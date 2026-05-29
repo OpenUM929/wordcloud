@@ -1,20 +1,26 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>그룹 분석 테스트 — 다면평가 워드클라우드</title>
+{% extends "base.html" %}
+{% block title %}그룹 분석 테스트 — 다면평가 워드클라우드{% endblock %}
+{% block extra_head %}
 <style>
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
     background: #eef1f5;
-    padding: 10px;
+    height: 100vh;
+    overflow: hidden;
+}
+.container {
+    background: #eef1f5 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+#main-panel {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    height: 100vh;
+    padding: 10px;
     overflow: hidden;
+    min-width: 0;
 }
 .condition-card {
     width: 1605px;
@@ -188,9 +194,10 @@ body {
 .retry-btn { background: #ffc107; color: #333; border: none; padding: 4px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
 .retry-btn:hover { background: #e0a800; }
 </style>
-</head>
-<body>
+{% endblock %}
 
+{% block content %}
+<div id="main-panel">
 <div class="condition-card">
     <h1>그룹 분석 테스트 — 다면평가 워드클라우드</h1>
     <p class="subtitle">X축(시간/회차) × Y축(평가자 관점) | 셀 내용(분석 유형) — 3개 모두 독립 선택</p>
@@ -320,6 +327,7 @@ body {
 <div id="resultArea">
     <p style="color:#999;text-align:center;padding:50px;">직원을 선택하고 매트릭스를 생성하세요.</p>
 </div>
+</div><!-- #main-panel -->
 
 <div class="modal-overlay" id="imgModal" onclick="closeModal()">
     <div class="modal-content">
@@ -338,7 +346,9 @@ body {
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 let _meta = null;
 let _csvEmployeeIds = null;
@@ -1205,5 +1215,4 @@ async function toggleWordBoost(word, enabled) {
     } catch(e) { alert('오류: ' + e.message); }
 }
 </script>
-</body>
-</html>
+{% endblock %}
