@@ -49,7 +49,7 @@ def create_batch_zip(batch_dir, session_results):
     
     Args:
         batch_dir: Batch directory path
-        session_results: JSON string of batch results
+        session_results: JSON string of batch results (unused, kept for compat)
         
     Returns:
         Flask send_file: ZIP file for download
@@ -58,7 +58,11 @@ def create_batch_zip(batch_dir, session_results):
         if not batch_dir or not os.path.exists(batch_dir):
             return {'error': '배치 처리 결과를 찾을 수 없습니다.'}, 404
         
-        summary = json.loads(session_results)
+        summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
+        if not os.path.exists(summary_path):
+            return {'error': 'batch_summary.json을 찾을 수 없습니다.'}, 404
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary = json.load(f)
         
         memory_file = BytesIO()
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:

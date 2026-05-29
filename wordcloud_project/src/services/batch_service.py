@@ -309,7 +309,7 @@ def process_batch_metadata(data, session_obj):
 def get_sample_metadata(session_obj):
     """Get sample metadata from batch processing results."""
     return get_sample_metadata_from_results(
-        session_obj.get('batch_results'),
+        None,
         session_obj.get('batch_dir'),
         PROCESSED_DATA_DIR_PATH
     )
@@ -319,7 +319,7 @@ def download_batch_results(session_obj):
     """Download batch results as ZIP file."""
     return create_batch_zip(
         session_obj.get('batch_dir'),
-        session_obj.get('batch_results')
+        None
     )
 
 

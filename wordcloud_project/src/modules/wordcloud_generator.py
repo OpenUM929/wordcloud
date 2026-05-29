@@ -6,8 +6,8 @@ import os
 import matplotlib.pyplot as plt
 from typing import Dict, Any, Optional, Callable
 from wordcloud import WordCloud
-from collections import Counter
 import numpy as np
+from PIL import Image, ImageDraw
 from utils.logger import setup_logger, get_log_file_path, get_timestamp
 from src.modules.stopword_manager import get_stopword_manager, filter_stopwords
 
@@ -276,25 +276,17 @@ class WordCloudGenerator:
                                        output_path: Optional[str] = None, background_color: str = 'white',
                                        max_words: int = 100, width: int = 800, height: int = 600,
                                        remove_stopwords: bool = True) -> bool:
-        """
-        옵션을 적용한 감정 기반 색상 워드클라우드 생성
-
-        Args:
-            word_freq: 단어 빈도 딕셔너리
-            word_scores: 단어 별 감정 점수 딕셔너리 (양수: 긍정, 음수: 부정, 0: 중립)
-            output_path: 이미지 저장 경로
-            background_color: 배경색
-            max_words: 최대 단어 수
-            width: 너비
-            height: 높이
-            remove_stopwords: 불용어 제거 여부
-
-        Returns:
-            성공 여부
-        """
-        self.logger.info(f"옵션 적용 감정 기반 워드클라우드 생성 시작: {len(word_freq)}개 단어")
+        """test_wordcloud2.py generate_wordcloud_bitmap() 동일 로직 — PIL 비트맵 충돌 감지 + 중앙 나선형 배치"""
+        self.logger.info(f"워드클라우드 생성 시작: {len(word_freq)}개 단어, {width}x{height}")
 
         try:
+            import math
+            import random
+            from PIL import Image, ImageDraw, ImageFont
+
+            wc_config = self.config["wordcloud"]
+            font_path = wc_config.get("font_path", "C:/Windows/Fonts/malgun.ttf")
+
             # 불용어 제거
             processed_word_freq = word_freq.copy()
             if remove_stopwords:
@@ -302,87 +294,110 @@ class WordCloudGenerator:
                 for word in list(processed_word_freq.keys()):
                     if manager.is_stopword(word):
                         del processed_word_freq[word]
-                self.logger.info(f"불용어 제거 완료: {len(word_freq) - len(processed_word_freq)}개 단어 제거")
 
-            # 설정 업데이트
-            self.update_config(
-                background_color=background_color,
-                max_words=max_words,
-                width=width,
-                height=height
-            )
-
-            # 단어 빈도 검증
-            if not processed_word_freq or len(processed_word_freq) == 0:
+            if not processed_word_freq:
                 self.logger.error("단어 빈도 정보가 없습니다.")
                 return False
 
-            # 색상 함수 (감정 점수 기반)
-            def color_func(word, font_size, position, orientation, random_state=None, **kwargs):
-                score = word_scores.get(word, 0.0)
-                
-                # score에 따라 색상 결정
-                if score > 0.5:
-                    # 강한 긍정: 민트 파스텔 (152, 251, 152)
-                    base_color = [152, 251, 152]
-                elif score > 0.0:
-                    # 약한 긍정: 연한 민트 (224, 255, 224)
-                    base_color = [224, 255, 224]
-                elif score >= -0.5 and score <= 0.0:
-                    # 중립: 파스텔 회색 (240, 240, 240)
-                    base_color = [240, 240, 240]
-                elif score > -0.5:
-                    # 약한 부정: 연한 파스텔 빨강 (255, 228, 225)
-                    base_color = [255, 228, 225]
-                else:
-                    # 강한 부정: 파스텔 빨강 (250, 128, 114)
-                    base_color = [250, 128, 114]
-                
-                # 점수의 절대값에 따라 진하기 조절
-                normalized_score = max(-1.0, min(1.0, score))
-                intensity = abs(normalized_score)
-                
-                # intensity에 따라 색상의 명도 조절 (0.7~1.0 범위)
-                if intensity == 0:
-                    color = [200, 200, 200]
-                else:
-                    brightness = 0.7 + (intensity * 0.3)
-                    color = [int(c * brightness) for c in base_color]
-                
-                return tuple(color)
+            random.seed(42)
 
-            # 워드클라우드 설정
-            wc_config = self.config["wordcloud"]
-            wordcloud = WordCloud(
-                font_path=wc_config.get("font_path"),
-                background_color=wc_config.get("background_color", "white"),
-                width=wc_config.get("width", 800),
-                height=wc_config.get("height", 600),
-                max_words=wc_config.get("max_words", 100),
-                color_func=color_func
+            sorted_words = sorted(processed_word_freq.items(), key=lambda x: x[1], reverse=True)
+            sorted_words = sorted_words[:max_words]
+            if not sorted_words:
+                return False
+
+            max_freq = sorted_words[0][1]
+            n_words = len(sorted_words)
+
+            canvas_area = width * height
+            max_font = min(
+                min(width, height) // 5,
+                int(math.sqrt(canvas_area / max(n_words, 10)) * 1.0)
             )
+            max_font = max(max_font, 14)
+            min_font = max(8, max_font // 5)
 
-            # 워드클라우드 생성
-            wordcloud.generate_from_frequencies(processed_word_freq)
-            self.logger.info("감정 기반 워드클라우드 생성 완료")
+            self.logger.info(f"폰트 범위: {min_font}~{max_font}px, 단어수: {n_words}")
 
-            # 이미지 저장
-            if output_path and self.config["output"]["save_image"]:
+            def get_font_size(freq):
+                ratio = freq / max_freq
+                return max(min_font, int(min_font + (ratio ** 0.6) * (max_font - min_font)))
+
+            def get_emotion_color(word):
+                score = word_scores.get(word, 0.0)
+                score = max(-1.0, min(1.0, score))
+                if score > 0.5:    return (100, 190, 145)   # 강한 긍정 — 파스텔 민트그린
+                elif score > 0.0:  return (145, 210, 165)   # 약한 긍정 — 파스텔 그린
+                elif score > -0.5: return (172, 178, 200)   # 중립 — 파스텔 라벤더그레이
+                elif score > -1.0: return (230, 150, 150)   # 약한 부정 — 파스텔 살몬
+                else:              return (215, 120, 130)   # 강한 부정 — 파스텔 로즈
+
+            def spiral_positions(cx, cy, start_angle):
+                diagonal = math.sqrt(width ** 2 + height ** 2)
+                b = diagonal / (2 * math.pi * 10)
+                theta = 0.0
+                while True:
+                    r = b * theta
+                    yield (int(cx + r * math.cos(theta + start_angle)),
+                           int(cy + r * math.sin(theta + start_angle)))
+                    theta += 0.12
+                    if r > diagonal:
+                        break
+
+            img_grey = Image.new('L', (width, height), 0)
+            img_color = Image.new('RGB', (width, height), background_color)
+            draw_grey = ImageDraw.Draw(img_grey)
+            draw_color = ImageDraw.Draw(img_color)
+            cx, cy = width // 2, height // 2
+            margin = 3
+            placed = 0
+
+            for word, freq in sorted_words:
+                font_size = get_font_size(freq)
+                try:
+                    font = ImageFont.truetype(font_path, font_size)
+                except Exception:
+                    font = ImageFont.load_default()
+
+                dummy_draw = ImageDraw.Draw(Image.new('L', (1, 1)))
+                bbox = dummy_draw.textbbox((0, 0), word, font=font)
+                tw = bbox[2] - bbox[0] + margin * 2
+                th = bbox[3] - bbox[1] + margin * 2
+
+                start_angle = random.uniform(0, 2 * math.pi)
+                placed_this = False
+
+                for sx, sy in spiral_positions(cx, cy, start_angle):
+                    x1 = sx - tw // 2
+                    y1 = sy - th // 2
+                    x2 = x1 + tw
+                    y2 = y1 + th
+                    if x1 < 0 or y1 < 0 or x2 > width or y2 > height:
+                        continue
+                    region = img_grey.crop((x1, y1, x2, y2))
+                    if max(region.getdata()) == 0:
+                        draw_grey.text(
+                            (x1 + margin - bbox[0], y1 + margin - bbox[1]),
+                            word, font=font, fill=255
+                        )
+                        draw_color.text(
+                            (x1 + margin - bbox[0], y1 + margin - bbox[1]),
+                            word, font=font, fill=get_emotion_color(word)
+                        )
+                        placed += 1
+                        placed_this = True
+                        break
+
+            if output_path:
                 os.makedirs(os.path.dirname(output_path), exist_ok=True)
-                wordcloud.to_file(output_path)
-                self.logger.info(f"워드클라우드 이미지 저장 완료: {output_path}")
+                img_color.save(output_path)
+                self.logger.info(f"워드클라우드 저장 완료: {output_path}")
 
-            # 플롯 표시 (선택적)
-            if self.config["output"]["show_plot"]:
-                plt.figure(figsize=(10, 8))
-                plt.imshow(wordcloud, interpolation='bilinear')
-                plt.axis('off')
-                plt.show()
-
+            self.logger.info(f"워드클라우드 생성 완료: {placed}/{n_words}개 단어 배치")
             return True
 
         except Exception as e:
-            self.logger.error(f"옵션 적용 감정 기반 워드클라우드 생성 실패: {e}")
+            self.logger.error(f"워드클라우드 생성 실패: {e}")
             import traceback
             self.logger.error(f"오류 상세: {traceback.format_exc()}")
             return False

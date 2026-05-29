@@ -3,6 +3,7 @@
 import os
 import json
 from datetime import datetime
+from src.modules.wordcloud_generator import WordCloudGenerator
 
 
 # 체크포인트 관련 상수
@@ -159,9 +160,15 @@ def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_
         # Add additional fields from mappings
         if 'target_employee_department' in mappings and mappings['target_employee_department'] in df.columns:
             metadata['target_employee_department'] = df.iloc[0].get(mappings['target_employee_department'], '생산부')
-        
+
         if 'target_employee_position' in mappings and mappings['target_employee_position'] in df.columns:
             metadata['target_employee_position'] = df.iloc[0].get(mappings['target_employee_position'], '사원')
+
+        # 원래 이름(이름 컬럼이 매핑된 경우) - 가명화 대상이 아니므로 evaluations에서 직접 추출
+        if 'target_employee_name' in mappings and evaluations:
+            name_val = evaluations[0].get('target_employee_name', '')
+            if name_val:
+                metadata['target_employee_name'] = str(name_val)
         
         # Stage 2에서 Stage 3/4에서 별도로 저장하므로 여기서는 저장 안 함
         # metadata_path = metadata_manager.save_employee_metadata(metadata, batch_dir)
@@ -228,7 +235,10 @@ def generate_employee_wordcloud(metadata, metadata_manager, generator, batch_dir
     """
     try:
         employee_id = metadata.get('target_employee_id')
-        wordcloud_path = os.path.join(batch_dir, "word", f"wordcloud_{employee_id}.png")
+        word_dir = os.path.join(batch_dir, "word")
+        combined_dir = os.path.join(word_dir, "combined")
+        os.makedirs(combined_dir, exist_ok=True)
+        wordcloud_path = os.path.join(combined_dir, f"wordcloud_{employee_id}.png")
         
         word_freq = metadata.get('consolidated_analysis', {}).get('word_frequency', {})
         
@@ -267,7 +277,7 @@ def generate_employee_wordcloud(metadata, metadata_manager, generator, batch_dir
             )
         
         # Update metadata with wordcloud path
-        metadata['wordcloud_path'] = f"word/wordcloud_{employee_id}.png"
+        metadata['wordcloud_path'] = f"word/combined/wordcloud_{employee_id}.png"
         metadata_manager.update_employee_metadata(employee_id, metadata, batch_dir)
         
         return wordcloud_path
@@ -369,7 +379,10 @@ def create_batch_summary(batch_dir, grouped_data, employee_results,
             'individual_metadata_dir': 'imeta',
             'consolidated_metadata_dir': 'tmeta'
         },
-        'employee_results': employee_results,
+        'employee_ids': list(set(
+            er.get('employee_id') or er.get('metadata', {}).get('target_employee_id', '')
+            for er in employee_results if er.get('success')
+        )),
         'processing_config': processing_config
     }
     
@@ -396,7 +409,6 @@ def process_batch(processed_data_dir, data, session_data):
     from io import StringIO
     import pandas as pd
     from src.models.metadata_manager import MetadataManager
-    from src.modules.wordcloud_generator import WordCloudGenerator
     import os
     
     # Load data from session file path (병렬 처리)
@@ -496,6 +508,38 @@ def process_batch(processed_data_dir, data, session_data):
     # Group data by employee
     grouped_data = group_data_by_employee(df, target_id_column, mappings)
     
+    # Always pseudonymize all PII fields (no user checkbox needed)
+    pseudonym_fields = data.get('pseudonym_fields', [])
+    forced_pseudo = [
+        'target_employee_id', 'evaluator_id',
+        'target_employee_department', 'target_employee_position',
+        'evaluator_department', 'evaluator_position',
+    ]
+    for f in forced_pseudo:
+        if f not in pseudonym_fields:
+            pseudonym_fields.append(f)
+    data['pseudonym_fields'] = pseudonym_fields
+    _pseudo_mgr = None
+    if pseudonym_fields:
+        from src.config.settings import ADMIN_PASSWORD, PSEUDONYM_MAPPINGS_PATH
+        from src.modules.pseudonym_manager import PseudonymManager
+        _pseudo_mgr = PseudonymManager(PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD)
+        
+        # Re-key grouped_data if target_employee_id is pseudonymized
+        if 'target_employee_id' in pseudonym_fields:
+            new_grouped_data = {}
+            for emp_id in list(grouped_data.keys()):
+                pseudo_id = _pseudo_mgr.get_pseudonym(str(emp_id))
+                new_grouped_data[pseudo_id] = grouped_data[emp_id]
+            grouped_data = new_grouped_data
+        
+        # Apply pseudonyms to evaluation dicts
+        for emp_id in grouped_data:
+            grouped_data[emp_id] = [
+                _pseudo_mgr.apply_pseudonyms_to_dict(ev, pseudonym_fields)
+                for ev in grouped_data[emp_id]
+            ]
+    
     # Initialize metadata manager
     metadata_manager = MetadataManager(processed_data_dir)
     
@@ -563,6 +607,11 @@ def process_batch(processed_data_dir, data, session_data):
                 mappings, df
             )
             if success:
+                if _pseudo_mgr:
+                    meta_fields = [f for f in pseudonym_fields
+                                   if f in ('target_employee_department', 'target_employee_position')]
+                    if meta_fields:
+                        metadata = _pseudo_mgr.apply_pseudonyms_to_dict(metadata, meta_fields)
                 return {
                     'employee_id': employee_id,
                     'metadata': metadata,
@@ -675,45 +724,15 @@ def process_batch(processed_data_dir, data, session_data):
     batch_processing_state['current_step'] = 3
     
     def save_imeta_single(args):
-        """imeta 단일 저장 (병렬용)"""
+        """imeta 단일 저장 (병렬용) — MetadataManager에 위임"""
         result = args
         try:
             metadata = result.get('metadata')
             if metadata:
-                target_id = metadata.get('target_employee_id')
-                imeta_dir = os.path.join(batch_dir, "imeta")
-                for idx, evaluation in enumerate(metadata.get('evaluations', [])):
-                    eval_id = evaluation.get('evaluation_id', f'eval-{target_id}-{idx+1}')
-                    individual_metadata = {
-                        "evaluation_id": evaluation.get('evaluation_id'),
-                        "target_employee_id": target_id,
-                        "target_employee_department": metadata.get('target_employee_department'),
-                        "target_employee_position": metadata.get('target_employee_position'),
-                        "target_hierarchy_level": metadata.get('target_hierarchy_level', 'staff'),
-                        "evaluation_document": evaluation.get('evaluation_document'),
-                        "evaluator_id": evaluation.get('evaluator_id'),
-                        "evaluator_department": evaluation.get('evaluator_department'),
-                        "evaluator_position": evaluation.get('evaluator_position'),
-                        "evaluator_hierarchy_level": evaluation.get('evaluator_hierarchy_level', 'staff'),
-                        "evaluation_date": evaluation.get('evaluation_date'),
-                        "preprocessing_results": evaluation.get('preprocessing_results'),
-                        "emotion_analysis_results": evaluation.get('emotion_analysis_results'),
-                        "nlp_analysis_results": evaluation.get('nlp_analysis_results'),
-                        "profanity_analysis_results": evaluation.get('profanity_analysis_results'),
-                        "leadership_analysis_results": evaluation.get('leadership_analysis_results'),
-                        "sarcasm_analysis_results": evaluation.get('sarcasm_analysis_results'),
-                        "processing_status": metadata.get('processing_status'),
-                        "session_id": metadata.get('session_id'),
-                        "created_at": metadata.get('created_at')
-                    }
-                    import hashlib
-                    metadata_json = json.dumps(individual_metadata, sort_keys=True, ensure_ascii=False)
-                    individual_metadata["data_integrity_hash"] = hashlib.sha256(metadata_json.encode('utf-8')).hexdigest()
-                    
-                    individual_path = os.path.join(imeta_dir, f"{eval_id}.json")
-                    with open(individual_path, 'w', encoding='utf-8') as f:
-                        json.dump(individual_metadata, f, ensure_ascii=False, indent=2)
-                return {'success': True, 'employee_id': target_id}
+                from src.models.metadata_manager import MetadataManager
+                mgr = MetadataManager()
+                mgr.save_individual_metadata(metadata, batch_dir)
+                return {'success': True, 'employee_id': metadata.get('target_employee_id')}
             return {'success': False, 'employee_id': result.get('employee_id')}
         except Exception as e:
             return {'success': False, 'employee_id': result.get('employee_id'), 'error': str(e)}
@@ -770,42 +789,115 @@ def process_batch(processed_data_dir, data, session_data):
             'remove_profanity': data.get('remove_profanity', False),
             'max_words': data.get('max_words', 100),
             'width': data.get('width', 800),
-            'height': data.get('height', 600)
+            'height': data.get('height', 600),
+            'wordcloud_sentiment_mode': data.get('wordcloud_sentiment_mode', 'combined')
         }
         
+        def _filter_word_freq_by_sentiment(word_freq, word_scores, sentiment):
+            """word_scores 기준으로 특정 감정의 단어만 필터링"""
+            if sentiment == 'positive':
+                return {w: f for w, f in word_freq.items() if word_scores.get(w, 0) > 0}
+            elif sentiment == 'negative':
+                return {w: f for w, f in word_freq.items() if word_scores.get(w, 0) < 0}
+            return word_freq
+
+        def _filter_word_scores_by_sentiment(word_scores, sentiment):
+            """word_scores 기준으로 특정 감정의 점수만 필터링"""
+            if sentiment == 'positive':
+                return {w: s for w, s in word_scores.items() if s > 0}
+            elif sentiment == 'negative':
+                return {w: s for w, s in word_scores.items() if s < 0}
+            return word_scores
+
+        def _generate_single_wordcloud(generator, word_freq, word_scores, output_path, wc_config):
+            """워드클라우드 단일 파일 생성"""
+            if wc_config.get('apply_emotion_colors', True) and word_scores:
+                generator.generate_with_colors_and_options(
+                    word_freq, word_scores, output_path,
+                    background_color=wc_config.get('background_color', 'white'),
+                    max_words=wc_config.get('max_words', 100),
+                    width=wc_config.get('width', 800),
+                    height=wc_config.get('height', 600)
+                )
+            else:
+                combined_text = ' '.join([str(word) * max(1, int(freq)) for word, freq in word_freq.items()])
+                generator.generate_wordcloud_with_options(
+                    combined_text, output_path,
+                    background_color=wc_config.get('background_color', 'white'),
+                    max_words=wc_config.get('max_words', 100),
+                    width=wc_config.get('width', 800),
+                    height=wc_config.get('height', 600)
+                )
+
         def generate_wordcloud_single(args):
             """워드클라우드 단일 생성 (병렬용) - 각 worker가 자체 generator 사용"""
-            from src.modules.wordcloud_generator import WordCloudGenerator
             result = args
             try:
                 metadata = result.get('metadata')
                 if metadata:
                     employee_id = metadata.get('target_employee_id')
-                    wordcloud_path = os.path.join(batch_dir, "word", f"wordcloud_{employee_id}.png")
+                    word_dir = os.path.join(batch_dir, "word")
                     
                     word_freq = metadata.get('consolidated_analysis', {}).get('word_frequency', {})
-                    
                     generator = WordCloudGenerator()
+                    sentiment_mode = wordcloud_config.get('wordcloud_sentiment_mode', 'combined')
                     
+                    word_scores = {}
                     if wordcloud_config.get('apply_emotion_colors', True):
                         word_scores = calculate_word_scores(metadata, word_freq)
-                        generator.generate_with_colors_and_options(
-                            word_freq, word_scores, wordcloud_path,
-                            background_color=wordcloud_config.get('background_color', 'white'),
-                            max_words=wordcloud_config.get('max_words', 100),
-                            width=wordcloud_config.get('width', 800),
-                            height=wordcloud_config.get('height', 600)
-                        )
-                    else:
-                        combined_text = ' '.join([str(word) * max(1, int(freq)) for word, freq in word_freq.items()])
-                        generator.generate_wordcloud_with_options(
-                            combined_text, wordcloud_path,
-                            background_color=wordcloud_config.get('background_color', 'white'),
-                            max_words=wordcloud_config.get('max_words', 100),
-                            width=wordcloud_config.get('width', 800),
-                            height=wordcloud_config.get('height', 600)
-                        )
-                    metadata['wordcloud_path'] = f"word/wordcloud_{employee_id}.png"
+
+                    combined_dir = os.path.join(word_dir, "combined")
+                    positive_dir = os.path.join(word_dir, "positive")
+                    negative_dir = os.path.join(word_dir, "negative")
+                    
+                    if sentiment_mode == 'combined':
+                        os.makedirs(combined_dir, exist_ok=True)
+                        wc_path = os.path.join(combined_dir, f"wordcloud_{employee_id}.png")
+                        _generate_single_wordcloud(generator, word_freq, word_scores, wc_path, wordcloud_config)
+                        metadata['wordcloud_path'] = f"word/combined/wordcloud_{employee_id}.png"
+                    
+                    elif sentiment_mode == 'separate':
+                        pos_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'positive')
+                        neg_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'negative')
+                        pos_scores = _filter_word_scores_by_sentiment(word_scores, 'positive')
+                        neg_scores = _filter_word_scores_by_sentiment(word_scores, 'negative')
+                        
+                        if pos_freq:
+                            os.makedirs(positive_dir, exist_ok=True)
+                            pos_path = os.path.join(positive_dir, f"wordcloud_{employee_id}.png")
+                            _generate_single_wordcloud(generator, pos_freq, pos_scores, pos_path, wordcloud_config)
+                        if neg_freq:
+                            os.makedirs(negative_dir, exist_ok=True)
+                            neg_path = os.path.join(negative_dir, f"wordcloud_{employee_id}.png")
+                            _generate_single_wordcloud(generator, neg_freq, neg_scores, neg_path, wordcloud_config)
+                        
+                        metadata['wordcloud_path'] = f"word/positive/wordcloud_{employee_id}.png"
+                        metadata['wordcloud_path_positive'] = f"word/positive/wordcloud_{employee_id}.png"
+                        metadata['wordcloud_path_negative'] = f"word/negative/wordcloud_{employee_id}.png"
+                    
+                    else:  # 'both'
+                        os.makedirs(combined_dir, exist_ok=True)
+                        wc_path = os.path.join(combined_dir, f"wordcloud_{employee_id}.png")
+                        _generate_single_wordcloud(generator, word_freq, word_scores, wc_path, wordcloud_config)
+                        metadata['wordcloud_path'] = f"word/combined/wordcloud_{employee_id}.png"
+                        
+                        pos_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'positive')
+                        neg_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'negative')
+                        pos_scores = _filter_word_scores_by_sentiment(word_scores, 'positive')
+                        neg_scores = _filter_word_scores_by_sentiment(word_scores, 'negative')
+                        
+                        if pos_freq:
+                            os.makedirs(positive_dir, exist_ok=True)
+                            pos_path = os.path.join(positive_dir, f"wordcloud_{employee_id}.png")
+                            _generate_single_wordcloud(generator, pos_freq, pos_scores, pos_path, wordcloud_config)
+                        if neg_freq:
+                            os.makedirs(negative_dir, exist_ok=True)
+                            neg_path = os.path.join(negative_dir, f"wordcloud_{employee_id}.png")
+                            _generate_single_wordcloud(generator, neg_freq, neg_scores, neg_path, wordcloud_config)
+                        
+                        metadata['wordcloud_path_positive'] = f"word/positive/wordcloud_{employee_id}.png"
+                        metadata['wordcloud_path_negative'] = f"word/negative/wordcloud_{employee_id}.png"
+                    
                     metadata_manager.update_employee_metadata(employee_id, metadata, batch_dir)
                     return {'success': True, 'employee_id': employee_id}
                 return {'success': False}
@@ -828,14 +920,23 @@ def process_batch(processed_data_dir, data, session_data):
     # completed 플래그는 enableWordcloud 여부와 무관하게 항상 설정 (SSE 무한루프 방지)
     batch_processing_state['completed'] = True
     
-    # Create summary
+    # Upsert each successful employee to user_data_manager (users/*.json)
+    batch_id = os.path.basename(batch_dir)
+    from src.services.user_data_manager import upsert
+    for er in employee_results:
+        if er.get('success'):
+            meta = er.get('metadata', {})
+            emp_id = er.get('employee_id') or meta.get('target_employee_id')
+            if emp_id:
+                upsert(emp_id, meta, meta.get('evaluations', []), batch_id)
+    
+    # Create summary (lightweight: employee_ids only, no full evaluation data)
     batch_summary = create_batch_summary(
         batch_dir, grouped_data, employee_results,
         batch_processing_state, data
     )
     
-    # Store in session
-    session_data['batch_results'] = json.dumps(batch_summary)
+    # Store batch dir in session (small, used for API calls)
     session_data['batch_dir'] = batch_dir
     
     return {

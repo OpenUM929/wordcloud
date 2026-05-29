@@ -70,10 +70,15 @@ def get_batch_list(processed_data_dir):
 def delete_batch_directory(batch_path):
     """
     Delete a batch directory.
-    
+
+    WARNING: This function only removes the batch directory on disk.
+    It does NOT remove the batch's evaluation data from users/*.json files.
+    For complete cleanup including user data, use remove_batch_from_all()
+    from user_data_manager before calling this function.
+
     Args:
         batch_path: Path to batch directory
-        
+
     Returns:
         tuple: (dict result, status_code)
     """
@@ -147,10 +152,10 @@ def get_batch_summary(processed_data_dir, batch_path):
 
 def get_sample_metadata_from_results(session_results, batch_dir, processed_data_dir):
     """
-    Get sample metadata from batch processing results stored in session.
+    Get sample metadata from batch processing results.
     
     Args:
-        session_results: JSON string of batch results from session
+        session_results: JSON string of batch results from session (unused, kept for compat)
         batch_dir: Batch directory path
         processed_data_dir: Base directory for processed data
         
@@ -158,10 +163,12 @@ def get_sample_metadata_from_results(session_results, batch_dir, processed_data_
         tuple: (dict result, status_code)
     """
     try:
-        if not session_results:
-            return {'error': '배치 처리 결과가 없습니다.'}, 400
+        summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
+        if not os.path.exists(summary_path):
+            return {'error': 'batch_summary.json을 찾을 수 없습니다.'}, 400
         
-        summary = json.loads(session_results)
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary = json.load(f)
         employee_results = summary.get('employee_results', [])
         
         if not employee_results:

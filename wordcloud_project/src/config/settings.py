@@ -28,6 +28,7 @@ SARCASM_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "sarcasm_config.json")
 PROFANITY_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "profanity_config.json")
 EMOTION_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "emotion_config.json")
 LEADERSHIP_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "leadership_config.json")
+WORD_BOOST_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "word_boost.json")
 
 # Output directories (PROJECT_ROOT is src/, go up one more level to wordcloud_project/)
 OUTPUTS_DIR_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', OUTPUTS_DIR))
@@ -40,6 +41,11 @@ FLASK_HOST = os.getenv('FLASK_HOST', '127.0.0.1')
 
 # Application settings
 SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key_here')
+
+# Admin settings
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin1234')
+PSEUDONYM_MAPPINGS_PATH = os.path.abspath(os.path.join(CONFIGS_DIR_PATH, 'pseudonym_mappings.enc'))
+POSITION_HIERARCHY_PATH = os.path.abspath(os.path.join(CONFIGS_DIR_PATH, 'position_hierarchy.json'))
 
 # Processing settings
 DEFAULT_WORDCLOUD_POS = ['Noun']

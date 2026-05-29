@@ -3,6 +3,7 @@
 {% block title %}워드클라우드{% endblock %}
 
 {% block extra_head %}
+
 <style>
     .wordcloud-options {
         margin: 20px 0;
@@ -298,6 +299,8 @@
     #metadataTree::-webkit-scrollbar-thumb:hover {
         background: #555;
     }
+
+
 </style>
 {% endblock %}
 
@@ -370,18 +373,39 @@
             <div class="emotion-colors-group">
                 <label><input type="checkbox" id="removeProfanity"> <span>비속어 제거</span></label>
             </div>
+
+            <div class="emotion-colors-group" style="margin-top: 8px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 4px;">감정 분리 모드:</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <label><input type="radio" name="sentimentMode" value="combined" checked> 통합</label>
+                    <label><input type="radio" name="sentimentMode" value="separate"> 긍정/부정 분리</label>
+                    <label><input type="radio" name="sentimentMode" value="both"> 통합 + 분리</label>
+                </div>
+            </div>
             <small style="color: #666; display: block; margin-top: 8px;">(긍정: 파랑, 부정: 빨강, 중립: 회색)</small>
         </div>
+
+
     </div>
     <button id="regenerateBtn" class="regenerate-btn" disabled>워드클라우드 재생성</button>
 </div>
 
 <div id="wordcloudContainer" style="display: none; margin: 20px 0;">
     <h3 id="employeeTitle">워드클라우드</h3>
-    <div style="text-align: center; margin: 20px 0;">
+    <div id="wordcloudCombined" style="text-align: center; margin: 20px 0; display: none;">
+        <h4 style="color: #666; margin-bottom: 10px;">통합 워드클라우드</h4>
         <img id="wordcloudImage" src="" alt="워드클라우드" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
     </div>
+    <div id="wordcloudPositive" style="text-align: center; margin: 20px 0; display: none;">
+        <h4 style="color: #28a745; margin-bottom: 10px;">긍정 워드클라우드</h4>
+        <img id="wordcloudImagePositive" src="" alt="긍정 워드클라우드" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+    </div>
+    <div id="wordcloudNegative" style="text-align: center; margin: 20px 0; display: none;">
+        <h4 style="color: #dc3545; margin-bottom: 10px;">부정 워드클라우드</h4>
+        <img id="wordcloudImageNegative" src="" alt="부정 워드클라우드" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+    </div>
     <div id="wordcloudInfo" style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;"></div>
+
 </div>
 
 <script>
@@ -735,25 +759,59 @@ function showWordcloud(metadata) {
     // 재생성 버튼 활성화
     document.getElementById('regenerateBtn').disabled = false;
 
-    // 워드클 라우드 이미지 표시
-    let wordcloudUrl = metadata.wordcloud_url;
-    
-    // metadata에 wordcloud_url이 없으면 selectedBatch와 employee_id로 생성
-    if (!wordcloudUrl && selectedBatch && metadata.employee_id) {
-        const batchName = selectedBatch.original_name || selectedBatch.name.split(' ').pop();
-        wordcloudUrl = `/api/wordcloud/batch/${batchName}/word/wordcloud_${metadata.employee_id}.png`;
+    const batchName = selectedBatch ? (selectedBatch.original_name || selectedBatch.name.split(' ').pop()) : '';
+    const empId = metadata.employee_id;
+
+    // 워드클라우드 이미지 표시
+    const rawMeta = metadata.metadata || {};
+    let combinedUrl = metadata.wordcloud_url;
+
+    // 통합 워드클라우드
+    if (!combinedUrl && batchName && empId) {
+        combinedUrl = `/api/wordcloud/batch/${batchName}/word/combined/wordcloud_${empId}.png`;
     }
-    
-    if (wordcloudUrl) {
-        document.getElementById('wordcloudImage').src = wordcloudUrl;
-        document.getElementById('wordcloudImage').style.display = 'block';
+    const combinedDiv = document.getElementById('wordcloudCombined');
+    if (combinedUrl) {
+        document.getElementById('wordcloudImage').src = combinedUrl;
+        combinedDiv.style.display = 'block';
     } else {
-        document.getElementById('wordcloudImage').src = '';
-        document.getElementById('wordcloudImage').style.display = 'none';
+        combinedDiv.style.display = 'none';
+    }
+
+    // 긍정 워드클라우드 (separate/both 모드)
+    const posPath = rawMeta.wordcloud_path_positive;
+    const posDiv = document.getElementById('wordcloudPositive');
+    let posUrl = metadata.wordcloud_url_positive;
+    if (!posUrl && posPath && batchName) {
+        posUrl = `/api/wordcloud/batch/${batchName}/word/${posPath.replace('word/', '')}`;
+    } else if (!posUrl && batchName && empId) {
+        posUrl = `/api/wordcloud/batch/${batchName}/word/positive/wordcloud_${empId}.png`;
+    }
+    if (posUrl) {
+        document.getElementById('wordcloudImagePositive').src = posUrl;
+        posDiv.style.display = 'block';
+    } else {
+        posDiv.style.display = 'none';
+    }
+
+    // 부정 워드클라우드 (separate/both 모드)
+    const negPath = rawMeta.wordcloud_path_negative;
+    const negDiv = document.getElementById('wordcloudNegative');
+    let negUrl = metadata.wordcloud_url_negative;
+    if (!negUrl && negPath && batchName) {
+        negUrl = `/api/wordcloud/batch/${batchName}/word/${negPath.replace('word/', '')}`;
+    } else if (!negUrl && batchName && empId) {
+        negUrl = `/api/wordcloud/batch/${batchName}/word/negative/wordcloud_${empId}.png`;
+    }
+    if (negUrl) {
+        document.getElementById('wordcloudImageNegative').src = negUrl;
+        negDiv.style.display = 'block';
+    } else {
+        negDiv.style.display = 'none';
     }
 
     // 직원 정보 표시
-    document.getElementById('employeeTitle').textContent = `직원 ${metadata.employee_id} 워드클라우드`;
+    document.getElementById('employeeTitle').textContent = `직원 ${empId} 워드클라우드`;
 
     // 근거정보 표시 - 카드 형식으로 구분
     const infoDiv = document.getElementById('wordcloudInfo');
@@ -777,6 +835,7 @@ function saveOptions() {
         backgroundColor: document.getElementById('backgroundColor').value,
         applyEmotionColors: document.getElementById('applyEmotionColors').checked,
         removeProfanity: document.getElementById('removeProfanity').checked,
+
         sizePreset: document.querySelector('input[name="sizePreset"]:checked').value,
         maxWords: parseInt(document.getElementById('maxWords').value)
     };
@@ -810,6 +869,7 @@ function loadOptions() {
         
         // 비속어 제거 복원
         document.getElementById('removeProfanity').checked = options.removeProfanity;
+        
         
         // 크기 프리셋 복원
         document.querySelectorAll('input[name="sizePreset"]').forEach(radio => {
@@ -877,8 +937,10 @@ document.getElementById('removeProfanity').addEventListener('change', saveOption
 // 최대 단어 수 입력 이벤트
 document.getElementById('maxWords').addEventListener('change', saveOptions);
 
+
 // 페이지 로드 시 옵션 로드
 document.addEventListener('DOMContentLoaded', loadOptions);
+
 
 // 워드클라우드 재생성 - 중복 호출 방지
 let regenerateInProgress = false;
@@ -939,13 +1001,18 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
         maxWords
     });
 
+    const sentimentMode = document.querySelector('input[name="sentimentMode"]:checked').value;
+    const generatePng = true;
+
     console.log('재생성 요청 데이터:', {
         employee_id: selectedMetadata.employee_id,
         batch_path: selectedBatch.path,
         wordcloud_pos: selectedPos,
         background_color: backgroundColor,
         apply_emotion_colors: applyEmotionColors,
-        remove_profanity: removeProfanity
+        remove_profanity: removeProfanity,
+        wordcloud_sentiment_mode: sentimentMode,
+        generate_png: generatePng
     });
 
     try {
@@ -961,7 +1028,9 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
                 remove_profanity: removeProfanity,
                 width: width,
                 height: height,
-                max_words: maxWords
+                max_words: maxWords,
+                wordcloud_sentiment_mode: sentimentMode,
+                generate_png: generatePng
             })
         });
 
@@ -970,11 +1039,9 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
         console.log('응답 결과:', result);
 
         if (result.success) {
-            // 메타데이터 정보 업데이트
             selectedMetadata.wordcloud_url = result.wordcloud_url;
-            selectedMetadata.wordcloud_info = result.wordcloud_info;
-
-            // 워드클라우드 표시 업데이트
+            selectedMetadata.wordcloud_url_positive = result.wordcloud_url_positive;
+            selectedMetadata.wordcloud_url_negative = result.wordcloud_url_negative;
             showWordcloud(selectedMetadata);
         } else {
             alert('워드클라우드 재생성 실패: ' + result.error);
@@ -989,118 +1056,6 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
         this.textContent = '워드클라우드 재생성';
     }
 });
-
-// 옵션 저장 함수
-function saveOptions() {
-    const options = {
-        morphology: Array.from(document.querySelectorAll('#wordcloudOptions input[type="checkbox"]:checked'))
-            .filter(cb => cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity')
-            .map(cb => cb.value),
-        backgroundColor: document.getElementById('backgroundColor').value,
-        applyEmotionColors: document.getElementById('applyEmotionColors').checked,
-        removeProfanity: document.getElementById('removeProfanity').checked,
-        sizePreset: document.querySelector('input[name="sizePreset"]:checked').value,
-        maxWords: parseInt(document.getElementById('maxWords').value)
-    };
-    localStorage.setItem('wordcloudOptions', JSON.stringify(options));
-}
-
-// 옵션 로드 함수
-function loadOptions() {
-    const savedOptions = localStorage.getItem('wordcloudOptions');
-    if (savedOptions) {
-        const options = JSON.parse(savedOptions);
-        
-        // 형태소 선택 복원
-        document.querySelectorAll('#wordcloudOptions input[type="checkbox"]').forEach(cb => {
-            if (cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity') {
-                cb.checked = options.morphology.includes(cb.value);
-            }
-        });
-        
-        // 배경색 선택 복원
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.classList.remove('selected');
-            if (btn.dataset.color === options.backgroundColor) {
-                btn.classList.add('selected');
-            }
-        });
-        document.getElementById('backgroundColor').value = options.backgroundColor;
-        
-        // 감정 색상 적용 복원
-        document.getElementById('applyEmotionColors').checked = options.applyEmotionColors;
-        
-        // 비속어 제거 복원
-        document.getElementById('removeProfanity').checked = options.removeProfanity;
-        
-        // 크기 프리셋 복원
-        document.querySelectorAll('input[name="sizePreset"]').forEach(radio => {
-            radio.checked = radio.value === options.sizePreset;
-        });
-        
-        // 최대 단어 수 복원
-        document.getElementById('maxWords').value = options.maxWords;
-        
-        // 현재 설정 메시지 업데이트
-        const posText = options.morphology.length === 0 ? '명사' : options.morphology.join(', ');
-        document.getElementById('currentMorphology').textContent = `현재 설정: ${posText}`;
-    }
-}
-
-// 감정 색상 적용 체크박스 이벤트
-document.getElementById('applyEmotionColors').addEventListener('change', saveOptions);
-
-// 비속어 제거 체크박스 이벤트
-document.getElementById('removeProfanity').addEventListener('change', saveOptions);
-
-// 최대 단어 수 입력 이벤트
-document.getElementById('maxWords').addEventListener('change', saveOptions);
-
-// 크기 라디오 버튼 이벤트 (필요시 추가)
-document.querySelectorAll('input[name="sizePreset"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        console.log('크기 선택:', this.value);
-        saveOptions();
-    });
-});
-
-// 색상 버튼 이벤트
-document.querySelectorAll('.color-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        // 선택된 색상 표시
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-        this.classList.add('selected');
-
-        // hidden input에 값 설정
-        document.getElementById('backgroundColor').value = this.dataset.color;
-        saveOptions();
-    });
-});
-
-// 형태소 선택 변경 이벤트
-document.querySelectorAll('#wordcloudOptions input[type="checkbox"]').forEach(cb => {
-    if (cb.id !== 'applyEmotionColors') {
-        cb.addEventListener('change', function() {
-            // 선택된 형태소 업데이트
-            const selectedPos = [];
-            document.querySelectorAll('#wordcloudOptions input[type="checkbox"]:checked').forEach(c => {
-                if (c.id !== 'applyEmotionColors') {
-                    selectedPos.push(c.value);
-                }
-            });
-            
-            // 현재 설정 메시지 업데이트
-            const posText = selectedPos.length === 0 ? '명사' : selectedPos.join(', ');
-            document.getElementById('currentMorphology').textContent = `현재 설정: ${posText}`;
-            
-            updateDisplayedWords();
-            saveOptions();
-        });
-    }
-});
-
-// 페이지 로드 시 옵션 로드
-document.addEventListener('DOMContentLoaded', loadOptions);
 
 // 페이지 로드 시 배치 트리 렌더링
 renderBatchTree();

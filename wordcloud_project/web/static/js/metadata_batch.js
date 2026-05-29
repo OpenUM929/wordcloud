@@ -4,6 +4,7 @@ var currentStep = 1;
 var uploadedData = null;
 var columnMappings = {};
 var fieldOrder = [];
+var pseudonymFields = {};
 
 var selectedField = null;
 var isProcessing = false;
@@ -88,16 +89,16 @@ var defaultMetadataStructure = {
     "session_id": { type: "string", required: true, auto: true, system: true, description: "세션 고유 식별자" },
     "created_at": { type: "timestamp", required: true, auto: true, system: true, description: "생성 시각" },
     "version": { type: "string", required: true, auto: true, system: true, description: "스키마 버전" },
-    "target_employee_id": { type: "string", required: true, auto: false, system: false, description: "평가 대상자 ID" },
-    "target_employee_department": { type: "string", required: false, auto: true, system: false, description: "평가 대상자 부서" },
-    "target_employee_position": { type: "string", required: false, auto: true, system: false, description: "평가 대상자 직책" },
+    "target_employee_id": { type: "string", required: true, auto: false, system: false, pseudonymable: true, description: "평가 대상자 ID" },
+    "target_employee_department": { type: "string", required: false, auto: true, system: false, pseudonymable: true, description: "평가 대상자 부서" },
+    "target_employee_position": { type: "string", required: false, auto: true, system: false, pseudonymable: true, description: "평가 대상자 직책" },
     "total_evaluations": { type: "number", required: true, auto: true, system: false, description: "총 평가 수" },
     "evaluation_document": { type: "string", required: true, auto: false, system: false, description: "평가 문서 내용" },
     "evaluation_score": { type: "number", required: false, auto: false, system: false, description: "다면평가 점수 (기본 1점)" },
-    "evaluator_department": { type: "string", required: false, auto: false, system: false, description: "평가자 부서 정보" },
-    "evaluator_position": { type: "string", required: false, auto: false, system: false, description: "평가자 직책" },
-    "evaluator_id": { type: "string", required: false, auto: false, system: false, description: "평가자 ID" },
-    "evaluation_date": { type: "string", required: false, auto: false, system: false, description: "평가 일자" },
+    "evaluator_department": { type: "string", required: false, auto: false, system: false, pseudonymable: true, description: "평가자 부서 정보" },
+    "evaluator_position": { type: "string", required: false, auto: false, system: false, pseudonymable: true, description: "평가자 직책" },
+    "evaluator_id": { type: "string", required: false, auto: false, system: false, pseudonymable: true, description: "평가자 ID" },
+    "evaluation_date": { type: "string", required: false, auto: false, system: false, pseudonymable: true, description: "평가 일자" },
     "preprocessing_results": { type: "object", required: false, auto: true, system: false, description: "데이터 정제 결과" },
     "emotion_analysis_results": { type: "object", required: false, auto: true, system: false, description: "감정 분석 결과" },
     "leadership_analysis_results": { type: "object", required: false, auto: true, system: false, description: "리더십 분석 결과" },
@@ -133,6 +134,26 @@ function saveMetadataStructure() {
         }
     });
     localStorage.setItem('metadataStructure', JSON.stringify(userFields));
+}
+
+function savePseudonymFieldsToLocal() {
+    var active = {};
+    Object.keys(pseudonymFields).forEach(function(f) {
+        if (pseudonymFields[f]) active[f] = true;
+    });
+    try { localStorage.setItem('lastPseudonymFields', JSON.stringify(active)); } catch(e) {}
+}
+
+function restorePseudonymFieldsFromLocal() {
+    try {
+        var saved = localStorage.getItem('lastPseudonymFields');
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            Object.keys(parsed).forEach(function(f) {
+                if (parsed[f]) pseudonymFields[f] = true;
+            });
+        }
+    } catch(e) {}
 }
 
 function loadPreviousMapping() {
@@ -194,14 +215,8 @@ function loadPreviousMapping() {
             updateMappingStatus();
 
             var message = '';
-            var style = '';
-            
             if (failedFields.length > 0) {
-                var missingColumns = failedFields.map(function(f) {
-                    return f.field + ' (컬럼: ' + f.expectedColumn + ')';
-                }).join(', ');
-                message = '<strong>⚠️ 일부 필드 매핑 실패:</strong> ' + appliedCount + '개 적용, ' + failedFields.length + '개 실패<br><small style="color: #666;">매핑되지 않은 필드: ' + missingColumns + '</small><br><small>※ 현재 데이터에 해당 컬럼이 없습니다. 수동 매핑이 필요합니다.</small>';
-                style = 'background: #fff3cd; padding: 10px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #ffc107;';
+                message = '⚠️ ' + appliedCount + '개 적용, ' + failedFields.length + '개 실패 (현재 데이터에 없는 컬럼)';
             } else {
                 message = '<strong>✅ 이전 매핑 불러오기 성공:</strong> ' + appliedCount + '개 필드가 모두 적용되었습니다.';
                 style = 'background: #d4edda; padding: 10px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #28a745;';
@@ -390,7 +405,12 @@ function renderMetadataTree() {
         var requiredHtml = field.required ? '<span class="tree-required">*필수</span>' : '';
         var autoHtml = field.auto ? '<span class="tree-auto">자동생성</span>' : '';
         
-        item.innerHTML = orderHtml + '<span class="tree-key">' + key + '</span><span class="tree-type">(' + field.type + ')</span>' + requiredHtml + autoHtml;
+        var pseudoHtml = '';
+        if (field.pseudonymable) {
+            pseudoHtml = '<span class="pseudo-toggle" title="항상 가명처리됨">🔒 가명</span>';
+        }
+        
+        item.innerHTML = orderHtml + '<span class="tree-key">' + key + '</span><span class="tree-type">(' + field.type + ')</span>' + requiredHtml + autoHtml + ' ' + pseudoHtml;
         item.onclick = (function(k) { return function() { selectField(k); }; })(key);
         container.appendChild(item);
     });
@@ -491,6 +511,11 @@ function updateMappingStatus() {
     
     if (currentStep === 2) {
         updateStepButtons();
+    }
+    
+    var pseudoDisplay = document.getElementById('pseudonymFieldsDisplay');
+    if (pseudoDisplay) {
+        pseudoDisplay.innerHTML = '🔒 모든 PII 필드가 항상 가명처리됩니다';
     }
 }
 
@@ -740,6 +765,7 @@ function startBatchProcessing() {
         wordcloudPos.push(cb.value);
     });
     
+    var sentimentModeEl = document.querySelector('input[name="sentimentMode"]:checked');
     var settings = {
         enablePreprocessing: document.getElementById('enablePreprocessing').checked,
         enableEmotionAnalysis: document.getElementById('enableEmotionAnalysis').checked,
@@ -749,9 +775,10 @@ function startBatchProcessing() {
         apply_emotion_colors: document.getElementById('batchApplyEmotionColors').checked,
         remove_profanity: document.getElementById('batchRemoveProfanity').checked,
         max_words: parseInt(document.getElementById('batchMaxWords').value),
-        width: parseInt(document.getElementById('batchSizePreset').value.split('x')[0]),
-        height: parseInt(document.getElementById('batchSizePreset').value.split('x')[1]),
-        mappings: columnMappings
+        width: parseInt(document.querySelector('input[name="sizePreset"]:checked').value.split('x')[0]),
+        height: parseInt(document.querySelector('input[name="sizePreset"]:checked').value.split('x')[1]),
+        wordcloud_sentiment_mode: sentimentModeEl ? sentimentModeEl.value : 'combined',
+        mappings: columnMappings,
     };
     
     var eventSource = new EventSource('/api/batch/events');
@@ -917,7 +944,8 @@ function retryFailed() {
             enablePreprocessing: document.getElementById('enablePreprocessing').checked,
             background_color: document.getElementById('batchBackgroundColor').value,
             apply_emotion_colors: document.getElementById('batchApplyEmotionColors').checked,
-            remove_profanity: document.getElementById('batchRemoveProfanity').checked
+            remove_profanity: document.getElementById('batchRemoveProfanity').checked,
+            wordcloud_sentiment_mode: document.querySelector('input[name="sentimentMode"]:checked') ? document.querySelector('input[name="sentimentMode"]:checked').value : 'combined'
         })
     })
     .then(function(resp) { return resp.json(); })
@@ -964,10 +992,9 @@ function deleteBatch() {
         return;
     }
 
-    fetch('/api/batch/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_path: batchPath })
+    var batchId = batchPath.split(/[\\/]/).pop();
+    fetch('/api/perspective/batch/' + batchId, {
+        method: 'DELETE'
     })
     .then(function(response) { return response.json(); })
     .then(function(data) {

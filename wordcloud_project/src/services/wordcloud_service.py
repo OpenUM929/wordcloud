@@ -13,6 +13,22 @@ from src.config.settings import (
 from src.modules.wordcloud_generator import WordCloudGenerator
 
 
+def _filter_freq_by_sentiment(word_freq, word_scores, sentiment):
+    if sentiment == 'positive':
+        return {w: f for w, f in word_freq.items() if word_scores.get(w, 0) > 0}
+    elif sentiment == 'negative':
+        return {w: f for w, f in word_freq.items() if word_scores.get(w, 0) < 0}
+    return word_freq
+
+
+def _filter_scores_by_sentiment(word_scores, sentiment):
+    if sentiment == 'positive':
+        return {w: s for w, s in word_scores.items() if s > 0}
+    elif sentiment == 'negative':
+        return {w: s for w, s in word_scores.items() if s < 0}
+    return word_scores
+
+
 def regenerate_wordcloud(data):
     """Regenerate wordcloud with specific parameters."""
     try:
@@ -22,18 +38,17 @@ def regenerate_wordcloud(data):
         background_color = data.get('background_color', 'white')
         apply_emotion_colors = data.get('apply_emotion_colors', True)
         remove_profanity = data.get('remove_profanity', False)
+        generate_png = data.get('generate_png', True)
         width = data.get('width', 800)
         height = data.get('height', 600)
         max_words = data.get('max_words', 100)
+        sentiment_mode = data.get('wordcloud_sentiment_mode', 'combined')
 
         if not employee_id or not batch_path:
             return {'success': False, 'error': '직원 ID와 배치 경로가 필요합니다.'}, 400
 
         # Load metadata
         from src.services.metadata_service import get_batch_metadata
-        import sys
-        import io
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
         batch_metadata = get_batch_metadata(batch_path)
         employee_metadata = next((meta for meta in batch_metadata if meta['employee_id'] == employee_id), None)
 
@@ -142,21 +157,27 @@ def regenerate_wordcloud(data):
                 else:
                     word_scores[word] = 0.0
 
-        generator = WordCloudGenerator(config_path=WORDCLOUD_CONFIG_PATH)
-        output_path = os.path.abspath(os.path.join(OUTPUTS_DIR_PATH, f"wordcloud_regen_{employee_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"))
-        success = generator.generate_with_colors_and_options(
-            new_word_freq, word_scores, output_path,
-            background_color=background_color,
-            max_words=max_words,
-            width=width,
-            height=height
-        )
+        from src.modules.word_boost_manager import get_word_boost_manager
+        new_word_freq = get_word_boost_manager().apply_to_frequency(new_word_freq)
 
-        if success:
-            wordcloud_url = f"/api/wordcloud/outputs/{os.path.basename(output_path)}"
-            return {
+        generator = WordCloudGenerator(config_path=WORDCLOUD_CONFIG_PATH)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+        def _generate_one(freq, scores, suffix=''):
+            out_name = f"wordcloud_regen_{employee_id}_{timestamp}{suffix}.png"
+            out_path = os.path.abspath(os.path.join(OUTPUTS_DIR_PATH, out_name))
+            ok = generator.generate_with_colors_and_options(
+                freq, scores, out_path,
+                background_color=background_color,
+                max_words=max_words,
+                width=width,
+                height=height
+            )
+            return (ok, f"/api/wordcloud/outputs/{out_name}")
+
+        if sentiment_mode == 'combined':
+            result = {
                 'success': True,
-                'wordcloud_url': wordcloud_url,
                 'wordcloud_info': {
                     "word_frequency": new_word_freq,
                     "word_scores": word_scores,
@@ -166,8 +187,52 @@ def regenerate_wordcloud(data):
                     "generation_timestamp": datetime.now().isoformat() + 'Z'
                 }
             }
-        else:
-            return {'success': False, 'error': '워드클라우드 생성 실패'}, 500
+            if generate_png:
+                ok, url = _generate_one(new_word_freq, word_scores)
+                if not ok:
+                    return {'success': False, 'error': '워드클라우드 생성 실패'}, 500
+                result['wordcloud_url'] = url
+            return result
+
+        pos_freq = _filter_freq_by_sentiment(new_word_freq, word_scores, 'positive')
+        neg_freq = _filter_freq_by_sentiment(new_word_freq, word_scores, 'negative')
+        pos_scores = _filter_scores_by_sentiment(word_scores, 'positive')
+        neg_scores = _filter_scores_by_sentiment(word_scores, 'negative')
+
+        result = {'success': True, 'sentiment_mode': sentiment_mode}
+
+        if generate_png:
+            if sentiment_mode == 'separate':
+                if pos_freq:
+                    ok, url = _generate_one(pos_freq, pos_scores, '_positive')
+                    result['wordcloud_url_positive'] = url
+                if neg_freq:
+                    ok, url = _generate_one(neg_freq, neg_scores, '_negative')
+                    result['wordcloud_url_negative'] = url
+
+            elif sentiment_mode == 'both':
+                if new_word_freq:
+                    ok, url = _generate_one(new_word_freq, word_scores)
+                    result['wordcloud_url'] = url
+                if pos_freq:
+                    ok, url = _generate_one(pos_freq, pos_scores, '_positive')
+                    result['wordcloud_url_positive'] = url
+                if neg_freq:
+                    ok, url = _generate_one(neg_freq, neg_scores, '_negative')
+                    result['wordcloud_url_negative'] = url
+
+            if not result.get('wordcloud_url') and not result.get('wordcloud_url_positive') and not result.get('wordcloud_url_negative'):
+                return {'success': False, 'error': '워드클라우드 생성 실패'}, 500
+
+        result['wordcloud_info'] = {
+            "word_frequency": new_word_freq,
+            "word_scores": word_scores,
+            "total_words": len(new_word_freq),
+            "morphology_types": wordcloud_pos,
+            "background_color": background_color,
+            "generation_timestamp": datetime.now().isoformat() + 'Z'
+        }
+        return result
 
     except Exception as e:
         return {'success': False, 'error': f'워드클라우드 재생성 실패: {str(e)}'}, 500

@@ -2,7 +2,7 @@
   "module_name": "wordcloud_generator",
   "description": "워드클라우드 생성 설정",
   "wordcloud": {
-    "font_path": "malgun.ttf",
+    "font_path": "C:/Windows/Fonts/malgun.ttf",
     "background_color": "white",
     "width": 800,
     "height": 600,

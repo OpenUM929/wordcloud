@@ -17,9 +17,10 @@
         .content { margin-top: 20px; }
         .upload-area { border: 2px dashed #007bff; padding: 40px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
         .upload-area.dragover { background: #e7f3ff; }
-        nav { margin-bottom: 30px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #dee2e6; }
-        nav a { margin-right: 15px; padding: 8px 16px; text-decoration: none; color: #495057; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; transition: all 0.2s; }
+        nav { margin-bottom: 30px; background: #f8f9fa; padding: 12px 15px; border-radius: 8px; border: 1px solid #dee2e6; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+        nav a { padding: 6px 12px; text-decoration: none; color: #495057; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; transition: all 0.2s; white-space: nowrap; }
         nav a:hover { background: #007bff; color: white; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        nav .sep { color: #999; font-weight: bold; user-select: none; }
         .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px; font-weight: bold; transition: all 0.2s; }
         .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
         .btn-primary { background: #007bff; color: white; }
@@ -338,6 +339,20 @@
             background-color: #6c757d;
             cursor: not-allowed;
         }
+        .pseudo-toggle {
+            font-size: 11px;
+            color: #6c757d;
+            cursor: pointer;
+            user-select: none;
+            margin-left: 5px;
+        }
+        .pseudo-toggle input[type="checkbox"] {
+            margin-right: 2px;
+            vertical-align: middle;
+        }
+        .pseudo-toggle:hover {
+            color: #007bff;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -346,12 +361,15 @@
     <nav>
         <a href="/metadata_batch">메타데이터 생성 (배치)</a>
         <a href="/settings">설정</a>
-        <span style="color: #666; margin: 0 15px; font-weight: bold;">│ 수동 조작</span>
+        <span class="sep">│ 수동 조작</span>
         <a href="/">입력</a>
         <a href="/sarcasm">반어법 분석</a>
         <a href="/wordcloud">워드클라우드</a>
         <a href="/perspective_test">그룹분석(Test)</a>
         <a href="/stopwords">불용어 관리</a>
+        <span class="sep">│</span>
+        <a href="/admin/batch-management">배치 관리</a>
+        <a href="/admin/login" style="color: #6c757d;">🔐 관리자</a>
     </nav>
 
     {% block content %}{% endblock %}

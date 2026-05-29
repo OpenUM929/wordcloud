@@ -60,7 +60,11 @@ def list_batches():
 
 @batch_bp.route('/delete', methods=['POST'])
 def delete():
-    """Delete a batch."""
+    """Delete a batch.
+
+    DEPRECATED: This endpoint does NOT clean up users/*.json data.
+    Use DELETE /api/perspective/batch/<batch_id> instead for full cleanup.
+    """
     try:
         data = request.json
         batch_path = data.get('batch_path')
