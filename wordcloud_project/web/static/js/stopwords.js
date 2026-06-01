@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingIndicator = document.getElementById('loading-indicator');
     const stopwordsTableContainer = document.getElementById('stopwords-table-container');
     const noResults = document.getElementById('no-results');
+    const paginationContainer = document.getElementById('pagination-container');
 
     // DOM elements
     const categoryList = document.getElementById('category-list');
@@ -46,7 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ]);
             updateUI();
             updateStatistics();
-            updatePagination();
         } catch (error) {
             showToast('error', '초기화 실패', error.message);
         }
@@ -167,6 +167,12 @@ document.addEventListener('DOMContentLoaded', function() {
             );
         }
 
+        // 현재 페이지가 필터 결과보다 크면 보정
+        const maxPage = Math.max(1, Math.ceil(filteredStopwords.length / pageSize));
+        if (currentPage > maxPage) {
+            currentPage = maxPage;
+        }
+
         // Apply pagination
         const startIndex = (currentPage - 1) * pageSize;
         const endIndex = startIndex + pageSize;
@@ -216,6 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
         loadingIndicator.style.display = 'none';
         stopwordsTableContainer.style.display = 'block';
         noResults.style.display = 'none';
+        if (paginationContainer) {
+            paginationContainer.style.display = '';
+        }
     }
 
     function updatePagination(filteredCount) {
@@ -225,84 +234,69 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         totalPages = Math.ceil(filteredCount / pageSize);
+        if (totalPages < 1) totalPages = 1;
         
-        let paginationHTML = `
-            <nav aria-label="불용어 목록 페이지네이션">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${currentPage - 1}">이전</a>
-                    </li>
-        `;
+        const pages = [];
+        const windowStart = Math.max(1, currentPage - 2);
+        const windowEnd = Math.min(totalPages, currentPage + 2);
         
-        // 페이지 번호 생성
-        const startPage = Math.max(1, currentPage - 2);
-        const endPage = Math.min(totalPages, currentPage + 2);
-        
-        if (startPage > 1) {
-            paginationHTML += `
-                <li class="page-item">
-                    <a class="page-link" href="#" data-page="1">1</a>
-                </li>
-            `;
-            if (startPage > 2) {
-                paginationHTML += `
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#">...</a>
-                    </li>
-                `;
+        if (windowStart > 1) {
+            pages.push(1);
+            if (windowStart > 2) {
+                pages.push('...');
             }
         }
-        
-        for (let i = startPage; i <= endPage; i++) {
-            paginationHTML += `
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link" href="#" data-page="${i}">${i}</a>
-                </li>
-            `;
+        for (let i = windowStart; i <= windowEnd; i++) {
+            pages.push(i);
         }
-        
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                paginationHTML += `
-                    <li class="page-item disabled">
-                        <a class="page-link" href="#">...</a>
-                    </li>
-                `;
+        if (windowEnd < totalPages) {
+            if (windowEnd < totalPages - 1) {
+                pages.push('...');
             }
-            paginationHTML += `
-                <li class="page-item">
-                    <a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a>
-                </li>
-            `;
+            pages.push(totalPages);
         }
         
-        paginationHTML += `
-                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" data-page="${currentPage + 1}">다음</a>
-                    </li>
-                </ul>
-            </nav>
-        `;
+        let paginationHTML = '<nav><ul class="pagination justify-content-center mb-0">';
+        paginationHTML += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">이전</a>
+        </li>`;
         
+        pages.forEach(p => {
+            if (p === '...') {
+                paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            } else {
+                paginationHTML += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${p}">${p}</a>
+                </li>`;
+            }
+        });
+        
+        paginationHTML += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">다음</a>
+        </li></ul></nav>`;
+        
+        paginationContainer.style.display = '';
         paginationContainer.innerHTML = paginationHTML;
         
-        // 페이지네이션 클릭 이벤트
-        document.querySelectorAll('#pagination-container .page-link').forEach(link => {
-            link.addEventListener('click', async (e) => {
+        paginationContainer.querySelectorAll('.page-link[data-page]').forEach(link => {
+            link.addEventListener('click', e => {
                 e.preventDefault();
                 const page = parseInt(link.getAttribute('data-page'));
                 if (page >= 1 && page <= totalPages && page !== currentPage) {
                     currentPage = page;
-                    updateUI(); // No need to reload, just re-filter and re-paginate
+                    updateUI();
                 }
             });
         });
     }
 
     function showNoResults() {
-        loadingIndicator.classList.add('d-none');
-        stopwordsTableContainer.classList.add('d-none');
-        noResults.classList.remove('d-none');
+        loadingIndicator.style.display = 'none';
+        stopwordsTableContainer.style.display = 'none';
+        noResults.style.display = 'block';
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
     }
     
     function updateStatistics() {
@@ -473,6 +467,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.success) {
                 allStopwords.push({ word, category });
+                searchTerm = '';
+                searchInput.value = '';
+                const filtered = currentCategory
+                    ? allStopwords.filter(item => item.category === currentCategory)
+                    : allStopwords;
+                currentPage = Math.max(1, Math.ceil(filtered.length / pageSize));
                 updateUI();
                 updateStatistics();
                 newWordInput.value = '';
@@ -495,6 +495,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.success) {
                 allStopwords = allStopwords.filter(item => item.word !== word);
+                const maxPage = Math.max(1, Math.ceil(allStopwords.length / pageSize));
+                if (currentPage > maxPage) {
+                    currentPage = maxPage;
+                }
                 updateUI();
                 updateStatistics();
                 showToast('success', '성공', '불용어가 삭제되었습니다.');
@@ -508,8 +512,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function searchStopwords() {
         searchTerm = searchInput.value.trim();
+        currentPage = 1;
         updateUI();
         updateStatistics();
+
+        if (searchTerm) {
+            const filtered = currentCategory
+                ? allStopwords.filter(item => item.category === currentCategory)
+                : allStopwords;
+            const hasMatch = filtered.some(item =>
+                item.word.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            if (!hasMatch) {
+                newWordInput.value = searchTerm;
+                classifyWord();
+                showToast('info', '알림', `'${searchTerm}'를 찾을 수 없습니다. 새로운 불용어로 추가해보세요.`);
+            }
+        }
     }
 
     async function filterDemoText() {
@@ -593,9 +612,8 @@ document.addEventListener('DOMContentLoaded', function() {
         pageSizeSelect.addEventListener('change', function() {
             pageSize = parseInt(this.value);
             currentPage = 1; // 페이지 크기 변경 시 첫 페이지로 이동
-            updateUI(); // 클라이언트에서 필터링과 페이징 처리
+            updateUI(); // updateUI가 updatePagination도 처리
             updateStatistics();
-            updatePagination();
         });
     }
     

@@ -324,6 +324,15 @@ class StopwordManager:
             성공 여부 (True/False)
         """
         try:
+            # self.stopwords의 변경 사항을 self.config에 동기화
+            categories = []
+            for category_name, words in self.stopwords.items():
+                categories.append({
+                    "name": category_name,
+                    "words": words
+                })
+            self.config["categories"] = categories
+
             # 디렉토리 생성 (존재하지 않을 경우)
             os.makedirs(os.path.dirname(config_path), exist_ok=True)
             
