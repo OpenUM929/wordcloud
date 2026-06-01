@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}관리자 대시보드{% endblock %}
+{% block content %}
+<h1>관리자 대시보드</h1>
+
+<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 350px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+    <h3>가명 복구</h3>
+    <p style="color: #666;">가명을 입력하여 원래 평가자 ID를 조회합니다.</p>
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+      <input type="text" id="pseudonymInput" placeholder="예: 평가자_A1B2C3" style="flex: 1; padding: 8px;">
+      <button class="btn btn-primary" onclick="lookupPseudonym()">조회</button>
+    </div>
+    <div id="lookupResult" style="margin-top: 15px;"></div>
+  </div>
+
+  <div style="flex: 1; min-width: 350px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+    <h3>직책 계층 관리</h3>
+    <p style="color: #666;">직책별 계층 순서를 정의합니다. 순서(↑↓)는 정렬용이며, 등급(grade)이 같은 직책은 동급(동료)으로 처리됩니다.</p>
+    <div id="positionList" style="margin-bottom: 12px;">
+      <p>로드 중...</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <input type="text" id="newPositionName" placeholder="직책명" style="padding: 6px; border: 1px solid #ccc; border-radius: 4px; flex: 1;">
+      <button class="btn btn-primary" onclick="addPosition()">추가</button>
+      <button class="btn btn-secondary" onclick="savePositions()">저장</button>
+    </div>
+    <div id="positionMsg" style="margin-top: 8px; font-size: 13px;"></div>
+  </div>
+
+  <div style="flex: 2; min-width: 500px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3>전체 가명 매핑 테이블</h3>
+      <button class="btn btn-secondary" onclick="loadMappings()">새로고침</button>
+    </div>
+    <p style="color: #666;">현재 시스템에 등록된 모든 가명-실명 매핑 정보입니다.</p>
+    <div id="mappingTableContainer" style="margin-top: 15px; max-height: 500px; overflow-y: auto;">
+      <p>로드하려면 새로고침을 클릭하세요.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function lookupPseudonym() {
+  var pseudo = document.getElementById('pseudonymInput').value.trim();
+  if (!pseudo) { alert('가명을 입력해주세요.'); return; }
+  var container = document.getElementById('lookupResult');
+  container.innerHTML = '<p>조회 중...</p>';
+  fetch('/admin/api/deanonymize', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({pseudonym: pseudo})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      if (d.found) {
+        container.innerHTML = '<div style="background: #d4edda; padding: 15px; border-radius: 5px;"><strong>✅ 원래 ID:</strong> ' + d.real_id + '</div>';
+      } else {
+        container.innerHTML = '<div style="background: #fff3cd; padding: 15px; border-radius: 5px;">⚠️ 등록되지 않은 가명입니다.</div>';
+      }
+    } else {
+      container.innerHTML = '<div style="background: #f8d7da; padding: 15px; border-radius: 5px;">❌ ' + (d.error || '오류') + '</div>';
+    }
+  })
+  .catch(function(e) {
+    container.innerHTML = '<div style="background: #f8d7da; padding: 15px; border-radius: 5px;">❌ 조회 중 오류: ' + e.message + '</div>';
+  });
+}
+
+function loadMappings() {
+  var container = document.getElementById('mappingTableContainer');
+  container.innerHTML = '<p>로드 중...</p>';
+  fetch('/admin/api/mappings')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (!d.success) {
+      container.innerHTML = '<p style="color: red;">오류: ' + (d.error || '알 수 없음') + '</p>';
+      if (d.error && d.error.includes('로그인')) { window.location.href = '/admin/login'; }
+      return;
+    }
+    if (d.total === 0) {
+      container.innerHTML = '<p style="color: #666;">등록된 가명 매핑이 없습니다. 배치 처리 시 가명 옵션을 활성화하면 매핑이 생성됩니다.</p>';
+      return;
+    }
+    var html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f8f9fa;"><th style="padding: 10px; border: 1px solid #ddd;">#</th><th style="padding: 10px; border: 1px solid #ddd;">실제 ID</th><th style="padding: 10px; border: 1px solid #ddd;">가명</th></tr></thead><tbody>';
+    d.mappings.forEach(function(m, i) {
+      html += '<tr><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">' + (i+1) + '</td><td style="padding: 8px; border: 1px solid #ddd;">' + m.real_id + '</td><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #007bff;">' + m.pseudonym + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    html += '<p style="margin-top: 10px; color: #666;">총 ' + d.total + '개 매핑</p>';
+    container.innerHTML = html;
+  })
+  .catch(function(e) {
+    container.innerHTML = '<p style="color: red;">로드 중 오류: ' + e.message + '</p>';
+  });
+}
+
+document.getElementById('pseudonymInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') lookupPseudonym();
+});
+
+document.getElementById('newPositionName').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addPosition();
+});
+
+let _hierarchy = [];
+
+function loadPositions() {
+  var container = document.getElementById('positionList');
+  container.innerHTML = '<p>로드 중...</p>';
+  fetch('/admin/api/positions')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (!d.success) { container.innerHTML = '<p style="color:red;">' + (d.error||'오류') + '</p>'; return; }
+    _hierarchy = d.hierarchy || [];
+    renderPositions();
+  })
+  .catch(function(e) { container.innerHTML = '<p style="color:red;">' + e.message + '</p>'; });
+}
+
+function renderPositions() {
+  var container = document.getElementById('positionList');
+  if (_hierarchy.length === 0) {
+    container.innerHTML = '<p style="color:#999;">등록된 직책이 없습니다. 아래에 추가하세요.</p>';
+    return;
+  }
+    var html = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f8f9fa;"><th style="padding:6px;border:1px solid #ddd;text-align:center;">순서</th><th style="padding:6px;border:1px solid #ddd;">직책명</th><th style="padding:6px;border:1px solid #ddd;text-align:center;">등급</th><th style="padding:6px;border:1px solid #ddd;text-align:center;">관리</th></tr></thead><tbody>';
+  _hierarchy.forEach(function(entry, i) {
+    html += '<tr>';
+    html += '<td style="padding:6px;border:1px solid #ddd;text-align:center;">' + (i+1) + '</td>';
+    html += '<td style="padding:6px;border:1px solid #ddd;">' + entry.name + '</td>';
+    html += '<td style="padding:6px;border:1px solid #ddd;text-align:center;"><input type="number" min="1" value="' + (entry.grade || i+1) + '" onchange="updateGrade(' + i + ', this.value)" style="width:60px;padding:2px;text-align:center;border:1px solid #ccc;border-radius:3px;"></td>';
+    html += '<td style="padding:6px;border:1px solid #ddd;text-align:center;">';
+    if (i > 0) html += '<button class="btn btn-sm" onclick="movePosition(' + i + ', -1)" style="padding:2px 6px;font-size:11px;">↑</button> ';
+    if (i < _hierarchy.length - 1) html += '<button class="btn btn-sm" onclick="movePosition(' + i + ', 1)" style="padding:2px 6px;font-size:11px;">↓</button> ';
+    html += '<button class="btn btn-sm" onclick="removePosition(' + i + ')" style="padding:2px 6px;font-size:11px;color:#dc3545;">✕</button>';
+    html += '</td></tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function addPosition() {
+  var name = document.getElementById('newPositionName').value.trim();
+  if (!name) { document.getElementById('positionMsg').textContent = '직책명을 입력하세요.'; return; }
+  if (_hierarchy.some(function(e) { return e.name === name; })) {
+    document.getElementById('positionMsg').textContent = '이미 존재하는 직책입니다.'; return;
+  }
+  _hierarchy.push({name: name, level: _hierarchy.length + 1, group: 'middle', grade: _hierarchy.length + 1});
+  document.getElementById('newPositionName').value = '';
+  renderPositions();
+  document.getElementById('positionMsg').textContent = '추가됨 (저장하려면 저장 버튼)';
+  document.getElementById('positionMsg').style.color = '#28a745';
+}
+
+function removePosition(idx) {
+  _hierarchy.splice(idx, 1);
+  renderPositions();
+  document.getElementById('positionMsg').textContent = '삭제됨 (저장하려면 저장 버튼)';
+  document.getElementById('positionMsg').style.color = '#856404';
+}
+
+function movePosition(idx, dir) {
+  var target = idx + dir;
+  if (target < 0 || target >= _hierarchy.length) return;
+  var temp = _hierarchy[idx];
+  _hierarchy[idx] = _hierarchy[target];
+  _hierarchy[target] = temp;
+  renderPositions();
+  document.getElementById('positionMsg').textContent = '순서 변경됨 (저장하려면 저장 버튼)';
+  document.getElementById('positionMsg').style.color = '#856404';
+}
+
+function updateGrade(idx, value) {
+  var g = parseInt(value, 10);
+  if (!isNaN(g) && g >= 1) {
+    _hierarchy[idx].grade = g;
+    document.getElementById('positionMsg').textContent = '등급 변경됨 (저장하려면 저장 버튼)';
+    document.getElementById('positionMsg').style.color = '#856404';
+  }
+}
+
+function savePositions() {
+  var msg = document.getElementById('positionMsg');
+  msg.textContent = '저장 중...';
+  msg.style.color = '#666';
+  fetch('/admin/api/positions', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({hierarchy: _hierarchy})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      _hierarchy = d.hierarchy;
+      renderPositions();
+      msg.textContent = '저장 완료!';
+      msg.style.color = '#28a745';
+    } else {
+      msg.textContent = '오류: ' + (d.error||'');
+      msg.style.color = '#dc3545';
+    }
+  })
+  .catch(function(e) {
+    msg.textContent = '오류: ' + e.message;
+    msg.style.color = '#dc3545';
+  });
+}
+
+window.addEventListener('load', function() {
+  setTimeout(loadMappings, 100);
+  setTimeout(loadPositions, 200);
+});
+</script>
+{% endblock %}

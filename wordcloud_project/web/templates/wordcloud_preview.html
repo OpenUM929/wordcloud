@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}애니메이션 워드클라우드 미리보기{% endblock %}
+
+{% block extra_head %}
+<!-- D3 v7 + d3-cloud -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.7/build/d3.layout.cloud.min.js"></script>
+<style>
+    .wc-layout {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+        align-items: flex-start;
+    }
+    .wc-sidebar {
+        flex: 0 0 220px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .wc-main {
+        flex: 1;
+        min-width: 0;
+    }
+    .wc-panel {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 14px 16px;
+    }
+    .wc-panel h5 {
+        font-size: 13px;
+        font-weight: 700;
+        color: #495057;
+        margin: 0 0 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .wc-panel select,
+    .wc-panel input[type=range] {
+        width: 100%;
+        margin-top: 4px;
+    }
+    .wc-panel label {
+        font-size: 13px;
+        color: #495057;
+        display: block;
+        margin-top: 8px;
+    }
+    .radio-group label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+        cursor: pointer;
+    }
+    #wc-canvas-wrap {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        min-height: 420px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    #wc-canvas-wrap svg { display: block; }
+    #wc-placeholder {
+        color: #adb5bd;
+        font-size: 15px;
+        text-align: center;
+        padding: 40px;
+    }
+    #word-table-wrap {
+        margin-top: 16px;
+        overflow-x: auto;
+    }
+    .wc-word-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .wc-word-table th {
+        background: #f1f3f5;
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        white-space: nowrap;
+    }
+    .wc-word-table td {
+        padding: 7px 10px;
+        border-bottom: 1px solid #f1f3f5;
+    }
+    .wc-word-table tr:hover td { background: #f8f9fa; }
+    .emotion-dot {
+        display: inline-block;
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        margin-right: 5px;
+        vertical-align: middle;
+    }
+    .export-bar {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+    .export-bar button {
+        font-size: 13px;
+        padding: 6px 14px;
+    }
+    #emotion-bar-wrap {
+        height: 10px;
+        background: #e9ecef;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 6px;
+        display: flex;
+    }
+    .emotion-seg { height: 100%; }
+    #wc-tooltip {
+        position: fixed;
+        background: rgba(30,40,60,0.92);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+        min-width: 160px;
+    }
+    #render-btn {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    #render-btn:hover { background: #0056b3; }
+    #render-btn:disabled { background: #6c757d; cursor: not-allowed; }
+    .range-label { display: flex; justify-content: space-between; font-size: 12px; color: #6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 4px;">애니메이션 워드클라우드 미리보기</h2>
+<p style="color:#6c757d; font-size:14px; margin-bottom:16px;">
+    배치와 직원을 선택한 뒤 렌더링 옵션을 조정하고 [렌더링 시작]을 클릭하세요.
+</p>
+
+<div class="wc-layout">
+    <!-- 사이드바 컨트롤 -->
+    <div class="wc-sidebar">
+
+        <div class="wc-panel">
+            <h5>데이터 선택</h5>
+            <label>배치
+                <select id="sel-batch">
+                    <option value="">-- 배치 선택 --</option>
+                </select>
+            </label>
+            <label>직원
+                <select id="sel-employee" disabled>
+                    <option value="">-- 직원 선택 --</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="wc-panel">
+            <h5>렌더링 옵션</h5>
+
+            <label>최대 단어 수: <span id="max-words-val">60</span>
+                <input type="range" id="max-words" min="10" max="120" value="60">
+                <span class="range-label"><span>10</span><span>120</span></span>
+            </label>
+
+            <label style="margin-top:10px;">애니메이션</label>
+            <div class="radio-group">
+                <label><input type="radio" name="anim" value="fadeIn" checked> fadeIn (순차 등장)</label>
+                <label><input type="radio" name="anim" value="spiral"> spiral (나선형)</label>
+                <label><input type="radio" name="anim" value="pop"> pop (팝)</label>
+            </div>
+
+            <label>테마
+                <select id="sel-theme">
+                    <option value="emotion_based">감정 기반 색상</option>
+                    <option value="dark">다크</option>
+                    <option value="pastel">파스텔</option>
+                    <option value="monochrome">단색</option>
+                </select>
+            </label>
+        </div>
+
+        <button id="render-btn" disabled>렌더링 시작</button>
+    </div>
+
+    <!-- 메인 영역 -->
+    <div class="wc-main">
+        <!-- 캔버스 -->
+        <div id="wc-canvas-wrap">
+            <div id="wc-placeholder">
+                배치와 직원을 선택한 뒤<br>렌더링 시작을 눌러주세요.
+            </div>
+        </div>
+
+        <!-- 감정 요약 바 -->
+        <div id="emotion-summary" style="display:none; margin-top:12px; font-size:13px; color:#495057;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                <span id="emo-label-pos" style="color:#64BF91; font-weight:bold;"></span>
+                <span id="emo-label-neu" style="color:#ACB2C8;"></span>
+                <span id="emo-label-neg" style="color:#D77882;"></span>
+            </div>
+            <div id="emotion-bar-wrap">
+                <div class="emotion-seg" id="bar-pos" style="background:#64BF91;"></div>
+                <div class="emotion-seg" id="bar-neu" style="background:#ACB2C8;"></div>
+                <div class="emotion-seg" id="bar-neg" style="background:#D77882;"></div>
+            </div>
+        </div>
+
+        <!-- 내보내기 버튼 -->
+        <div class="export-bar" id="export-bar" style="display:none;">
+            <button class="btn btn-outline-secondary" id="btn-svg">SVG 내보내기</button>
+            <button class="btn btn-outline-secondary" id="btn-png">PNG 내보내기</button>
+            <button class="btn btn-outline-secondary" id="btn-json">JSON 복사</button>
+        </div>
+
+        <!-- 단어 상세 테이블 -->
+        <div id="word-table-wrap" style="display:none;">
+            <h6 style="margin:14px 0 6px; font-size:14px; color:#495057;">단어 상세 데이터</h6>
+            <table class="wc-word-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>단어</th>
+                        <th>빈도</th>
+                        <th>감정 점수</th>
+                        <th>감정 레이블</th>
+                    </tr>
+                </thead>
+                <tbody id="word-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 툴팁 -->
+<div id="wc-tooltip"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/wordcloud/WordCloudTheme.js"></script>
+<script src="/static/js/wordcloud/WordCloudAnimator.js"></script>
+<script src="/static/js/wordcloud/WordCloudRenderer.js"></script>
+<script>
+(function() {
+    let renderer = null;
+    let currentData = null;
+
+    const selBatch    = document.getElementById('sel-batch');
+    const selEmployee = document.getElementById('sel-employee');
+    const renderBtn   = document.getElementById('render-btn');
+    const maxWordsEl  = document.getElementById('max-words');
+    const maxWordsVal = document.getElementById('max-words-val');
+    const tooltip     = document.getElementById('wc-tooltip');
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    async function init() {
+        const res = await fetch('/api/batch/list');
+        const json = await res.json();
+        if (!json.success) return;
+        json.data.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.original_name;
+            opt.textContent = b.name || b.original_name;
+            selBatch.appendChild(opt);
+        });
+    }
+
+    maxWordsEl.addEventListener('input', () => {
+        maxWordsVal.textContent = maxWordsEl.value;
+    });
+
+    selBatch.addEventListener('change', async () => {
+        const batchId = selBatch.value;
+        selEmployee.innerHTML = '<option value="">-- 직원 선택 --</option>';
+        selEmployee.disabled = true;
+        renderBtn.disabled = true;
+        if (!batchId) return;
+
+        const res = await fetch(`/api/wordcloud/preview/employees/${batchId}`);
+        const json = await res.json();
+        if (!json.success) return;
+        json.employee_ids.forEach(id => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = id;
+            selEmployee.appendChild(opt);
+        });
+        selEmployee.disabled = false;
+    });
+
+    selEmployee.addEventListener('change', () => {
+        renderBtn.disabled = !(selBatch.value && selEmployee.value);
+    });
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    renderBtn.addEventListener('click', async () => {
+        const batchId    = selBatch.value;
+        const employeeId = selEmployee.value;
+        if (!batchId || !employeeId) return;
+
+        renderBtn.disabled = true;
+        renderBtn.textContent = '렌더링 중...';
+
+        const wrap = document.getElementById('wc-canvas-wrap');
+        const W = wrap.clientWidth || 800;
+
+        const animMode = document.querySelector('input[name=anim]:checked').value;
+        const theme    = document.getElementById('sel-theme').value;
+        const maxWords = parseInt(maxWordsEl.value);
+
+        try {
+            renderer = new WordCloudRenderer('wc-canvas-wrap', {
+                width: W,
+                height: Math.round(W * 0.6),
+                maxWords,
+                animationMode: animMode,
+                theme,
+            });
+
+            renderer.onWordClick((word) => {
+                console.log('clicked:', word);
+            });
+
+            renderer.onWordHover((word, event, entering) => {
+                if (entering) {
+                    tooltip.innerHTML = `
+                        <strong>${word.text}</strong><br>
+                        빈도: ${word.frequency}회<br>
+                        감정: ${word.emotion_label} (${word.emotion_score})<br>
+                        <div style="background:#444;border-radius:3px;height:6px;margin-top:5px;overflow:hidden;">
+                          <div style="background:${word.color};width:${Math.round(Math.max(0,word.emotion_score)*100)}%;height:100%;"></div>
+                        </div>`;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (event.clientX + 12) + 'px';
+                    tooltip.style.top  = (event.clientY - 30) + 'px';
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+
+            currentData = await renderer.loadFromAPI(batchId, employeeId);
+            renderer.render();
+
+            _showEmotionSummary(currentData.emotion_summary);
+            _fillWordTable(renderer._words);
+            document.getElementById('export-bar').style.display = 'flex';
+            document.getElementById('word-table-wrap').style.display = 'block';
+
+        } catch (e) {
+            wrap.innerHTML = `<div style="color:#dc3545;padding:20px;">${e.message}</div>`;
+        } finally {
+            renderBtn.disabled = false;
+            renderBtn.textContent = '렌더링 시작';
+        }
+    });
+
+    // ── Emotion bar ───────────────────────────────────────────────────────────
+    function _showEmotionSummary(emo) {
+        const wrap = document.getElementById('emotion-summary');
+        wrap.style.display = 'block';
+        const pos = Math.round(emo.positive_ratio * 100);
+        const neu = Math.round(emo.neutral_ratio * 100);
+        const neg = 100 - pos - neu;
+        document.getElementById('bar-pos').style.width = pos + '%';
+        document.getElementById('bar-neu').style.width = neu + '%';
+        document.getElementById('bar-neg').style.width = Math.max(0, neg) + '%';
+        document.getElementById('emo-label-pos').textContent = `긍정 ${pos}%`;
+        document.getElementById('emo-label-neu').textContent = `중립 ${neu}%`;
+        document.getElementById('emo-label-neg').textContent = `부정 ${Math.max(0,neg)}%`;
+    }
+
+    // ── Word table ────────────────────────────────────────────────────────────
+    function _fillWordTable(words) {
+        const tbody = document.getElementById('word-tbody');
+        tbody.innerHTML = '';
+        words.slice(0, 30).forEach((w, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td><span class="emotion-dot" style="background:${w.color}"></span>${w.text}</td>
+                <td>${w.frequency}</td>
+                <td>${w.emotion_score.toFixed(2)}</td>
+                <td>${w.emotion_label}</td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ── Export ────────────────────────────────────────────────────────────────
+    document.getElementById('btn-svg').addEventListener('click', () => {
+        if (!renderer) return;
+        const svg = renderer.exportSVG();
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        _download(URL.createObjectURL(blob), 'wordcloud.svg');
+    });
+
+    document.getElementById('btn-png').addEventListener('click', async () => {
+        if (!renderer) return;
+        const blob = await renderer.exportPNG();
+        _download(URL.createObjectURL(blob), 'wordcloud.png');
+    });
+
+    document.getElementById('btn-json').addEventListener('click', () => {
+        if (!currentData) return;
+        navigator.clipboard.writeText(JSON.stringify(currentData, null, 2))
+            .then(() => alert('JSON이 클립보드에 복사되었습니다.'));
+    });
+
+    function _download(url, filename) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // ── Tooltip mouse tracking ────────────────────────────────────────────────
+    document.addEventListener('mousemove', (e) => {
+        if (tooltip.style.display === 'block') {
+            tooltip.style.left = (e.clientX + 12) + 'px';
+            tooltip.style.top  = (e.clientY - 30) + 'px';
+        }
+    });
+
+    init();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{
+  "module_name": "wordcloud_generator",
+  "description": "워드클라우드 생성 설정",
+  "wordcloud": {
+    "font_path": "malgun.ttf",
+    "background_color": "white",
+    "width": 800,
+    "height": 600,
+    "max_words": 100
+  },
+  "output": {
+    "format": "png",
+    "save_image": true,
+    "show_plot": false
+  }
+}

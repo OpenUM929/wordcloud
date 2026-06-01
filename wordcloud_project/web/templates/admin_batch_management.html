@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}배치 리스트 관리{% endblock %}
+{% block content %}
+<h1>배치 리스트</h1>
+<p style="color: #666;">등록된 모든 배치를 확인하고 삭제할 수 있습니다. 배치 삭제 시 해당 배치의 <strong>모든 유저 데이터</strong>가 통합데이터에서 제거됩니다.</p>
+
+<div style="margin-bottom: 15px;">
+  <button class="btn btn-secondary" onclick="loadBatches()">새로고침</button>
+  <span id="batchCount" style="margin-left: 10px; color: #666; font-size: 13px;"></span>
+</div>
+
+<div id="batchListContainer">
+  <p>로드 중...</p>
+</div>
+
+<script>
+function loadBatches() {
+  var container = document.getElementById('batchListContainer');
+  container.innerHTML = '<p>로드 중...</p>';
+  fetch('/api/perspective/batches')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (!d.success) {
+      container.innerHTML = '<p style="color: red;">오류: ' + (d.error || '알 수 없음') + '</p>';
+      if (d.error && d.error.includes('로그인')) { window.location.href = '/admin/login'; }
+      return;
+    }
+    var batches = d.batches || [];
+    var info = d.batch_info || {};
+    document.getElementById('batchCount').textContent = '총 ' + info.batch_count + '개 배치, ' + info.unique_employees + '명, ' + info.total_evaluations + '건 평가';
+    renderBatches(batches);
+  })
+  .catch(function(e) {
+    container.innerHTML = '<p style="color: red;">로드 중 오류: ' + e.message + '</p>';
+  });
+}
+
+function renderBatches(batches) {
+  var container = document.getElementById('batchListContainer');
+  if (batches.length === 0) {
+    container.innerHTML = '<p style="color: #999;">등록된 배치가 없습니다.</p>';
+    return;
+  }
+
+  var html = '<table style="width:100%;border-collapse:collapse;">';
+  html += '<thead><tr style="background:#f8f9fa;">';
+  html += '<th style="padding:10px;border:1px solid #ddd;">배치 ID</th>';
+  html += '<th style="padding:10px;border:1px solid #ddd;">생성일</th>';
+  html += '<th style="padding:10px;border:1px solid #ddd;">직원수</th>';
+  html += '<th style="padding:10px;border:1px solid #ddd;">평가수</th>';
+  html += '<th style="padding:10px;border:1px solid #ddd;">관리</th>';
+  html += '</tr></thead><tbody>';
+
+  batches.forEach(function(b) {
+    html += '<tr>';
+    html += '<td style="padding:8px;border:1px solid #ddd;font-weight:bold;">' + b.batch_id + '</td>';
+    html += '<td style="padding:8px;border:1px solid #ddd;font-size:13px;">' + (b.created_at || '-') + '</td>';
+    html += '<td style="padding:8px;border:1px solid #ddd;text-align:center;">' + (b.employee_count || 0) + '</td>';
+    html += '<td style="padding:8px;border:1px solid #ddd;text-align:center;">' + (b.total_evaluations || 0) + '</td>';
+    html += '<td style="padding:8px;border:1px solid #ddd;text-align:center;">';
+    html += '<button class="btn btn-danger" onclick="deleteBatch(\'' + b.batch_id + '\')" style="padding:4px 14px;font-size:12px;">삭제</button>';
+    html += '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function deleteBatch(batchId) {
+  if (!confirm('배치 "' + batchId + '"를 삭제하시겠습니까?\n\n⚠️ 이 배치에 속한 모든 유저 데이터가 통합데이터에서 제거됩니다.\n이 작업은 되돌릴 수 없습니다.')) return;
+  if (!confirm('정말 삭제하시겠습니까? 다시 한번 확인합니다.')) return;
+
+  fetch('/api/perspective/batch/' + batchId, { method: 'DELETE' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      alert('삭제 완료: ' + batchId);
+      loadBatches();
+    } else {
+      alert('오류: ' + (d.error || '알 수 없음'));
+    }
+  })
+  .catch(function(e) {
+    alert('오류: ' + e.message);
+  });
+}
+
+window.addEventListener('load', loadBatches);
+</script>
+{% endblock %}

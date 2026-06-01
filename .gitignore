@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.env
+
+# Generated output files (word cloud images, etc.)
+wordcloud_project/outputs/
+wordcloud_project/processed_data/
+
+# Logs
+*.log
+logs/
+
+# Backups
+backup_*/
+
+# Temp
+temp/
+wordcloud_project/src/temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config & metadata
+metadata/
+/configs/
+wordcloud_project/web/logs/
+
+# Model files
+model/
+
+# Stdout/stderr
+*stdout.txt
+*stderr.txt

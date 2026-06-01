@@ -1,0 +1,40 @@
+{
+  "module_name": "word_boost",
+  "description": "워드클라우드 단어 가점 설정 — 다면평가에서 강조할 단어와 배율을 관리합니다",
+  "boost_words": [
+    {"word": "리더십",   "factor": 2.0, "category": "리더십", "enabled": true},
+    {"word": "리더",     "factor": 1.8, "category": "리더십", "enabled": true},
+    {"word": "솔선수범", "factor": 2.0, "category": "리더십", "enabled": true},
+    {"word": "방향제시", "factor": 1.8, "category": "리더십", "enabled": true},
+    {"word": "소통",     "factor": 2.0, "category": "소통/협업", "enabled": true},
+    {"word": "커뮤니케이션", "factor": 1.8, "category": "소통/협업", "enabled": true},
+    {"word": "협업",     "factor": 2.0, "category": "소통/협업", "enabled": true},
+    {"word": "협력",     "factor": 1.8, "category": "소통/협업", "enabled": true},
+    {"word": "팀워크",   "factor": 2.0, "category": "소통/협업", "enabled": true},
+    {"word": "공유",     "factor": 1.5, "category": "소통/협업", "enabled": true},
+    {"word": "전문성",   "factor": 2.0, "category": "역량", "enabled": true},
+    {"word": "전문",     "factor": 1.5, "category": "역량", "enabled": true},
+    {"word": "창의",     "factor": 1.8, "category": "역량", "enabled": true},
+    {"word": "창의적",   "factor": 2.0, "category": "역량", "enabled": true},
+    {"word": "혁신",     "factor": 2.0, "category": "역량", "enabled": true},
+    {"word": "문제해결", "factor": 2.0, "category": "역량", "enabled": true},
+    {"word": "기획",     "factor": 1.8, "category": "역량", "enabled": true},
+    {"word": "추진력",   "factor": 2.0, "category": "역량", "enabled": true},
+    {"word": "실행력",   "factor": 2.0, "category": "역량", "enabled": true},
+    {"word": "책임감",   "factor": 2.0, "category": "태도", "enabled": true},
+    {"word": "책임",     "factor": 1.8, "category": "태도", "enabled": true},
+    {"word": "성실",     "factor": 2.0, "category": "태도", "enabled": true},
+    {"word": "적극",     "factor": 1.8, "category": "태도", "enabled": true},
+    {"word": "적극적",   "factor": 2.0, "category": "태도", "enabled": true},
+    {"word": "배려",     "factor": 1.8, "category": "태도", "enabled": true},
+    {"word": "신뢰",     "factor": 2.0, "category": "태도", "enabled": true},
+    {"word": "성과",     "factor": 2.0, "category": "성과", "enabled": true},
+    {"word": "목표달성", "factor": 2.0, "category": "성과", "enabled": true},
+    {"word": "성장",     "factor": 1.8, "category": "성과", "enabled": true},
+    {"word": "발전",     "factor": 1.5, "category": "성과", "enabled": true}
+  ],
+  "settings": {
+    "max_factor": 5.0,
+    "min_factor": 1.1
+  }
+}

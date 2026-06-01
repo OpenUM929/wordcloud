@@ -44,6 +44,8 @@ from src.routes.wordcloud_routes import wordcloud_bp
 from src.routes.api_routes import api_bp
 from src.routes.perspective_routes import perspective_bp
 from src.routes.admin_routes import admin_bp
+from src.routes.wordcloud_data_routes import wordcloud_data_bp
+from src.routes.wordcloud_preview_routes import wordcloud_preview_bp
 
 # One-time migration: old batch_summary (full data) → users/*.json + lightweight summaries
 from src.services.user_data_manager import migrate_from_old_format
@@ -76,6 +78,8 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(perspective_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(wordcloud_data_bp)
+    app.register_blueprint(wordcloud_preview_bp)
     
     # Error handlers
     @app.errorhandler(404)

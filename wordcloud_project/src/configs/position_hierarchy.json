@@ -1,0 +1,10 @@
+{
+  "hierarchy": [
+    {"name": "사원", "level": 1, "group": "junior", "grade": 1},
+    {"name": "대리", "level": 2, "group": "junior", "grade": 2},
+    {"name": "과장", "level": 3, "group": "middle", "grade": 3},
+    {"name": "차장", "level": 4, "group": "middle", "grade": 4},
+    {"name": "팀장", "level": 5, "group": "senior", "grade": 5},
+    {"name": "부장", "level": 6, "group": "senior", "grade": 6}
+  ]
+}
