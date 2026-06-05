@@ -1,0 +1,14 @@
+[
+  {"id": "pf-01", "input": "시발점은 업무의 시작점입니다", "expected": {"detected": false}, "category": "정상", "description": "1계층: '시발'이지만 '시발점'은 정상 명사"},
+  {"id": "pf-02", "input": "씨발점은 업무의 시작점입니다", "expected": {"detected": true, "methods_used": ["kiwi_morpheme"]}, "category": "1계층", "description": "1계층: 정확한 욕설 형태소"},
+  {"id": "pf-03", "input": "시. 발! 느낌표", "expected": {"detected": true, "methods_used": ["gap_pattern"]}, "category": "2계층", "description": "2계층: 음절 사이 특수문자"},
+  {"id": "pf-04", "input": "개!새끼 같은 태도", "expected": {"detected": true, "methods_used": ["gap_pattern"]}, "category": "2계층", "description": "2계층: 중간에 느낌표"},
+  {"id": "pf-05", "input": "업무 능력이 뛰어납니다", "expected": {"detected": false}, "category": "정상", "description": "정상 문장"},
+  {"id": "pf-06", "input": "씨1발점은", "expected": {"detected": true}, "category": "2계층", "description": "2계층: 숫자 간격"},
+  {"id": "pf-07", "input": "개 새 끼", "expected": {"detected": true}, "category": "2계층", "description": "2계층: 공백 간격"},
+  {"id": "pf-08", "input": "시발", "expected": {"detected": true, "methods_used": ["kiwi_morpheme"]}, "category": "1계층", "description": "1계층: 단독 욕설"},
+  {"id": "pf-09", "input": "씨발", "expected": {"detected": true, "methods_used": ["kiwi_morpheme"]}, "category": "1계층", "description": "1계층: 단독 욕설"},
+  {"id": "pf-10", "input": "개새끼", "expected": {"detected": true, "methods_used": ["kiwi_morpheme"]}, "category": "1계층", "description": "1계층: 단독 욕설"},
+  {"id": "pf-11", "input": "시스템 발전을 기대합니다", "expected": {"detected": false}, "category": "정상", "description": "정상: '시발'이 포함되나 의미 없음"},
+  {"id": "pf-12", "input": "미개한 사고방식", "expected": {"detected": false}, "category": "정상", "description": "정상: '개'가 포함되나 의미 없음"}
+]

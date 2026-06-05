@@ -1,0 +1,53 @@
+.test-container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+.test-panel { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.test-input-area { display: flex; gap: 10px; margin-bottom: 15px; }
+.test-textarea { flex: 1; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: vertical; }
+.test-btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.test-btn-primary { background: #007bff; color: white; }
+.test-btn-success { background: #28a745; color: white; }
+.test-btn-secondary { background: #6c757d; color: white; }
+.test-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+/* 프리셋 버튼 */
+.preset-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+.preset-btn { padding: 6px 12px; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.preset-btn:hover { background: #007bff; color: white; }
+
+/* 요약 패널 */
+.test-summary { display: flex; gap: 30px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
+.test-summary-item { text-align: center; }
+.test-summary-item .number { font-size: 28px; font-weight: bold; color: #007bff; }
+.test-summary-item .label { font-size: 12px; color: #666; }
+
+/* 결과 테이블 */
+.test-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.test-table th { background: #f0f0f0; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; position: sticky; top: 0; }
+.test-table td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+.test-table tr:hover { background: #f8f9fa; }
+
+/* 배지 */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-pass { background: #d4edda; color: #155724; }
+.badge-fail { background: #f8d7da; color: #721c24; }
+.badge-layer1 { background: #cce5ff; color: #004085; }
+.badge-layer2 { background: #fff3cd; color: #856404; }
+
+/* 로그 영역 */
+.test-log-area { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+.test-log-info { color: #4fc1ff; }
+.test-log-success { color: #4ec9b0; }
+.test-log-error { color: #f48771; }
+
+/* 체크박스 그룹 */
+.checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; }
+.checkbox-group label { font-size: 13px; color: #555; cursor: pointer; }
+
+/* 단어 목록 */
+.word-list-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+.word-list-table th { background: #f0f0f0; padding: 8px; text-align: left; border-bottom: 2px solid #ddd; }
+.word-list-table td { padding: 8px; border-bottom: 1px solid #eee; }
+
+/* 디테일折りたたみ */
+.profanity-detail { margin-top: 4px; font-size: 12px; }
+.profanity-detail summary { color: #dc3545; cursor: pointer; }
+.profanity-detail > div { color: #666; padding: 8px; background: #f8f9fa; border-radius: 4px; margin-top: 4px; }

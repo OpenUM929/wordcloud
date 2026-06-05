@@ -1,0 +1,717 @@
+{% extends "base.html" %}
+
+{% block title %}저장 갤러리{% endblock %}
+
+{% block extra_head %}
+<style>
+    .gallery-filter-bar {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        padding: 14px 16px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .gallery-filter-bar label {
+        font-size: 13px;
+        color: #495057;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 4px;
+    }
+    .gallery-filter-bar input[type="text"],
+    .gallery-filter-bar input[type="date"] {
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 13px;
+        min-width: 140px;
+    }
+    .gallery-filter-bar .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 16px;
+    }
+    .gallery-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: box-shadow 0.2s, transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .gallery-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+    .gallery-card .thumb-wrap {
+        height: 160px;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .gallery-card .thumb-wrap img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    .gallery-card .thumb-placeholder {
+        color: #adb5bd;
+        font-size: 13px;
+    }
+    .gallery-card .card-body {
+        padding: 12px 14px;
+    }
+    .gallery-card .card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #333;
+        margin: 0 0 4px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .gallery-card .card-meta {
+        font-size: 12px;
+        color: #6c757d;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .gallery-card .badge-count {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: #e9ecef;
+        font-size: 11px;
+        color: #495057;
+        font-weight: 600;
+    }
+    .pagination-bar {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 24px;
+        padding: 10px;
+    }
+    .pagination-bar button {
+        padding: 6px 14px;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+        color: #495057;
+    }
+    .pagination-bar button:hover:not(:disabled) {
+        background: #f8f9fa;
+    }
+    .pagination-bar button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .pagination-bar button.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .pagination-bar .page-info {
+        font-size: 13px;
+        color: #6c757d;
+    }
+    #galleryEmpty {
+        text-align: center;
+        padding: 60px 20px;
+        color: #adb5bd;
+    }
+    #galleryEmpty h4 {
+        margin-bottom: 8px;
+        color: #6c757d;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.55);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+    .modal-overlay.open {
+        display: flex;
+    }
+    .modal-box {
+        background: white;
+        border-radius: 10px;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: auto;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        width: 800px;
+        display: flex;
+        flex-direction: column;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .modal-header h3 {
+        margin: 0;
+        font-size: 16px;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 22px;
+        color: #adb5bd;
+        cursor: pointer;
+    }
+    .modal-close:hover {
+        color: #333;
+    }
+    .modal-body {
+        padding: 18px;
+        overflow-y: auto;
+    }
+    .modal-images {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .modal-image-wrap {
+        text-align: center;
+    }
+    .modal-image-wrap img {
+        max-width: 100%;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+    }
+    .modal-image-wrap .img-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 6px;
+    }
+    .modal-meta {
+        background: #f8f9fa;
+        border-radius: 6px;
+        padding: 12px 14px;
+        font-size: 13px;
+        color: #495057;
+    }
+    .modal-meta .meta-row {
+        display: flex;
+        padding: 4px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .modal-meta .meta-row:last-child {
+        border-bottom: none;
+    }
+    .modal-meta .meta-key {
+        width: 140px;
+        font-weight: 600;
+        color: #333;
+    }
+    .modal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+
+    /* 출처 배지 */
+    .source-badge {
+        position: absolute; top: 6px; right: 6px;
+        font-size: 10px; font-weight: 700;
+        padding: 2px 6px; border-radius: 10px;
+        pointer-events: none;
+    }
+    .source-badge--deploy { background: #d1ecf1; color: #0c5460; }
+    .source-badge--matrix { background: #fce8b2; color: #6d4c0a; }
+
+    /* 칩 필터 */
+    .chip {
+        display: inline-block;
+        padding: 3px 10px;
+        border: 1px solid #ced4da;
+        border-radius: 14px;
+        font-size: 12px;
+        cursor: pointer;
+        background: white;
+        margin: 2px;
+        transition: background 0.15s, color 0.15s;
+    }
+    .chip:hover:not(:disabled) { background: #e9ecef; }
+    .chip--active   { background: #007bff; color: white; border-color: #007bff; }
+    .chip--disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* 모달 탭 */
+    .modal-tab {
+        padding: 6px 14px;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+    .modal-tab.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>📁 저장 갤러리</h1>
+<p style="color:#6c757d; font-size:14px; margin-bottom:16px;">
+    제출용 저장 및 매트릭스 결과 이미지를 조회합니다.
+</p>
+
+<div class="gallery-filter-bar">
+    <div class="filter-group">
+        <label>직원 ID</label>
+        <input type="text" id="filterEmployeeId" placeholder="예: EMP001">
+    </div>
+    <div class="filter-group">
+        <label>시작일</label>
+        <input type="text" id="filterDateFrom" placeholder="YYYYMMDD">
+    </div>
+    <div class="filter-group">
+        <label>종료일</label>
+        <input type="text" id="filterDateTo" placeholder="YYYYMMDD">
+    </div>
+    <div class="filter-group">
+        <label>출력 모드</label>
+        <div style="display:flex;gap:10px;align-items:center;padding:4px 0;">
+            <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                <input type="radio" name="filterOutputMode" value="" checked> 전체
+            </label>
+            <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                <input type="radio" name="filterOutputMode" value="pseudonym"> 가명
+            </label>
+            <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                <input type="radio" name="filterOutputMode" value="real"> 실명
+            </label>
+        </div>
+    </div>
+    <button class="btn btn-primary" onclick="loadGallery(1)" style="padding:6px 18px;font-size:13px;">검색</button>
+</div>
+
+<div id="galleryGrid" class="gallery-grid"></div>
+<div id="galleryEmpty" style="display:none;">
+    <h4>저장된 이미지가 없습니다</h4>
+    <p>그룹분석 페이지에서 제출용 저장을 실행하면 이곳에 표시됩니다.</p>
+</div>
+
+<div class="pagination-bar" id="paginationBar" style="display:none;"></div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="modalTitle">상세 정보</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- 탭 버튼 -->
+            <div id="modalTabs" style="display:flex;gap:8px;margin-bottom:12px;">
+                <button class="modal-tab" data-tab="deploy" onclick="switchTab('deploy')">제출용 저장</button>
+                <button class="modal-tab" data-tab="matrix" onclick="switchTab('matrix')">매트릭스</button>
+            </div>
+            <!-- 종류 칩 -->
+            <div id="typeChips" style="margin-bottom:8px;">
+                <button id="chipCombined" class="chip chip--active" onclick="toggleTypeChip('combined')">통합</button>
+                <button id="chipPositive" class="chip" onclick="toggleTypeChip('positive')">긍정</button>
+                <button id="chipNegative" class="chip" onclick="toggleTypeChip('negative')">부정</button>
+            </div>
+            <!-- 연도 칩 -->
+            <div style="margin-bottom:12px;">
+                <span style="font-size:12px;color:#6c757d;margin-right:6px;">연도</span>
+                <span id="yearChips"></span>
+            </div>
+            <!-- 이미지 그리드 -->
+            <div id="imageGrid" class="modal-images"></div>
+            <!-- 메타 정보 -->
+            <div id="modalMeta"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+let currentFilters = {};
+
+async function loadGallery(page) {
+    currentPage = page;
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('per_page', 20);
+    
+    const empId = document.getElementById('filterEmployeeId').value.trim();
+    if (empId) params.set('employee_id', empId);
+    
+    const dateFrom = document.getElementById('filterDateFrom').value.trim();
+    if (dateFrom) params.set('date_from', dateFrom);
+    
+    const dateTo = document.getElementById('filterDateTo').value.trim();
+    if (dateTo) params.set('date_to', dateTo);
+    
+    const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
+    if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
+    
+    const grid = document.getElementById('galleryGrid');
+    const empty = document.getElementById('galleryEmpty');
+    const pagination = document.getElementById('paginationBar');
+    
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#999;padding:40px;">로드 중...</p>';
+    empty.style.display = 'none';
+    pagination.style.display = 'none';
+    
+    try {
+        const res = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
+        const data = await res.json();
+        
+        if (!data.success) {
+            grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:#dc3545;padding:40px;">오류: ${data.error || '알 수 없음'}</p>`;
+            return;
+        }
+        
+        if (data.entries.length === 0) {
+            grid.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        
+        grid.innerHTML = '';
+        data.entries.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'gallery-card';
+            
+            const thumbHtml = item.thumbnail_url
+                ? `<img src="${item.thumbnail_url}" alt="thumbnail">`
+                : `<span class="thumb-placeholder">이미지 없음</span>`;
+            
+            const dateStr = item.timestamp
+                ? `${item.timestamp.slice(0,4)}-${item.timestamp.slice(4,6)}-${item.timestamp.slice(6,8)} ${item.timestamp.slice(9,11)}:${item.timestamp.slice(11,13)}`
+                : '-';
+            
+            const src = item.source || 'deploy';
+            card.innerHTML = `
+                <div class="thumb-wrap" style="position:relative;">
+                    ${thumbHtml}
+                    <div class="source-badge source-badge--${src}">
+                        ${src === 'matrix' ? '매트릭스' : '제출용'}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-title">${escapeHtml(item.deploy_name || item.employee_id)}</div>
+                    <div class="card-meta">
+                        <span>${dateStr}</span>
+                        <span class="badge-count">${item.image_count}장</span>
+                    </div>
+                </div>
+            `;
+            card.onclick = () => openDetail(item.id, item.employee_id);
+            grid.appendChild(card);
+        });
+        
+        // Pagination
+        if (data.total > data.per_page) {
+            renderPagination(data.total, data.page, data.per_page);
+            pagination.style.display = 'flex';
+        }
+    } catch (e) {
+        grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:#dc3545;padding:40px;">로드 중 오류: ${e.message}</p>`;
+    }
+}
+
+function renderPagination(total, page, perPage) {
+    const bar = document.getElementById('paginationBar');
+    const totalPages = Math.ceil(total / perPage);
+    let html = '';
+    
+    html += `<button onclick="loadGallery(${page - 1})" ${page <= 1 ? 'disabled' : ''}>이전</button>`;
+    
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === page) {
+            html += `<button class="active" disabled>${i}</button>`;
+        } else if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+            html += `<button onclick="loadGallery(${i})">${i}</button>`;
+        } else if (i === page - 3 || i === page + 3) {
+            html += `<span class="page-info">...</span>`;
+        }
+    }
+    
+    html += `<button onclick="loadGallery(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>다음</button>`;
+    html += `<span class="page-info">총 ${total}개</span>`;
+    
+    bar.innerHTML = html;
+}
+
+// ── 모달 상태 ──────────────────────────────────────────────────
+let currentEntries = { deploy: null, matrix: null };
+let currentTab     = 'deploy';
+let selectedTypes  = new Set(['combined']);
+let selectedYears  = new Set();
+
+// ── 모달 진입 ──────────────────────────────────────────────────
+async function openDetail(entryId, employeeId) {
+    const modal = document.getElementById('detailModal');
+    document.getElementById('modalBody').innerHTML =
+        '<p style="text-align:center;padding:30px;color:#999;">로드 중...</p>';
+    modal.classList.add('open');
+
+    const [detailRes, employeeRes] = await Promise.all([
+        fetch(`/api/perspective/deploy-gallery/detail/${encodeURIComponent(entryId)}`),
+        fetch(`/api/perspective/deploy-gallery/employee-entries/${encodeURIComponent(employeeId)}`),
+    ]);
+    const detailData   = await detailRes.json();
+    const employeeData = await employeeRes.json();
+
+    if (!detailData.success) {
+        document.getElementById('modalBody').innerHTML =
+            `<p style="color:#dc3545;">오류: ${detailData.error}</p>`;
+        return;
+    }
+
+    const clickedEntry  = detailData.entry;
+    const clickedSource = clickedEntry.source || 'deploy';
+
+    currentEntries.deploy = employeeData.deploy || null;
+    currentEntries.matrix = employeeData.matrix || null;
+    currentEntries[clickedSource] = clickedEntry;   // 클릭 entry는 detail 버전 우선
+
+    currentTab    = clickedSource;
+    selectedTypes = new Set(['combined']);
+    selectedYears = new Set();
+
+    document.getElementById('modalTitle').textContent =
+        `${escapeHtml(clickedEntry.deploy_name || clickedEntry.employee_id)} 상세 정보`;
+
+    renderModal();
+}
+
+// ── 모달 전체 재렌더 ───────────────────────────────────────────
+function renderModal() {
+    renderTabs();
+
+    // 칩 컨테이너 항상 복원 (renderNoData가 숨겼을 수 있음)
+    document.getElementById('typeChips').style.display = '';
+    document.getElementById('yearChips').parentElement.style.display = '';
+
+    const entry = currentEntries[currentTab];
+    if (!entry) {
+        renderNoData();
+        return;
+    }
+    updateChipAvailability(entry.source || 'deploy');
+    renderYearChips(entry);
+    renderFilteredImages(entry);
+    renderMeta(entry);
+}
+
+// ── 탭 전환 ───────────────────────────────────────────────────
+function switchTab(tabName) {
+    currentTab    = tabName;
+    selectedTypes = new Set(['combined']);
+    selectedYears = new Set();
+    renderModal();
+}
+
+function renderTabs() {
+    ['deploy', 'matrix'].forEach(src => {
+        const btn = document.querySelector(`[data-tab="${src}"]`);
+        if (!btn) return;
+        btn.classList.toggle('active', src === currentTab);
+    });
+}
+
+// ── 칩 활성화 제어 ────────────────────────────────────────────
+function updateChipAvailability(source) {
+    const posChip  = document.getElementById('chipPositive');
+    const negChip  = document.getElementById('chipNegative');
+    const isMatrix = source === 'matrix';
+    posChip.disabled = isMatrix;
+    negChip.disabled = isMatrix;
+    posChip.classList.toggle('chip--disabled', isMatrix);
+    negChip.classList.toggle('chip--disabled', isMatrix);
+    if (isMatrix) selectedTypes = new Set(['combined']);
+    // DOM active 상태 동기화
+    ['combined', 'positive', 'negative'].forEach(t => {
+        const id = { combined: 'chipCombined', positive: 'chipPositive', negative: 'chipNegative' }[t];
+        document.getElementById(id)?.classList.toggle('chip--active', selectedTypes.has(t));
+    });
+}
+
+function toggleTypeChip(type) {
+    if (selectedTypes.has(type)) {
+        if (selectedTypes.size > 1) selectedTypes.delete(type);  // 최소 1개 유지
+    } else {
+        selectedTypes.add(type);
+    }
+    renderFilteredImages(currentEntries[currentTab]);
+    ['combined', 'positive', 'negative'].forEach(t => {
+        const id = { combined: 'chipCombined', positive: 'chipPositive', negative: 'chipNegative' }[t];
+        document.getElementById(id)?.classList.toggle('chip--active', selectedTypes.has(t));
+    });
+}
+
+// ── 연도 칩 ───────────────────────────────────────────────────
+function renderYearChips(entry) {
+    const container = document.getElementById('yearChips');
+    const years = Object.keys(entry.row_results || {}).sort();
+    container.innerHTML = '';
+    container.appendChild(makeChip('전체', 'all', selectedYears.size === 0));
+    years.forEach(y => container.appendChild(makeChip(y, y, selectedYears.has(y))));
+}
+
+function makeChip(label, value, isActive) {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (isActive ? ' chip--active' : '');
+    btn.textContent = label;
+    btn.dataset.value = value;
+    btn.onclick = () => toggleYearChip(value);
+    return btn;
+}
+
+function toggleYearChip(value) {
+    if (value === 'all') {
+        selectedYears.clear();              // '전체' 선택 = 개별 선택 해제
+    } else {
+        selectedYears.delete('all');
+        selectedYears.has(value)
+            ? selectedYears.delete(value)
+            : selectedYears.add(value);
+    }
+    renderModal();                          // 연도 칩 재렌더 + 이미지 재필터링
+}
+
+// ── 이미지 필터링 + 정렬 ──────────────────────────────────────
+function filterImages(entry, selTypes, selYears) {
+    const images    = [];
+    const typeOrder = { combined: 0, positive: 1, negative: 2 };
+    const allYears  = selYears.size === 0 || selYears.has('all');
+
+    // 최상위 images (연도 없음) — 연도 전체 선택 시만 포함
+    if (allYears) {
+        ['combined', 'positive', 'negative'].forEach(type => {
+            if (selTypes.has(type) && entry.images?.[type])
+                images.push({ year: null, type, url: entry.images[type] });
+        });
+    }
+
+    // row_results (연도별)
+    Object.entries(entry.row_results || {}).forEach(([year, rowData]) => {
+        if (allYears || selYears.has(year)) {
+            ['combined', 'positive', 'negative'].forEach(type => {
+                if (selTypes.has(type) && rowData[type])
+                    images.push({ year, type, url: rowData[type] });
+            });
+        }
+    });
+
+    images.sort((a, b) => {
+        if (a.year === null && b.year !== null) return -1;
+        if (a.year !== null && b.year === null) return  1;
+        if (a.year !== b.year) return String(a.year).localeCompare(String(b.year));
+        return typeOrder[a.type] - typeOrder[b.type];
+    });
+    return images;
+}
+
+function renderFilteredImages(entry) {
+    const grid     = document.getElementById('imageGrid');
+    const labelMap = { combined: '통합', positive: '긍정', negative: '부정' };
+    const filtered = filterImages(entry, selectedTypes, selectedYears);
+
+    if (!filtered.length) {
+        grid.innerHTML = '<p style="text-align:center;color:#adb5bd;padding:20px;">조건에 맞는 이미지가 없습니다.</p>';
+        return;
+    }
+    grid.innerHTML = filtered.map(({ year, type, url }) => `
+        <div class="modal-image-wrap">
+            <img src="${url}" alt="${year ? year + ' ' : ''}${labelMap[type]}">
+            <div class="img-label">${year ? year + ' — ' : ''}${labelMap[type]}</div>
+            <a href="${url}" download class="btn btn-sm btn-outline-secondary"
+               style="margin-top:4px;font-size:11px;">다운로드</a>
+        </div>
+    `).join('');
+}
+
+// ── 메타 정보 ─────────────────────────────────────────────────
+function renderMeta(entry) {
+    const opts = entry.options || {};
+    const sourceLabel = { deploy: '제출용 저장', matrix: '매트릭스' }[(entry.source || 'deploy')];
+    document.getElementById('modalMeta').innerHTML = `
+        <div class="modal-meta">
+            <div class="meta-row"><span class="meta-key">직원 ID</span><span>${escapeHtml(entry.employee_id || '-')}</span></div>
+            <div class="meta-row"><span class="meta-key">출처</span><span>${sourceLabel}</span></div>
+            <div class="meta-row"><span class="meta-key">출력 모드</span><span>${entry.output_mode === 'real' ? '실명' : '가명'}</span></div>
+            <div class="meta-row"><span class="meta-key">행 기준</span><span>${escapeHtml(entry.row_field || '-')}</span></div>
+            <div class="meta-row"><span class="meta-key">분석 유형</span><span>${escapeHtml(entry.analysis_type || '-')}</span></div>
+            <div class="meta-row"><span class="meta-key">형태소</span><span>${(opts.wordcloud_pos || []).join(', ')}</span></div>
+            <div class="meta-row"><span class="meta-key">배경색</span><span>${escapeHtml(opts.background_color || '-')}</span></div>
+            <div class="meta-row"><span class="meta-key">크기</span><span>${opts.width || '-'} x ${opts.height || '-'}</span></div>
+            <div class="meta-row"><span class="meta-key">최대 단어</span><span>${opts.max_words || '-'}</span></div>
+            <div class="meta-row"><span class="meta-key">감정 색상</span><span>${opts.apply_emotion_colors ? '적용' : '미적용'}</span></div>
+            <div class="meta-row"><span class="meta-key">비속어 제거</span><span>${opts.remove_profanity ? '적용' : '미적용'}</span></div>
+            <div class="meta-row"><span class="meta-key">저장 시각</span><span>${entry.timestamp || '-'}</span></div>
+        </div>
+    `;
+}
+
+// ── 데이터 없음 ───────────────────────────────────────────────
+function renderNoData() {
+    document.getElementById('imageGrid').innerHTML =
+        '<p style="text-align:center;color:#adb5bd;padding:40px;">이 직원의 해당 출처 데이터가 없습니다.</p>';
+    document.getElementById('modalMeta').innerHTML = '';
+    // 칩 숨김 (renderModal 진입 시 복원됨)
+    document.getElementById('typeChips').style.display = 'none';
+    document.getElementById('yearChips').parentElement.style.display = 'none';
+}
+
+function closeModal() {
+    document.getElementById('detailModal').classList.remove('open');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Close modal on overlay click
+document.getElementById('detailModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+
+// Initial load
+loadGallery(1);
+</script>
+{% endblock %}

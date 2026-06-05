@@ -12,6 +12,8 @@ body {
     box-shadow: none !important;
     padding: 0 !important;
     overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 #main-panel {
     flex: 1;
@@ -19,7 +21,7 @@ body {
     flex-direction: column;
     gap: 8px;
     padding: 10px;
-    overflow: hidden;
+    overflow-y: auto;
     min-width: 0;
 }
 .condition-card {
@@ -165,6 +167,8 @@ body {
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
 .modal-overlay.open { display: flex; }
 .modal-content { background: white; border-radius: 8px; padding: 20px; max-width: 90vw; max-height: 90vh; box-shadow: 0 4px 20px rgba(0,0,0,0.3); overflow: auto; }
+#idInputModal.modal-overlay { background: rgba(0,0,0,0.3); }
+#idInputModal .modal-content { background: #fff; border: 1px solid #ccc; }
 .modal-content img { max-width: 80vw; max-height: 75vh; }
 .modal-close { float: right; cursor: pointer; font-size: 22px; color: #999; background: none; border: none; }
 .modal-close:hover { color: #333; }
@@ -183,7 +187,7 @@ body {
 .emp-content .card h4 { margin: 0 0 6px 0; font-size: 13px; }
 .emp-content .card img { width: 100%; height: 100px; object-fit: contain; background: #f8f9fa; border-radius: 4px; cursor: pointer; }
 .progress-container { background: #e9ecef; border-radius: 6px; height: 18px; overflow: hidden; margin: 6px 0; position: relative; }
-.progress-bar { height: 100%; background: linear-gradient(90deg, #007bff, #00b894); transition: width 0.3s ease; border-radius: 6px; }
+.progress-container .deploy-bar { height: 100%; background: linear-gradient(90deg, #007bff, #00b894); transition: width 0.3s ease; border-radius: 6px; }
 .progress-text { position: absolute; top: 0; left: 0; right: 0; height: 18px; line-height: 18px; text-align: center; font-size: 11px; font-weight: 600; color: #333; }
 .progress-text.light { color: #fff; }
 .deploy-status { font-size: 12px; line-height: 1.6; margin: 6px 0; max-height: 200px; overflow-y: auto; }
@@ -193,6 +197,42 @@ body {
 .deploy-status .pending { color: #999; }
 .retry-btn { background: #ffc107; color: #333; border: none; padding: 4px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
 .retry-btn:hover { background: #e0a800; }
+
+/* Deploy Toast */
+.deploy-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid #28a745;
+    border-radius: 8px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    animation: toastIn 0.3s ease;
+    max-width: 320px;
+}
+.deploy-toast.hide {
+    animation: toastOut 0.3s ease forwards;
+}
+.deploy-toast a {
+    color: #28a745;
+    font-weight: bold;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+@keyframes toastIn {
+    from { transform: translateX(100px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes toastOut {
+    from { transform: translateX(0); opacity: 1; }
+    to   { transform: translateX(100px); opacity: 0; }
+}
 </style>
 {% endblock %}
 
@@ -207,7 +247,7 @@ body {
             <div class="label">① 대상 직원</div>
             <select id="employeeSelect"><option value="">로딩...</option></select>
             <div class="options" style="flex:none;margin-top:4px;">
-                <label><input type="checkbox" id="allEmployeesCheck"> 전체 직원 대상</label>
+                <label><input type="checkbox" id="allEmployeesCheck" onchange="toggleAllEmployees()"> 전체 직원 대상</label>
             </div>
 
             <div class="output-mode-bar" style="border-top:1px solid #eee;padding-top:4px;margin-top:2px;">
@@ -217,14 +257,12 @@ body {
             </div>
 
             <div id="rawDataSection" style="display:none;border-top:1px solid #eee;padding-top:4px;margin-top:2px;">
-                <div id="adminAuthArea" style="display:flex;gap:4px;align-items:center;margin-bottom:3px;">
-                    <input type="password" id="adminPwInput" placeholder="관리자 비밀번호" style="flex:1;padding:4px 8px;font-size:12px;border:1px solid #ccc;border-radius:4px;">
-                    <button class="btn-secondary" style="padding:2px 10px;font-size:11px;" onclick="adminLogin()">인증</button>
-                    <span id="adminAuthStatus" style="font-size:11px;"></span>
-                </div>
-                <div id="csvArea" style="display:none;">
+                <div id="csvArea">
                     <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:1px;">CSV 업로드 (일괄 대상)</div>
-                    <input type="file" id="csvFileInput" accept=".csv" style="font-size:12px;width:100%;padding:3px 0;">
+                    <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
+                        <input type="file" id="csvFileInput" accept=".csv" style="font-size:12px;flex:1;padding:3px 0;">
+                        <button class="btn-secondary" style="padding:4px 10px;font-size:11px;white-space:nowrap;" onclick="openIdInputModal()">사번 직접 입력</button>
+                    </div>
                     <div id="csvStatus" style="font-size:11px;color:#28a745;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
                     <div style="margin-top:5px;padding:5px 7px;background:#f0f4ff;border-radius:4px;border:1px solid #c8d8ff;">
                         <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:#334;">
@@ -306,7 +344,7 @@ body {
                     onclick="event.stopPropagation();loadWordBoost()">새로고침</button>
         </span>
     </div>
-    <div class="emp-content" style="padding:10px;">
+    <div class="emp-content" style="padding:10px;max-height:300px;overflow-y:auto;">
         <!-- 추가 폼 -->
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
             <input type="text" id="wbWord" placeholder="단어" style="width:90px;padding:4px 7px;font-size:12px;border:1px solid #ccc;border-radius:4px;">
@@ -324,6 +362,75 @@ body {
     </div>
 </div>
 
+<div id="wcOptionsArea" style="background:#fff;border:1px solid #d4edda;border-radius:6px;margin-bottom:6px;">
+    <div style="display:flex;align-items:center;padding:6px 10px;cursor:pointer;background:#f0fff4;border-radius:6px 6px 0 0;"
+         onclick="var c=this.nextElementSibling;c.classList.toggle('open');this.querySelector('.wco-arrow').classList.toggle('open')">
+        <span class="wco-arrow arrow">▶</span>
+        <span style="font-size:12px;font-weight:600;margin-left:4px;">워드클라우드 옵션</span>
+        <span id="wcOptionsSummary" style="font-size:11px;color:#888;margin-left:8px;"></span>
+    </div>
+    <div class="emp-content" style="padding:10px;">
+        <!-- 프리셋 바 -->
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;padding:6px 10px;background:#f8f9fa;border-radius:5px;border:1px solid #dee2e6;">
+            <select id="wco-preset-select" style="flex:1;max-width:220px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;"><option value="">-- 저장된 프리셋 --</option></select>
+            <button style="font-size:11px;padding:3px 10px;" class="btn-secondary" onclick="wcPresetLoad()">불러오기</button>
+            <button style="font-size:11px;padding:3px 10px;" class="btn-success" onclick="wcPresetSave()">저장</button>
+            <button style="font-size:11px;padding:3px 10px;" class="btn-danger" onclick="wcPresetDelete()">삭제</button>
+        </div>
+        <!-- PC형 가로 카드 레이아웃 -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+            <!-- 배경색 카드 -->
+            <div style="border:1px solid #e0e0e0;border-radius:6px;padding:10px 12px;background:#fafafa;min-width:180px;">
+                <div style="font-size:11px;font-weight:600;color:#555;margin-bottom:6px;border-bottom:2px solid #28a745;padding-bottom:3px;">배경색</div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;" id="wco-color-options">
+                    <button type="button" class="color-btn selected" data-color="white" style="background:white;border:1px solid #ccc;width:22px;height:22px;" title="흰색" onclick="wcSelectColor(this);updateWcOptionsSummary()"></button>
+                    <button type="button" class="color-btn" data-color="black" style="background:black;width:22px;height:22px;" title="검은색" onclick="wcSelectColor(this);updateWcOptionsSummary()"></button>
+                    <button type="button" class="color-btn" data-color="lightblue" style="background:lightblue;width:22px;height:22px;" title="연한 파랑" onclick="wcSelectColor(this);updateWcOptionsSummary()"></button>
+                    <button type="button" class="color-btn" data-color="lightgray" style="background:lightgray;width:22px;height:22px;" title="연한 회색" onclick="wcSelectColor(this);updateWcOptionsSummary()"></button>
+                    <button type="button" class="color-btn" data-color="lightgreen" style="background:lightgreen;width:22px;height:22px;" title="연한 초록" onclick="wcSelectColor(this);updateWcOptionsSummary()"></button>
+                    <button type="button" class="color-btn" data-color="lightyellow" style="background:lightyellow;width:22px;height:22px;" title="연한 노랑" onclick="wcSelectColor(this);updateWcOptionsSummary()"></button>
+                    <button type="button" class="color-btn" data-color="lightpink" style="background:lightpink;width:22px;height:22px;" title="연한 분홍" onclick="wcSelectColor(this);updateWcOptionsSummary()"></button>
+                </div>
+                <input type="hidden" id="wco-bg-color" value="white">
+            </div>
+            <!-- 이미지 크기 카드 -->
+            <div style="border:1px solid #e0e0e0;border-radius:6px;padding:10px 12px;background:#fafafa;min-width:200px;">
+                <div style="font-size:11px;font-weight:600;color:#555;margin-bottom:6px;border-bottom:2px solid #28a745;padding-bottom:3px;">이미지 크기</div>
+                <div style="display:flex;flex-direction:column;gap:3px;font-size:12px;">
+                    <label><input type="radio" name="wcoSize" value="400x300" onchange="updateWcOptionsSummary()"> 소형 (400×300)</label>
+                    <label><input type="radio" name="wcoSize" value="800x600" checked onchange="updateWcOptionsSummary()"> 표준 (800×600)</label>
+                    <label><input type="radio" name="wcoSize" value="1000x750" onchange="updateWcOptionsSummary()"> 대형 (1000×750)</label>
+                    <label><input type="radio" name="wcoSize" value="1600x1200" onchange="updateWcOptionsSummary()"> HD (1600×1200)</label>
+                </div>
+            </div>
+            <!-- 기타 옵션 카드 -->
+            <div style="border:1px solid #e0e0e0;border-radius:6px;padding:10px 12px;background:#fafafa;min-width:200px;">
+                <div style="font-size:11px;font-weight:600;color:#555;margin-bottom:6px;border-bottom:2px solid #28a745;padding-bottom:3px;">기타 옵션</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span style="font-size:12px;color:#555;white-space:nowrap;">최대 단어 수:</span>
+                    <input type="range" id="wco-max-words" min="20" max="150" value="80" style="flex:1;"
+                           oninput="document.getElementById('wco-max-words-val').textContent=this.value;updateWcOptionsSummary()">
+                    <span id="wco-max-words-val" style="font-size:12px;font-weight:600;min-width:24px;">80</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+                    <label><input type="checkbox" id="wco-emotion-colors" checked onchange="updateWcOptionsSummary()"> 감정 색상 적용</label>
+                    <label><input type="checkbox" id="wco-remove-profanity" onchange="updateWcOptionsSummary()"> 욕설 단어 제거</label>
+                </div>
+            </div>
+            <!-- 추출 품사 카드 -->
+            <div style="border:1px solid #e0e0e0;border-radius:6px;padding:10px 12px;background:#fafafa;min-width:160px;">
+                <div style="font-size:11px;font-weight:600;color:#555;margin-bottom:6px;border-bottom:2px solid #28a745;padding-bottom:3px;">추출 품사</div>
+                <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
+                    <label><input type="checkbox" class="wco-pos-cb" value="Noun" checked onchange="updateWcOptionsSummary()"> 명사</label>
+                    <label><input type="checkbox" class="wco-pos-cb" value="Verb" onchange="updateWcOptionsSummary()"> 동사</label>
+                    <label><input type="checkbox" class="wco-pos-cb" value="Adjective" onchange="updateWcOptionsSummary()"> 형용사</label>
+                    <label><input type="checkbox" class="wco-pos-cb" value="Adverb" onchange="updateWcOptionsSummary()"> 부사</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="resultArea">
     <p style="color:#999;text-align:center;padding:50px;">직원을 선택하고 매트릭스를 생성하세요.</p>
 </div>
@@ -336,23 +443,42 @@ body {
     </div>
 </div>
 
-<div class="modal-overlay" id="csvModal" onclick="if(event.target===this)cancelCsv()">
-    <div class="modal-content" style="max-width:520px;max-height:70vh;">
-        <h3 id="csvModalTitle" style="margin:0 0 10px 0;">CSV 직원 목록</h3>
-        <div id="csvModalBody" style="max-height:40vh;overflow-y:auto;font-size:13px;"></div>
+<div class="modal-overlay" id="profanityDetailModal" onclick="if(event.target===this)closeProfanityModal()">
+    <div class="modal-content" style="max-width:700px;width:90%;max-height:80vh;">
+        <button class="modal-close" onclick="closeProfanityModal()">&times;</button>
+        <h3 style="margin:0 0 12px;font-size:15px;color:#dc3545;">욕설 감지 상세</h3>
+        <div id="profanityDetailBody" style="overflow-y:auto;max-height:calc(80vh - 80px);"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="idInputModal" onclick="if(event.target===this)cancelIdInput()">
+    <div class="modal-content" style="max-width:800px;max-height:80vh;display:flex;flex-direction:column;">
+        <h3 style="margin:0 0 10px 0;">직원 ID 입력</h3>
+        <div style="display:flex;gap:12px;flex:1;overflow:hidden;">
+            <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">직접 입력</div>
+                <textarea id="idInputTextarea" placeholder="사번을 입력하세요. 쉼표, 줄바꿈, 공백으로 구분 가능" style="flex:1;resize:none;padding:8px;font-size:12px;border:1px solid #ccc;border-radius:4px;"></textarea>
+                <div style="font-size:11px;color:#888;margin-top:4px;">파일에서 읽어온 목록이 우측에 표시됩니다. 직접 추가/수정 가능합니다.</div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto;">
+                <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">인식된 직원 목록</div>
+                <div id="idInputPreview" style="font-size:12px;"></div>
+            </div>
+        </div>
+        <div id="idInputStatus" style="font-size:11px;color:#888;margin-top:6px;"></div>
         <div style="margin-top:12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
-            <button class="btn-secondary" onclick="cancelCsv()">취소</button>
-            <button class="btn-primary" onclick="confirmCsv()">확인</button>
+            <button class="btn-secondary" onclick="cancelIdInput()">취소</button>
+            <button class="btn-primary" onclick="confirmIdInput()">확인</button>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/wordcloud/WordCloudPreset.js"></script>
 <script>
 let _meta = null;
 let _csvEmployeeIds = null;
-let _adminAuthed = false;
 
 const _origLog = console.log.bind(console);
 const _origError = console.error.bind(console);
@@ -455,6 +581,62 @@ function closeModal() {
     document.getElementById('imgModal').classList.remove('open');
 }
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function highlightProfanity(text, details) {
+    if (!text) return '';
+    const spans = (details || [])
+        .filter(d => d.span && d.span.length === 2)
+        .sort((a, b) => a.span[0] - b.span[0]);
+    if (!spans.length) return escapeHtml(text);
+    let result = '', cursor = 0;
+    for (const d of spans) {
+        const [s, e] = d.span;
+        if (s >= cursor) {
+            result += escapeHtml(text.substring(cursor, s));
+            result += '<mark style="background:#ffcccc;color:#c00;padding:0 2px;border-radius:2px;font-weight:bold;">' + escapeHtml(text.substring(s, e)) + '</mark>';
+            cursor = e;
+        }
+    }
+    result += escapeHtml(text.substring(cursor));
+    return result;
+}
+
+function openProfanityModal(evt, el) {
+    evt.stopPropagation();
+    const sentences = JSON.parse(decodeURIComponent(el.dataset.sentences || '[]'));
+    const body = document.getElementById('profanityDetailBody');
+    if (!sentences.length) {
+        body.innerHTML = '<p style="color:#999;font-size:13px;">상세 데이터 없음</p>';
+    } else {
+        body.innerHTML = sentences.map(s => {
+            const highlighted = highlightProfanity(s.original_text, s.detection_details);
+            const badges = (s.detection_details || []).map(d => {
+                const label = d.layer === 'morpheme' ? '1계층(형태소)' : '2계층(간격패턴)';
+                const bg = d.layer === 'morpheme' ? '#d1ecf1' : '#fff3cd';
+                return '<span class="badge" style="background:' + bg + ';margin:1px;">' + label + ': ' + escapeHtml(d.word) + '</span>';
+            }).join('');
+            const filtered = s.filtered_text
+                ? '<details style="margin-top:5px;"><summary style="font-size:11px;color:#666;cursor:pointer;">필터링 결과 보기</summary><div style="font-size:12px;color:#555;padding:5px;background:#f8f9fa;margin-top:3px;border-radius:4px;">' + escapeHtml(s.filtered_text) + '</div></details>'
+                : '';
+            return '<div style="border:1px solid #dee2e6;border-radius:6px;padding:10px 12px;margin-bottom:8px;">'
+                + '<div style="font-size:11px;color:#888;margin-bottom:4px;">평가자: ' + escapeHtml(s.evaluator_id || '알수없음') + '</div>'
+                + '<div style="font-size:13px;line-height:1.7;background:#fff8f8;padding:8px;border-radius:4px;border-left:3px solid #dc3545;">' + highlighted + '</div>'
+                + (badges ? '<div style="margin-top:5px;">' + badges + '</div>' : '')
+                + filtered
+                + '</div>';
+        }).join('');
+    }
+    document.getElementById('profanityDetailModal').classList.add('open');
+}
+
+function closeProfanityModal() {
+    document.getElementById('profanityDetailModal').classList.remove('open');
+}
+
 function getOutputMode() {
     return document.querySelector('input[name="outputMode"]:checked').value;
 }
@@ -462,6 +644,12 @@ function getOutputMode() {
 function getAnalysisTypes() {
     const cbs = document.querySelectorAll('input[name="analysisType"]:checked');
     return Array.from(cbs).map(cb => cb.value);
+}
+
+function toggleAllEmployees() {
+    const cb = document.getElementById('allEmployeesCheck');
+    const sel = document.getElementById('employeeSelect');
+    sel.disabled = cb.checked;
 }
 
 function getDeployMode() {
@@ -479,12 +667,6 @@ function toggleMode() {
         rawSection.style.display = 'block';
         card.style.height = '';
         document.querySelector('.selector-row').style.minHeight = '0';
-        _adminAuthed = false;
-        document.getElementById('csvArea').style.display = 'none';
-        document.getElementById('adminAuthStatus').textContent = '';
-        document.getElementById('adminPwInput').value = '';
-        document.getElementById('adminPwInput').style.display = '';
-        document.querySelector('#adminAuthArea button').style.display = '';
         _csvEmployeeIds = null;
         document.getElementById('csvStatus').textContent = '';
         document.getElementById('csvFileInput').value = '';
@@ -499,36 +681,6 @@ function toggleMode() {
     }
 }
 
-async function adminLogin() {
-    const pw = document.getElementById('adminPwInput').value;
-    if (!pw) { document.getElementById('adminAuthStatus').textContent = '비밀번호 입력'; return; }
-    try {
-        const r = await fetch('/admin/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({password: pw})
-        });
-        const d = await r.json();
-        if (d.success) {
-            _adminAuthed = true;
-            document.getElementById('adminAuthStatus').textContent = '✅ 인증됨';
-            document.getElementById('csvArea').style.display = 'block';
-            document.querySelector('.selector-row').style.minHeight = '';
-            await loadMeta();
-            document.getElementById('adminPwInput').style.display = 'none';
-            document.querySelector('#adminAuthArea button').style.display = 'none';
-        } else {
-            document.getElementById('adminAuthStatus').textContent = '❌ ' + (d.error||'실패');
-        }
-    } catch(e) {
-        document.getElementById('adminAuthStatus').textContent = '❌ 오류';
-    }
-}
-
-document.getElementById('adminPwInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') adminLogin();
-});
-
 document.getElementById('csvFileInput').addEventListener('change', async function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -541,7 +693,8 @@ document.getElementById('csvFileInput').addEventListener('change', async functio
     try {
         const r = await fetch('/api/perspective/csv-parse', {
             method: 'POST',
-            body: formData
+            body: formData,
+            credentials: 'include'
         });
         const d = await r.json();
 
@@ -550,42 +703,113 @@ document.getElementById('csvFileInput').addEventListener('change', async functio
             return;
         }
 
-        let modalHtml = `<p><strong>총 ${d.total}개</strong> 중 <strong style="color:#28a745;">${d.matched}명</strong> 매칭됨`;
-        if (d.not_found && d.not_found.length > 0) {
-            modalHtml += `, <strong style="color:#dc3545;">${d.not_found.length}개</strong> 미매칭</p>`;
-            modalHtml += '<p style="font-size:12px;color:#dc3545;">미매칭: ' + d.not_found.join(', ') + '</p>';
+        const matchedIds = d.matched_ids || [];
+        const notFound = d.not_found || [];
+
+        // 좌측 textarea에 파일 결과 자동 입력
+        document.getElementById('idInputTextarea').value = matchedIds.join('\n');
+
+        // 우측 미리보기 렌더링
+        let previewHtml = `<p><strong>총 ${d.total}개</strong> 중 <strong style="color:#28a745;">${d.matched}명</strong> 매칭`;
+        if (notFound.length > 0) {
+            previewHtml += `, <strong style="color:#dc3545;">${notFound.length}개</strong> 미매칭</p>`;
+            previewHtml += '<p style="font-size:12px;color:#dc3545;">미매칭: ' + notFound.join(', ') + '</p>';
         } else {
-            modalHtml += '</p>';
+            previewHtml += '</p>';
         }
-        modalHtml += '<hr style="margin:6px 0;"><div style="font-size:12px;line-height:1.6;">';
-        (d.matched_ids || []).forEach(id => {
-            modalHtml += '<span style="display:inline-block;background:#e9ecef;padding:2px 6px;border-radius:3px;margin:2px;">' + id + '</span>';
+        previewHtml += '<hr style="margin:6px 0;"><table style="width:100%;font-size:12px;border-collapse:collapse;">';
+        previewHtml += '<thead><tr style="background:#f0f0f0;"><th style="padding:4px;border:1px solid #ddd;">사번</th></tr></thead><tbody>';
+        matchedIds.forEach(id => {
+            previewHtml += `<tr><td style="padding:4px;border:1px solid #eee;">${id}</td></tr>`;
         });
-        modalHtml += '</div>';
+        previewHtml += '</tbody></table>';
 
-        document.getElementById('csvModalTitle').textContent = `CSV 직원 목록 (${d.matched}명)`;
-        document.getElementById('csvModalBody').innerHTML = modalHtml;
-        document.getElementById('csvModal').classList.add('open');
+        document.getElementById('idInputPreview').innerHTML = previewHtml;
+        document.getElementById('idInputModal').classList.add('open');
 
-        window._pendingCsvIds = d.matched_ids;
+        window._pendingFileIds = matchedIds;
     } catch(e) {
         document.getElementById('csvStatus').textContent = '❌ 업로드 오류';
     }
 });
 
-function confirmCsv() {
-    _csvEmployeeIds = window._pendingCsvIds || [];
-    document.getElementById('csvStatus').textContent = `CSV: ${_csvEmployeeIds.length}명 선택됨`;
-    document.getElementById('csvModal').classList.remove('open');
-    document.getElementById('employeeSelect').disabled = true;
-    document.getElementById('allEmployeesCheck').disabled = true;
+function parseIdsFromTextarea() {
+    const text = document.getElementById('idInputTextarea').value;
+    return text.split(/[,\s\n]+/).map(s => s.trim()).filter(s => s.length > 0);
 }
 
-function cancelCsv() {
-    window._pendingCsvIds = null;
-    document.getElementById('csvModal').classList.remove('open');
+function openIdInputModal() {
+    document.getElementById('idInputTextarea').value = '';
+    document.getElementById('idInputPreview').innerHTML = '<p style="color:#888;font-size:12px;text-align:center;padding:20px 0;">좌측에 사번을 입력하고 확인을 누르세요.</p>';
+    document.getElementById('idInputStatus').textContent = '';
+    document.getElementById('idInputStatus').style.color = '#888';
+    window._pendingFileIds = [];
+    document.getElementById('idInputModal').classList.add('open');
+}
+
+async function confirmIdInput() {
+    const ids = parseIdsFromTextarea();
+    if (ids.length === 0) {
+        cancelIdInput();
+        return;
+    }
+
+    document.getElementById('idInputStatus').textContent = '매칭 확인 중...';
+    document.getElementById('idInputStatus').style.color = '#888';
+
+    try {
+        const r = await fetch('/api/perspective/parse-ids', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ids: ids})
+        });
+        const d = await r.json();
+
+        if (!d.success) {
+            document.getElementById('idInputStatus').textContent = '❌ ' + (d.error||'실패');
+            document.getElementById('idInputStatus').style.color = '#dc3545';
+            return;
+        }
+
+        const matchedIds = d.matched_ids || [];
+        const notFound = d.not_found || [];
+
+        if (notFound.length > 0) {
+            const notFoundStr = notFound.join(', ');
+            const msg = `다음 ${notFound.length}명의 직원은 존재하지 않습니다: ${notFoundStr}`;
+            document.getElementById('idInputStatus').textContent = '⚠️ ' + msg;
+            document.getElementById('idInputStatus').style.color = '#dc3545';
+
+            if (matchedIds.length === 0) {
+                alert('입력한 모든 직원이 시스템에 존재하지 않습니다.\n\n존재하지 않는 직원: ' + notFoundStr);
+                return;
+            }
+
+            if (!confirm(msg + '\n\n매칭된 ' + matchedIds.length + '명의 직원만 선택하시겠습니까?')) {
+                return;
+            }
+        }
+
+        _csvEmployeeIds = matchedIds;
+        document.getElementById('csvStatus').textContent = `선택: ${_csvEmployeeIds.length}명`;
+        document.getElementById('idInputModal').classList.remove('open');
+        document.getElementById('employeeSelect').disabled = true;
+        document.getElementById('allEmployeesCheck').disabled = true;
+    } catch(e) {
+        document.getElementById('idInputStatus').textContent = '❌ 오류';
+        document.getElementById('idInputStatus').style.color = '#dc3545';
+    }
+}
+
+function cancelIdInput() {
+    window._pendingFileIds = null;
+    document.getElementById('idInputModal').classList.remove('open');
     document.getElementById('csvFileInput').value = '';
     document.getElementById('csvStatus').textContent = '';
+    document.getElementById('idInputTextarea').value = '';
+    document.getElementById('idInputPreview').innerHTML = '';
+    document.getElementById('idInputStatus').textContent = '';
+    document.getElementById('idInputStatus').style.color = '#888';
     _csvEmployeeIds = null;
     document.getElementById('employeeSelect').disabled = false;
     document.getElementById('allEmployeesCheck').disabled = false;
@@ -602,11 +826,6 @@ async function generateMatrix() {
 
     if (analysisTypes.length === 0) { setStatus('분석 유형을 선택하세요.', true); return; }
 
-    if (outputMode === 'real' && !_adminAuthed) {
-        setStatus('원데이터 모드는 관리자 인증이 필요합니다.', true);
-        return;
-    }
-
     if (!allEmp && !empId && !csvIds) { setStatus('직원을 선택하세요.', true); return; }
 
     const resultArea = document.getElementById('resultArea');
@@ -616,6 +835,7 @@ async function generateMatrix() {
     const rowValues = getSelectedRowValues();
     const rowCombineAll = isRowCombineAll();
 
+    const _wco = getWcOptions();
     const body = {
         row_field: rowField,
         col_mode: colMode,
@@ -626,6 +846,13 @@ async function generateMatrix() {
         deploy_mode: getDeployMode(),
         row_values: rowValues,
         row_combine_all: rowCombineAll,
+        background_color: _wco.background_color,
+        width: _wco.width,
+        height: _wco.height,
+        max_words: _wco.max_words,
+        apply_emotion_colors: _wco.apply_emotion_colors,
+        remove_profanity: _wco.remove_profanity,
+        wordcloud_pos: _wco.wordcloud_pos,
     };
 
     if (csvIds) {
@@ -654,7 +881,7 @@ async function generateMatrix() {
         if (d.all_employees) {
             renderAllEmployees(d, resultArea);
         } else {
-            renderMatrix(d, resultArea, analysisTypes[0]);
+            renderMatrix(d, resultArea, analysisTypes);
         }
         setStatus('완료');
     } catch(e) {
@@ -664,9 +891,9 @@ async function generateMatrix() {
     }
 }
 
-async function saveDeploy() {
-    if (getOutputMode() !== 'real' || !_adminAuthed) {
-        setStatus('제출용 저장은 원데이터 모드 + 관리자 인증이 필요합니다.', true);
+async function saveDeploy(resumeSessionId = null) {
+    if (!resumeSessionId && getOutputMode() !== 'real') {
+        setStatus('제출용 저장은 원데이터 모드가 필요합니다.', true);
         return;
     }
 
@@ -687,12 +914,16 @@ async function saveDeploy() {
     if (!allEmp && !empId && !csvIds) { setStatus('직원을 선택하세요.', true); return; }
     if (analysisTypes.length === 0) { setStatus('분석 유형을 선택하세요.', true); return; }
 
+    // 제출 전 최근 사용된 프리셋 자동 적용
+    wcPresetLoad();
+
     const rowValues = getSelectedRowValues();
     const rowCombineAll = isRowCombineAll();
 
     const includeName = document.getElementById('includeNameInFilename')?.checked ?? true;
     const includeId   = document.getElementById('includeIdInFilename')?.checked ?? true;
 
+    const _wco2 = getWcOptions();
     const body = {
         row_field: rowField,
         col_mode: colMode,
@@ -704,6 +935,13 @@ async function saveDeploy() {
         output_mode: getOutputMode(),
         include_name: includeName,
         include_id: includeId,
+        background_color: _wco2.background_color,
+        width: _wco2.width,
+        height: _wco2.height,
+        max_words: _wco2.max_words,
+        apply_emotion_colors: _wco2.apply_emotion_colors,
+        remove_profanity: _wco2.remove_profanity,
+        wordcloud_pos: _wco2.wordcloud_pos,
     };
 
     if (csvIds) {
@@ -727,7 +965,7 @@ async function saveDeploy() {
         const barColor = pct >= 100 ? '#00b894' : '#007bff';
         let h = '<div class="summary-bar"><span><strong>제출용 저장 중...</strong></span>';
         h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
-        h += `<div class="progress-container"><div class="progress-bar" style="width:${pct}%;background:${barColor};"></div><div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
+        h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div><div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
         h += '<div class="deploy-status">';
         statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
         if (lineExtra) h += lineExtra;
@@ -743,143 +981,311 @@ async function saveDeploy() {
     setStatus('');
     renderProgress(0, 'init');
 
+    let sessionId = resumeSessionId || null;
     try {
-        const r = await fetch('/api/perspective/matrix/save-deploy-stream', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-        });
-        if (!r.ok) {
-            setStatus('저장 실패: 서버 오류', true);
-            resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">서버 오류가 발생했습니다.</p>';
-            return;
-        }
+        let options = {...body};
+        delete options.employee_ids;
+        delete options.employee_id;
+        delete options.all_employees;
 
-        const reader = r.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
+        if (!sessionId) {
+            let employeeIds = [];
+            if (csvIds) employeeIds = csvIds;
+            else if (allEmp) {
+                const _m = _meta || await loadMeta().then(() => _meta);
+                employeeIds = (_m.employees || []).map(e => e.employee_id);
+            } else if (empId) employeeIds = [empId];
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-            for (const line of lines) {
-                if (!line.trim()) continue;
-                try {
-                    const data = JSON.parse(line);
-                    if (data.status === 'processing') {
-                        if (total < data.total) total = data.total;
-                        addLine(`⏳ ${data.employee} 데이터 정재 중...`, 'processing');
-                        renderProgress(data.current);
-                    } else if (data.status === 'done') {
-                        doneCount++;
-                        addLine(`✅ ${data.name} 완료`, 'done');
-                        successData.push(data);
-                        renderProgress(data.current);
-                    } else if (data.status === 'fail') {
-                        failCount++;
-                        addLine(`❌ ${data.employee} 실패 - ${data.error}`, 'fail');
-                        failData.push(data);
-                        renderProgress(data.current);
-                    } else if (data.status === 'complete') {
-                        renderComplete(data);
-                    }
-                } catch(e) {
-                    _origError('NDJSON parse error:', e.message, e.stack, 'line:', line);
+            if (employeeIds.length === 0) {
+                setStatus('처리할 직원이 없습니다.', true);
+                return;
+            }
+            total = employeeIds.length;
+
+            const startRes = await fetch('/api/perspective/deploy-session/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({options, employee_ids: employeeIds})
+            });
+            const startData = await startRes.json();
+            if (!startData.success) {
+                setStatus('세션 생성 실패: ' + (startData.error || ''), true);
+                resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">' + (startData.error || '세션 생성 실패') + '</p>';
+                return;
+            }
+            sessionId = startData.session_id;
+            total = startData.total;
+        } else {
+            const progressRes = await fetch(`/api/perspective/deploy-session/progress?session_id=${sessionId}`);
+            const progressData = await progressRes.json();
+            if (progressData.success && progressData.progress) {
+                total = progressData.progress.total_count || 0;
+                // 세션에 저장된 options 복원 (페이지 재로드 후에도 원래 설정 유지)
+                if (progressData.progress.options) {
+                    try {
+                        const savedOpts = typeof progressData.progress.options === 'string'
+                            ? JSON.parse(progressData.progress.options)
+                            : progressData.progress.options;
+                        options = savedOpts;
+                    } catch (_) {}
                 }
             }
         }
+        localStorage.setItem('deploy_session_id', sessionId);
+
+        // Chunk 폴링 루프
+        while (true) {
+            const chunkRes = await fetch(`/api/perspective/deploy-session/chunk?session_id=${sessionId}&count=50`);
+            const chunk = await chunkRes.json();
+            if (!chunk.success) {
+                addLine(`❌ Chunk 할당 실패: ${chunk.error}`, 'fail');
+                break;
+            }
+            if (chunk.employee_ids.length === 0) break;
+
+            const completedIds = [];
+            const failedItems = [];
+
+            // Worker Sharding: 청크를 WORKER_COUNT등분 → Promise.all 병렬 처리
+            // 각 워커는 자기 subset을 1명씩 순차 처리 → 진행률 실시간 + employee_id 정확 추적
+            const WORKER_COUNT = 4;
+
+            const yieldToRenderer = () => new Promise(r => setTimeout(r, 0));
+
+            const processOne = async (eid) => {
+                addLine(`⏳ ${eid} 처리 중...`, 'processing');
+                renderProgress(doneCount + failCount);
+                await yieldToRenderer();
+                try {
+                    const res = await fetch('/api/perspective/matrix/save-deploy', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({...options, employee_id: eid})
+                    });
+                    const d = await res.json();
+                    if (d.success) {
+                        completedIds.push({employee_id: eid, result_data: d});
+                        successData.push({...d, employee_id: eid});
+                        doneCount++;
+                        addLine(`✅ ${d.name || eid} 완료`, 'done');
+                    } else {
+                        failedItems.push({employee_id: eid, error: d.error || '처리 실패'});
+                        failData.push({employee_id: eid, error: d.error || '처리 실패'});
+                        failCount++;
+                        addLine(`❌ ${eid} 실패 - ${d.error || '처리 실패'}`, 'fail');
+                    }
+                } catch(_e) {
+                    failedItems.push({employee_id: eid, error: '네트워크 오류'});
+                    failData.push({employee_id: eid, error: '네트워크 오류'});
+                    failCount++;
+                    addLine(`❌ ${eid} 실패 - 네트워크 오류`, 'fail');
+                }
+                renderProgress(doneCount + failCount);
+                await yieldToRenderer();
+            };
+
+            const processSubset = async (subset) => {
+                for (const eid of subset) await processOne(eid);
+            };
+
+            const workerPromises = [];
+            for (let w = 0; w < WORKER_COUNT; w++) {
+                const subset = chunk.employee_ids.filter((_, i) => i % WORKER_COUNT === w);
+                if (subset.length > 0) workerPromises.push(processSubset(subset));
+            }
+            await Promise.all(workerPromises);
+
+            // 완료 보고
+            await fetch('/api/perspective/deploy-session/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId, completed_items: completedIds, failed_items: failedItems})
+            });
+
+            renderProgress(doneCount + failCount);
+        }
     } catch(e) {
-        _origError('Stream error:', e);
+        _origError('Deploy error:', e);
         setStatus('저장 중 오류', true);
         addLine('❌ 네트워크 오류', 'fail');
         renderProgress(doneCount + failCount);
+    } finally {
+        if (sessionId) {
+            localStorage.removeItem('deploy_session_id');
+        }
     }
 
-    function renderComplete(summary) {
-        const successItems = summary.success || successData;
-        const failItems = summary.fail || failData;
-        const totalItems = summary.total || total;
-        const successCount = successItems.length;
-        const failCountItems = failItems.length;
+    renderDeployComplete({success: successData, fail: failData, total});
+}
 
-        let h = '<div class="summary-bar" style="background:#d4edda;border-color:#c3e6cb;">';
-        h += `<span><strong>✅ 제출용 저장 완료</strong></span>`;
-        h += `<span>${successCount}/${totalItems} 성공</span>`;
-        if (failCountItems > 0) h += `<span style="color:#dc3545;">${failCountItems}건 실패</span>`;
+function showDeployToast(message, linkUrl) {
+    const existing = document.querySelector('.deploy-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'deploy-toast';
+    toast.innerHTML = '<span>' + message + '</span><a href="' + linkUrl + '">갤러리에서 확인 →</a>';
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.classList.add('hide');
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+}
+
+function renderDeployComplete(summary) {
+    const successItems = summary.success || [];
+    const failItems = summary.fail || [];
+    const totalItems = summary.total || (successItems.length + failItems.length);
+    const successCount = successItems.length;
+    const failCountItems = failItems.length;
+
+    // 전부 성공 시: 토스트만, 상세 모달은 띄우지 않음
+    if (failCountItems === 0 && successCount > 0) {
+        showDeployToast('✅ ' + successCount + '명 저장 완료', '/deploy-gallery');
+        let h = '<div class="summary-bar" style="background:#d4edda;border-color:#c3e6cb;color:#155724;">';
+        h += '<span><strong>✅ 저장 완료</strong></span>';
+        h += '<span>' + successCount + '명의 이미지가 갤러리에 저장되었습니다.</span>';
+        h += '<a href="/deploy-gallery" style="margin-left:auto;color:#155724;font-weight:bold;text-decoration:underline;">갤러리에서 확인 →</a>';
         h += '</div>';
-
-        h += `<div class="progress-container"><div class="progress-bar" style="width:100%;background:#00b894;"></div><div class="progress-text light">${successCount}/${totalItems} (100%)</div></div>`;
-
-        if (successCount > 0) {
-            h += '<div style="margin-top:12px;">';
-            successItems.forEach(res => {
-                const name = res.name || res.employee_id || '?';
-                h += '<div style="margin-bottom:16px;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;">';
-                h += `<div style="padding:8px 12px;background:#f8f9fa;font-weight:bold;font-size:13px;">${name}</div>`;
-
-                if (res.row_results && Object.keys(res.row_results).length > 0) {
-                    // 개별 출력: 연도별 행으로 렌더링
-                    Object.entries(res.row_results).forEach(([rowKey, rowData]) => {
-                        const combinedUrl = rowData.combined || '';
-                        const positiveUrl = rowData.positive || '';
-                        const negativeUrl = rowData.negative || '';
-                        h += `<div style="padding:4px 10px 2px;font-size:12px;font-weight:600;color:#555;background:#f0f4f8;border-top:1px solid #dee2e6;">${rowKey}</div>`;
-                        h += '<div style="display:flex;gap:8px;padding:8px 10px;">';
-                        [['통합', combinedUrl, '#333'], ['긍정', positiveUrl, '#28a745'], ['부정', negativeUrl, '#dc3545']].forEach(([label, url, color]) => {
-                            h += '<div style="flex:1;text-align:center;">';
-                            h += `<div style="font-size:12px;font-weight:700;color:${color};margin-bottom:4px;">${label}</div>`;
-                            if (url) {
-                                h += `<img src="${url}" style="height:80px;width:auto;max-width:100%;border:1px solid #eee;border-radius:6px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
-                            } else {
-                                h += '<div style="height:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:6px;border:1px solid #eee;">데이터 없음</div>';
-                            }
-                            h += '</div>';
-                        });
-                        h += '</div>';
-                    });
-                } else {
-                    // 통합 출력: 기존 방식
-                    const combinedUrl = res.combined || res['통합'] || '';
-                    const positiveUrl = res.positive || res['긍정'] || '';
-                    const negativeUrl = res.negative || res['부정'] || '';
-                    h += '<div style="display:flex;gap:8px;padding:10px;">';
-                    [['통합', combinedUrl, '#333'], ['긍정', positiveUrl, '#28a745'], ['부정', negativeUrl, '#dc3545']].forEach(([label, url, color]) => {
-                        h += '<div style="flex:1;text-align:center;">';
-                        h += `<div style="font-size:13px;font-weight:700;color:${color};margin-bottom:6px;">${label}</div>`;
-                        if (url) {
-                            h += `<img src="${url}" style="height:90px;width:auto;max-width:100%;border:1px solid #eee;border-radius:6px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
-                        } else {
-                            h += '<div style="height:90px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:12px;border-radius:6px;border:1px solid #eee;">데이터 없음</div>';
-                        }
-                        h += '</div>';
-                    });
-                    h += '</div>';
-                }
-
-                h += '</div>';
-            });
-            h += '</div>';
-        }
-
-        if (failCountItems > 0) {
-            const failedIds = failItems.map(f => f.employee_id || f.employee || '?');
-            h += `<div style="margin-top:10px;padding:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;">`;
-            h += `<strong>❌ 실패한 직원 (${failCountItems}명)</strong>: ${failedIds.join(', ')}<br>`;
-            h += `<button class="retry-btn" onclick="retryFailed(${JSON.stringify(failedIds).replace(/"/g,"'")})">🔄 다시 시도</button>`;
-            h += '</div>';
-        }
-
+        const resultArea = document.getElementById('resultArea');
         resultArea.innerHTML = h;
-        setStatus(`완료 (${successCount}/${totalItems})`);
-
+        setStatus('완료 (' + successCount + '/' + totalItems + ')');
         document.body.style.height = 'auto';
         document.body.style.overflow = 'auto';
         resultArea.style.flex = 'none';
         resultArea.style.overflow = 'visible';
         resultArea.style.minHeight = '';
+        return;
+    }
+
+    let h = '<div class="summary-bar" style="background:#d4edda;border-color:#c3e6cb;">';
+    h += `<span><strong>✅ 제출용 저장 완료</strong></span>`;
+    h += `<span>${successCount}/${totalItems} 성공</span>`;
+    if (failCountItems > 0) h += `<span style="color:#dc3545;">${failCountItems}건 실패</span>`;
+    h += '</div>';
+
+    h += `<div class="progress-container"><div class="deploy-bar" style="width:100%;background:#00b894;"></div><div class="progress-text light">${successCount}/${totalItems} (100%)</div></div>`;
+
+    if (successCount > 0) {
+        h += '<div style="margin-top:12px;">';
+        successItems.forEach(res => {
+            const name = res.name || res.employee_id || '?';
+            h += '<div style="margin-bottom:16px;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;">';
+            h += `<div style="padding:8px 12px;background:#f8f9fa;font-weight:bold;font-size:13px;">${name}</div>`;
+
+            if (res.row_results && Object.keys(res.row_results).length > 0) {
+                Object.entries(res.row_results).forEach(([rowKey, rowData]) => {
+                    const combinedUrl = rowData.combined || '';
+                    const positiveUrl = rowData.positive || '';
+                    const negativeUrl = rowData.negative || '';
+                    h += `<div style="padding:4px 10px 2px;font-size:12px;font-weight:600;color:#555;background:#f0f4f8;border-top:1px solid #dee2e6;">${rowKey}</div>`;
+                    h += '<div style="display:flex;gap:6px;padding:8px 10px;">';
+                    [['통합', combinedUrl, rowData.combined_sentences || [], '#333'],
+                     ['긍정', positiveUrl, rowData.positive_sentences || [], '#28a745'],
+                     ['부정', negativeUrl, rowData.negative_sentences || [], '#dc3545']].forEach(([label, url, sentences, color]) => {
+                        h += '<div style="flex:1;">';
+                        h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
+                        h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
+                        if (url) {
+                            h += `<img src="${url}" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
+                        } else {
+                            h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
+                        }
+                        if (sentences.length > 0) {
+                            h += '<div style="font-size:7px;color:#555;line-height:1.3;overflow-y:auto;max-height:80px;text-align:left;flex:1;word-break:break-all;padding:0 2px;">';
+                            sentences.forEach(s => { h += '• ' + s + '<br>'; });
+                            h += '</div>';
+                        }
+                        h += '</div></div>';
+                    });
+                    h += '</div>';
+                });
+            } else {
+                const combinedUrl = res.combined || res['통합'] || '';
+                const positiveUrl = res.positive || res['긍정'] || '';
+                const negativeUrl = res.negative || res['부정'] || '';
+                h += '<div style="display:flex;gap:6px;padding:10px;">';
+                [['통합', combinedUrl, res.combined_sentences || res['통합_문장'] || [], '#333'],
+                 ['긍정', positiveUrl, res.positive_sentences || res['긍정_문장'] || [], '#28a745'],
+                 ['부정', negativeUrl, res.negative_sentences || res['부정_문장'] || [], '#dc3545']].forEach(([label, url, sentences, color]) => {
+                    h += '<div style="flex:1;">';
+                    h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
+                    h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
+                    if (url) {
+                        h += `<img src="${url}" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
+                    } else {
+                        h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
+                    }
+                    if (sentences.length > 0) {
+                        h += '<div style="font-size:7px;color:#555;line-height:1.3;overflow-y:auto;max-height:80px;text-align:left;flex:1;word-break:break-all;padding:0 2px;">';
+                        sentences.forEach(s => { h += '• ' + s + '<br>'; });
+                        h += '</div>';
+                    }
+                    h += '</div>';
+                    if (label === '부정') {
+                        const ps = res.profanity_summary;
+                        if (ps && ps.profanity_sentences && ps.profanity_sentences.length > 0) {
+                            h += '<div style="margin-top:4px;border-top:1px dashed #f5c6cb;padding-top:3px;">';
+                            h += '<div style="font-size:7px;color:#dc3545;font-weight:bold;margin-bottom:2px;">⚠ 욕설 감지 문장</div>';
+                            ps.profanity_sentences.forEach(s => {
+                                const hl = highlightProfanity(s.original_text, s.detection_details);
+                                h += '<div style="font-size:7px;color:#555;line-height:1.4;margin-bottom:3px;padding:2px 4px;background:#fff8f8;border-left:2px solid #dc3545;">';
+                                h += hl + '</div>';
+                            });
+                            h += '</div>';
+                        }
+                    }
+                    h += '</div>';
+                });
+                h += '</div>';
+            }
+
+            h += '</div>';
+        });
+        h += '</div>';
+    }
+
+    if (failCountItems > 0) {
+        const failedIds = failItems.map(f => f.employee_id || f.employee || '?');
+        h += `<div style="margin-top:10px;padding:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;">`;
+        h += `<strong>❌ 실패한 직원 (${failCountItems}명)</strong>: ${failedIds.join(', ')}<br>`;
+        h += `<button class="retry-btn" onclick="retryFailed(${JSON.stringify(failedIds).replace(/"/g,"'")})">🔄 다시 시도</button>`;
+        h += '</div>';
+    }
+
+    const resultArea = document.getElementById('resultArea');
+    resultArea.innerHTML = h;
+    setStatus(`완료 (${successCount}/${totalItems})`);
+    document.body.style.height = 'auto';
+    document.body.style.overflow = 'auto';
+    resultArea.style.flex = 'none';
+    resultArea.style.overflow = 'visible';
+    resultArea.style.minHeight = '';
+}
+
+async function showDeployResults(sessionId) {
+    dismissResume();
+    const resultArea = document.getElementById('resultArea');
+    resultArea.innerHTML = '<p style="padding:20px;color:#555;">이전 작업 결과 불러오는 중...</p>';
+    try {
+        const r = await fetch(`/api/perspective/deploy-session/tasks?session_id=${sessionId}`);
+        const d = await r.json();
+        if (!d.success) { resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">결과를 불러올 수 없습니다.</p>'; return; }
+
+        const successData = [];
+        const failData = [];
+        d.tasks.forEach(task => {
+            if (task.status === 'completed' && task.result_path) {
+                try {
+                    const result = JSON.parse(task.result_path);
+                    successData.push({...result, employee_id: task.employee_id});
+                } catch (_) {}
+            } else if (task.status === 'failed') {
+                failData.push({employee_id: task.employee_id, error: task.error_message || '처리 실패'});
+            }
+        });
+        renderDeployComplete({success: successData, fail: failData, total: d.tasks.length});
+    } catch(e) {
+        resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">네트워크 오류로 결과를 불러올 수 없습니다.</p>';
     }
 }
 
@@ -889,16 +1295,18 @@ function retryFailed(failedIds) {
     saveDeploy();
 }
 
-function renderMatrix(data, container, analysisType) {
+function renderMatrix(data, container, analysisTypes) {
     const rows = data.rows || [];
     const cols = data.columns || [];
     const matrix = data.matrix || {};
     const empId = data.employee_id_real || data.employee_id || '?';
     const empLabel = data.employee_name ? `${data.employee_name} (${empId})` : empId;
+    const typesArr = Array.isArray(analysisTypes) ? analysisTypes : [analysisTypes];
+    const typeLabel = (data.analysis_types || typesArr).join(', ');
 
     let html = '<div class="summary-bar">';
     html += `<span><strong>${empLabel}</strong></span>`;
-    html += `<span>X=<strong>${data.row_label}</strong>  Y=<strong>${data.col_label}</strong>  분석=<strong>${data.analysis_type||''}</strong></span>`;
+    html += `<span>X=<strong>${data.row_label}</strong>  Y=<strong>${data.col_label}</strong>  분석=<strong>${typeLabel}</strong></span>`;
     html += `<span>${rows.length}행 × ${cols.length}열</span>`;
     html += '</div>';
 
@@ -911,7 +1319,7 @@ function renderMatrix(data, container, analysisType) {
         html += '<tr><th class="row-header">' + rk + '</th>';
         cols.forEach(ck => {
             const cell = matrix[rk]?.[ck] || {};
-            html += '<td class="cell">' + renderCell(cell, analysisType) + '</td>';
+            html += '<td class="cell">' + renderCell(cell, typesArr) + '</td>';
         });
         html += '</tr>';
     });
@@ -930,71 +1338,94 @@ function renderMatrix(data, container, analysisType) {
     container.innerHTML = html;
 }
 
-function renderCell(cell, type) {
-    if (cell.warning) {
-        return '<div class="cell-warning">' + cell.warning + '</div>';
-    }
-    let h = '<div class="cell-content">';
-
+function renderCellSection(d, type) {
+    let h = '';
     if (type === 'nlp') {
-        if (cell.wordcloud_url) {
-            h += '<img src="' + cell.wordcloud_url + '" onclick="openModal(\'' + cell.wordcloud_url + '\')" onerror="this.style.display=\'none\'">';
+        if (d.wordcloud_url) {
+            h += '<img src="' + d.wordcloud_url + '" onclick="openModal(\'' + d.wordcloud_url + '\')" onerror="this.style.display=\'none\'">';
         }
-        h += '<div class="cell-stats">';
-        h += '<span class="badge badge-info">' + (cell.evaluation_count || 0) + '건</span>';
-        if (cell.avg_sentiment) {
-            h += ' <span class="badge badge-success">긍' + (cell.avg_sentiment.positive*100).toFixed(0) + '%</span>';
-            h += ' <span class="badge badge-danger">부' + (cell.avg_sentiment.negative*100).toFixed(0) + '%</span>';
+        if (d.avg_sentiment) {
+            h += ' <span class="badge badge-success">긍' + (d.avg_sentiment.positive*100).toFixed(0) + '%</span>';
+            h += ' <span class="badge badge-danger">부' + (d.avg_sentiment.negative*100).toFixed(0) + '%</span>';
         }
-        h += '</div>';
-        if (cell.top_words) {
-            const top = Object.entries(cell.top_words).slice(0,5);
+        if (d.top_words) {
+            const top = Object.entries(d.top_words).slice(0,5);
             h += '<div class="top-words">' + top.map(([w,c]) => '<span>' + w + '(' + c + ')</span>').join('') + '</div>';
         }
     } else if (type === 'emotion') {
-        h += '<div class="cell-stats"><span class="badge badge-info">' + (cell.evaluation_count||0) + '건</span></div>';
-        if (cell.avg_sentiment) {
-            const pos = (cell.avg_sentiment.positive * 100).toFixed(0);
-            const neg = (cell.avg_sentiment.negative * 100).toFixed(0);
+        if (d.avg_sentiment) {
+            const pos = (d.avg_sentiment.positive * 100).toFixed(0);
+            const neg = (d.avg_sentiment.negative * 100).toFixed(0);
             h += '<div class="metric-number">' + pos + '%</div><div class="metric-label">긍정</div>';
             h += '<div class="metric-bar-bg"><div class="metric-bar-fill" style="background:#28a745;width:' + pos + '%;"></div></div>';
             h += '<div class="metric-row"><span>부정</span><span>' + neg + '%</span></div>';
             h += '<div class="metric-bar-bg"><div class="metric-bar-fill" style="background:#dc3545;width:' + neg + '%;"></div></div>';
         }
-        if (cell.emotion_labels) {
-            const top = Object.entries(cell.emotion_labels).slice(0,3);
+        if (d.emotion_labels) {
+            const top = Object.entries(d.emotion_labels).slice(0,3);
             h += '<div class="top-words">' + top.map(([l,c]) => '<span>' + l + '(' + c + ')</span>').join('') + '</div>';
         }
+        if (d.positive_sentences && d.positive_sentences.length > 0) {
+            h += '<details style="margin-top:4px;font-size:11px;"><summary style="color:#28a745;cursor:pointer;">▼ 긍정 사유 ' + d.positive_sentences.length + '건</summary>';
+            h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
+            d.positive_sentences.forEach(s => { h += '• ' + s + '<br>'; });
+            h += '</div></details>';
+        }
+        if (d.negative_sentences && d.negative_sentences.length > 0) {
+            h += '<details style="margin-top:4px;font-size:11px;"><summary style="color:#dc3545;cursor:pointer;">▼ 부정 사유 ' + d.negative_sentences.length + '건</summary>';
+            h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
+            d.negative_sentences.forEach(s => { h += '• ' + s + '<br>'; });
+            h += '</div></details>';
+        }
     } else if (type === 'leadership') {
-        h += '<div class="cell-stats"><span class="badge badge-info">' + (cell.evaluation_count||0) + '건</span></div>';
-        const score = cell.avg_leadership_score || 0;
+        const score = d.avg_leadership_score || 0;
         h += '<div class="metric-number">' + (score*100).toFixed(0) + '</div><div class="metric-label">리더십 점수</div>';
         h += '<div class="metric-bar-bg"><div class="metric-bar-fill" style="background:#007bff;width:' + (score*100) + '%;"></div></div>';
-        if (cell.competencies) {
-            Object.entries(cell.competencies).slice(0,4).forEach(([k,v]) => {
+        if (d.competencies) {
+            Object.entries(d.competencies).slice(0,4).forEach(([k,v]) => {
                 const short = {communication:'커뮤니케이션',leadership:'리더십',problem_solving:'문제해결',teamwork:'팀워크',innovation:'혁신',ethics:'윤리'}[k]||k;
                 h += '<div class="metric-row"><span>' + short + '</span><span>' + (v*100).toFixed(0) + '</span></div>';
             });
         }
     } else if (type === 'profanity') {
-        h += '<div class="cell-stats"><span class="badge badge-info">' + (cell.evaluation_count||0) + '건</span></div>';
-        h += '<div class="metric-number">' + (cell.total_profanity_count||0) + '</div><div class="metric-label">욕설 건수</div>';
-        const ratio = cell.profanity_ratio || 0;
+        h += '<div class="metric-number">' + (d.total_profanity_count||0) + '</div><div class="metric-label">욕설 건수</div>';
+        const ratio = d.profanity_ratio || 0;
         const color = ratio > 0.3 ? '#dc3545' : ratio > 0.1 ? '#ffc107' : '#28a745';
         h += '<div class="metric-bar-bg"><div class="metric-bar-fill" style="background:' + color + ';width:' + Math.min(ratio*100,100) + '%;"></div></div>';
         h += '<div class="metric-label">비율 ' + (ratio*100).toFixed(1) + '%</div>';
-        if (cell.profanity_words?.length) {
-            h += '<div class="top-words">' + cell.profanity_words.slice(0,5).map(w => '<span>' + w + '</span>').join('') + '</div>';
+        if (d.profanity_words?.length) {
+            h += '<div class="top-words">' + d.profanity_words.slice(0,5).map(w => '<span>' + w + '</span>').join('') + '</div>';
+        }
+        if (d.profanity_sentences?.length) {
+            const key = encodeURIComponent(JSON.stringify(d.profanity_sentences));
+            h += '<div class="badge badge-danger" style="margin-top:4px;cursor:pointer;font-size:11px;" onclick=\'openProfanityModal(event,this)\' data-sentences=\'' + key + '\'>▶ 문장 상세 보기 (' + d.profanity_sentences.length + '건)</div>';
         }
     } else if (type === 'sarcasm') {
-        h += '<div class="cell-stats"><span class="badge badge-info">' + (cell.evaluation_count||0) + '건</span></div>';
-        h += '<div class="metric-number">' + (cell.sarcasm_count||0) + '</div><div class="metric-label">비꼼 탐지</div>';
-        const sr = cell.sarcasm_ratio || 0;
+        h += '<div class="metric-number">' + (d.sarcasm_count||0) + '</div><div class="metric-label">비꼼 탐지</div>';
+        const sr = d.sarcasm_ratio || 0;
         const sc = sr > 0.3 ? '#dc3545' : sr > 0.1 ? '#ffc107' : '#28a745';
         h += '<div class="metric-bar-bg"><div class="metric-bar-fill" style="background:' + sc + ';width:' + (sr*100) + '%;"></div></div>';
         h += '<div class="metric-label">비율 ' + (sr*100).toFixed(1) + '%</div>';
     }
+    return h;
+}
 
+function renderCell(cell, types) {
+    if (cell.warning) {
+        return '<div class="cell-warning">' + cell.warning + '</div>';
+    }
+    const typesArr = Array.isArray(types) ? types : [types];
+    let h = '<div class="cell-content">';
+    h += '<div class="cell-stats"><span class="badge badge-info">' + (cell.evaluation_count||0) + '건</span></div>';
+    const typeNames = {nlp:'NLP', emotion:'감정', leadership:'리더십', profanity:'욕설', sarcasm:'비꼼'};
+    typesArr.forEach(type => {
+        const data = cell[type];
+        if (!data) return;
+        if (typesArr.length > 1) {
+            h += '<div style="font-size:10px;font-weight:600;color:#888;margin-top:4px;border-top:1px solid #eee;padding-top:2px;">' + (typeNames[type]||type) + '</div>';
+        }
+        h += renderCellSection(data, type);
+    });
     h += '</div>';
     return h;
 }
@@ -1007,9 +1438,10 @@ function renderAllEmployees(data, container) {
         return;
     }
 
+    const allTypesArr = data.analysis_types || [data.analysis_type || 'nlp'];
     let html = '<div class="summary-bar">';
     html += '<span><strong>전체 직원 (' + empIds.length + '명)</strong></span>';
-    html += '<span>분석=' + (data.analysis_type||'') + '</span></div>';
+    html += '<span>분석=' + allTypesArr.join(', ') + '</span></div>';
 
     empIds.forEach(empId => {
         const er = results[empId];
@@ -1017,6 +1449,7 @@ function renderAllEmployees(data, container) {
         const rows = er.rows || [];
         const cols = er.columns || [];
         const matrix = er.matrix || {};
+        const erTypes = er.analysis_types || allTypesArr;
 
         html += '<div class="emp-section">';
         html += '<div class="emp-header" onclick="var c=this.nextElementSibling;c.classList.toggle(\'open\');this.querySelector(\'.arrow\').classList.toggle(\'open\')">';
@@ -1035,12 +1468,7 @@ function renderAllEmployees(data, container) {
                 html += '<tr><th class="row-header">' + rk + '</th>';
                 cols.forEach(ck => {
                     const cell = matrix[rk]?.[ck] || {};
-                    html += '<td class="cell">';
-                    if (cell.wordcloud_url) {
-                        html += '<img src="' + cell.wordcloud_url + '" onclick="openModal(\'' + cell.wordcloud_url + '\')" style="height:80px;" onerror="this.style.display=\'none\'">';
-                    }
-                    html += '<div class="cell-stats"><span class="badge badge-info">' + (cell.evaluation_count||0) + '건</span></div>';
-                    html += '</td>';
+                    html += '<td class="cell">' + renderCell(cell, erTypes) + '</td>';
                 });
                 html += '</tr>';
             });
@@ -1061,7 +1489,7 @@ async function loadBatchHistory() {
     area.style.display = 'block';
     list.innerHTML = '로딩...';
     try {
-        const r = await fetch('/api/perspective/batches');
+        const r = await fetch('/api/perspective/batches', { credentials: 'include' });
         const d = await r.json();
         if (!d.success || !d.batches || d.batches.length === 0) {
             list.innerHTML = '<p style="color:#999;padding:10px;text-align:center;">배치 이력이 없습니다.</p>';
@@ -1093,7 +1521,7 @@ async function deleteBatch(batchId, btn) {
     btn.disabled = true;
     btn.textContent = '...';
     try {
-        const r = await fetch(`/api/perspective/batch/${batchId}`, { method: 'DELETE' });
+        const r = await fetch(`/api/perspective/batch/${batchId}`, { method: 'DELETE', credentials: 'include' });
         const d = await r.json();
         if (d.success) {
             loadBatchHistory();
@@ -1214,5 +1642,188 @@ async function toggleWordBoost(word, enabled) {
         else alert('수정 실패: ' + (d.error || ''));
     } catch(e) { alert('오류: ' + e.message); }
 }
+
+// ── 워드클라우드 옵션 ─────────────────────────────────────────────────────────
+
+function wcSelectColor(btn) {
+    document.querySelectorAll('#wco-color-options .color-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('wco-bg-color').value = btn.dataset.color;
+}
+
+function updateWcOptionsSummary() {
+    const el = document.getElementById('wcOptionsSummary');
+    const opts = getWcOptions();
+    const parts = [];
+    parts.push(opts.background_color);
+    parts.push(opts.width + 'x' + opts.height);
+    parts.push(opts.max_words + '단어');
+    if (opts.apply_emotion_colors) parts.push('감정색상');
+    if (opts.remove_profanity) parts.push('욕설제거');
+    const posLabels = {Noun:'명사', Verb:'동사', Adjective:'형용사', Adverb:'부사'};
+    const posNames = opts.wordcloud_pos.map(p => posLabels[p] || p).join(',');
+    if (posNames) parts.push('품사:' + posNames);
+    el.textContent = '[' + parts.join(' | ') + ']';
+}
+
+function getWcOptions() {
+    const sizeVal = (document.querySelector('input[name="wcoSize"]:checked') || {value: '800x600'}).value;
+    const [w, h] = sizeVal.split('x').map(Number);
+    const posCbs = document.querySelectorAll('.wco-pos-cb:checked');
+    return {
+        background_color: document.getElementById('wco-bg-color').value || 'white',
+        width: w,
+        height: h,
+        max_words: parseInt(document.getElementById('wco-max-words').value),
+        apply_emotion_colors: document.getElementById('wco-emotion-colors').checked,
+        remove_profanity: document.getElementById('wco-remove-profanity').checked,
+        wordcloud_pos: Array.from(posCbs).map(cb => cb.value),
+    };
+}
+
+function applyWcOptions(options) {
+    if (!options) return;
+    if (options.background_color) {
+        document.querySelectorAll('#wco-color-options .color-btn').forEach(b => {
+            b.classList.toggle('selected', b.dataset.color === options.background_color);
+        });
+        document.getElementById('wco-bg-color').value = options.background_color;
+    }
+    if (options.width && options.height) {
+        const val = options.width + 'x' + options.height;
+        const radio = document.querySelector(`input[name="wcoSize"][value="${val}"]`);
+        if (radio) radio.checked = true;
+    }
+    if (options.max_words != null) {
+        document.getElementById('wco-max-words').value = options.max_words;
+        document.getElementById('wco-max-words-val').textContent = options.max_words;
+    }
+    if (options.apply_emotion_colors != null)
+        document.getElementById('wco-emotion-colors').checked = options.apply_emotion_colors;
+    if (options.remove_profanity != null)
+        document.getElementById('wco-remove-profanity').checked = options.remove_profanity;
+    if (options.wordcloud_pos != null) {
+        document.querySelectorAll('.wco-pos-cb').forEach(cb => {
+            cb.checked = options.wordcloud_pos.includes(cb.value);
+        });
+    }
+    updateWcOptionsSummary();
+}
+
+// ── 프리셋 ────────────────────────────────────────────────────────────────────
+
+function wcPresetLoad() {
+    const id = document.getElementById('wco-preset-select').value;
+    if (!id) return;
+    WordCloudPreset.setLastUsed(id);
+    const preset = WordCloudPreset.load(id);
+    if (preset) applyWcOptions(preset.options);
+}
+
+function wcPresetSave() {
+    const name = prompt('프리셋 이름을 입력하세요:');
+    if (!name || !name.trim()) return;
+    const opts = getWcOptions();
+    const existing = WordCloudPreset.list().find(p => p.name === name.trim());
+    const merged = Object.assign({}, existing?.options || {}, opts);
+    WordCloudPreset.save(name.trim(), merged);
+    WordCloudPreset.populateSelect(document.getElementById('wco-preset-select'));
+    document.getElementById('wco-preset-select').value =
+        WordCloudPreset.list().find(p => p.name === name.trim())?.id || '';
+}
+
+function wcPresetDelete() {
+    const id = document.getElementById('wco-preset-select').value;
+    if (!id) return;
+    if (!confirm('이 프리셋을 삭제하시겠습니까?')) return;
+    WordCloudPreset.delete(id);
+    WordCloudPreset.populateSelect(document.getElementById('wco-preset-select'));
+}
+
+async function checkResume() {
+    try {
+        let sessionId = localStorage.getItem('deploy_session_id');
+        const activeRes = await fetch('/api/perspective/deploy-session/active', { credentials: 'include' });
+        const activeData = await activeRes.json();
+
+        const activeSessions = (activeData.success && activeData.sessions) ? activeData.sessions : [];
+
+        // 미완료 세션 우선 처리
+        if (activeSessions.length > 0) {
+            let targetSession = activeSessions[0];
+            if (sessionId) {
+                const found = activeSessions.find(s => s.session_id === sessionId);
+                if (found) targetSession = found;
+            }
+            // 다중 미완료 세션: 최근 1개만, 나머지 자동 취소
+            activeSessions.filter(s => s.session_id !== targetSession.session_id).forEach(s => {
+                fetch('/api/perspective/deploy-session/cancel', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({session_id: s.session_id})
+                }).catch(() => {});
+            });
+
+            const total = targetSession.total_count || 0;
+            const completed = targetSession.completed_count || 0;
+            const failed = targetSession.failed_count || 0;
+            const pausedAt = targetSession.paused_at || targetSession.created_at || '';
+            const dateStr = pausedAt ? pausedAt.slice(0, 16).replace('T', ' ') : '알 수 없는 시각';
+
+            let h = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;justify-content:center;align-items:center;z-index:2000;" id="resumePopupOverlay">';
+            h += '<div style="background:white;border-radius:8px;padding:24px;max-width:480px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);">';
+            h += '<h3 style="margin:0 0 12px 0;font-size:16px;">이전 작업 발견</h3>';
+            h += `<p style="font-size:13px;color:#555;line-height:1.5;">${dateStr}에 시작된 저장 작업이 중단되었습니다.<br>`;
+            h += `<strong>${completed}</strong> / ${total} 완료 (실패 ${failed}명)</p>`;
+            h += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">';
+            h += `<button class="btn-secondary" onclick="dismissResume('${targetSession.session_id}')">무시하고 새로 시작</button>`;
+            h += `<button class="btn-primary" onclick="resumeDeploySession('${targetSession.session_id}')">이어서 계속</button>`;
+            h += '</div></div></div>';
+            document.body.insertAdjacentHTML('beforeend', h);
+            return;
+        }
+
+        // 미완료 세션 없음 → localStorage 정리
+        if (sessionId) localStorage.removeItem('deploy_session_id');
+    } catch(e) {
+        _origError('Resume check failed:', e);
+    }
+}
+
+function dismissResume(sessionId) {
+    const overlay = document.getElementById('resumePopupOverlay');
+    if (overlay) overlay.remove();
+    localStorage.removeItem('deploy_session_id');
+    if (sessionId) {
+        fetch('/api/perspective/deploy-session/cancel', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({session_id: sessionId})
+        }).catch(() => {});
+    }
+}
+
+async function resumeDeploySession(sessionId) {
+    dismissResume();
+    await fetch('/api/perspective/deploy-session/resume', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({session_id: sessionId})
+    });
+    saveDeploy(sessionId);
+}
+
+// 페이지 로드 시 프리셋 드롭다운 초기화 — 최근 사용 프리셋 자동 적용
+document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('wco-preset-select');
+    WordCloudPreset.populateSelect(sel);
+    const lastId = WordCloudPreset.getLastUsed();
+    if (lastId && WordCloudPreset.load(lastId)) {
+        sel.value = lastId;
+        wcPresetLoad();
+    }
+    updateWcOptionsSummary();
+    toggleAllEmployees();
+    checkResume();
+});
 </script>
 {% endblock %}

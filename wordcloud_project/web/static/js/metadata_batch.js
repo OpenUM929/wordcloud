@@ -759,25 +759,9 @@ function startBatchProcessing() {
     isProcessing = true;
     document.getElementById('processingStatus').classList.remove('hidden');
     
-    var wordcloudPosCheckboxes = document.querySelectorAll('#wordcloudOptions input[name="wordcloudPos"]:checked');
-    var wordcloudPos = [];
-    wordcloudPosCheckboxes.forEach(function(cb) {
-        wordcloudPos.push(cb.value);
-    });
-    
-    var sentimentModeEl = document.querySelector('input[name="sentimentMode"]:checked');
     var settings = {
         enablePreprocessing: document.getElementById('enablePreprocessing').checked,
         enableEmotionAnalysis: document.getElementById('enableEmotionAnalysis').checked,
-        enableWordcloud: document.getElementById('enableWordcloud').checked,
-        wordcloud_pos: wordcloudPos,
-        background_color: document.getElementById('batchBackgroundColor').value,
-        apply_emotion_colors: document.getElementById('batchApplyEmotionColors').checked,
-        remove_profanity: document.getElementById('batchRemoveProfanity').checked,
-        max_words: parseInt(document.getElementById('batchMaxWords').value),
-        width: parseInt(document.querySelector('input[name="sizePreset"]:checked').value.split('x')[0]),
-        height: parseInt(document.querySelector('input[name="sizePreset"]:checked').value.split('x')[1]),
-        wordcloud_sentiment_mode: sentimentModeEl ? sentimentModeEl.value : 'combined',
         mappings: columnMappings,
     };
     
@@ -939,13 +923,8 @@ function retryFailed() {
         body: JSON.stringify({
             employee_ids: empIds,
             mappings: columnMappings,
-            enableWordcloud: document.getElementById('enableWordcloud').checked,
             enableEmotionAnalysis: document.getElementById('enableEmotionAnalysis').checked,
             enablePreprocessing: document.getElementById('enablePreprocessing').checked,
-            background_color: document.getElementById('batchBackgroundColor').value,
-            apply_emotion_colors: document.getElementById('batchApplyEmotionColors').checked,
-            remove_profanity: document.getElementById('batchRemoveProfanity').checked,
-            wordcloud_sentiment_mode: document.querySelector('input[name="sentimentMode"]:checked') ? document.querySelector('input[name="sentimentMode"]:checked').value : 'combined'
         })
     })
     .then(function(resp) { return resp.json(); })
@@ -1210,38 +1189,4 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('nextBtn').addEventListener('click', nextStep);
     document.getElementById('prevBtn').addEventListener('click', prevStep);
     
-    var enableWordcloud = document.getElementById('enableWordcloud');
-    var wordcloudOptions = document.getElementById('wordcloudOptions');
-    wordcloudOptions.style.display = enableWordcloud.checked ? 'block' : 'none';
-    
-    enableWordcloud.addEventListener('change', function(e) {
-        wordcloudOptions.style.display = e.target.checked ? 'block' : 'none';
-    });
-    
-    var colorBtns = document.querySelectorAll('.color-btn');
-    var colorNames = {
-        'white': '흰색',
-        'black': '검은색',
-        'lightblue': '연한 파랑',
-        'lightgray': '연한 회색',
-        'lightgreen': '연한 초록',
-        'lightyellow': '연한 노랑',
-        'lightpink': '연한 분홍'
-    };
-    
-    colorBtns.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var color = btn.getAttribute('data-color');
-            document.getElementById('batchBackgroundColor').value = color;
-            
-            colorBtns.forEach(function(b) {
-                b.style.border = '2px solid transparent';
-            });
-            btn.style.border = '2px solid #007bff';
-            
-            document.getElementById('selectedColorLabel').textContent = '선택된 배경색: ' + (colorNames[color] || color);
-        });
-    });
-    
-    document.querySelector('.color-btn[data-color="white"]').style.border = '2px solid #007bff';
 });

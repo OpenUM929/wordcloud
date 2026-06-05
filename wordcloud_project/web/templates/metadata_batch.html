@@ -4,134 +4,6 @@
 
 {% block extra_head %}
 <style>
-    .wordcloud-options {
-        margin: 20px 0;
-        padding: 15px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        background-color: #f8f9fa;
-    }
-    .wordcloud-options h3, .wordcloud-options h4 {
-        margin-top: 0;
-        color: #333;
-    }
-    .cards-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-top: 15px;
-    }
-    .option-card {
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 15px;
-        flex: 1;
-        min-width: 250px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .option-card h4 {
-        margin: 0 0 10px 0;
-        color: #333;
-        font-size: 16px;
-        border-bottom: 2px solid #007bff;
-        padding-bottom: 5px;
-    }
-    .morphology-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    .morphology-options label {
-        display: flex;
-        align-items: center;
-        background: #f8f9fa;
-        padding: 8px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 1px solid #dee2e6;
-    }
-    .morphology-options label:hover {
-        background: #e9ecef;
-        border-color: #adb5bd;
-    }
-    .morphology-options input[type="checkbox"] {
-        margin-right: 8px;
-    }
-    .color-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .color-btn {
-        border: 2px solid #ddd;
-        cursor: pointer;
-        transition: all 0.2s;
-        border-radius: 6px;
-        width: 35px;
-        height: 35px;
-    }
-    .color-btn:hover {
-        border-color: #999;
-        transform: scale(1.1);
-    }
-    .color-btn.selected {
-        border-color: #007bff;
-        box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
-        transform: scale(1.1);
-    }
-    .size-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .size-options label {
-        display: flex;
-        align-items: center;
-        background: #f8f9fa;
-        padding: 8px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: 1px solid #dee2e6;
-        white-space: nowrap;
-    }
-    .size-options label:hover {
-        background: #e9ecef;
-        border-color: #adb5bd;
-    }
-    .size-options input[type="radio"] {
-        margin-right: 8px;
-    }
-    .size-options input[type="radio"]:checked + span {
-        font-weight: bold;
-        color: #007bff;
-    }
-    .max-words-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .max-words-group input {
-        width: 80px;
-        padding: 6px 8px;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-    }
-    .emotion-colors-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .emotion-colors-group label {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-    }
-    .emotion-colors-group input[type="checkbox"] {
-        margin-right: 8px;
-    }
     .tree-item {
         padding: 5px 10px;
         cursor: pointer;
@@ -290,6 +162,10 @@
 {% block content %}
     <h1>메타데이터 생성 (배치 처리)</h1>
 
+    <div style="margin: 15px 0;">
+        <a href="/perspective_test" class="btn btn-outline-info" style="text-decoration: none;">📊 그룹분석 (Perspective Analysis)</a>
+    </div>
+
     <div class="step-indicator">
         <div class="step active" data-step="1">
             <div class="step-number">1</div>
@@ -444,75 +320,6 @@
                 <h3>처리 설정</h3>
                 <label><input type="checkbox" id="enablePreprocessing" checked> 데이터 정제 적용</label><br>
                 <label><input type="checkbox" id="enableEmotionAnalysis" checked> 감정 분석 적용</label><br>
-                <label><input type="checkbox" id="enableWordcloud" checked> 워드클라우드 생성</label>
-            </div>
-
-            <div id="wordcloudOptions" class="wordcloud-options" style="display: none;">
-                <h4>워드클라우드 생성 옵션</h4>
-                <div class="cards-container">
-                    <div class="option-card">
-                        <h4>형태소 선택</h4>
-                        <div class="morphology-options">
-                            <label><input type="checkbox" value="Noun" name="wordcloudPos" checked> <span>명사 (Noun)</span></label>
-                            <label><input type="checkbox" value="Verb" name="wordcloudPos"> <span>동사 (Verb)</span></label>
-                            <label><input type="checkbox" value="Adjective" name="wordcloudPos"> <span>형용사 (Adjective)</span></label>
-                            <label><input type="checkbox" value="Adverb" name="wordcloudPos"> <span>부사 (Adverb)</span></label>
-                            <label><input type="checkbox" value="Exclamation" name="wordcloudPos"> <span>감탄사 (Exclamation)</span></label>
-                        </div>
-                    </div>
-
-                    <div class="option-card">
-                        <h4>배경색 선택</h4>
-                        <div class="color-options">
-                            <button type="button" class="color-btn" data-color="white" style="background-color: white; border: 1px solid #ccc;" title="흰색"></button>
-                            <button type="button" class="color-btn" data-color="black" style="background-color: black;" title="검은색"></button>
-                            <button type="button" class="color-btn" data-color="lightblue" style="background-color: lightblue;" title="연한 파랑"></button>
-                            <button type="button" class="color-btn" data-color="lightgray" style="background-color: lightgray;" title="연한 회색"></button>
-                            <button type="button" class="color-btn" data-color="lightgreen" style="background-color: lightgreen;" title="연한 초록"></button>
-                            <button type="button" class="color-btn" data-color="lightyellow" style="background-color: lightyellow;" title="연한 노랑"></button>
-                            <button type="button" class="color-btn" data-color="lightpink" style="background-color: lightpink;" title="연한 분홍"></button>
-                        </div>
-                        <input type="hidden" id="batchBackgroundColor" value="white">
-                        <div id="selectedColorLabel" style="margin-top: 5px; font-size: 12px; color: #666;">선택된 배경색: 흰색</div>
-                    </div>
-
-                    <div class="option-card">
-                        <h4>크기 설정</h4>
-                        <div class="size-options">
-                            <label><input type="radio" name="sizePreset" value="800x600" checked> <span>표준 (800x600)</span></label>
-                            <label><input type="radio" name="sizePreset" value="600x400"> <span>소형 (600x400)</span></label>
-                            <label><input type="radio" name="sizePreset" value="1000x750"> <span>대형 (1000x750)</span></label>
-                            <label><input type="radio" name="sizePreset" value="1200x900"> <span>초대형 (1200x900)</span></label>
-                            <label><input type="radio" name="sizePreset" value="400x300"> <span>썸네일 (400x300)</span></label>
-                            <label><input type="radio" name="sizePreset" value="1600x1200"> <span>고해상도 (1600x1200)</span></label>
-                        </div>
-                    </div>
-
-                    <div class="option-card">
-                        <h4>추가 옵션</h4>
-                        <div class="max-words-group" style="margin-bottom: 8px;">
-                            <label>최대 단어 수:</label>
-                            <input type="number" id="batchMaxWords" value="100" min="10" max="200" step="10">
-                            <span>개</span>
-                        </div>
-                        <div class="emotion-colors-group" style="margin-bottom: 8px;">
-                            <label><input type="checkbox" id="batchApplyEmotionColors" checked> <span>감정 기반 색상 적용</span></label>
-                        </div>
-                        <div class="emotion-colors-group" style="margin-bottom: 8px;">
-                            <label><input type="checkbox" id="batchRemoveProfanity"> <span>비속어 제거</span></label>
-                        </div>
-                        <div class="emotion-colors-group" style="flex-direction: column; align-items: flex-start; margin-top: 8px;">
-                            <label style="font-weight: bold; margin-bottom: 4px;">감정 분리 모드:</label>
-                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                <label><input type="radio" name="sentimentMode" value="combined" checked> 통합</label>
-                                <label><input type="radio" name="sentimentMode" value="separate"> 긍정/부정 분리</label>
-                                <label><input type="radio" name="sentimentMode" value="both"> 통합 + 분리</label>
-                            </div>
-                        </div>
-                        <small style="color: #666; display: block; margin-top: 8px;">(긍정: 파랑, 부정: 빨강, 중립: 회색)</small>
-                    </div>
-                </div>
-            </div>
             <div id="pseudonymInfo" style="margin: 15px 0; padding: 12px; background: #e8f4fd; border-radius: 6px; border-left: 4px solid #007bff;">
                 <strong>🔒 가명 처리</strong>
                 <span id="pseudonymFieldsDisplay" style="color: #666; margin-left: 10px;">모든 PII 필드가 항상 가명처리됩니다</span>

@@ -321,6 +321,15 @@
 
 <div id="wordcloudOptions" class="wordcloud-options" style="display: none;">
     <h3>워드클라우드 생성 옵션</h3>
+
+    <!-- 프리셋 바 -->
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:8px 12px;background:#f8f9fa;border-radius:6px;border:1px solid #dee2e6;">
+        <select id="wc-preset-select" style="flex:1;font-size:13px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;"><option value="">-- 저장된 프리셋 --</option></select>
+        <button class="btn btn-sm btn-outline-primary" onclick="wcPagePresetLoad()">불러오기</button>
+        <button class="btn btn-sm btn-success" onclick="wcPagePresetSave()">현재 설정 저장</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="wcPagePresetDelete()">삭제</button>
+    </div>
+
     <div class="cards-container">
         <div class="option-card">
             <h4>형태소 선택</h4>
@@ -408,6 +417,7 @@
 
 </div>
 
+<script src="/static/js/wordcloud/WordCloudPreset.js"></script>
 <script>
 // 공통 모듈: 메타데이터 정보 HTML 생성
 function generateMetadataInfoHtml(metadata) {
@@ -563,7 +573,30 @@ function generateMetadataInfoHtml(metadata) {
                 </p>
                 <p style="font-size: 14px; color: #666;"><strong>원본:</strong> ${evaluation.evaluation_document}</p>
                 ${evaluation.preprocessing_results?.cleaned_content && evaluation.preprocessing_results.cleaned_content !== evaluation.evaluation_document ? `<p style="font-size: 14px; color: #666;"><strong>필터링:</strong> ${evaluation.preprocessing_results.cleaned_content}</p>` : ''}
-                ${evaluation.profanity_analysis_results?.detected_profanity && evaluation.profanity_analysis_results.detected_profanity.length > 0 ? `<p style="font-size: 14px; color: #d9534f;"><strong>비속어:</strong> ${evaluation.profanity_analysis_results.detected_profanity.join(', ')}</p>` : ''}
+                ${evaluation.profanity_analysis_results?.detected_profanity && evaluation.profanity_analysis_results.detected_profanity.length > 0 ? `
+                    <p style="font-size: 14px; color: #d9534f;"><strong>비속어:</strong> ${evaluation.profanity_analysis_results.detected_profanity.join(', ')}</p>
+                    <details style="margin-top:4px;font-size:12px;">
+                        <summary style="color:#dc3545;cursor:pointer;">▼ 필터 상세</summary>
+                        <div style="color:#666;padding:8px;background:#f8f9fa;border-radius:4px;">
+                            <p><strong>원본:</strong> ${evaluation.profanity_analysis_results.original_text || ''}</p>
+                            <p><strong>필터링 결과:</strong> ${evaluation.profanity_analysis_results.filtered_text || ''}</p>
+                            <p><strong>탐지 계층:</strong> ${(evaluation.profanity_analysis_results.methods_used || []).map(m =>
+                                m === 'kiwi_morpheme' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#cce5ff;color:#004085;font-size:11px;">1계층(형태소)</span>' :
+                                m === 'gap_pattern' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#fff3cd;color:#856404;font-size:11px;">2계층(간격)</span>' : m
+                            ).join(' ')}</p>
+                            <p><strong>처리 시간:</strong> ${evaluation.profanity_analysis_results.processing_time_ms || 0}ms</p>
+                            <p><strong>언어 판정:</strong> ${evaluation.profanity_analysis_results.language || '-'}</p>
+                            ${evaluation.profanity_analysis_results.detection_details && evaluation.profanity_analysis_results.detection_details.length > 0 ? `
+                                <p><strong>상세 위치:</strong></p>
+                                <ul style="margin:4px 0;padding-left:20px;">
+                                    ${evaluation.profanity_analysis_results.detection_details.map(d =>
+                                        `<li>${d.word}: ${d.layer === 'morpheme' ? '1계층(형태소)' : '2계층(간격)'} (${d.span[0]}-${d.span[1]})</li>`
+                                    ).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    </details>
+                ` : ''}
                 ${nlpWords.length > 0 ? `<p style="font-size: 12px; color: #888;"><strong>형태소 분석:</strong> ${nlpWords.slice(0, 10).join(', ')}${nlpWords.length > 10 ? '...' : ''}</p>` : ''}
                 ${topEmotions.length > 0 ? `
                     <p style="font-size: 12px; color: #888;">
@@ -1059,5 +1092,85 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
 
 // 페이지 로드 시 배치 트리 렌더링
 renderBatchTree();
+
+// ── 프리셋 ────────────────────────────────────────────────────────────────────
+
+function getCurrentOptions() {
+    const morphology = Array.from(document.querySelectorAll('#wordcloudOptions input[type="checkbox"]:checked'))
+        .filter(cb => cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity')
+        .map(cb => cb.value);
+    const sizePreset = (document.querySelector('input[name="sizePreset"]:checked') || {value:'800x600'}).value;
+    const [w, h] = sizePreset.split('x').map(Number);
+    return {
+        wordcloud_pos: morphology,
+        background_color: document.getElementById('backgroundColor').value || 'white',
+        width: w, height: h,
+        max_words: parseInt(document.getElementById('maxWords').value),
+        apply_emotion_colors: document.getElementById('applyEmotionColors').checked,
+        remove_profanity: document.getElementById('removeProfanity').checked,
+        sentiment_mode: (document.querySelector('input[name="sentimentMode"]:checked') || {value:'combined'}).value,
+    };
+}
+
+function applyPageOptions(options) {
+    if (!options) return;
+    if (options.wordcloud_pos) {
+        document.querySelectorAll('#wordcloudOptions input[type="checkbox"]').forEach(cb => {
+            if (cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity')
+                cb.checked = options.wordcloud_pos.includes(cb.value);
+        });
+    }
+    if (options.background_color) {
+        document.querySelectorAll('.color-btn').forEach(b => {
+            b.classList.toggle('selected', b.dataset.color === options.background_color);
+        });
+        document.getElementById('backgroundColor').value = options.background_color;
+    }
+    if (options.width && options.height) {
+        const val = options.width + 'x' + options.height;
+        const r = document.querySelector(`input[name="sizePreset"][value="${val}"]`);
+        if (r) r.checked = true;
+    }
+    if (options.max_words != null) document.getElementById('maxWords').value = options.max_words;
+    if (options.apply_emotion_colors != null)
+        document.getElementById('applyEmotionColors').checked = options.apply_emotion_colors;
+    if (options.remove_profanity != null)
+        document.getElementById('removeProfanity').checked = options.remove_profanity;
+    if (options.sentiment_mode) {
+        const r = document.querySelector(`input[name="sentimentMode"][value="${options.sentiment_mode}"]`);
+        if (r) r.checked = true;
+    }
+}
+
+function wcPagePresetLoad() {
+    const id = document.getElementById('wc-preset-select').value;
+    if (!id) return;
+    const preset = WordCloudPreset.load(id);
+    if (preset) applyPageOptions(preset.options);
+}
+
+function wcPagePresetSave() {
+    const name = prompt('프리셋 이름을 입력하세요:');
+    if (!name || !name.trim()) return;
+    const opts = getCurrentOptions();
+    const existing = WordCloudPreset.list().find(p => p.name === name.trim());
+    const merged = Object.assign({}, existing?.options || {}, opts);
+    WordCloudPreset.save(name.trim(), merged);
+    WordCloudPreset.populateSelect(document.getElementById('wc-preset-select'));
+    document.getElementById('wc-preset-select').value =
+        WordCloudPreset.list().find(p => p.name === name.trim())?.id || '';
+}
+
+function wcPagePresetDelete() {
+    const id = document.getElementById('wc-preset-select').value;
+    if (!id) return;
+    if (!confirm('이 프리셋을 삭제하시겠습니까?')) return;
+    WordCloudPreset.delete(id);
+    WordCloudPreset.populateSelect(document.getElementById('wc-preset-select'));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    WordCloudPreset.populateSelect(document.getElementById('wc-preset-select'));
+});
 </script>
 {% endblock %}

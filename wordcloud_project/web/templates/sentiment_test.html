@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block title %}감정 분석 문장 단위 테스트{% endblock %}
+{% block extra_head %}
+<style>
+    .page-container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+    h1 { margin: 20px 0; font-size: 24px; color: #333; }
+    .panel { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .input-area { display: flex; gap: 10px; margin-bottom: 15px; }
+    textarea { flex: 1; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: vertical; }
+    .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .btn-primary { background: #007bff; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .controls { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px; }
+    .control-group { display: flex; flex-direction: column; gap: 5px; }
+    .control-group label { font-size: 12px; color: #666; font-weight: 600; }
+    .slider-group { display: flex; align-items: center; gap: 10px; }
+    .slider-group input[type=range] { width: 150px; }
+    .slider-group span { font-weight: 600; color: #007bff; min-width: 40px; }
+    .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; }
+    .checkbox-group label { font-size: 13px; color: #555; cursor: pointer; }
+    .preset-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+    .preset-btn { padding: 6px 12px; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .preset-btn:hover { background: #007bff; color: white; }
+    .summary { display: flex; gap: 30px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
+    .summary-item { text-align: center; }
+    .summary-item .number { font-size: 28px; font-weight: bold; color: #007bff; }
+    .summary-item .label { font-size: 12px; color: #666; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #f0f0f0; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; position: sticky; top: 0; }
+    td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:hover { background: #f8f9fa; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-pos { background: #d4edda; color: #155724; }
+    .badge-neg { background: #f8d7da; color: #721c24; }
+    .badge-neu { background: #fff3cd; color: #856404; }
+    .badge-match { background: #d4edda; color: #155724; }
+    .badge-mismatch { background: #f8d7da; color: #721c24; }
+    .score-pos { color: #28a745; font-weight: 600; }
+    .score-neg { color: #dc3545; font-weight: 600; }
+    .score-neu { color: #6c757d; }
+    .contrast-yes { color: #dc3545; font-weight: 600; }
+    .last-yes { color: #007bff; font-weight: 600; }
+    .log-area { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .log-area .log-info { color: #4fc1ff; }
+    .log-area .log-success { color: #4ec9b0; }
+    .log-area .log-error { color: #f48771; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ccc; border-top-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .category-header { background: #e9ecef; padding: 8px 15px; font-weight: 600; color: #495057; font-size: 14px; border-left: 4px solid #007bff; }
+    .text-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .text-preview:hover { white-space: normal; overflow: visible; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <h1>문장 단위 감정 교정 테스트</h1>
+
+    <div class="panel">
+        <h3 style="margin-top:0;">설정</h3>
+        <div class="controls">
+            <div class="control-group">
+                <label>Confidence Threshold (저신뢰도 기준)</label>
+                <div class="slider-group">
+                    <input type="range" id="thresholdSlider" min="0.05" max="0.40" step="0.05" value="0.20" oninput="document.getElementById('thresholdVal').textContent=this.value">
+                    <span id="thresholdVal">0.20</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>반전 가중치</label>
+                <div class="slider-group">
+                    <input type="range" id="weightSlider" min="1.0" max="4.0" step="0.5" value="2.0" oninput="document.getElementById('weightVal').textContent=this.value">
+                    <span id="weightVal">2.0</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>반전 표지어 포함</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="incStrong" checked> 강한반전</label>
+                    <label><input type="checkbox" id="incMedium" checked> 중간반전</label>
+                    <label><input type="checkbox" id="incSuffix" checked> 접미사</label>
+                    <label><input type="checkbox" id="incIdiomatic" checked> 관용표현</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top:0;">개별 문장 테스트</h3>
+        <div class="preset-buttons">
+            <button class="preset-btn" onclick="setText('업무 능력이 뛰어납니다. 커뮤니케이션에 개선의 여지가 있습니다.')">기본반전</button>
+            <button class="preset-btn" onclick="setText('일 처리가 느립니다. 그러나 책임감은 매우 강합니다.')">앞부+뒤긍</button>
+            <button class="preset-btn" onclick="setText('성실하지만 결과가 아쉽습니다.')">-지만접미</button>
+            <button class="preset-btn" onclick="setText('업무 능력이 매우 뛰어납니다.')">단문긍정</button>
+            <button class="preset-btn" onclick="setText('커뮤니케이션에 개선의 여지가 있습니다.')">단문모호</button>
+            <button class="preset-btn" onclick="setText('업무 능력이 뛰어납니다. 다만 보고 체계가 미흡합니다. 앞으로 개선이 기대됩니다.')">샌드위치</button>
+            <button class="preset-btn" onclick="setText('')">지우기</button>
+        </div>
+        <div class="input-area">
+            <textarea id="testText" placeholder="평가 문장을 입력하세요..."></textarea>
+            <button class="btn btn-primary" onclick="analyzeSingle()" id="analyzeBtn">분석하기</button>
+        </div>
+        <div id="singleResult"></div>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top:0;">100개 일괄 테스트</h3>
+        <button class="btn btn-success" onclick="runBatchTest()" id="batchBtn">일괄테스트 실행</button>
+        <div id="batchSummary" style="margin-top:15px;"></div>
+        <div id="batchResults"></div>
+    </div>
+
+    <div class="panel">
+        <h3 style="margin-top:0;">교정 로그</h3>
+        <div class="log-area" id="logArea"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setText(text) {
+    document.getElementById('testText').value = text;
+}
+
+function log(msg, type='info') {
+    const area = document.getElementById('logArea');
+    const cls = type === 'success' ? 'log-success' : type === 'error' ? 'log-error' : 'log-info';
+    area.innerHTML += `<div class="${cls}">${new Date().toLocaleTimeString()} ${msg}</div>`;
+    area.scrollTop = area.scrollHeight;
+}
+
+function getConfig() {
+    return {
+        threshold: parseFloat(document.getElementById('thresholdSlider').value),
+        weight: parseFloat(document.getElementById('weightSlider').value),
+        include_strong: document.getElementById('incStrong').checked,
+        include_medium: document.getElementById('incMedium').checked,
+        include_suffix: document.getElementById('incSuffix').checked,
+        include_idiomatic: document.getElementById('incIdiomatic').checked,
+    };
+}
+
+async function analyzeSingle() {
+    const text = document.getElementById('testText').value.trim();
+    if (!text) { alert('문장을 입력하세요'); return; }
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    btn.textContent = '분석 중...';
+    log(`개별 분석 시작: "${text.substring(0,50)}..."`);
+
+    try {
+        const cfg = getConfig();
+        const r = await fetch('/api/perspective/test/sentence-sentiment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text: text, ...cfg})
+        });
+        const d = await r.json();
+        if (!d.success) { log('오류: ' + (d.error||'알 수 없음'), 'error'); return; }
+        renderSingleResult(d);
+        log(`개별 분석 완료: ${d.sentence_count}개 문장`, 'success');
+    } catch(e) {
+        log('오류: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '분석하기';
+    }
+}
+
+function renderSingleResult(data) {
+    let h = '<table><thead><tr>' +
+        '<th>#</th><th>문장</th><th>pos</th><th>neg</th><th>conf</th><th>str</th>' +
+        '<th>반전</th><th>마지막</th><th>원점수</th><th>교정</th><th>판정</th>' +
+        '<th>opus_en</th><th>opus_ko</th><th>opus_pos</th><th>opus_neg</th>' +
+        '<th>nllb_en</th><th>nllb_ko</th><th>nllb_pos</th><th>nllb_neg</th></tr></thead><tbody>';
+    data.sentences.forEach((s, i) => {
+        const badgeClass = s.result === 'positive' ? 'badge-pos' : s.result === 'negative' ? 'badge-neg' : 'badge-neu';
+        const scoreClass = s.corrected_score > 0 ? 'score-pos' : s.corrected_score < 0 ? 'score-neg' : 'score-neu';
+        const bt = s.back_translation || {};
+        const opus = bt.opus || {};
+        const nllb = bt.nllb || {};
+        h += `<tr>
+            <td>${i+1}</td>
+            <td class="text-preview">${s.text}</td>
+            <td>${s.pos}</td>
+            <td>${s.neg}</td>
+            <td>${s.confidence}</td>
+            <td>${s.strength}</td>
+            <td class="${s.has_contrast?'contrast-yes':''}">${s.has_contrast?'Yes':''}</td>
+            <td class="${s.is_last?'last-yes':''}">${s.is_last?'Yes':''}</td>
+            <td>${s.original_score}</td>
+            <td class="${scoreClass}">${s.corrected_score}</td>
+            <td><span class="badge ${badgeClass}">${s.result}</span></td>
+            <td class="text-preview">${opus.english||''}</td>
+            <td class="text-preview">${opus.back_translated||''}</td>
+            <td>${opus.pos!==undefined?opus.pos:''}</td>
+            <td>${opus.neg!==undefined?opus.neg:''}</td>
+            <td class="text-preview">${nllb.english||''}</td>
+            <td class="text-preview">${nllb.back_translated||''}</td>
+            <td>${nllb.pos!==undefined?nllb.pos:''}</td>
+            <td>${nllb.neg!==undefined?nllb.neg:''}</td>
+        </tr>`;
+    });
+    h += '</tbody></table>';
+    document.getElementById('singleResult').innerHTML = h;
+}
+
+async function runBatchTest() {
+    const btn = document.getElementById('batchBtn');
+    btn.disabled = true;
+    btn.textContent = '실행 중... (100개 단문, 약 1~2분)';
+    log('100개 일괄 테스트 시작');
+    document.getElementById('batchResults').innerHTML = '<div class="loading"><div class="spinner"></div>분석 중입니다...</div>';
+
+    try {
+        const cfg = getConfig();
+        const r = await fetch('/api/perspective/test/sentence-sentiment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({batch: true, ...cfg})
+        });
+        const d = await r.json();
+        if (!d.success) { log('오류: ' + (d.error||'알 수 없음'), 'error'); return; }
+        renderBatchResult(d);
+        log(`일괄 테스트 완료: 정확도 ${d.accuracy}% (${d.correct}/${d.total})`, 'success');
+    } catch(e) {
+        log('오류: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '일괄테스트 실행';
+    }
+}
+
+function renderBatchResult(data) {
+    // 요약
+    const summary = document.getElementById('batchSummary');
+    summary.innerHTML = `
+        <div class="summary">
+            <div class="summary-item"><div class="number">${data.total}</div><div class="label">전체 문장</div></div>
+            <div class="summary-item"><div class="number" style="color:#28a745">${data.correct}</div><div class="label">정확한 예측</div></div>
+            <div class="summary-item"><div class="number" style="color:#dc3545">${data.total - data.correct}</div><div class="label">오차</div></div>
+            <div class="summary-item"><div class="number" style="color:#007bff">${data.accuracy}%</div><div class="label">정확도</div></div>
+            <div class="summary-item"><div class="number">${data.threshold}</div><div class="label">Threshold</div></div>
+            <div class="summary-item"><div class="number">${data.weight}</div><div class="label">가중치</div></div>
+        </div>`;
+
+    // 상세 결과
+    let h = '<table><thead><tr>' +
+        '<th>ID</th><th>카테고리</th><th>원문</th><th>pos</th><th>neg</th><th>conf</th>' +
+        '<th>반전</th><th>원점수</th><th>교정</th><th>예상</th><th>실제</th><th>일치</th>' +
+        '<th>opus_en</th><th>opus_ko</th><th>opus_pos</th><th>opus_neg</th>' +
+        '<th>nllb_en</th><th>nllb_ko</th><th>nllb_pos</th><th>nllb_neg</th></tr></thead><tbody>';
+
+    data.results.forEach(item => {
+        const lastSent = item.sentences[item.sentences.length - 1];
+        if (!lastSent) return;
+        const matchBadge = lastSent.match === true ? '<span class="badge badge-match">일치</span>' :
+            lastSent.match === false ? '<span class="badge badge-mismatch">불일치</span>' : '';
+        const scoreClass = lastSent.corrected_score > 0 ? 'score-pos' : lastSent.corrected_score < 0 ? 'score-neg' : 'score-neu';
+        
+        const bt = lastSent.back_translation || {};
+        const opus = bt.opus || {};
+        const nllb = bt.nllb || {};
+        
+        h += `<tr>
+            <td>${item.id}</td>
+            <td>${item.category}</td>
+            <td class="text-preview">${item.text}</td>
+            <td>${lastSent.pos}</td>
+            <td>${lastSent.neg}</td>
+            <td>${lastSent.confidence}</td>
+            <td class="${lastSent.has_contrast?'contrast-yes':''}">${lastSent.has_contrast?'Yes':''}</td>
+            <td>${lastSent.original_score}</td>
+            <td class="${scoreClass}">${lastSent.corrected_score}</td>
+            <td><span class="badge badge-neu">${lastSent.expected}</span></td>
+            <td><span class="badge ${lastSent.result==='positive'?'badge-pos':lastSent.result==='negative'?'badge-neg':'badge-neu'}">${lastSent.result}</span></td>
+            <td>${matchBadge}</td>
+            <td class="text-preview">${opus.english||''}</td>
+            <td class="text-preview">${opus.back_translated||''}</td>
+            <td>${opus.pos!==undefined?opus.pos:''}</td>
+            <td>${opus.neg!==undefined?opus.neg:''}</td>
+            <td class="text-preview">${nllb.english||''}</td>
+            <td class="text-preview">${nllb.back_translated||''}</td>
+            <td>${nllb.pos!==undefined?nllb.pos:''}</td>
+            <td>${nllb.neg!==undefined?nllb.neg:''}</td>
+        </tr>`;
+    });
+    h += '</tbody></table>';
+    document.getElementById('batchResults').innerHTML = h;
+}
+</script>
+{% endblock %}

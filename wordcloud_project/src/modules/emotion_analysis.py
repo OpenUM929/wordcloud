@@ -56,10 +56,9 @@ class EmotionAnalysis:
                 # 로컬 모델 로드 (분류 헤드 추가)
                 from transformers import AutoModelForSequenceClassification, AutoTokenizer
                 self.logger.info("AutoModelForSequenceClassification 로드 중...")
-                model = AutoModelForSequenceClassification.from_pretrained(
-                    base_path,
-                    num_labels=self.config["model"].get("num_labels", 3)
-                )
+                # num_labels 미지정: 모델 체크포인트의 config에서 자동으로 읽음.
+                # 명시하면 저장된 헤드와 크기가 다를 때 무작위 재초기화 위험이 있음.
+                model = AutoModelForSequenceClassification.from_pretrained(base_path)
                 self.logger.info("AutoTokenizer 로드 중...")
                 tokenizer = AutoTokenizer.from_pretrained(base_path)
 

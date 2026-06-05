@@ -122,3 +122,21 @@ def wordcloud_debug():
 def perspective_test():
     """Test page for perspective/group analysis."""
     return render_template('perspective_test.html')
+
+
+@ui_bp.route('/sentiment-test')
+def sentiment_test():
+    """Sentence-level sentiment override test page."""
+    return render_template('sentiment_test.html')
+
+
+@ui_bp.route('/profanity-test')
+def profanity_test():
+    """Profanity filter test page."""
+    return render_template('profanity_test.html')
+
+
+@ui_bp.route('/deploy-gallery')
+def deploy_gallery():
+    """Deployment gallery page for viewing saved images."""
+    return render_template('deploy_gallery.html')

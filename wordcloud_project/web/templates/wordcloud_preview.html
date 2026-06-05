@@ -199,6 +199,18 @@
             </label>
         </div>
 
+        <div class="wc-panel">
+            <h5>프리셋</h5>
+            <select id="prev-preset-select" style="width:100%;margin-bottom:6px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;">
+                <option value="">-- 저장된 프리셋 --</option>
+            </select>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button class="btn btn-sm btn-outline-primary" style="flex:1;font-size:11px;" onclick="prevPresetLoad()">불러오기</button>
+                <button class="btn btn-sm btn-success" style="flex:1;font-size:11px;" onclick="prevPresetSave()">저장</button>
+                <button class="btn btn-sm btn-outline-danger" style="flex:1;font-size:11px;" onclick="prevPresetDelete()">삭제</button>
+            </div>
+        </div>
+
         <button id="render-btn" disabled>렌더링 시작</button>
     </div>
 
@@ -256,6 +268,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/wordcloud/WordCloudPreset.js"></script>
 <script src="/static/js/wordcloud/WordCloudTheme.js"></script>
 <script src="/static/js/wordcloud/WordCloudAnimator.js"></script>
 <script src="/static/js/wordcloud/WordCloudRenderer.js"></script>
@@ -442,5 +455,61 @@
 
     init();
 })();
+
+// ── 프리셋 ────────────────────────────────────────────────────────────────────
+
+function _prevGetOptions() {
+    return {
+        max_words: parseInt(document.getElementById('max-words').value),
+        animation_mode: (document.querySelector('input[name="anim"]:checked') || {value:'fadeIn'}).value,
+        theme: document.getElementById('sel-theme').value,
+    };
+}
+
+function _prevApplyOptions(options) {
+    if (!options) return;
+    if (options.max_words != null) {
+        document.getElementById('max-words').value = options.max_words;
+        document.getElementById('max-words-val').textContent = options.max_words;
+    }
+    if (options.animation_mode) {
+        const r = document.querySelector(`input[name="anim"][value="${options.animation_mode}"]`);
+        if (r) r.checked = true;
+    }
+    if (options.theme) {
+        document.getElementById('sel-theme').value = options.theme;
+    }
+}
+
+function prevPresetLoad() {
+    const id = document.getElementById('prev-preset-select').value;
+    if (!id) return;
+    const preset = WordCloudPreset.load(id);
+    if (preset) _prevApplyOptions(preset.options);
+}
+
+function prevPresetSave() {
+    const name = prompt('프리셋 이름을 입력하세요:');
+    if (!name || !name.trim()) return;
+    const opts = _prevGetOptions();
+    const existing = WordCloudPreset.list().find(p => p.name === name.trim());
+    const merged = Object.assign({}, existing?.options || {}, opts);
+    WordCloudPreset.save(name.trim(), merged);
+    WordCloudPreset.populateSelect(document.getElementById('prev-preset-select'));
+    document.getElementById('prev-preset-select').value =
+        WordCloudPreset.list().find(p => p.name === name.trim())?.id || '';
+}
+
+function prevPresetDelete() {
+    const id = document.getElementById('prev-preset-select').value;
+    if (!id) return;
+    if (!confirm('이 프리셋을 삭제하시겠습니까?')) return;
+    WordCloudPreset.delete(id);
+    WordCloudPreset.populateSelect(document.getElementById('prev-preset-select'));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    WordCloudPreset.populateSelect(document.getElementById('prev-preset-select'));
+});
 </script>
 {% endblock %}

@@ -275,7 +275,8 @@ class WordCloudGenerator:
     def generate_with_colors_and_options(self, word_freq: Dict[str, float], word_scores: Dict[str, float],
                                        output_path: Optional[str] = None, background_color: str = 'white',
                                        max_words: int = 100, width: int = 800, height: int = 600,
-                                       remove_stopwords: bool = True) -> bool:
+                                       remove_stopwords: bool = True,
+                                       apply_emotion_colors: bool = True) -> bool:
         """test_wordcloud2.py generate_wordcloud_bitmap() 동일 로직 — PIL 비트맵 충돌 감지 + 중앙 나선형 배치"""
         self.logger.info(f"워드클라우드 생성 시작: {len(word_freq)}개 단어, {width}x{height}")
 
@@ -380,9 +381,10 @@ class WordCloudGenerator:
                             (x1 + margin - bbox[0], y1 + margin - bbox[1]),
                             word, font=font, fill=255
                         )
+                        fill_color = get_emotion_color(word) if apply_emotion_colors else (50, 50, 50)
                         draw_color.text(
                             (x1 + margin - bbox[0], y1 + margin - bbox[1]),
-                            word, font=font, fill=get_emotion_color(word)
+                            word, font=font, fill=fill_color
                         )
                         placed += 1
                         placed_this = True

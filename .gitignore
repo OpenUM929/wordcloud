@@ -20,6 +20,9 @@ backup_*/
 temp/
 wordcloud_project/src/temp/
 
+# Deploy session DB
+wordcloud_project/.sessions/
+
 # OS
 .DS_Store
 Thumbs.db

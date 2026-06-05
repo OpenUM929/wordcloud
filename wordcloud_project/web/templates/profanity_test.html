@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}욕설 필터 테스트{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="/static/css/test-common.css">
+{% endblock %}
+
+{% block content %}
+<div class="test-container">
+    <h1>욕설 필터 2계층 탐지 테스트</h1>
+
+    <div class="test-panel">
+        <h3>설정</h3>
+        <div class="checkbox-group">
+            <label><input type="checkbox" id="enableLayer1" checked> 1계층 활성화 (Kiwi 형태소)</label>
+            <label><input type="checkbox" id="enableLayer2" checked> 2계층 활성화 (음절 간격)</label>
+            <label><input type="checkbox" id="showDetails" checked> 상세 정보 표시</label>
+        </div>
+    </div>
+
+    <div class="test-panel">
+        <h3>개별 문장 테스트</h3>
+        <div class="preset-buttons">
+            <button class="preset-btn" onclick="setText('시발점은 업무의 시작점입니다')">정상: 시발점</button>
+            <button class="preset-btn" onclick="setText('씨발점은 업무의 시작점입니다')">1계층: 씨발점</button>
+            <button class="preset-btn" onclick="setText('시. 발! 느낌표')">2계층: 시. 발!</button>
+            <button class="preset-btn" onclick="setText('개!새끼 같은 태도')">2계층: 개!새끼</button>
+            <button class="preset-btn" onclick="setText('업무 능력이 뛰어납니다')">정상 문장</button>
+            <button class="preset-btn" onclick="setText('시스템 발전을 기대합니다')">정상: 시스템</button>
+            <button class="preset-btn" onclick="setText('미개한 사고방식')">정상: 미개</button>
+            <button class="preset-btn" onclick="setText('')">지우기</button>
+        </div>
+        <div class="test-input-area">
+            <textarea id="testText" class="test-textarea" placeholder="테스트할 문장을 입력하세요..."></textarea>
+            <button class="test-btn test-btn-primary" onclick="runSingle()" id="runSingleBtn">테스트 실행</button>
+        </div>
+        <div id="singleResult"></div>
+    </div>
+
+    <div class="test-panel">
+        <h3>12개 예제 일괄 테스트</h3>
+        <button class="test-btn test-btn-success" onclick="runBatch()" id="runBatchBtn">일괄테스트 실행</button>
+        <div id="batchSummary" style="margin-top:15px;"></div>
+        <div id="batchResults"></div>
+    </div>
+
+    <div class="test-panel">
+        <h3>등록된 욕설 단어 목록</h3>
+        <div id="wordList"></div>
+    </div>
+
+    <div class="test-panel">
+        <h3>로그</h3>
+        <div id="logArea" class="test-log-area"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/test-common.js"></script>
+<script>
+const TEST_TYPE = 'profanity';
+
+function setText(t) { document.getElementById('testText').value = t; }
+
+function getParams() {
+    return {
+        enable_layer1: document.getElementById('enableLayer1').checked,
+        enable_layer2: document.getElementById('enableLayer2').checked,
+    };
+}
+
+async function runSingle() {
+    const text = document.getElementById('testText').value.trim();
+    if (!text) { alert('문장을 입력하세요'); return; }
+    const btn = document.getElementById('runSingleBtn');
+    btn.disabled = true; btn.textContent = '분석 중...';
+    TestLogger.clear('logArea');
+    TestLogger.log('logArea', `개별 테스트 시작: "${text.substring(0,50)}..."`);
+
+    try {
+        const d = await TestRunner.run(TEST_TYPE, text, getParams());
+        if (!d.success) {
+            TestLogger.log('logArea', '오류: ' + (d.error||'알 수 없음'), 'error');
+            return;
+        }
+        renderSingle(d);
+        TestLogger.log('logArea', `완료: ${d.processing_time_ms}ms`, 'success');
+    } catch(e) {
+        TestLogger.log('logArea', '오류: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false; btn.textContent = '테스트 실행';
+    }
+}
+
+function renderSingle(data) {
+    const actual = data.actual || {};
+    const show = document.getElementById('showDetails').checked;
+    let h = '<table class="test-table">';
+    h += `<tr><th>원본</th><td>${escapeHtml(actual.original_text || '')}</td></tr>`;
+    h += `<tr><th>필터링 결과</th><td>${escapeHtml(actual.filtered_text || '')}</td></tr>`;
+    h += `<tr><th>탐지 단어</th><td>${(actual.detected_profanity || []).join(', ') || '없음'}</td></tr>`;
+    h += `<tr><th>사용 계층</th><td>${formatMethods(actual.methods_used || [])}</td></tr>`;
+    if (show) {
+        h += `<tr><th>언어 판정</th><td>${actual.language || '-'}</td></tr>`;
+        h += `<tr><th>처리 시간</th><td>${actual.processing_time_ms || 0}ms</td></tr>`;
+        if (actual.detection_details && actual.detection_details.length > 0) {
+            h += `<tr><th>상세 위치</th><td><ul style="margin:0;padding-left:18px;">`;
+            actual.detection_details.forEach(d => {
+                const layerBadge = d.layer === 'morpheme' ? '<span class="badge badge-layer1">1계층</span>' : '<span class="badge badge-layer2">2계층</span>';
+                h += `<li>${d.word} ${layerBadge} (${d.span[0]}-${d.span[1]})</li>`;
+            });
+            h += `</ul></td></tr>`;
+        }
+    }
+    h += '</table>';
+    document.getElementById('singleResult').innerHTML = h;
+}
+
+async function runBatch() {
+    const btn = document.getElementById('runBatchBtn');
+    btn.disabled = true; btn.textContent = '실행 중...';
+    TestLogger.clear('logArea');
+    TestLogger.log('logArea', '배치 테스트 시작...');
+
+    try {
+        const casesData = await TestRunner.loadCases(TEST_TYPE);
+        if (!casesData.success || !casesData.cases || casesData.cases.length === 0) {
+            TestLogger.log('logArea', '등록된 테스트케이스가 없습니다. configs/test_cases/profanity_cases.json을 확인하세요.', 'error');
+            return;
+        }
+        const d = await TestRunner.runBatch(TEST_TYPE, casesData.cases, getParams());
+        if (!d.success) {
+            TestLogger.log('logArea', '오류: ' + (d.error||'알 수 없음'), 'error');
+            return;
+        }
+        TestRenderer.renderSummary('batchSummary', d);
+        renderBatchResults(d.results);
+        TestLogger.log('logArea', `배치 완료: ${d.accuracy}% (${d.passed}/${d.total})`, 'success');
+    } catch(e) {
+        TestLogger.log('logArea', '오류: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false; btn.textContent = '일괄테스트 실행';
+    }
+}
+
+function renderBatchResults(results) {
+    const columns = [
+        { header: 'ID', accessor: r => r.case_id },
+        { header: '입력', accessor: r => r.input, formatter: v => `<span class="text-preview">${escapeHtml(v)}</span>` },
+        { header: '탐지', accessor: r => r.actual.detected, formatter: v => v ? '<span class="badge badge-fail">탐지</span>' : '<span class="badge badge-pass">통과</span>' },
+        { header: '계층', accessor: r => (r.actual.methods_used || []).join(', '), formatter: v => formatMethods(v.split(', ').filter(x=>x)) },
+        { header: '단어', accessor: r => (r.actual.detected_profanity || []).join(', ') },
+        { header: '결과', accessor: r => r.match, formatter: v => v ? '<span class="badge badge-pass">PASS</span>' : '<span class="badge badge-fail">FAIL</span>' },
+        { header: '시간', accessor: r => r.processing_time_ms + 'ms' },
+    ];
+    TestRenderer.renderTable('batchResults', results, columns);
+}
+
+function formatMethods(methods) {
+    if (!methods || methods.length === 0) return '없음';
+    return methods.map(m => {
+        if (m === 'kiwi_morpheme') return '<span class="badge badge-layer1">1계층(형태소)</span>';
+        if (m === 'gap_pattern') return '<span class="badge badge-layer2">2계층(간격)</span>';
+        if (m === 'profanity_check') return '<span class="badge badge-layer2">영어(profanity-check)</span>';
+        return m;
+    }).join(' ');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 페이지 로드 시 단어 목록 로드
+(async function init() {
+    try {
+        const pf = await fetch('/api/test/cases/profanity');
+        const data = await pf.json();
+        if (data.success && data.cases && data.cases.length > 0) {
+            let h = `<table class="word-list-table"><thead><tr><th>ID</th><th>카테고리</th><th>입력</th><th>기대값</th><th>설명</th></tr></thead><tbody>`;
+            data.cases.forEach(c => {
+                h += `<tr><td>${c.id}</td><td>${c.category}</td><td>${escapeHtml(c.input)}</td><td>${JSON.stringify(c.expected)}</td><td>${c.description||''}</td></tr>`;
+            });
+            h += '</tbody></table>';
+            document.getElementById('wordList').innerHTML = h;
+        } else {
+            document.getElementById('wordList').innerHTML = '<p style="color:#666">등록된 테스트케이스가 없습니다.</p>';
+        }
+    } catch(e) {
+        document.getElementById('wordList').innerHTML = '<p style="color:#dc3545">목록 로드 실패: ' + e.message + '</p>';
+    }
+})();
+</script>
+{% endblock %}

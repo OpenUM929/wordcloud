@@ -349,6 +349,16 @@
         .pseudo-toggle:hover {
             color: #007bff;
         }
+        #globalAuthOverlay {
+            position: fixed; inset: 0; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+        }
+        #globalAuthOverlay.hidden { display: none; }
+        #globalAuthBox {
+            background: white; border-radius: 12px; padding: 36px 40px; width: 360px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25); text-align: center;
+        }
     </style>
     <link rel="stylesheet" href="/static/css/nav.css">
     {% block extra_head %}{% endblock %}
@@ -356,18 +366,40 @@
 <body>
     <nav>
         <a href="/metadata_batch">메타데이터 생성 (배치)</a>
+        <a href="/perspective_test">📊 그룹분석</a>
+        <a href="/deploy-gallery">📁 저장 갤러리</a>
         <a href="/settings">설정</a>
         <span class="sep">│ 수동 조작</span>
         <a href="/">입력</a>
         <a href="/sarcasm">반어법 분석</a>
         <a href="/wordcloud">워드클라우드</a>
-        <a href="/perspective_test">그룹분석(Test)</a>
         <a href="/wordcloud-preview">애니메이션 WC</a>
         <a href="/stopwords">불용어 관리</a>
+        <div class="dropdown">
+            <span class="dropbtn">테스트</span>
+            <div class="dropdown-content">
+                <a href="/sentiment-test">감정테스트</a>
+                <a href="/profanity-test">욕설필터</a>
+            </div>
+        </div>
         <span class="sep">│</span>
         <a href="/admin/batch-management">배치 관리</a>
         <a href="/admin/login" style="color: #6c757d;">🔐 관리자</a>
+        <span id="globalAuthBadge" style="display:none;background:#28a745;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:4px;">인증됨</span>
     </nav>
+    <div id="globalAuthOverlay" {% if _is_admin_session %}class="hidden"{% endif %}>
+        <div id="globalAuthBox">
+            <h3 style="margin-bottom:16px;">관리자 인증 필요</h3>
+            <p style="font-size:13px;color:#666;margin-bottom:20px;">관리자 비밀번호를 입력하세요.</p>
+            <input type="password" id="globalAuthPwInput" placeholder="비밀번호 입력"
+                   style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
+            <button onclick="globalAuthLogin()"
+                    style="width:100%;padding:10px;background:#007bff;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer;">
+                인증
+            </button>
+            <div id="globalAuthError" style="margin-top:8px;font-size:12px;color:#dc3545;min-height:16px;"></div>
+        </div>
+    </div>
     <div class="container">
     {% block content %}{% endblock %}
     </div>
@@ -378,6 +410,72 @@
     <!-- jQuery for older Bootstrap compatibility (optional but recommended) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
+    <script>
+    (function() {
+        async function checkGlobalAuth() {
+            try {
+                const r = await fetch('/admin/api/check', {credentials: 'include'});
+                const d = await r.json();
+                if (!d.admin_logged_in) showGlobalAuthModal();
+                else updateAuthBadge(true);
+            } catch(e) {}
+        }
+        function showGlobalAuthModal() {
+            document.getElementById('globalAuthOverlay').classList.remove('hidden');
+            setTimeout(function() {
+                var inp = document.getElementById('globalAuthPwInput');
+                if (inp) inp.focus();
+            }, 50);
+        }
+        function hideGlobalAuthModal() {
+            document.getElementById('globalAuthOverlay').classList.add('hidden');
+        }
+        function updateAuthBadge(ok) {
+            var badge = document.getElementById('globalAuthBadge');
+            if (badge) badge.style.display = ok ? '' : 'none';
+        }
+        window.globalAuthLogin = async function() {
+            var pw = document.getElementById('globalAuthPwInput').value;
+            var err = document.getElementById('globalAuthError');
+            if (!pw) { err.textContent = '비밀번호를 입력하세요.'; return; }
+            try {
+                var r = await fetch('/admin/login', {
+                    method: 'POST', credentials: 'include',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({password: pw})
+                });
+                var d = await r.json();
+                if (d.success) { hideGlobalAuthModal(); updateAuthBadge(true); location.reload(); }
+                else err.textContent = '❌ ' + (d.error || '인증 실패');
+            } catch(e) { err.textContent = '오류가 발생했습니다.'; }
+        };
+        var _origFetch = window.fetch;
+        window.fetch = function() {
+            return _origFetch.apply(this, arguments).then(function(res) {
+                if (res.status === 401) { showGlobalAuthModal(); }
+                return res;
+            });
+        };
+        document.addEventListener('DOMContentLoaded', function() {
+            var inp = document.getElementById('globalAuthPwInput');
+            if (inp) {
+                inp.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') window.globalAuthLogin();
+                });
+            }
+            // 서버사이드에서 초기 인증 상태를 결정하므로 AJAX 체크 불필요.
+            // 모달이 이미 표시 중(미인증)이면 입력 필드에 포커스.
+            var overlay = document.getElementById('globalAuthOverlay');
+            if (overlay && !overlay.classList.contains('hidden')) {
+                setTimeout(function() {
+                    if (inp) inp.focus();
+                }, 50);
+            } else {
+                updateAuthBadge(true);
+            }
+        });
+    })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

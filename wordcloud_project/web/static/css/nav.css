@@ -41,3 +41,63 @@ nav .sep {
     display: block;
     font-family: Arial, sans-serif;
 }
+
+/* ── 드롭다운 (테스트 메뉴) ─────────────────────────────── */
+nav .dropdown {
+    position: relative;
+    display: block;
+}
+nav .dropbtn {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    text-decoration: none;
+    color: #495057;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    transition: all 0.2s;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    text-align: left;
+    box-sizing: border-box;
+}
+nav .dropbtn::after {
+    content: ' ▼';
+    font-size: 10px;
+    color: #adb5bd;
+    float: right;
+}
+nav .dropdown:hover .dropbtn {
+    background: #007bff;
+    color: white;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+}
+nav .dropdown:hover .dropbtn::after {
+    color: #fff;
+}
+nav .dropdown-content {
+    display: none;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 0 4px 12px;
+    margin-top: 2px;
+}
+nav .dropdown:hover .dropdown-content {
+    display: flex;
+}
+nav .dropdown-content a {
+    display: block;
+    padding: 6px 10px;
+    font-size: 12px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    color: #495057;
+}
+nav .dropdown-content a:hover {
+    background: #e9ecef;
+    color: #007bff;
+    box-shadow: none;
+}

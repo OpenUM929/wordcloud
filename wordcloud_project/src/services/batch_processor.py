@@ -1,9 +1,8 @@
-"""Batch processor module - handles batch metadata processing and wordcloud generation."""
+"""Batch processor module - handles batch metadata processing."""
 
 import os
 import json
 from datetime import datetime
-from src.modules.wordcloud_generator import WordCloudGenerator
 
 
 # 체크포인트 관련 상수
@@ -217,74 +216,6 @@ def check_profanity_in_metadata(metadata, batch_state):
     
     return profanities
 
-
-def generate_employee_wordcloud(metadata, metadata_manager, generator, batch_dir, 
-                                wordcloud_config):
-    """
-    Generate wordcloud for an employee.
-    
-    Args:
-        metadata: Employee metadata
-        metadata_manager: MetadataManager instance
-        generator: WordCloudGenerator instance
-        batch_dir: Batch directory path
-        wordcloud_config: Wordcloud generation config dict
-        
-    Returns:
-        str or None: Wordcloud path if successful
-    """
-    try:
-        employee_id = metadata.get('target_employee_id')
-        word_dir = os.path.join(batch_dir, "word")
-        combined_dir = os.path.join(word_dir, "combined")
-        os.makedirs(combined_dir, exist_ok=True)
-        wordcloud_path = os.path.join(combined_dir, f"wordcloud_{employee_id}.png")
-        
-        word_freq = metadata.get('consolidated_analysis', {}).get('word_frequency', {})
-        
-        # Remove profanity if configured
-        if wordcloud_config.get('remove_profanity', False):
-            profanity_words = set()
-            if 'consolidated_analysis' in metadata and 'profanity_consolidated' in metadata['consolidated_analysis']:
-                profanity_words.update([
-                    word.replace('legacy:', '') 
-                    for word in metadata['consolidated_analysis']['profanity_consolidated'].get('profanity_words', [])
-                ])
-            word_freq = {w: f for w, f in word_freq.items() if w not in profanity_words}
-        
-        # Calculate word scores for emotion-based colors
-        word_scores = {}
-        if wordcloud_config.get('apply_emotion_colors', True) and word_freq:
-            word_scores = calculate_word_scores(metadata, word_freq)
-        
-        # Generate wordcloud
-        if wordcloud_config.get('apply_emotion_colors', True):
-            generator.generate_with_colors_and_options(
-                word_freq, word_scores, wordcloud_path,
-                background_color=wordcloud_config.get('background_color', 'white'),
-                max_words=wordcloud_config.get('max_words', 100),
-                width=wordcloud_config.get('width', 800),
-                height=wordcloud_config.get('height', 600)
-            )
-        else:
-            combined_text = ' '.join([str(word) * max(1, int(freq)) for word, freq in word_freq.items()])
-            generator.generate_wordcloud_with_options(
-                combined_text, wordcloud_path,
-                background_color=wordcloud_config.get('background_color', 'white'),
-                max_words=wordcloud_config.get('max_words', 100),
-                width=wordcloud_config.get('width', 800),
-                height=wordcloud_config.get('height', 600)
-            )
-        
-        # Update metadata with wordcloud path
-        metadata['wordcloud_path'] = f"word/combined/wordcloud_{employee_id}.png"
-        metadata_manager.update_employee_metadata(employee_id, metadata, batch_dir)
-        
-        return wordcloud_path
-        
-    except Exception as e:
-        print(f"Error generating wordcloud: {str(e)}")
-        return None
 
 
 def calculate_word_scores(metadata, word_freq):
@@ -775,149 +706,13 @@ def process_batch(processed_data_dir, data, session_data):
     
     batch_processing_state['status_message'] = f'Stage 5 완료: tmeta 저장 ({len(successful_results)}개)'
     batch_processing_state['current_step'] = 5
-    
-    # ============================================================
-    # Stage 6: 병렬 워드클라우드 생성
-    # ============================================================
-    if data.get('enableWordcloud', True):
-        batch_processing_state['status_message'] = f'Stage 6: 워드클라우드 병렬 생성 시작 ({len(successful_results)}개)...'
-        batch_processing_state['current_step'] = 5
-        
-        wordcloud_config = {
-            'background_color': data.get('background_color', 'white'),
-            'apply_emotion_colors': data.get('apply_emotion_colors', True),
-            'remove_profanity': data.get('remove_profanity', False),
-            'max_words': data.get('max_words', 100),
-            'width': data.get('width', 800),
-            'height': data.get('height', 600),
-            'wordcloud_sentiment_mode': data.get('wordcloud_sentiment_mode', 'combined')
-        }
-        
-        def _filter_word_freq_by_sentiment(word_freq, word_scores, sentiment):
-            """word_scores 기준으로 특정 감정의 단어만 필터링"""
-            if sentiment == 'positive':
-                return {w: f for w, f in word_freq.items() if word_scores.get(w, 0) > 0}
-            elif sentiment == 'negative':
-                return {w: f for w, f in word_freq.items() if word_scores.get(w, 0) < 0}
-            return word_freq
+    batch_processing_state['total_employees'] = len(grouped_data)
+    batch_processing_state['processed_employees'] = len(employee_results)
+    batch_processing_state['success_count'] = sum(1 for r in employee_results if r['success'])
+    batch_processing_state['error_count'] = sum(1 for r in employee_results if not r['success'])
+    batch_processing_state['total_rows'] = len(df)
 
-        def _filter_word_scores_by_sentiment(word_scores, sentiment):
-            """word_scores 기준으로 특정 감정의 점수만 필터링"""
-            if sentiment == 'positive':
-                return {w: s for w, s in word_scores.items() if s > 0}
-            elif sentiment == 'negative':
-                return {w: s for w, s in word_scores.items() if s < 0}
-            return word_scores
-
-        def _generate_single_wordcloud(generator, word_freq, word_scores, output_path, wc_config):
-            """워드클라우드 단일 파일 생성"""
-            if wc_config.get('apply_emotion_colors', True) and word_scores:
-                generator.generate_with_colors_and_options(
-                    word_freq, word_scores, output_path,
-                    background_color=wc_config.get('background_color', 'white'),
-                    max_words=wc_config.get('max_words', 100),
-                    width=wc_config.get('width', 800),
-                    height=wc_config.get('height', 600)
-                )
-            else:
-                combined_text = ' '.join([str(word) * max(1, int(freq)) for word, freq in word_freq.items()])
-                generator.generate_wordcloud_with_options(
-                    combined_text, output_path,
-                    background_color=wc_config.get('background_color', 'white'),
-                    max_words=wc_config.get('max_words', 100),
-                    width=wc_config.get('width', 800),
-                    height=wc_config.get('height', 600)
-                )
-
-        def generate_wordcloud_single(args):
-            """워드클라우드 단일 생성 (병렬용) - 각 worker가 자체 generator 사용"""
-            result = args
-            try:
-                metadata = result.get('metadata')
-                if metadata:
-                    employee_id = metadata.get('target_employee_id')
-                    word_dir = os.path.join(batch_dir, "word")
-                    
-                    word_freq = metadata.get('consolidated_analysis', {}).get('word_frequency', {})
-                    generator = WordCloudGenerator()
-                    sentiment_mode = wordcloud_config.get('wordcloud_sentiment_mode', 'combined')
-                    
-                    word_scores = {}
-                    if wordcloud_config.get('apply_emotion_colors', True):
-                        word_scores = calculate_word_scores(metadata, word_freq)
-
-                    combined_dir = os.path.join(word_dir, "combined")
-                    positive_dir = os.path.join(word_dir, "positive")
-                    negative_dir = os.path.join(word_dir, "negative")
-                    
-                    if sentiment_mode == 'combined':
-                        os.makedirs(combined_dir, exist_ok=True)
-                        wc_path = os.path.join(combined_dir, f"wordcloud_{employee_id}.png")
-                        _generate_single_wordcloud(generator, word_freq, word_scores, wc_path, wordcloud_config)
-                        metadata['wordcloud_path'] = f"word/combined/wordcloud_{employee_id}.png"
-                    
-                    elif sentiment_mode == 'separate':
-                        pos_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'positive')
-                        neg_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'negative')
-                        pos_scores = _filter_word_scores_by_sentiment(word_scores, 'positive')
-                        neg_scores = _filter_word_scores_by_sentiment(word_scores, 'negative')
-                        
-                        if pos_freq:
-                            os.makedirs(positive_dir, exist_ok=True)
-                            pos_path = os.path.join(positive_dir, f"wordcloud_{employee_id}.png")
-                            _generate_single_wordcloud(generator, pos_freq, pos_scores, pos_path, wordcloud_config)
-                        if neg_freq:
-                            os.makedirs(negative_dir, exist_ok=True)
-                            neg_path = os.path.join(negative_dir, f"wordcloud_{employee_id}.png")
-                            _generate_single_wordcloud(generator, neg_freq, neg_scores, neg_path, wordcloud_config)
-                        
-                        metadata['wordcloud_path'] = f"word/positive/wordcloud_{employee_id}.png"
-                        metadata['wordcloud_path_positive'] = f"word/positive/wordcloud_{employee_id}.png"
-                        metadata['wordcloud_path_negative'] = f"word/negative/wordcloud_{employee_id}.png"
-                    
-                    else:  # 'both'
-                        os.makedirs(combined_dir, exist_ok=True)
-                        wc_path = os.path.join(combined_dir, f"wordcloud_{employee_id}.png")
-                        _generate_single_wordcloud(generator, word_freq, word_scores, wc_path, wordcloud_config)
-                        metadata['wordcloud_path'] = f"word/combined/wordcloud_{employee_id}.png"
-                        
-                        pos_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'positive')
-                        neg_freq = _filter_word_freq_by_sentiment(word_freq, word_scores, 'negative')
-                        pos_scores = _filter_word_scores_by_sentiment(word_scores, 'positive')
-                        neg_scores = _filter_word_scores_by_sentiment(word_scores, 'negative')
-                        
-                        if pos_freq:
-                            os.makedirs(positive_dir, exist_ok=True)
-                            pos_path = os.path.join(positive_dir, f"wordcloud_{employee_id}.png")
-                            _generate_single_wordcloud(generator, pos_freq, pos_scores, pos_path, wordcloud_config)
-                        if neg_freq:
-                            os.makedirs(negative_dir, exist_ok=True)
-                            neg_path = os.path.join(negative_dir, f"wordcloud_{employee_id}.png")
-                            _generate_single_wordcloud(generator, neg_freq, neg_scores, neg_path, wordcloud_config)
-                        
-                        metadata['wordcloud_path_positive'] = f"word/positive/wordcloud_{employee_id}.png"
-                        metadata['wordcloud_path_negative'] = f"word/negative/wordcloud_{employee_id}.png"
-                    
-                    metadata_manager.update_employee_metadata(employee_id, metadata, batch_dir)
-                    return {'success': True, 'employee_id': employee_id}
-                return {'success': False}
-            except Exception as e:
-                return {'success': False, 'error': str(e)}
-        
-        with ThreadPoolExecutor(max_workers=num_workers) as executor:
-            wordcloud_results = list(executor.map(generate_wordcloud_single, successful_results))
-        
-        batch_processing_state['status_message'] = f'Stage 6 완료: 워드클라우드 생성 ({len(successful_results)}개)'
-        batch_processing_state['current_step'] = 6
-        
-        batch_processing_state['total_employees'] = len(grouped_data)
-        batch_processing_state['processed_employees'] = len(employee_results)
-        batch_processing_state['success_count'] = sum(1 for r in employee_results if r['success'])
-        batch_processing_state['error_count'] = sum(1 for r in employee_results if not r['success'])
-        batch_processing_state['total_rows'] = len(df)
-        batch_processing_state['current_step'] = 6
-    
-    # completed 플래그는 enableWordcloud 여부와 무관하게 항상 설정 (SSE 무한루프 방지)
+    # completed 플래그 설정 (SSE 무한루프 방지)
     batch_processing_state['completed'] = True
     
     # Upsert each successful employee to user_data_manager (users/*.json)

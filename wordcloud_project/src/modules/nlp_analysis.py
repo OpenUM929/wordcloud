@@ -9,6 +9,26 @@ from kiwipiepy import Kiwi
 from konlpy.tag import Okt
 from utils.logger import setup_logger, get_log_file_path, get_timestamp
 
+# wordcloud_pos 레이블 → Kiwi 품사 태그 매핑 (NNB 의존명사 제외)
+_KIWI_POS_MAP = {
+    'Noun':      ['NNG', 'NNP', 'SL'],   # SL: 영어/외래어
+    'Verb':      ['VV'],
+    'Adjective': ['VA'],
+}
+
+# Kiwi 태그 → wordcloud_pos 레이블 역매핑 (저장 시 기존 형식 유지)
+_KIWI_TAG_TO_POS = {
+    'NNG': 'Noun',
+    'NNP': 'Noun',
+    'SL':  'Noun',   # 영어/외래어 → Noun으로 분류
+    'VV':  'Verb',
+    'VA':  'Adjective',
+}
+
+# meaningful_words_with_pos 저장 시 항상 추출할 전체 품사 목록
+_ALL_KIWI_POS_LABELS = ['Noun', 'Verb', 'Adjective']
+_ALL_OKT_POS_LABELS  = ['Noun', 'Verb', 'Adjective']
+
 class NLPAnalysis:
     """자연어 형태소 분석 모듈"""
 
@@ -96,45 +116,44 @@ class NLPAnalysis:
                 self.logger.error(f"{log_prefix}Kiwi 분석 실패: {e}")
                 results["analysis"]["kiwi_tokens"] = {"error": str(e)}
 
-        # Okt 분석
+        # Okt 분석 (형태소 태깅 결과 보존)
+        okt_pos = None
         if self.okt:
             try:
-                # 형태소 분석 및 품사 태깅
                 okt_pos = self.okt.pos(text)
-
-                # wordcloud_pos 설정에 따라 의미 있는 단어 추출
-                wordcloud_pos = self.config.get('wordcloud_pos', ['Noun', 'Verb', 'Adjective'])
-                meaningful_words = []
-                from src.modules.stopword_manager import get_stopword_manager
-                manager = get_stopword_manager()
-                for word, pos in okt_pos:
-                    # 설정된 품사만 추출
-                    if pos in wordcloud_pos and len(word) > 1:
-                        # 불용어 제거
-                        if not manager.is_stopword(word):
-                            meaningful_words.append((word, pos))
-                    elif len(word) == 1:
-                        # 한 글자 단어는 불용어로 간주 (설정된 리스트 외에도)
-                        if not manager.is_stopword(word):
-                            meaningful_words.append((word, pos))
-
-                # 문장 경계 추출
-                sentence_boundaries = self._extract_sentence_boundaries(text)
-
-                # meaningful_words에서 품사 태그 제거 (단어만 반환)
-                words_only = [word for word, pos in meaningful_words]
-                results["analysis"]["okt_morphemes"] = okt_pos  # 전체 형태소 (품사 포함)
-                results["analysis"]["meaningful_words"] = words_only  # 의미 있는 단어만 (품사 제거)
-                # 품사 정보가 필요한 경우 별도로 저장
-                results["analysis"]["meaningful_words_with_pos"] = meaningful_words
-                results["analysis"]["sentence_boundaries"] = sentence_boundaries
-
-                self.logger.info(f"{log_prefix}Okt 분석 완료: {len(meaningful_words)}개 의미 단어 추출 (품사: {wordcloud_pos})")
+                results["analysis"]["okt_morphemes"] = okt_pos
+                self.logger.info(f"{log_prefix}Okt 분석 완료")
             except Exception as e:
                 self.logger.error(f"{log_prefix}Okt 분석 실패: {e}")
                 results["analysis"]["okt_morphemes"] = {"error": str(e)}
-                results["analysis"]["meaningful_words"] = {"error": str(e)}
-                results["analysis"]["sentence_boundaries"] = {"error": str(e)}
+
+        # 의미 단어 추출 (Kiwi 우선 → NNB 의존명사 제외, fallback Okt)
+        # meaningful_words_with_pos: 모든 품사 저장 (재생성 시 품사 옵션 변경 가능하도록)
+        # meaningful_words: wordcloud_pos 필터 적용 (word_frequency 계산용)
+        wordcloud_pos = self.config.get('wordcloud_pos', ['Noun', 'Verb', 'Adjective'])
+        from src.modules.stopword_manager import get_stopword_manager
+        manager = get_stopword_manager()
+        try:
+            if self.kiwi:
+                all_with_pos = self._extract_meaningful_words_kiwi(text, _ALL_KIWI_POS_LABELS, manager)
+                filtered_words = [w for w, pos in all_with_pos if pos in wordcloud_pos]
+            elif okt_pos is not None:
+                all_with_pos = self._extract_meaningful_words_okt(okt_pos, _ALL_OKT_POS_LABELS, manager)
+                filtered_words = [w for w, pos in all_with_pos if pos in wordcloud_pos]
+            else:
+                all_with_pos = []
+                filtered_words = []
+
+            sentence_boundaries = self._extract_sentence_boundaries(text)
+            results["analysis"]["meaningful_words"] = filtered_words
+            results["analysis"]["meaningful_words_with_pos"] = all_with_pos
+            results["analysis"]["sentence_boundaries"] = sentence_boundaries
+            self.logger.info(f"{log_prefix}의미 단어 추출 완료: 전체 {len(all_with_pos)}개, 필터 {len(filtered_words)}개 (품사: {wordcloud_pos})")
+        except Exception as e:
+            self.logger.error(f"{log_prefix}의미 단어 추출 실패: {e}")
+            results["analysis"]["meaningful_words"] = {"error": str(e)}
+            results["analysis"]["meaningful_words_with_pos"] = {"error": str(e)}
+            results["analysis"]["sentence_boundaries"] = {"error": str(e)}
 
         # 결과 저장
         if output_path and self.config["output"]["save_results"]:
@@ -146,6 +165,41 @@ class NLPAnalysis:
         self.logger.info(f"{log_prefix}텍스트 분석 완료")
         results["config"] = self.config
         return results
+
+    def _extract_meaningful_words_kiwi(self, text: str, pos_labels: list, manager) -> list:
+        """Kiwi 기반 의미 단어 추출 — NNB(의존명사) 제외.
+
+        pos_labels: 추출할 품사 레이블 목록 ('Noun', 'Verb', 'Adjective')
+        kiwipiepy 버전에 따라 token.tag가 str 또는 IntEnum일 수 있어 양쪽 처리.
+        """
+        allowed_tags = set()
+        for label in pos_labels:
+            allowed_tags.update(_KIWI_POS_MAP.get(label, []))
+
+        try:
+            tokens = self.kiwi.tokenize(text)
+        except Exception as e:
+            self.logger.warning(f"Kiwi tokenize 실패, 빈 목록 반환: {e}")
+            return []
+
+        result = []
+        for token in tokens:
+            tag = token.tag
+            # kiwipiepy 버전에 따라 tag가 str이거나 IntEnum
+            tag_str = tag if isinstance(tag, str) else (tag.name if hasattr(tag, 'name') else str(tag).split('.')[-1])
+            word = token.form
+            pos_label = _KIWI_TAG_TO_POS.get(tag_str)
+            if pos_label and pos_label in pos_labels and len(word) > 1 and not manager.is_stopword(word):
+                result.append((word, pos_label))
+        return result
+
+    def _extract_meaningful_words_okt(self, okt_pos: list, pos_labels: list, manager) -> list:
+        """Okt 기반 의미 단어 추출 (Kiwi 미사용 시 fallback)."""
+        result = []
+        for word, pos in okt_pos:
+            if pos in pos_labels and len(word) > 1 and not manager.is_stopword(word):
+                result.append((word, pos))
+        return result
 
     def analyze_word_pos(self, word: str) -> str:
         """
