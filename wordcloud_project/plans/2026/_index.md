@@ -1,0 +1,15 @@
+# 2026 계획서 인덱스
+
+| 계획서 | 작업 요약 | 상태 | 작성일 |
+|--------|-----------|------|--------|
+| 0421_01_batch-scalability-plan | 배치 처리 대용량 최적화 | PND | 2026-04-21 |
+| 0602_01_profanity-eng-fix | 불용어 영문 처리 개선 | PND | 2026-06-02 |
+| 0604_01_deploy-gallery-v2 | 갤러리 v2 배포 | DN | 2026-06-04 |
+| 0604_01_deploy-image-gallery | 이미지 갤러리 배포 | DN | 2026-06-04 |
+| 0604_01_deploy-resume | 세션 저장 및 재개 | DN | 2026-06-04 |
+| 0604_01_profanity-display-fix | 불용어 표시 오류 수정 | PND | 2026-06-04 |
+| 0605_01_global-auth-real | 전역 인증 체계 도입 | DN | 2026-06-05 |
+| 0605_01_restore-deploy-preview | 배포 결과 미리보기 복원 | PND | 2026-06-05 |
+| 0605_02_deploy-ux-enhance | 저장 완료 후 UX 개선 | DN | 2026-06-05 |
+| 0605_03_deploy-retry-cascade | 실패 태스크 재시도 | DN | 2026-06-05 |
+| 0605_04_gallery-detail-load | 갤러리 상세 로드 | PND | 2026-06-05 |
