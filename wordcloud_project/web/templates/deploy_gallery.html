@@ -151,7 +151,7 @@
         justify-content: center;
         align-items: center;
         z-index: 1000;
-        padding: 20px;
+        padding: 48px 40px;
     }
     .modal-overlay.open {
         display: flex;
@@ -171,7 +171,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 18px 32px;
+        padding: 20px 40px !important;
         border-bottom: 1px solid #e9ecef;
     }
     .modal-header h3 {
@@ -190,16 +190,16 @@
         color: #333;
     }
     .modal-body {
-        padding: 24px 32px;
+        padding: 32px 40px !important;
         overflow-y: auto;
         flex: 1;
         min-height: 0;
     }
     .modal-images {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 14px;
-        margin-bottom: 4px;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 16px;
     }
     .modal-image-wrap {
         text-align: center;
@@ -213,25 +213,26 @@
         display: block;
     }
     .modal-image-wrap .img-label {
-        font-size: 24px;
+        font-size: 13px;
         color: #495057;
         font-weight: 700;
-        margin-top: 8px;
+        margin-top: 6px;
     }
     .img-download-btn {
         position: absolute;
         top: 6px; right: 6px;
         opacity: 0;
         transition: opacity 0.15s;
-        background: rgba(0,0,0,0.55);
-        color: white !important;
+        background: none;
+        color: rgba(255,255,255,0.85) !important;
         border: none;
-        border-radius: 4px;
-        padding: 4px 8px;
+        padding: 0;
         font-size: 11px;
+        font-weight: 600;
         cursor: pointer;
         text-decoration: none !important;
-        line-height: 1.4;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+        line-height: 1;
     }
     .modal-image-wrap:hover .img-download-btn { opacity: 1; }
 
@@ -322,7 +323,7 @@
         display: flex;
         gap: 0;
         border-bottom: 2px solid #e9ecef;
-        padding: 0 32px;
+        padding: 0 40px;
         background: #fff;
         flex-shrink: 0;
     }
@@ -407,6 +408,187 @@
     .modal-details > summary::before { content: '▶'; font-size: 10px; }
     .modal-details[open] > summary::before { content: '▼'; }
     .modal-details[open] > summary { color: #495057; }
+
+    /* ── 날짜 칩 필터 ── */
+    #dateChipsContainer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    #dateChipsContainer .chip { font-size: 12px; }
+
+    /* ── 삭제 모드 카드 ── */
+    .card-checkbox-wrap {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 2;
+        display: none;
+    }
+    .delete-mode .card-checkbox-wrap { display: block; }
+    .card-checkbox-wrap input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #dc3545;
+    }
+    .gallery-card.delete-mode:hover { transform: none; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .gallery-card.delete-mode { cursor: default; }
+    .gallery-card.selected { outline: 2px solid #dc3545; outline-offset: -2px; }
+
+    /* ── 날짜 그룹 헤더 ── */
+    .date-group-header {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 4px 4px;
+        border-bottom: 2px solid #dee2e6;
+        margin-top: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #495057;
+    }
+    .date-group-header:first-child { margin-top: 0; }
+    .date-group-select-all {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #dc3545;
+        display: none;
+    }
+    .delete-mode-active .date-group-select-all { display: inline-block; }
+
+    /* ── 삭제 하단 바 ── */
+    #deleteBottomBar {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #343a40;
+        color: white;
+        padding: 12px 24px;
+        z-index: 500;
+        align-items: center;
+        gap: 16px;
+        justify-content: flex-end;
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
+    }
+    #deleteBottomBar.visible { display: flex; }
+    #deleteSelectedCount { font-size: 14px; flex: 1; }
+
+    /* ── 삭제 확인 다이얼로그 ── */
+    #deleteConfirmDialog {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        z-index: 1100;
+        justify-content: center;
+        align-items: center;
+    }
+    #deleteConfirmDialog.open { display: flex; }
+    .confirm-box {
+        background: white;
+        border-radius: 8px;
+        padding: 24px 28px;
+        min-width: 320px;
+        max-width: 90vw;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .confirm-box h4 { margin: 0 0 12px; font-size: 16px; }
+    .confirm-box p  { font-size: 14px; color: #6c757d; margin: 0 0 20px; }
+    .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ── 삭제 모드 패널 ── */
+    #deleteModePanel {
+        display: none;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 20px;
+        padding: 10px 16px;
+        background: #fff8f8;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+    #deleteModePanel.visible { display: flex; }
+    .delete-filter-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+    .delete-filter-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #6c757d;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .delete-chip-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .delete-chip {
+        padding: 3px 12px;
+        font-size: 12px;
+        border-radius: 20px;
+        border: 1px solid #adb5bd;
+        background: white;
+        color: #495057;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        white-space: nowrap;
+    }
+    .delete-chip:hover { border-color: #dc3545; color: #dc3545; }
+    .delete-chip--active { background: #dc3545; color: white; border-color: #dc3545; }
+    .delete-select-row {
+        flex-basis: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #f5c6cb;
+        margin-top: 2px;
+    }
+    .select-all-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+        color: #495057;
+        flex-shrink: 0;
+    }
+    .select-all-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: #dc3545;
+        cursor: pointer;
+    }
+    #deleteSelectedCount { font-size: 13px; color: #495057; flex: 1; }
+
+    /* 날짜 그룹 헤더 — 삭제 모드 시 클릭 가능 */
+    .delete-mode-active .date-group-header { cursor: pointer; }
+    .delete-mode-active .date-group-header:hover { background: #f8d7da; border-radius: 4px; }
+
+    /* ── 확인 다이얼로그 구조화 ── */
+    #deleteConfirmMsg { margin: 0 0 20px; }
+    .confirm-total { font-size: 15px; font-weight: 700; color: #212529; margin: 0 0 8px; }
+    .confirm-breakdown {
+        list-style: none;
+        padding: 0 0 0 12px;
+        margin: 0 0 6px;
+        font-size: 13px;
+        color: #495057;
+    }
+    .confirm-breakdown li::before { content: '· '; }
+    .confirm-date-label { font-size: 12px; color: #6c757d; margin: 6px 0 2px; font-weight: 600; }
+    .confirm-warning { font-size: 12px; color: #dc3545; margin: 10px 0 0; }
 </style>
 {% endblock %}
 
@@ -422,12 +604,20 @@
         <input type="text" id="filterEmployeeId" placeholder="예: EMP001">
     </div>
     <div class="filter-group">
-        <label>시작일</label>
-        <input type="text" id="filterDateFrom" placeholder="YYYYMMDD">
+        <label>배치 명칭</label>
+        <input type="text" id="filterBatchTitle" placeholder="배치 명칭 검색">
     </div>
-    <div class="filter-group">
-        <label>종료일</label>
-        <input type="text" id="filterDateTo" placeholder="YYYYMMDD">
+    <div class="filter-group" style="flex:1;min-width:200px;">
+        <label>날짜</label>
+        <div id="dateChipsContainer">
+            <span style="color:#adb5bd;font-size:12px;">날짜 로드 중...</span>
+        </div>
+    </div>
+    <div class="filter-group" style="flex:1;min-width:200px;">
+        <label>배치 명칭</label>
+        <div id="batchTitleChipsContainer">
+            <span style="color:#adb5bd;font-size:12px;">배치 명칭 로드 중...</span>
+        </div>
     </div>
     <div class="filter-group">
         <label>출력 모드</label>
@@ -443,7 +633,42 @@
             </label>
         </div>
     </div>
-    <button class="btn btn-primary" onclick="loadGallery(1)" style="padding:6px 18px;font-size:13px;">검색</button>
+    <div style="display:flex;gap:8px;align-items:flex-end;">
+        <button class="btn btn-primary" onclick="loadGallery(1)" style="padding:6px 18px;font-size:13px;">검색</button>
+        <button class="btn btn-secondary" id="deleteModeBtn" onclick="toggleDeleteMode()" style="padding:6px 14px;font-size:13px;">삭제 모드</button>
+    </div>
+</div>
+
+<!-- 삭제 모드 패널 -->
+<div id="deleteModePanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;color:#666;">필터 조건</span>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="toggleAdvancedDeleteFilter()">고급 필터</button>
+    </div>
+    <div class="delete-filter-row">
+        <span class="delete-filter-label">소스</span>
+        <div id="deleteSourceChips" class="delete-chip-group"></div>
+    </div>
+    <div class="delete-filter-row">
+        <span class="delete-filter-label">배치 명칭</span>
+        <div id="deleteBatchTitleChips" class="delete-chip-group"></div>
+    </div>
+    <div class="delete-filter-row" id="deleteYearRow" style="display:none;">
+        <span class="delete-filter-label">연도</span>
+        <div id="deleteYearChips" class="delete-chip-group"></div>
+    </div>
+    <div class="delete-filter-row">
+        <span class="delete-filter-label">날짜</span>
+        <div id="deleteDateChips" class="delete-chip-group"></div>
+    </div>
+    <div class="delete-select-row">
+        <label class="select-all-label">
+            <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)">
+            전체 선택
+        </label>
+        <span id="deleteSelectedCount">0개 선택됨</span>
+        <button class="btn btn-danger delete-confirm-btn" onclick="openDeleteConfirm()" disabled style="padding:5px 14px;font-size:13px;">선택 삭제</button>
+    </div>
 </div>
 
 <div id="galleryGrid" class="gallery-grid"></div>
@@ -453,6 +678,25 @@
 </div>
 
 <div class="pagination-bar" id="paginationBar" style="display:none;"></div>
+
+<!-- 삭제 하단 바 -->
+<div id="deleteBottomBar">
+    <span id="deleteCountBar" style="font-size:14px;flex:1;"></span>
+    <button class="btn btn-secondary" onclick="toggleDeleteMode()" style="padding:6px 14px;font-size:13px;">취소</button>
+    <button class="btn btn-danger delete-confirm-btn" onclick="openDeleteConfirm()" style="padding:6px 14px;font-size:13px;" disabled>선택 삭제</button>
+</div>
+
+<!-- 삭제 확인 다이얼로그 -->
+<div id="deleteConfirmDialog">
+    <div class="confirm-box">
+        <h4>항목 삭제</h4>
+        <div id="deleteConfirmMsg"></div>
+        <div class="confirm-actions">
+            <button class="btn btn-secondary" onclick="closeDeleteConfirm()" style="padding:6px 14px;font-size:13px;">취소</button>
+            <button class="btn btn-danger" onclick="executeDelete()" style="padding:6px 14px;font-size:13px;">삭제</button>
+        </div>
+    </div>
+</div>
 
 <!-- 라이트박스 -->
 <div id="lightboxOverlay" onclick="closeLightbox()">
@@ -511,89 +755,672 @@
 
 <script>
 let currentPage = 1;
-let currentFilters = {};
 
+// ── 날짜 칩 & 배치 명칭 칩 & 삭제 모드 상태 ──
+let selectedDateChips = new Set();
+let selectedBatchTitleChips = new Set();
+let deleteMode = false;
+let selectedEntryIds = new Set();
+let galleryEntries = [];       // 현재 화면에 렌더링된 항목
+let allDeleteEntries = [];     // 삭제 모드 전용: 전체 로드된 항목
+let deleteFilterSource = new Set();  // 삭제 필터 - 소스
+let deleteFilterYear   = '';         // 삭제 필터 - 연도
+let deleteFilterDates  = new Set();  // 삭제 필터 - 날짜
+let selectedDeleteBatchTitles = new Set();  // 삭제 필터 - 배치 명칭
+let _pendingDeleteAction = null;
+
+// ── 날짜 칩 ──────────────────────────────────────────────────────
+async function loadAvailableDates() {
+    try {
+        const res  = await fetch('/api/perspective/deploy-gallery/dates');
+        const data = await res.json();
+        if (data.success) renderDateChips(data.dates);
+    } catch (e) {
+        console.warn('날짜 칩 로드 실패:', e);
+    }
+}
+
+function renderDateChips(dates) {
+    const container = document.getElementById('dateChipsContainer');
+    container.innerHTML = '';
+    const allChip = document.createElement('button');
+    allChip.className = 'chip' + (selectedDateChips.size === 0 ? ' chip--active' : '');
+    allChip.textContent = '전체';
+    allChip.onclick = () => toggleDateChip('__all__');
+    container.appendChild(allChip);
+    dates.forEach(d => {
+        const mm   = d.slice(4, 6);
+        const dd   = d.slice(6, 8);
+        const chip = document.createElement('button');
+        chip.className = 'chip' + (selectedDateChips.has(d) ? ' chip--active' : '');
+        chip.textContent = `${mm}/${dd}`;
+        chip.dataset.date = d;
+        chip.onclick = () => toggleDateChip(d);
+        container.appendChild(chip);
+    });
+}
+
+function toggleDateChip(value) {
+    if (value === '__all__') {
+        selectedDateChips.clear();
+    } else {
+        selectedDateChips.has(value) ? selectedDateChips.delete(value) : selectedDateChips.add(value);
+    }
+    document.querySelectorAll('#dateChipsContainer .chip').forEach(btn => {
+        const d = btn.dataset.date;
+        btn.classList.toggle('chip--active', d ? selectedDateChips.has(d) : selectedDateChips.size === 0);
+    });
+    loadGallery(1);
+}
+
+// ── 배치 명칭 칩 ─────────────────────────────────────────────────
+async function loadAvailableBatchTitles() {
+    try {
+        const res  = await fetch('/api/perspective/deploy-gallery/batch-titles');
+        const data = await res.json();
+        if (data.success) renderBatchTitleChips(data.batch_titles);
+    } catch (e) {
+        console.warn('배치 명칭 칩 로드 실패:', e);
+    }
+}
+
+function renderBatchTitleChips(titles) {
+    const container = document.getElementById('batchTitleChipsContainer');
+    container.innerHTML = '';
+    const allChip = document.createElement('button');
+    allChip.className = 'chip' + (selectedBatchTitleChips.size === 0 ? ' chip--active' : '');
+    allChip.textContent = '전체';
+    allChip.onclick = () => toggleBatchTitleChip('__all__');
+    container.appendChild(allChip);
+    titles.forEach(t => {
+        const chip = document.createElement('button');
+        chip.className = 'chip' + (selectedBatchTitleChips.has(t) ? ' chip--active' : '');
+        chip.textContent = t;
+        chip.dataset.batchTitle = t;
+        chip.onclick = () => toggleBatchTitleChip(t);
+        container.appendChild(chip);
+    });
+}
+
+function toggleBatchTitleChip(value) {
+    if (value === '__all__') {
+        selectedBatchTitleChips.clear();
+    } else {
+        selectedBatchTitleChips.has(value) ? selectedBatchTitleChips.delete(value) : selectedBatchTitleChips.add(value);
+    }
+    document.querySelectorAll('#batchTitleChipsContainer .chip').forEach(btn => {
+        const t = btn.dataset.batchTitle;
+        btn.classList.toggle('chip--active', t ? selectedBatchTitleChips.has(t) : selectedBatchTitleChips.size === 0);
+    });
+    loadGallery(1);
+}
+
+// ── 갤러리 로드 ──────────────────────────────────────────────────
 async function loadGallery(page) {
     currentPage = page;
     const params = new URLSearchParams();
     params.set('page', page);
     params.set('per_page', 20);
-    
+
     const empId = document.getElementById('filterEmployeeId').value.trim();
     if (empId) params.set('employee_id', empId);
-    
-    const dateFrom = document.getElementById('filterDateFrom').value.trim();
-    if (dateFrom) params.set('date_from', dateFrom);
-    
-    const dateTo = document.getElementById('filterDateTo').value.trim();
-    if (dateTo) params.set('date_to', dateTo);
-    
+
+    if (selectedBatchTitleChips.size > 0) {
+        params.set('batch_title', Array.from(selectedBatchTitleChips).join(','));
+    }
+
+    if (selectedDateChips.size > 0) {
+        params.set('dates', Array.from(selectedDateChips).join(','));
+    }
+
     const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
     if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
-    
-    const grid = document.getElementById('galleryGrid');
-    const empty = document.getElementById('galleryEmpty');
+
+    const grid       = document.getElementById('galleryGrid');
+    const empty      = document.getElementById('galleryEmpty');
     const pagination = document.getElementById('paginationBar');
-    
+
     grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#999;padding:40px;">로드 중...</p>';
-    empty.style.display = 'none';
+    empty.style.display    = 'none';
     pagination.style.display = 'none';
-    
+
     try {
-        const res = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
+        const res  = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
         const data = await res.json();
-        
+
         if (!data.success) {
             grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:#dc3545;padding:40px;">오류: ${data.error || '알 수 없음'}</p>`;
             return;
         }
-        
+
+        galleryEntries = data.entries;
+
         if (data.entries.length === 0) {
             grid.innerHTML = '';
             empty.style.display = 'block';
             return;
         }
-        
-        grid.innerHTML = '';
-        data.entries.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'gallery-card';
-            
-            const thumbHtml = item.thumbnail_url
-                ? `<img src="${item.thumbnail_url}" alt="thumbnail">`
-                : `<span class="thumb-placeholder">이미지 없음</span>`;
-            
-            const dateStr = item.timestamp
-                ? `${item.timestamp.slice(0,4)}-${item.timestamp.slice(4,6)}-${item.timestamp.slice(6,8)} ${item.timestamp.slice(9,11)}:${item.timestamp.slice(11,13)}`
-                : '-';
-            
-            const src = item.source || 'deploy';
-            card.innerHTML = `
-                <div class="thumb-wrap" style="position:relative;">
-                    ${thumbHtml}
-                    <div class="source-badge source-badge--${src}">
-                        ${src === 'matrix' ? '매트릭스' : '제출용'}
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="card-title">${escapeHtml(item.deploy_name || item.employee_id)}</div>
-                    <div class="card-meta">
-                        <span>${dateStr}</span>
-                        <span class="badge-count">${item.image_count}장</span>
-                    </div>
-                </div>
-            `;
-            card.onclick = () => openDetail(item.id, item.employee_id);
-            grid.appendChild(card);
-        });
-        
-        // Pagination
+
+        renderGalleryGrid(data.entries);
+
         if (data.total > data.per_page) {
             renderPagination(data.total, data.page, data.per_page);
             pagination.style.display = 'flex';
         }
     } catch (e) {
         grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:#dc3545;padding:40px;">로드 중 오류: ${e.message}</p>`;
+    }
+}
+
+// ── 갤러리 그리드 렌더링 (날짜 그룹 헤더 포함) ───────────────────
+function renderGalleryGrid(entries) {
+    const grid = document.getElementById('galleryGrid');
+    grid.innerHTML = '';
+    grid.classList.toggle('delete-mode-active', deleteMode);
+
+    // 1차: batch_title 그룹핑
+    const batchGroups = {};
+    const batchOrder = [];
+    entries.forEach(item => {
+        const batchKey = item.batch_title || '';
+        if (!batchGroups[batchKey]) { batchGroups[batchKey] = []; batchOrder.push(batchKey); }
+        batchGroups[batchKey].push(item);
+    });
+
+    let groupIndex = 0;
+    batchOrder.forEach(batchKey => {
+        // batch_title 헤더 (있는 경우)
+        if (batchKey) {
+            const batchHeader = document.createElement('div');
+            batchHeader.className = 'batch-group-header';
+            batchHeader.style.cssText = 'grid-column:1/-1;padding:8px 12px;background:#e9ecef;font-weight:600;font-size:14px;color:#333;border-radius:4px;margin-top:8px;';
+            batchHeader.textContent = batchKey;
+            grid.appendChild(batchHeader);
+        }
+
+        // 2차: 날짜 그룹핑
+        const dateGroups = {};
+        const dateOrder = [];
+        batchGroups[batchKey].forEach(item => {
+            const dateKey = (item.timestamp || '').slice(0, 8);
+            if (!dateGroups[dateKey]) { dateGroups[dateKey] = []; dateOrder.push(dateKey); }
+            dateGroups[dateKey].push(item);
+        });
+
+        dateOrder.forEach(dateKey => {
+            const mm    = dateKey.slice(4, 6);
+            const dd    = dateKey.slice(6, 8);
+            const label = dateKey ? `${mm}/${dd}` : '날짜 미상';
+
+            const header = document.createElement('div');
+            header.className = 'date-group-header';
+            header.dataset.dateGroup = dateKey;
+            groupIndex++;
+
+            const groupCb = document.createElement('input');
+            groupCb.type = 'checkbox';
+            groupCb.className = 'date-group-select-all';
+            groupCb.addEventListener('change', () => toggleGroupSelect(dateKey, groupCb.checked));
+
+            const groupSpan = document.createElement('span');
+            groupSpan.textContent = `${label} (${dateGroups[dateKey].length}개)`;
+
+            header.appendChild(groupCb);
+            header.appendChild(groupSpan);
+
+            // 삭제 모드에서 헤더 행 클릭 → 날짜 그룹 전체 선택 토글
+            header.onclick = (e) => {
+                if (!deleteMode) return;
+                if (e.target.closest('input[type="checkbox"]')) return;
+                const newState = !groupCb.checked || groupCb.indeterminate;
+                groupCb.checked = newState;
+                toggleGroupSelect(dateKey, newState);
+            };
+            grid.appendChild(header);
+
+            dateGroups[dateKey].forEach(item => grid.appendChild(buildGalleryCard(item)));
+        });
+    });
+}
+
+function buildGalleryCard(item) {
+    const card = document.createElement('div');
+    card.className = 'gallery-card' + (deleteMode ? ' delete-mode' : '');
+    if (deleteMode && selectedEntryIds.has(item.id)) card.classList.add('selected');
+    card.dataset.entryId = item.id;
+
+    const thumbHtml = item.thumbnail_url
+        ? `<img src="${escapeHtml(item.thumbnail_url)}" alt="thumbnail">`
+        : `<span class="thumb-placeholder">이미지 없음</span>`;
+
+    const dateStr = item.timestamp
+        ? `${item.timestamp.slice(0,4)}-${item.timestamp.slice(4,6)}-${item.timestamp.slice(6,8)} ${item.timestamp.slice(9,11)}:${item.timestamp.slice(11,13)}`
+        : '-';
+
+    const src = item.source || 'deploy';
+    const cbChecked = deleteMode && selectedEntryIds.has(item.id) ? ' checked' : '';
+    card.innerHTML = `
+        <div class="thumb-wrap" style="position:relative;">
+            <div class="card-checkbox-wrap">
+                <input type="checkbox" data-entry-id="${escapeHtml(item.id)}"${cbChecked}
+                       onclick="event.stopPropagation(); toggleCardSelect('${escapeHtml(item.id)}', this.checked)">
+            </div>
+            ${thumbHtml}
+            <div class="source-badge source-badge--${escapeHtml(src)}">
+                ${src === 'matrix' ? '매트릭스' : '제출용'}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="card-title">${escapeHtml(item.display_title || item.deploy_name || item.employee_id)}</div>
+            ${item.batch_title ? `<div class="card-batch-label" style="font-size:11px;color:#666;margin-top:2px;">${escapeHtml(item.batch_title)}</div>` : ''}
+            <div class="card-meta">
+                <span>${dateStr}</span>
+                <span class="badge-count">${item.image_count}장</span>
+            </div>
+        </div>
+    `;
+    card.onclick = () => {
+        if (deleteMode) {
+            const cb = card.querySelector('input[type="checkbox"]');
+            cb.checked = !cb.checked;
+            toggleCardSelect(item.id, cb.checked);
+        } else {
+            openDetail(item.id, item.employee_id);
+        }
+    };
+    return card;
+}
+
+// ── 삭제 모드 ────────────────────────────────────────────────────
+async function toggleDeleteMode() {
+    deleteMode = !deleteMode;
+    selectedEntryIds.clear();
+    deleteFilterSource.clear();
+    deleteFilterYear  = '';
+    deleteFilterDates.clear();
+
+    const modeBtn = document.getElementById('deleteModeBtn');
+    modeBtn.textContent = deleteMode ? '삭제 모드 끄기' : '삭제 모드';
+    modeBtn.className   = deleteMode ? 'btn btn-danger' : 'btn btn-secondary';
+
+    const panel      = document.getElementById('deleteModePanel');
+    const bottomBar  = document.getElementById('deleteBottomBar');
+    const pagination = document.getElementById('paginationBar');
+
+    if (deleteMode) {
+        panel.classList.add('visible');
+        bottomBar.classList.add('visible');
+        pagination.style.display = 'none';
+        document.getElementById('galleryGrid').innerHTML =
+            '<p style="grid-column:1/-1;text-align:center;color:#999;padding:40px;">전체 데이터 로드 중...</p>';
+        await _loadAllForDelete();
+        renderDeletePanel();
+        renderDeleteGrid();
+    } else {
+        panel.classList.remove('visible');
+        bottomBar.classList.remove('visible');
+        allDeleteEntries = [];
+        await loadGallery(1);
+    }
+}
+
+function toggleCardSelect(id, checked) {
+    checked ? selectedEntryIds.add(id) : selectedEntryIds.delete(id);
+    const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(id)}"]`);
+    if (card) card.classList.toggle('selected', checked);
+    syncGroupCheckboxes();
+    updateDeleteCount();
+}
+
+function toggleGroupSelect(dateKey, checked) {
+    galleryEntries.forEach(entry => {
+        const cardDateKey = (entry.timestamp || '').slice(0, 8);
+        if (cardDateKey !== dateKey) return;
+        checked ? selectedEntryIds.add(entry.id) : selectedEntryIds.delete(entry.id);
+        const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(entry.id)}"]`);
+        if (card) {
+            card.classList.toggle('selected', checked);
+            const cb = card.querySelector('input[type="checkbox"]');
+            if (cb) cb.checked = checked;
+        }
+    });
+    updateDeleteCount();
+}
+
+function syncGroupCheckboxes() {
+    document.querySelectorAll('.date-group-header').forEach(header => {
+        const dateKey    = header.dataset.dateGroup;
+        const groupCb    = header.querySelector('.date-group-select-all');
+        if (!groupCb) return;
+        const groupItems = galleryEntries.filter(e => (e.timestamp || '').slice(0, 8) === dateKey);
+        const allSel     = groupItems.length > 0 && groupItems.every(e => selectedEntryIds.has(e.id));
+        const anySel     = groupItems.some(e => selectedEntryIds.has(e.id));
+        groupCb.checked       = allSel;
+        groupCb.indeterminate = !allSel && anySel;
+    });
+}
+
+function updateDeleteCount() {
+    const count = selectedEntryIds.size;
+    // 전체 선택 항목 중 소스 분류는 allDeleteEntries 기준 (필터 바깥 선택도 포함)
+    const allCtx  = deleteMode ? allDeleteEntries : galleryEntries;
+    const selected = allCtx.filter(e => selectedEntryIds.has(e.id));
+    const deployCount = selected.filter(e => (e.source || 'deploy') === 'deploy').length;
+    const matrixCount = selected.filter(e => e.source === 'matrix').length;
+
+    let countText = `${count}개 선택됨`;
+    if (count > 0) {
+        const parts = [];
+        if (deployCount > 0) parts.push(`배포용 ${deployCount}개`);
+        if (matrixCount > 0) parts.push(`매트릭스 ${matrixCount}개`);
+        if (parts.length > 0) countText += ` (${parts.join(' · ')})`;
+    }
+
+    const countPanelEl = document.getElementById('deleteSelectedCount');
+    if (countPanelEl) countPanelEl.textContent = countText;
+    const countBarEl = document.getElementById('deleteCountBar');
+    if (countBarEl) countBarEl.textContent = count > 0 ? countText : '';
+
+    document.querySelectorAll('.delete-confirm-btn').forEach(btn => { btn.disabled = count === 0; });
+
+    // 전체 선택 체크박스 — 현재 화면(galleryEntries) 기준
+    const selectAllChk = document.getElementById('selectAllChk');
+    if (selectAllChk) {
+        if (galleryEntries.length > 0) {
+            const allSel = galleryEntries.every(e => selectedEntryIds.has(e.id));
+            const anySel = galleryEntries.some(e => selectedEntryIds.has(e.id));
+            selectAllChk.checked       = allSel;
+            selectAllChk.indeterminate = !allSel && anySel;
+        } else {
+            selectAllChk.checked = selectAllChk.indeterminate = false;
+        }
+    }
+}
+
+// ── 삭제 모드 전체 데이터 로드 ───────────────────────────────────
+async function _loadAllForDelete() {
+    try {
+        const params = new URLSearchParams();
+        params.set('page', 1);
+        params.set('per_page', 9999);
+        const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
+        if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
+        const res  = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
+        const data = await res.json();
+        if (data.success) allDeleteEntries = data.entries;
+    } catch (e) {
+        console.error('전체 데이터 로드 실패:', e);
+    }
+}
+
+function _getDeleteFiltered() {
+    return allDeleteEntries.filter(e => {
+        const src  = e.source || 'deploy';
+        const ts   = e.timestamp || '';
+        const bt   = e.batch_title || '';
+        if (deleteFilterSource.size > 0 && !deleteFilterSource.has(src)) return false;
+        if (selectedDeleteBatchTitles.size > 0 && !selectedDeleteBatchTitles.has(bt)) return false;
+        if (deleteFilterYear  && ts.slice(0, 4) !== deleteFilterYear)     return false;
+        if (deleteFilterDates.size > 0 && !deleteFilterDates.has(ts.slice(0, 8))) return false;
+        return true;
+    });
+}
+
+function renderDeleteGrid() {
+    galleryEntries = _getDeleteFiltered();
+    renderGalleryGrid(galleryEntries);
+    updateDeleteCount();
+}
+
+function toggleAdvancedDeleteFilter() {
+    const advancedRows = document.querySelectorAll('#deleteYearRow, .delete-filter-row:has(#deleteDateChips)');
+    advancedRows.forEach(row => {
+        row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+    });
+}
+
+function renderDeletePanel() {
+    // 소스 칩
+    const allSources = new Set(allDeleteEntries.map(e => e.source || 'deploy'));
+    const srcContainer = document.getElementById('deleteSourceChips');
+    srcContainer.innerHTML = '';
+    [['deploy', '배포용'], ['matrix', '매트릭스']].forEach(([src, label]) => {
+        if (!allSources.has(src)) return;
+        const chip = document.createElement('button');
+        chip.className = 'delete-chip' + (deleteFilterSource.has(src) ? ' delete-chip--active' : '');
+        chip.textContent = label;
+        chip.onclick = () => {
+            deleteFilterSource.has(src) ? deleteFilterSource.delete(src) : deleteFilterSource.add(src);
+            deleteFilterYear = '';
+            deleteFilterDates.clear();
+            renderDeletePanel();  // 소스 칩 active 상태도 함께 갱신
+            renderDeleteGrid();
+        };
+        srcContainer.appendChild(chip);
+    });
+
+    // 배치 명칭 칩
+    const allBatchTitles = [...new Set(allDeleteEntries.map(e => e.batch_title).filter(Boolean))].sort();
+    const btContainer = document.getElementById('deleteBatchTitleChips');
+    btContainer.innerHTML = '';
+    allBatchTitles.forEach(bt => {
+        const chip = document.createElement('button');
+        chip.className = 'delete-chip' + (selectedDeleteBatchTitles.has(bt) ? ' delete-chip--active' : '');
+        chip.textContent = bt;
+        chip.onclick = () => {
+            selectedDeleteBatchTitles.has(bt) ? selectedDeleteBatchTitles.delete(bt) : selectedDeleteBatchTitles.add(bt);
+            // 토글된 배치 항목만 직접 처리 — filtered 범위가 아닌 allDeleteEntries 기준으로 확실히 반영
+            const isNowActive = selectedDeleteBatchTitles.has(bt);
+            allDeleteEntries.forEach(e => {
+                if (e.batch_title === bt) {
+                    isNowActive ? selectedEntryIds.add(e.id) : selectedEntryIds.delete(e.id);
+                }
+            });
+            // 선택 상태 갱신
+            renderDeletePanel();
+            renderDeleteGrid();
+            // 그리드 checkbox 동기화
+            galleryEntries.forEach(entry => {
+                const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(entry.id)}"]`);
+                if (card) {
+                    card.classList.toggle('selected', selectedEntryIds.has(entry.id));
+                    const cb = card.querySelector('input[type="checkbox"]');
+                    if (cb) cb.checked = selectedEntryIds.has(entry.id);
+                }
+            });
+            syncGroupCheckboxes();
+            updateDeleteCount();
+        };
+        btContainer.appendChild(chip);
+    });
+
+    _renderDeleteYearAndDateChips();
+}
+
+function _renderDeleteYearAndDateChips() {
+    const srcFiltered = allDeleteEntries.filter(e =>
+        deleteFilterSource.size === 0 || deleteFilterSource.has(e.source || 'deploy')
+    );
+    const years = [...new Set(srcFiltered.map(e => (e.timestamp || '').slice(0, 4)).filter(Boolean))].sort();
+    const yearRow = document.getElementById('deleteYearRow');
+
+    if (years.length > 1) {
+        yearRow.style.display = 'flex';
+        const yrContainer = document.getElementById('deleteYearChips');
+        yrContainer.innerHTML = '';
+        years.forEach(yr => {
+            const chip = document.createElement('button');
+            chip.className = 'delete-chip' + (deleteFilterYear === yr ? ' delete-chip--active' : '');
+            chip.textContent = yr;
+            chip.onclick = () => {
+                deleteFilterYear = (deleteFilterYear === yr) ? '' : yr;
+                deleteFilterDates.clear();
+                _renderDeleteYearAndDateChips();  // 연도 칩 active 상태도 함께 갱신
+                renderDeleteGrid();
+            };
+            yrContainer.appendChild(chip);
+        });
+    } else {
+        yearRow.style.display = 'none';
+        deleteFilterYear = '';
+    }
+    _renderDeleteDateChips(srcFiltered);
+}
+
+function _renderDeleteDateChips(srcFiltered) {
+    const yrFiltered = srcFiltered.filter(e =>
+        !deleteFilterYear || (e.timestamp || '').slice(0, 4) === deleteFilterYear
+    );
+    const dates = [...new Set(
+        yrFiltered.map(e => (e.timestamp || '').slice(0, 8)).filter(d => d.length === 8)
+    )].sort();
+
+    const dateContainer = document.getElementById('deleteDateChips');
+    dateContainer.innerHTML = '';
+    dates.forEach(d => {
+        const chip = document.createElement('button');
+        chip.className = 'delete-chip' + (deleteFilterDates.has(d) ? ' delete-chip--active' : '');
+        chip.textContent = `${d.slice(4, 6)}/${d.slice(6, 8)}`;
+        chip.onclick = () => {
+            deleteFilterDates.has(d) ? deleteFilterDates.delete(d) : deleteFilterDates.add(d);
+            chip.classList.toggle('delete-chip--active', deleteFilterDates.has(d));
+            renderDeleteGrid();
+        };
+        dateContainer.appendChild(chip);
+    });
+}
+
+function toggleSelectAll(checked) {
+    galleryEntries.forEach(entry => {
+        checked ? selectedEntryIds.add(entry.id) : selectedEntryIds.delete(entry.id);
+        const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(entry.id)}"]`);
+        if (card) {
+            card.classList.toggle('selected', checked);
+            const cb = card.querySelector('input[type="checkbox"]');
+            if (cb) cb.checked = checked;
+        }
+    });
+    syncGroupCheckboxes();
+    updateDeleteCount();
+}
+
+function _buildDeleteSummaryHtml(ids) {
+    const idSet = new Set(ids.map(String));
+    const allCtx  = allDeleteEntries.length > 0 ? allDeleteEntries : galleryEntries;
+    const entries = allCtx.filter(e => idSet.has(String(e.id)));
+    const total = ids.length;
+    const deployCount = entries.filter(e => (e.source || 'deploy') === 'deploy').length;
+    const matrixCount = entries.filter(e => e.source === 'matrix').length;
+
+    const byDate = {};
+    const byBatch = {};
+    entries.forEach(e => {
+        const ts = e.timestamp || '';
+        const dk = ts.slice(0, 8);
+        const label = dk.length >= 8 ? `${dk.slice(4, 6)}/${dk.slice(6, 8)}` : '날짜 미상';
+        byDate[label] = (byDate[label] || 0) + 1;
+        const bt = e.batch_title || '미지정';
+        byBatch[bt] = (byBatch[bt] || 0) + 1;
+    });
+
+    const sourceRows = [];
+    if (deployCount > 0) sourceRows.push(`<li>배포용: ${deployCount}개</li>`);
+    if (matrixCount > 0) sourceRows.push(`<li>매트릭스: ${matrixCount}개</li>`);
+
+    const dateKeys = Object.keys(byDate);
+    const dateSection = dateKeys.length > 1
+        ? `<p class="confirm-date-label">날짜별</p><ul class="confirm-breakdown">${dateKeys.map(d => `<li>${d} — ${byDate[d]}개</li>`).join('')}</ul>`
+        : '';
+
+    const batchKeys = Object.keys(byBatch);
+    const batchSection = batchKeys.length > 0
+        ? `<p class="confirm-batch-label">배치 명칭별</p><ul class="confirm-breakdown">${batchKeys.map(b => `<li>${escapeHtml(b)} — ${byBatch[b]}개</li>`).join('')}</ul>`
+        : '';
+
+    return `
+        <p class="confirm-total">총 <strong>${total}개</strong>를 삭제합니다.</p>
+        ${sourceRows.length > 0 ? `<ul class="confirm-breakdown">${sourceRows.join('')}</ul>` : ''}
+        ${dateSection}
+        ${batchSection}
+        <p class="confirm-warning">이 작업은 되돌릴 수 없습니다.</p>
+    `;
+}
+
+function openDeleteConfirm() {
+    if (selectedEntryIds.size === 0) return;
+    const ids = Array.from(selectedEntryIds);
+    document.getElementById('deleteConfirmMsg').innerHTML = _buildDeleteSummaryHtml(ids);
+    _pendingDeleteAction = _executeDeleteSelected;
+    document.getElementById('deleteConfirmDialog').classList.add('open');
+}
+
+function closeDeleteConfirm() {
+    _pendingDeleteAction = null;
+    document.getElementById('deleteConfirmDialog').classList.remove('open');
+}
+
+async function executeDelete() {
+    const action = _pendingDeleteAction;  // closeDeleteConfirm이 null로 만들기 전에 저장
+    closeDeleteConfirm();
+    if (action) {
+        await action();
+    }
+}
+
+async function _executeDeleteSelected() {
+    const ids = Array.from(selectedEntryIds);
+    try {
+        const res  = await fetch('/api/perspective/deploy-gallery/entries', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({entry_ids: ids}),
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`삭제 실패: ${data.error || '알 수 없음'}`);
+            return;
+        }
+        if (data.file_errors && data.file_errors.length > 0) {
+            console.warn('파일 삭제 오류 (무시됨):', data.file_errors);
+        }
+        deleteMode = false;
+        selectedEntryIds.clear();
+        allDeleteEntries = [];
+        deleteFilterSource.clear();
+        deleteFilterYear  = '';
+        deleteFilterDates.clear();
+        document.getElementById('deleteModeBtn').textContent = '삭제 모드';
+        document.getElementById('deleteModeBtn').className   = 'btn btn-secondary';
+        document.getElementById('deleteBottomBar').classList.remove('visible');
+        document.getElementById('deleteModePanel').classList.remove('visible');
+        await loadAvailableDates();
+        await loadAvailableBatchTitles();
+        await loadGallery(1);
+    } catch (e) {
+        alert(`삭제 중 오류: ${e.message}`);
+    }
+}
+
+async function _executeDeleteByIds(ids) {
+    try {
+        const res  = await fetch('/api/perspective/deploy-gallery/entries', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({entry_ids: ids}),
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert(`삭제 실패: ${data.error || '알 수 없음'}`);
+            return;
+        }
+        if (data.file_errors && data.file_errors.length > 0) {
+            console.warn('파일 삭제 오류 (무시됨):', data.file_errors);
+        }
+        await loadAvailableDates();
+        await loadAvailableBatchTitles();
+        await loadGallery(1);
+    } catch (e) {
+        alert(`삭제 중 오류: ${e.message}`);
     }
 }
 
@@ -665,7 +1492,7 @@ async function openDetail(entryId, employeeId) {
         selectedYears = new Set();
 
         document.getElementById('modalTitle').textContent =
-            `${escapeHtml(clickedEntry.deploy_name || clickedEntry.employee_id)} 상세 정보`;
+            `${escapeHtml(clickedEntry.display_title || clickedEntry.deploy_name || clickedEntry.employee_id)} 상세 정보`;
 
         // 로딩 숨김 / 컨텐츠 표시
         if (loading) loading.style.display = 'none';
@@ -817,15 +1644,19 @@ function renderFilteredImages(entry) {
         grid.innerHTML = '<p style="text-align:center;color:#adb5bd;padding:20px;">조건에 맞는 이미지가 없습니다.</p>';
         return;
     }
-    grid.innerHTML = filtered.map(({ year, type, url }) => `
+    grid.innerHTML = filtered.map(({ year, type, url }) => {
+        const cleanUrl = escapeHtml(url.split('?')[0]);
+        const filename = cleanUrl.split('/').pop() || 'wordcloud.png';
+        return `
         <div class="modal-image-wrap">
             <img src="${escapeHtml(url)}"
                  alt="${year ? escapeHtml(year) + ' ' : ''}${labelMap[type]}"
                  onclick="openLightbox(this.src)">
-            <a href="${escapeHtml(url)}" download class="img-download-btn">↓ 저장</a>
-            <div class="img-label">${year ? escapeHtml(year) + ' — ' : ''}${labelMap[type]}</div>
+            <a href="${cleanUrl}" download="${filename}" class="img-download-btn">↓ 저장</a>
+            <div class="img-label">${year ? escapeHtml(year) + ' - ' : ''}${labelMap[type]}</div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // ── 메타 정보 ─────────────────────────────────────────────────
@@ -837,6 +1668,7 @@ function renderMeta(entry) {
             <div class="meta-row"><span class="meta-key">직원 ID</span><span>${escapeHtml(entry.employee_id || '-')}</span></div>
             <div class="meta-row"><span class="meta-key">출처</span><span>${sourceLabel}</span></div>
             <div class="meta-row"><span class="meta-key">출력 모드</span><span>${entry.output_mode === 'real' ? '실명' : '가명'}</span></div>
+            <div class="meta-row"><span class="meta-key">배치 명칭</span><span>${escapeHtml(entry.batch_title || '-')}</span></div>
             <div class="meta-row"><span class="meta-key">행 기준</span><span>${escapeHtml(entry.row_field || '-')}</span></div>
             <div class="meta-row"><span class="meta-key">분석 유형</span><span>${escapeHtml(entry.analysis_type || '-')}</span></div>
             <div class="meta-row"><span class="meta-key">형태소</span><span>${(opts.wordcloud_pos || []).join(', ')}</span></div>
@@ -900,6 +1732,8 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Initial load
+loadAvailableDates();
+loadAvailableBatchTitles();
 loadGallery(1);
 </script>
 {% endblock %}

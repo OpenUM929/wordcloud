@@ -32,12 +32,17 @@ def stream_batch_events(global_state):
             'processed_rows': global_state.get('processed_rows', 0),
             'profanity_employees': global_state.get('profanity_employees', []),
             'failed_employees': global_state.get('failed_employees', []),
-            'completed': global_state.get('completed', False)
+            'completed': global_state.get('completed', False),
+            'error': global_state.get('error', ''),
+            'batch_dir': global_state.get('batch_dir', '')
         }
         
         yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
         
         if global_state.get('completed'):
+            break
+        
+        if global_state.get('error'):
             break
         
         time.sleep(0.5)

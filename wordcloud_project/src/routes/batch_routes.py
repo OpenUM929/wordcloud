@@ -62,15 +62,20 @@ def list_batches():
 def delete():
     """Delete a batch.
 
-    DEPRECATED: This endpoint does NOT clean up users/*.json data.
-    Use DELETE /api/perspective/batch/<batch_id> instead for full cleanup.
+    DEPRECATED: Use DELETE /api/perspective/batch/<batch_id> for full cleanup.
+    This endpoint now cleans up evaluations DB before removing the batch directory.
     """
     try:
         data = request.json
         batch_path = data.get('batch_path')
         if not batch_path:
             return jsonify({'success': False, 'error': '배치 경로가 필요합니다.'}), 400
-            
+
+        import os as _os
+        batch_id = _os.path.basename(batch_path)
+        from src.services.user_data_manager import remove_batch_from_all
+        remove_batch_from_all(batch_id, [])
+
         result, status = delete_batch(batch_path)
         return jsonify(result), status
     except Exception as e:

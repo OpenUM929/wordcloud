@@ -48,16 +48,9 @@ from src.routes.admin_routes import admin_bp
 from src.routes.wordcloud_data_routes import wordcloud_data_bp
 from src.routes.wordcloud_preview_routes import wordcloud_preview_bp
 
-# One-time migration: old batch_summary (full data) → users/*.json + lightweight summaries
-from src.services.user_data_manager import migrate_from_old_format
-_migrate_result = migrate_from_old_format()
-if _migrate_result.get('migrated'):
-    print(f"[Migration] 기존 배치 데이터를 users/*.json으로 변환 완료: "
-          f"{_migrate_result['batches_migrated']}개 배치, "
-          f"{_migrate_result['employees_migrated']}명, "
-          f"{_migrate_result['evaluations_migrated']}건 평가")
-elif _migrate_result.get('reason'):
-    print(f"[Migration] {_migrate_result['reason']}")
+# One-time migration: users/*.json → evaluations DB (deploy_session_service에서 테이블 생성 완료 후 실행)
+from src.services.deploy_session_service import _auto_migrate_evaluations
+_auto_migrate_evaluations()
 
 
 def create_app():
@@ -135,5 +128,6 @@ if __name__ == '__main__':
         debug=FLASK_DEBUG,
         host=FLASK_HOST,
         port=FLASK_PORT,
-        threaded=True
+        threaded=True,
+        use_reloader=False
     )

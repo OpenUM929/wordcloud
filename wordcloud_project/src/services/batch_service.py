@@ -271,8 +271,35 @@ def delete_batch(batch_path):
     return delete_batch_directory(batch_path)
 
 
+def _run_batch_process(data, session_data):
+    """Run batch processing in background thread.
+    
+    session_data is a plain dict (not Flask session object)
+    to avoid thread-safety issues.
+    """
+    global batch_processing_state, _batch_busy
+    
+    try:
+        result, status = process_batch(PROCESSED_DATA_DIR_PATH, data, session_data)
+        
+        if status == 200:
+            batch_processing_state['status_message'] = '완료'
+            batch_processing_state['progress'] = 100
+            batch_processing_state['completed'] = True
+    except Exception as e:
+        batch_processing_state['status_message'] = f'오류: {str(e)}'
+        batch_processing_state['error'] = str(e)
+    finally:
+        with _batch_lock:
+            _batch_busy = False
+
+
 def process_batch_metadata(data, session_obj):
-    """Process batch metadata - coordinates the full batch processing."""
+    """Process batch metadata - coordinates the full batch processing.
+    
+    Returns immediately with {'success': True, 'status': 'started'}
+    and runs the actual processing in a background thread.
+    """
     global batch_processing_state, _batch_busy
     
     with _batch_lock:
@@ -288,22 +315,37 @@ def process_batch_metadata(data, session_obj):
         batch_processing_state['success_count'] = 0
         batch_processing_state['error_count'] = 0
         batch_processing_state['profanity_employees'] = []
+        batch_processing_state['failed_employees'] = []
         batch_processing_state['total_rows'] = 0
         batch_processing_state['processed_rows'] = 0
         batch_processing_state['status_message'] = '데이터 로딩 중...'
         batch_processing_state['completed'] = False
+        if 'error' in batch_processing_state:
+            del batch_processing_state['error']
+        if 'batch_dir' in batch_processing_state:
+            del batch_processing_state['batch_dir']
 
-        result, status = process_batch(PROCESSED_DATA_DIR_PATH, data, session_obj)
+        # Extract plain dict from Flask session to avoid thread-safety issues
+        session_data = {
+            'csv_file_path': session_obj.get('csv_file_path'),
+            'input_type': session_obj.get('input_type'),
+            'csv_filename': session_obj.get('csv_filename'),
+            'csv_rows': session_obj.get('csv_rows'),
+        }
 
-        if status == 200:
-            batch_processing_state['status_message'] = '완료'
-            batch_processing_state['progress'] = 100
-            batch_processing_state['completed'] = True
+        # Start background thread for actual processing
+        thread = threading.Thread(
+            target=_run_batch_process,
+            args=(data, session_data),
+            daemon=True
+        )
+        thread.start()
 
-        return result, status
-    finally:
+        return {'success': True, 'status': 'started'}, 200
+    except Exception as e:
         with _batch_lock:
             _batch_busy = False
+        return {'error': str(e)}, 500
 
 
 def get_sample_metadata(session_obj):

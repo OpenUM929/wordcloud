@@ -814,6 +814,14 @@ function startBatchProcessing() {
             console.log(data.log);
         }
         
+        // 에러 발생 시 즉시 처리
+        if (data.error) {
+            eventSource.close();
+            alert(data.error);
+            isProcessing = false;
+            return;
+        }
+        
         if (data.completed) {
             eventSource.close();
             document.getElementById('progressFill').style.width = '100%';
@@ -827,6 +835,11 @@ function startBatchProcessing() {
             var lastStep = procSteps[procSteps.length - 1];
             if (lastStep) {
                 lastStep.classList.add('completed');
+            }
+            
+            // batch_dir 저장 (SSE에서 전달됨)
+            if (data.batch_dir) {
+                sessionStorage.setItem('batchDir', data.batch_dir);
             }
             
             setTimeout(function() {
@@ -847,12 +860,6 @@ function startBatchProcessing() {
                 document.getElementById('resultsSummary').innerHTML = html;
             }, 500);
             
-            isProcessing = false;
-        }
-        
-        if (data.error) {
-            eventSource.close();
-            alert(data.error);
             isProcessing = false;
         }
     };

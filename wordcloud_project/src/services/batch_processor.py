@@ -337,6 +337,8 @@ def process_batch(processed_data_dir, data, session_data):
     Returns:
         tuple: (result dict, status_code)
     """
+    # Import global state FIRST (must be before any usage)
+    from src.services.batch_service import batch_processing_state
     from io import StringIO
     import pandas as pd
     from src.models.metadata_manager import MetadataManager
@@ -426,6 +428,9 @@ def process_batch(processed_data_dir, data, session_data):
         else:
             return {'error': '지원되지 않는 파일 형식입니다.'}, 400
     
+    # 파일 로드 완료: 5%
+    batch_processing_state['progress'] = 5
+    
     # Initialize batch directory
     batch_dir, batch_num = initialize_batch_directory(processed_data_dir)
     
@@ -474,9 +479,6 @@ def process_batch(processed_data_dir, data, session_data):
     # Initialize metadata manager
     metadata_manager = MetadataManager(processed_data_dir)
     
-    # Import batch processing state from batch_service (unified state)
-    from src.services.batch_service import batch_processing_state
-    
     # Import concurrent.futures for parallel processing
     from concurrent.futures import ThreadPoolExecutor, as_completed
     import multiprocessing
@@ -513,9 +515,11 @@ def process_batch(processed_data_dir, data, session_data):
         stopword_mgr = get_stopword_manager(os.path.join(CONFIGS_DIR_PATH, 'stopwords.json'))
         
         batch_processing_state['status_message'] = 'Stage 2 완료: 분석기 초기화 성공'
+        batch_processing_state['progress'] = 10
     except Exception as e:
         error_msg = f'분석기 초기화 실패: {str(e)}'
         batch_processing_state['status_message'] = f'Stage 2 실패: {error_msg}'
+        batch_processing_state['progress'] = 10
         employee_results = [
             {'employee_id': emp_id, 'error': error_msg, 'success': False}
             for emp_id in grouped_data.keys()
@@ -524,6 +528,7 @@ def process_batch(processed_data_dir, data, session_data):
         pre_init_success = False
     else:
         batch_processing_state['current_step'] = 1
+        batch_processing_state['progress'] = 10
         pre_init_success = True
         employee_results = []
     
@@ -568,7 +573,8 @@ def process_batch(processed_data_dir, data, session_data):
     employee_items = list(grouped_data.items())
     
     if pre_init_success:
-        batch_processing_state['status_message'] = f'메타데이터 생성 중 (0/{len(employee_items)})'
+        total_employee_count = len(employee_items)
+        batch_processing_state['status_message'] = f'메타데이터 생성 중 (0/{total_employee_count})'
         
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             future_to_employee = {
@@ -595,8 +601,10 @@ def process_batch(processed_data_dir, data, session_data):
                     })
                 
                 completed += 1
-                if completed % 100 == 0:
-                    batch_processing_state['status_message'] = f'메타데이터 생성 중 ({completed}/{len(employee_items)})'
+                # 10% ~ 50%: 메타데이터 생성 단계
+                batch_processing_state['progress'] = int(10 + (completed / total_employee_count) * 40)
+                if completed % 100 == 0 or completed == total_employee_count:
+                    batch_processing_state['status_message'] = f'메타데이터 생성 중 ({completed}/{total_employee_count})'
                 
                 if completed % CHECKPOINT_INTERVAL == 0:
                     last_employee = result['employee_id']
@@ -604,7 +612,7 @@ def process_batch(processed_data_dir, data, session_data):
                         batch_dir, completed, len(employee_items),
                         last_employee, employee_results
                     )
-                    batch_processing_state['status_message'] = f'체크포인트 저장 완료 ({completed}/{len(employee_items)})'
+                    batch_processing_state['status_message'] = f'체크포인트 저장 완료 ({completed}/{total_employee_count})'
         
         save_checkpoint(
             batch_dir, len(employee_results), len(employee_items),
@@ -614,6 +622,7 @@ def process_batch(processed_data_dir, data, session_data):
         
         batch_processing_state['status_message'] = f'Stage 3 완료: 메타데이터 생성 ({len(employee_results)}명)'
         batch_processing_state['current_step'] = 2
+        batch_processing_state['progress'] = 50
     
     # 실패한 직원 추적
     failed_employees = [r for r in employee_results if not r['success']]
@@ -651,8 +660,10 @@ def process_batch(processed_data_dir, data, session_data):
     
     successful_results = [r for r in employee_results if r['success']]
     
-    batch_processing_state['status_message'] = f'Stage 4: imeta 병렬 저장 시작 ({len(successful_results)}개)...'
+    total_successful = len(successful_results)
+    batch_processing_state['status_message'] = f'Stage 4: imeta 병렬 저장 시작 ({total_successful}개)...'
     batch_processing_state['current_step'] = 3
+    batch_processing_state['progress'] = 50
     
     def save_imeta_single(args):
         """imeta 단일 저장 (병렬용) — MetadataManager에 위임"""
@@ -668,17 +679,28 @@ def process_batch(processed_data_dir, data, session_data):
         except Exception as e:
             return {'success': False, 'employee_id': result.get('employee_id'), 'error': str(e)}
     
+    # imeta 저장: 50% ~ 70% (완료 1개마다 progress 업데이트)
+    imeta_completed = 0
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        imeta_results = list(executor.map(save_imeta_single, successful_results))
+        imeta_futures = {
+            executor.submit(save_imeta_single, result): result
+            for result in successful_results
+        }
+        for future in as_completed(imeta_futures):
+            future.result()
+            imeta_completed += 1
+            batch_processing_state['progress'] = int(50 + (imeta_completed / total_successful) * 20)
     
-    batch_processing_state['status_message'] = f'Stage 4 완료: imeta 저장 ({len(successful_results)}개)'
+    batch_processing_state['status_message'] = f'Stage 4 완료: imeta 저장 ({total_successful}개)'
     batch_processing_state['current_step'] = 3
+    batch_processing_state['progress'] = 70
     
     # ============================================================
     # Stage 5: 병렬 tmeta (통합 인사데이터) 저장
     # ============================================================
-    batch_processing_state['status_message'] = f'Stage 5: tmeta 병렬 저장 시작 ({len(successful_results)}개)...'
+    batch_processing_state['status_message'] = f'Stage 5: tmeta 병렬 저장 시작 ({total_successful}개)...'
     batch_processing_state['current_step'] = 4
+    batch_processing_state['progress'] = 70
     
     def save_tmeta_single(args):
         """tmeta 단일 저장 (병렬용)"""
@@ -701,11 +723,21 @@ def process_batch(processed_data_dir, data, session_data):
         except Exception as e:
             return {'success': False, 'employee_id': result.get('employee_id'), 'error': str(e)}
     
+    # tmeta 저장: 70% ~ 90% (완료 1개마다 progress 업데이트)
+    tmeta_completed = 0
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        tmeta_results = list(executor.map(save_tmeta_single, successful_results))
+        tmeta_futures = {
+            executor.submit(save_tmeta_single, result): result
+            for result in successful_results
+        }
+        for future in as_completed(tmeta_futures):
+            future.result()
+            tmeta_completed += 1
+            batch_processing_state['progress'] = int(70 + (tmeta_completed / total_successful) * 20)
     
-    batch_processing_state['status_message'] = f'Stage 5 완료: tmeta 저장 ({len(successful_results)}개)'
+    batch_processing_state['status_message'] = f'Stage 5 완료: tmeta 저장 ({total_successful}개)'
     batch_processing_state['current_step'] = 5
+    batch_processing_state['progress'] = 90
     batch_processing_state['total_employees'] = len(grouped_data)
     batch_processing_state['processed_employees'] = len(employee_results)
     batch_processing_state['success_count'] = sum(1 for r in employee_results if r['success'])
@@ -714,6 +746,8 @@ def process_batch(processed_data_dir, data, session_data):
 
     # completed 플래그 설정 (SSE 무한루프 방지)
     batch_processing_state['completed'] = True
+    batch_processing_state['progress'] = 100
+    batch_processing_state['batch_dir'] = batch_dir
     
     # Upsert each successful employee to user_data_manager (users/*.json)
     batch_id = os.path.basename(batch_dir)
@@ -731,7 +765,7 @@ def process_batch(processed_data_dir, data, session_data):
         batch_processing_state, data
     )
     
-    # Store batch dir in session (small, used for API calls)
+    # Store batch dir in session_data (plain dict, used for API calls)
     session_data['batch_dir'] = batch_dir
     
     return {
