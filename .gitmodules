@@ -1,0 +1,3 @@
+[submodule ".clinerules"]
+    path = .clinerules
+    url = https://github.com/OpenUM929/clinerules.git

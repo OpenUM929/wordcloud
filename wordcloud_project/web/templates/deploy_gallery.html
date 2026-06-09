@@ -161,9 +161,9 @@
         border-radius: 10px;
         max-width: 90vw;
         max-height: 90vh;
-        overflow: auto;
+        overflow: hidden;
         box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-        width: 800px;
+        width: min(1100px, 90vw);
         display: flex;
         flex-direction: column;
     }
@@ -171,12 +171,13 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 14px 18px;
+        padding: 18px 32px;
         border-bottom: 1px solid #e9ecef;
     }
     .modal-header h3 {
         margin: 0;
-        font-size: 16px;
+        font-size: 32px;
+        font-weight: 700;
     }
     .modal-close {
         background: none;
@@ -189,28 +190,80 @@
         color: #333;
     }
     .modal-body {
-        padding: 18px;
+        padding: 24px 32px;
         overflow-y: auto;
+        flex: 1;
+        min-height: 0;
     }
     .modal-images {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 12px;
-        margin-bottom: 16px;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 14px;
+        margin-bottom: 4px;
     }
     .modal-image-wrap {
         text-align: center;
+        position: relative;
     }
     .modal-image-wrap img {
         max-width: 100%;
         border: 1px solid #e9ecef;
         border-radius: 6px;
+        cursor: zoom-in;
+        display: block;
     }
     .modal-image-wrap .img-label {
-        font-size: 12px;
-        color: #6c757d;
-        margin-top: 6px;
+        font-size: 24px;
+        color: #495057;
+        font-weight: 700;
+        margin-top: 8px;
     }
+    .img-download-btn {
+        position: absolute;
+        top: 6px; right: 6px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        background: rgba(0,0,0,0.55);
+        color: white !important;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        text-decoration: none !important;
+        line-height: 1.4;
+    }
+    .modal-image-wrap:hover .img-download-btn { opacity: 1; }
+
+    /* 라이트박스 */
+    #lightboxOverlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.88);
+        z-index: 2000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        cursor: zoom-out;
+    }
+    #lightboxOverlay.open { display: flex; }
+    #lightboxImg {
+        max-width: 92vw;
+        max-height: 92vh;
+        border-radius: 6px;
+        box-shadow: 0 4px 32px rgba(0,0,0,0.6);
+        cursor: default;
+    }
+    #lightboxClose {
+        position: absolute;
+        top: 16px; right: 20px;
+        background: none; border: none;
+        color: white; font-size: 34px;
+        cursor: pointer; line-height: 1;
+        opacity: 0.8;
+    }
+    #lightboxClose:hover { opacity: 1; }
     .modal-meta {
         background: #f8f9fa;
         border-radius: 6px;
@@ -264,20 +317,96 @@
     .chip--active   { background: #007bff; color: white; border-color: #007bff; }
     .chip--disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* 모달 탭 */
+    /* 모달 탭 바 — 헤더 바로 아래 */
+    .modal-tab-bar {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid #e9ecef;
+        padding: 0 32px;
+        background: #fff;
+        flex-shrink: 0;
+    }
     .modal-tab {
-        padding: 6px 14px;
-        border: 1px solid #dee2e6;
-        background: white;
-        border-radius: 6px;
+        padding: 10px 18px;
+        border: none;
+        background: none;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c757d;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        border-radius: 0;
+        transition: color 0.15s;
+        white-space: nowrap;
+    }
+    .modal-tab:hover:not(.active) { color: #343a40; }
+    .modal-tab.active {
+        color: #007bff;
+        border-bottom-color: #007bff;
+    }
+
+    /* 필터 영역 */
+    .modal-filter-area {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px 16px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .filter-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #6c757d;
+        min-width: 34px;
+        flex-shrink: 0;
+    }
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    /* 이미지 섹션 제목 */
+    .modal-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    /* 상세 정보 토글 */
+    .modal-details {
+        margin-top: 20px;
+        border-top: 1px solid #e9ecef;
+        padding-top: 4px;
+    }
+    .modal-details > summary {
         cursor: pointer;
         font-size: 13px;
+        font-weight: 700;
+        color: #6c757d;
+        padding: 8px 0;
+        user-select: none;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
-    .modal-tab.active {
-        background: #007bff;
-        color: white;
-        border-color: #007bff;
-    }
+    .modal-details > summary::-webkit-details-marker { display: none; }
+    .modal-details > summary::before { content: '▶'; font-size: 10px; }
+    .modal-details[open] > summary::before { content: '▼'; }
+    .modal-details[open] > summary { color: #495057; }
 </style>
 {% endblock %}
 
@@ -325,34 +454,57 @@
 
 <div class="pagination-bar" id="paginationBar" style="display:none;"></div>
 
+<!-- 라이트박스 -->
+<div id="lightboxOverlay" onclick="closeLightbox()">
+    <img id="lightboxImg" onclick="event.stopPropagation()" alt="">
+    <button id="lightboxClose" onclick="closeLightbox()">&times;</button>
+</div>
+
 <!-- Detail Modal -->
 <div class="modal-overlay" id="detailModal">
     <div class="modal-box">
+        <!-- 헤더 -->
         <div class="modal-header">
             <h3 id="modalTitle">상세 정보</h3>
             <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
+        <!-- 탭 바 (헤더 바로 아래, 패딩 없이) -->
+        <div class="modal-tab-bar" id="modalTabs">
+            <button class="modal-tab" data-tab="deploy" onclick="switchTab('deploy')">제출용 저장</button>
+            <button class="modal-tab" data-tab="matrix" onclick="switchTab('matrix')">매트릭스</button>
+        </div>
+        <!-- 본문 -->
         <div class="modal-body" id="modalBody">
-            <!-- 탭 버튼 -->
-            <div id="modalTabs" style="display:flex;gap:8px;margin-bottom:12px;">
-                <button class="modal-tab" data-tab="deploy" onclick="switchTab('deploy')">제출용 저장</button>
-                <button class="modal-tab" data-tab="matrix" onclick="switchTab('matrix')">매트릭스</button>
+            <!-- 로딩 -->
+            <div id="modalLoading" style="display:none;text-align:center;padding:40px;color:#999;">
+                로드 중...
             </div>
-            <!-- 종류 칩 -->
-            <div id="typeChips" style="margin-bottom:8px;">
-                <button id="chipCombined" class="chip chip--active" onclick="toggleTypeChip('combined')">통합</button>
-                <button id="chipPositive" class="chip" onclick="toggleTypeChip('positive')">긍정</button>
-                <button id="chipNegative" class="chip" onclick="toggleTypeChip('negative')">부정</button>
+            <!-- 실제 컨텐츠 -->
+            <div id="modalContentArea">
+                <!-- 필터 영역 -->
+                <div id="filterArea" class="modal-filter-area">
+                    <div class="filter-row" id="typeChips">
+                        <span class="filter-label">종류</span>
+                        <div class="filter-chips">
+                            <button id="chipCombined" class="chip chip--active" onclick="toggleTypeChip('combined')">통합</button>
+                            <button id="chipPositive" class="chip" onclick="toggleTypeChip('positive')">긍정</button>
+                            <button id="chipNegative" class="chip" onclick="toggleTypeChip('negative')">부정</button>
+                        </div>
+                    </div>
+                    <div class="filter-row" id="yearChipsRow">
+                        <span class="filter-label">연도</span>
+                        <div class="filter-chips" id="yearChips"></div>
+                    </div>
+                </div>
+                <!-- 이미지 그리드 -->
+                <p class="modal-section-title">워드클라우드</p>
+                <div id="imageGrid" class="modal-images"></div>
+                <!-- 상세 정보 (접기/펼치기) -->
+                <details class="modal-details">
+                    <summary>상세 정보</summary>
+                    <div id="modalMeta"></div>
+                </details>
             </div>
-            <!-- 연도 칩 -->
-            <div style="margin-bottom:12px;">
-                <span style="font-size:12px;color:#6c757d;margin-right:6px;">연도</span>
-                <span id="yearChips"></span>
-            </div>
-            <!-- 이미지 그리드 -->
-            <div id="imageGrid" class="modal-images"></div>
-            <!-- 메타 정보 -->
-            <div id="modalMeta"></div>
         </div>
     </div>
 </div>
@@ -477,47 +629,64 @@ let selectedYears  = new Set();
 // ── 모달 진입 ──────────────────────────────────────────────────
 async function openDetail(entryId, employeeId) {
     const modal = document.getElementById('detailModal');
-    document.getElementById('modalBody').innerHTML =
-        '<p style="text-align:center;padding:30px;color:#999;">로드 중...</p>';
+    const loading = document.getElementById('modalLoading');
+    const content = document.getElementById('modalContentArea');
+
+    // 로딩 표시 / 컨텐츠 숨김
+    if (loading) loading.style.display = 'block';
+    if (content) content.style.display = 'none';
     modal.classList.add('open');
 
-    const [detailRes, employeeRes] = await Promise.all([
-        fetch(`/api/perspective/deploy-gallery/detail/${encodeURIComponent(entryId)}`),
-        fetch(`/api/perspective/deploy-gallery/employee-entries/${encodeURIComponent(employeeId)}`),
-    ]);
-    const detailData   = await detailRes.json();
-    const employeeData = await employeeRes.json();
+    try {
+        const [detailRes, employeeRes] = await Promise.all([
+            fetch(`/api/perspective/deploy-gallery/detail/${encodeURIComponent(entryId)}`),
+            fetch(`/api/perspective/deploy-gallery/employee-entries/${encodeURIComponent(employeeId)}`),
+        ]);
+        const detailData   = await detailRes.json();
+        const employeeData = await employeeRes.json();
 
-    if (!detailData.success) {
-        document.getElementById('modalBody').innerHTML =
-            `<p style="color:#dc3545;">오류: ${detailData.error}</p>`;
-        return;
+        if (!detailData.success) {
+            document.getElementById('imageGrid').innerHTML =
+                `<p style="color:#dc3545;">오류: ${detailData.error}</p>`;
+            if (loading) loading.style.display = 'none';
+            if (content) content.style.display = 'block';
+            return;
+        }
+
+        const clickedEntry  = detailData.entry;
+        const clickedSource = clickedEntry.source || 'deploy';
+
+        currentEntries.deploy = employeeData.deploy || null;
+        currentEntries.matrix = employeeData.matrix || null;
+        currentEntries[clickedSource] = clickedEntry;   // 클릭 entry는 detail 버전 우선
+
+        currentTab    = clickedSource;
+        selectedTypes = new Set(['combined']);
+        selectedYears = new Set();
+
+        document.getElementById('modalTitle').textContent =
+            `${escapeHtml(clickedEntry.deploy_name || clickedEntry.employee_id)} 상세 정보`;
+
+        // 로딩 숨김 / 컨텐츠 표시
+        if (loading) loading.style.display = 'none';
+        if (content) content.style.display = 'block';
+        renderModal();
+    } catch (e) {
+        console.error('openDetail error:', e);
+        document.getElementById('imageGrid').innerHTML =
+            `<p style="color:#dc3545;text-align:center;padding:20px;">상세 정보를 불러오는 중 오류가 발생했습니다.<br>${escapeHtml(e.message)}</p>`;
+        if (loading) loading.style.display = 'none';
+        if (content) content.style.display = 'block';
     }
-
-    const clickedEntry  = detailData.entry;
-    const clickedSource = clickedEntry.source || 'deploy';
-
-    currentEntries.deploy = employeeData.deploy || null;
-    currentEntries.matrix = employeeData.matrix || null;
-    currentEntries[clickedSource] = clickedEntry;   // 클릭 entry는 detail 버전 우선
-
-    currentTab    = clickedSource;
-    selectedTypes = new Set(['combined']);
-    selectedYears = new Set();
-
-    document.getElementById('modalTitle').textContent =
-        `${escapeHtml(clickedEntry.deploy_name || clickedEntry.employee_id)} 상세 정보`;
-
-    renderModal();
 }
 
 // ── 모달 전체 재렌더 ───────────────────────────────────────────
 function renderModal() {
     renderTabs();
 
-    // 칩 컨테이너 항상 복원 (renderNoData가 숨겼을 수 있음)
-    document.getElementById('typeChips').style.display = '';
-    document.getElementById('yearChips').parentElement.style.display = '';
+    // 필터 영역 항상 복원 (renderNoData가 숨겼을 수 있음)
+    document.getElementById('filterArea').style.display = '';
+    document.getElementById('imageGrid').previousElementSibling.style.display = ''; // 섹션 제목
 
     const entry = currentEntries[currentTab];
     if (!entry) {
@@ -650,10 +819,11 @@ function renderFilteredImages(entry) {
     }
     grid.innerHTML = filtered.map(({ year, type, url }) => `
         <div class="modal-image-wrap">
-            <img src="${url}" alt="${year ? year + ' ' : ''}${labelMap[type]}">
-            <div class="img-label">${year ? year + ' — ' : ''}${labelMap[type]}</div>
-            <a href="${url}" download class="btn btn-sm btn-outline-secondary"
-               style="margin-top:4px;font-size:11px;">다운로드</a>
+            <img src="${escapeHtml(url)}"
+                 alt="${year ? escapeHtml(year) + ' ' : ''}${labelMap[type]}"
+                 onclick="openLightbox(this.src)">
+            <a href="${escapeHtml(url)}" download class="img-download-btn">↓ 저장</a>
+            <div class="img-label">${year ? escapeHtml(year) + ' — ' : ''}${labelMap[type]}</div>
         </div>
     `).join('');
 }
@@ -685,13 +855,25 @@ function renderNoData() {
     document.getElementById('imageGrid').innerHTML =
         '<p style="text-align:center;color:#adb5bd;padding:40px;">이 직원의 해당 출처 데이터가 없습니다.</p>';
     document.getElementById('modalMeta').innerHTML = '';
-    // 칩 숨김 (renderModal 진입 시 복원됨)
-    document.getElementById('typeChips').style.display = 'none';
-    document.getElementById('yearChips').parentElement.style.display = 'none';
+    // 필터 영역 + 섹션 제목 숨김 (renderModal 진입 시 복원됨)
+    document.getElementById('filterArea').style.display = 'none';
+    document.getElementById('imageGrid').previousElementSibling.style.display = 'none';
 }
 
 function closeModal() {
     document.getElementById('detailModal').classList.remove('open');
+}
+
+function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightboxOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    document.getElementById('lightboxOverlay').classList.remove('open');
+    document.getElementById('lightboxImg').src = '';
+    document.body.style.overflow = '';
 }
 
 function escapeHtml(text) {
@@ -706,9 +888,15 @@ document.getElementById('detailModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
 
-// Close modal on Escape key
+// Close modal / lightbox on Escape key
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+        if (document.getElementById('lightboxOverlay').classList.contains('open')) {
+            closeLightbox();
+        } else {
+            closeModal();
+        }
+    }
 });
 
 // Initial load

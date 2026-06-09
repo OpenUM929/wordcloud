@@ -1,7 +1,9 @@
 """Perspective analysis routes - X/Y matrix group analysis API."""
 import os
 import json as json_lib
-from flask import Blueprint, request, jsonify, session, Response
+import zipfile
+import tempfile
+from flask import Blueprint, request, jsonify, session, Response, send_file
 from src.services.perspective_service import (
     load_all_batches, get_matrix_meta,
     generate_perspective_matrix, save_to_deploy,
@@ -9,12 +11,14 @@ from src.services.perspective_service import (
     build_profanity_summary, _get_pseudo_mgr,
     TEST_SENTENCES_100, split_sentences, has_contrastive,
     sentence_sentiment_override, _get_sentence_level_scores,
+    OUTPUTS_DIR_PATH,
 )
 from src.services.deploy_session_service import (
     create_session, allocate_chunk, report_chunk,
     get_active_sessions, resume_session, cancel_session,
     cleanup_old_sessions, get_session_progress,
     get_session_tasks, get_recently_completed_sessions,
+    retry_failed_tasks,
 )
 from src.services.audit_service import log_action
 
@@ -231,6 +235,23 @@ def api_deploy_session_resume():
     return jsonify({'success': True})
 
 
+@perspective_bp.route('/deploy-session/retry', methods=['POST'])
+def api_deploy_session_retry():
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    session_id = data.get('session_id', '')
+    if not session_id:
+        return jsonify({'success': False, 'error': 'session_id가 필요합니다.'}), 400
+
+    progress = get_session_progress(session_id)
+    if not progress:
+        return jsonify({'success': False, 'error': '세션을 찾을 수 없습니다.'}), 404
+
+    retry_failed_tasks(session_id)
+    return jsonify({'success': True, 'session_id': session_id})
+
+
 @perspective_bp.route('/deploy-session/cancel', methods=['POST'])
 def api_deploy_session_cancel():
     if not _is_admin():
@@ -275,6 +296,67 @@ def api_deploy_session_recent_completed():
     hours = request.args.get('hours', 24, type=int)
     sessions = get_recently_completed_sessions(hours)
     return jsonify({'success': True, 'sessions': sessions})
+
+
+@perspective_bp.route('/deploy-session/download', methods=['GET'])
+def api_deploy_session_download():
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    session_id = request.args.get('session_id', '')
+    if not session_id:
+        return jsonify({'success': False, 'error': 'session_id가 필요합니다.'}), 400
+
+    tasks = get_session_tasks(session_id)
+    if not tasks:
+        return jsonify({'success': False, 'error': '세션을 찾을 수 없습니다.'}), 404
+
+    file_paths = []
+    for task in tasks:
+        if task.get('status') != 'completed':
+            continue
+        result_path = task.get('result_path', '')
+        if not result_path:
+            continue
+        try:
+            result = json_lib.loads(result_path)
+        except (json_lib.JSONDecodeError, TypeError):
+            continue
+
+        urls = []
+        if 'combined' in result:
+            urls.append(result['combined'])
+        if 'positive' in result:
+            urls.append(result['positive'])
+        if 'negative' in result:
+            urls.append(result['negative'])
+        for row_data in result.get('row_results', {}).values():
+            if isinstance(row_data, dict):
+                urls.extend([row_data.get('combined'), row_data.get('positive'), row_data.get('negative')])
+
+        for url in urls:
+            if not url:
+                continue
+            clean_url = url.split('?')[0]
+            rel = clean_url.lstrip('/')
+            if rel.startswith('outputs/'):
+                rel = rel[8:]
+            abs_path = os.path.join(OUTPUTS_DIR_PATH, rel)
+            if os.path.exists(abs_path):
+                file_paths.append(abs_path)
+
+    if not file_paths:
+        return jsonify({'success': False, 'error': '다운로드할 파일이 없습니다.'}), 404
+
+    from datetime import datetime as _dt
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+    with zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for fp in file_paths:
+            arcname = os.path.relpath(fp, OUTPUTS_DIR_PATH).replace('\\', '/')
+            zf.write(fp, arcname)
+
+    return send_file(tmp.name, mimetype='application/zip',
+                     as_attachment=True,
+                     download_name=f'deploy_{session_id[:8]}_{_dt.now().strftime("%Y%m%d")}.zip')
 
 
 @perspective_bp.route('/matrix', methods=['POST'])

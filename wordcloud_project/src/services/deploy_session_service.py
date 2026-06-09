@@ -303,6 +303,34 @@ def get_session_tasks(session_id):
         conn.close()
 
 
+def retry_failed_tasks(session_id):
+    """세션 내 실패한 태스크를 pending으로 리셋하고 세션을 running 상태로 복원."""
+    conn = _get_conn()
+    try:
+        with conn:
+            # failed 태스크를 pending으로 리셋
+            conn.execute(
+                """
+                UPDATE deploy_tasks
+                   SET status = 'pending', error_message = NULL, completed_at = NULL, assigned_at = NULL
+                 WHERE session_id = ? AND status = 'failed'
+                """,
+                (session_id,),
+            )
+            # 세션 상태를 running으로 복원, completed_at 초기화
+            conn.execute(
+                """
+                UPDATE deploy_sessions
+                   SET status = 'running', completed_at = NULL
+                 WHERE session_id = ?
+                """,
+                (session_id,),
+            )
+        return True
+    finally:
+        conn.close()
+
+
 def get_recently_completed_sessions(hours=24):
     conn = _get_conn()
     try:

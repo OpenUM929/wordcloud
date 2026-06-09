@@ -310,6 +310,7 @@ body {
     <div class="action-row">
         <button class="btn-primary" onclick="generateMatrix()">매트릭스 생성</button>
         <button class="btn-success" onclick="saveDeploy()">제출용 저장</button>
+        <button id="zipDownloadBtn" class="btn-secondary" style="display:none;margin-left:8px;" onclick="downloadDeployZip()">⬇️ 결과물 ZIP</button>
         <span id="statusMsg"></span>
         <span style="margin-left:auto;font-size:11px;color:#888;display:flex;align-items:center;gap:4px;">
             배포모드:
@@ -453,15 +454,15 @@ body {
 
 <div class="modal-overlay" id="idInputModal" onclick="if(event.target===this)cancelIdInput()">
     <div class="modal-content" style="max-width:800px;max-height:80vh;display:flex;flex-direction:column;">
-        <h3 style="margin:0 0 10px 0;">직원 ID 입력</h3>
-        <div style="display:flex;gap:12px;flex:1;overflow:hidden;">
-            <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
-                <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">직접 입력</div>
-                <textarea id="idInputTextarea" placeholder="사번을 입력하세요. 쉼표, 줄바꿈, 공백으로 구분 가능" style="flex:1;resize:none;padding:8px;font-size:12px;border:1px solid #ccc;border-radius:4px;"></textarea>
-                <div style="font-size:11px;color:#888;margin-top:4px;">파일에서 읽어온 목록이 우측에 표시됩니다. 직접 추가/수정 가능합니다.</div>
+        <h3 style="margin:0 0 16px;padding-bottom:12px;border-bottom:2px solid #e9ecef;">✏️ 직원 ID 입력</h3>
+        <div style="display:flex;gap:16px;flex:1;overflow:hidden;">
+            <div style="flex:1;display:flex;flex-direction:column;min-width:0;border:1px solid #dee2e6;border-radius:6px;padding:10px;background:#ffffff;">
+                <div style="font-size:12px;font-weight:700;color:#212529;margin-bottom:6px;">✏️ 직접 입력</div>
+                <textarea id="idInputTextarea" placeholder="사번을 입력하세요. 쉼표, 줄바꿈, 공백으로 구분. 수천 명 입력 가능." style="flex:1;resize:none;padding:8px;font-size:12px;border:1px solid #ccc;border-radius:4px;"></textarea>
+                <div style="font-size:11px;color:#888;margin-top:4px;">쉼표, 줄바꿈, 공백으로 구분. 수천 명 입력 가능.</div>
             </div>
-            <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto;">
-                <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px;">인식된 직원 목록</div>
+            <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto;border:1px solid #dee2e6;border-radius:6px;padding:10px;background:#f8f9fa;">
+                <div style="font-size:12px;font-weight:700;color:#212529;margin-bottom:6px;">조회 결과 <span id="idInputCountBadge" style="background:#0d6efd;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;">0명</span></div>
                 <div id="idInputPreview" style="font-size:12px;"></div>
             </div>
         </div>
@@ -738,11 +739,87 @@ function parseIdsFromTextarea() {
     return text.split(/[,\s\n]+/).map(s => s.trim()).filter(s => s.length > 0);
 }
 
-function openIdInputModal() {
-    document.getElementById('idInputTextarea').value = '';
-    document.getElementById('idInputPreview').innerHTML = '<p style="color:#888;font-size:12px;text-align:center;padding:20px 0;">좌측에 사번을 입력하고 확인을 누르세요.</p>';
-    document.getElementById('idInputStatus').textContent = '';
-    document.getElementById('idInputStatus').style.color = '#888';
+function updateIdInputCount() {
+    const ids = parseIdsFromTextarea();
+    const badge = document.getElementById('idInputCountBadge');
+    if (badge) badge.textContent = ids.length + '명';
+    _renderIdPreviewPending(ids);
+}
+
+function _renderIdPreviewPending(ids) {
+    const preview = document.getElementById('idInputPreview');
+    if (!preview) return;
+    if (ids.length === 0) {
+        preview.innerHTML = '<p style="color:#aaa;font-size:12px;text-align:center;padding:16px 0;">좌측에 사번을 입력하세요.</p>';
+        return;
+    }
+    const rows = ids.map(id =>
+        `<tr><td style="padding:3px 6px;font-family:monospace;color:#333;">${id}</td>` +
+        `<td style="padding:3px 6px;color:#aaa;font-size:11px;">— 미확인</td></tr>`
+    ).join('');
+    preview.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;">` +
+        `<tr style="border-bottom:1px solid #dee2e6;">` +
+        `<th style="padding:3px 6px;font-size:11px;font-weight:600;color:#888;text-align:left;">입력 사번</th>` +
+        `<th style="padding:3px 6px;font-size:11px;font-weight:600;color:#888;text-align:left;">조회 결과</th>` +
+        `</tr>${rows}</table>`;
+}
+
+function _renderIdPreviewResults(inputIds, notFound, detailsMap) {
+    const notFoundSet = new Set(notFound);
+    const preview = document.getElementById('idInputPreview');
+    if (!preview) return;
+    const rows = inputIds.map(id => {
+        if (notFoundSet.has(id)) {
+            return `<tr><td style="padding:3px 6px;font-family:monospace;color:#333;">${id}</td>` +
+                   `<td style="padding:3px 6px;"><span style="color:#dc3545;font-weight:600;">❌ 없음</span></td></tr>`;
+        }
+        const det = detailsMap[id];
+        const label = det ? (det.name || '찾음') : '찾음';
+        return `<tr><td style="padding:3px 6px;font-family:monospace;color:#333;">${id}</td>` +
+               `<td style="padding:3px 6px;"><span style="color:#198754;font-weight:600;">✅ ${label}</span></td></tr>`;
+    }).join('');
+    preview.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;">` +
+        `<tr style="border-bottom:1px solid #dee2e6;">` +
+        `<th style="padding:3px 6px;font-size:11px;font-weight:600;color:#888;text-align:left;">입력 사번</th>` +
+        `<th style="padding:3px 6px;font-size:11px;font-weight:600;color:#888;text-align:left;">조회 결과</th>` +
+        `</tr>${rows}</table>`;
+}
+
+function openIdInputModal(failedIds = null, sessionId = null) {
+    const ta = document.getElementById('idInputTextarea');
+    const modalContent = document.querySelector('#idInputModal .modal-content');
+    // 실시간 카운트 이벤트 리스너 (중복 방지)
+    if (!ta._hasInputListener) {
+        ta.addEventListener('input', updateIdInputCount);
+        ta._hasInputListener = true;
+    }
+    // 재시도 모드일 때 textarea 및 모달 높이 확장
+    if (sessionId) {
+        ta.style.minHeight = '400px';
+        if (modalContent) modalContent.style.maxHeight = '95vh';
+        window._retrySessionId = sessionId;
+    } else {
+        ta.style.minHeight = '';
+        if (modalContent) modalContent.style.maxHeight = '80vh';
+        window._retrySessionId = null;
+    }
+    // 모달 타이틀 동적 변경
+    const titleEl = document.querySelector('#idInputModal h3');
+    if (titleEl) titleEl.textContent = sessionId ? '✏️ 실패 사번 수정 (재시도)' : '✏️ 직원 ID 입력';
+
+    if (failedIds && failedIds.length > 0) {
+        ta.value = failedIds.join('\n');
+        updateIdInputCount();
+        document.getElementById('idInputStatus').textContent = sessionId
+            ? '⚠️ 저장이 완료되지 않은 사번입니다. 수정 후 확인을 눌러 재시도하세요.'
+            : '⚠️ 저장이 완료되지 않은 사번입니다. 수정 후 확인을 눌러 재시도하세요.';
+        document.getElementById('idInputStatus').style.color = '#dc3545';
+    } else {
+        ta.value = '';
+        updateIdInputCount();
+        document.getElementById('idInputStatus').textContent = '';
+        document.getElementById('idInputStatus').style.color = '#888';
+    }
     window._pendingFileIds = [];
     document.getElementById('idInputModal').classList.add('open');
 }
@@ -774,6 +851,12 @@ async function confirmIdInput() {
         const matchedIds = d.matched_ids || [];
         const notFound = d.not_found || [];
 
+        const detailsMap = {};
+        (d.details || []).forEach(det => { detailsMap[det.employee_id] = det; });
+        _renderIdPreviewResults(ids, notFound, detailsMap);
+        const badge = document.getElementById('idInputCountBadge');
+        if (badge) badge.textContent = `${matchedIds.length}/${ids.length}명`;
+
         if (notFound.length > 0) {
             const notFoundStr = notFound.join(', ');
             const msg = `다음 ${notFound.length}명의 직원은 존재하지 않습니다: ${notFoundStr}`;
@@ -795,6 +878,12 @@ async function confirmIdInput() {
         document.getElementById('idInputModal').classList.remove('open');
         document.getElementById('employeeSelect').disabled = true;
         document.getElementById('allEmployeesCheck').disabled = true;
+
+        // 재시도 모드일 때 saveDeploy 자동 호출
+        if (window._retrySessionId) {
+            saveDeploy(window._retrySessionId);
+            window._retrySessionId = null;
+        }
     } catch(e) {
         document.getElementById('idInputStatus').textContent = '❌ 오류';
         document.getElementById('idInputStatus').style.color = '#dc3545';
@@ -803,6 +892,7 @@ async function confirmIdInput() {
 
 function cancelIdInput() {
     window._pendingFileIds = null;
+    window._retrySessionId = null;
     document.getElementById('idInputModal').classList.remove('open');
     document.getElementById('csvFileInput').value = '';
     document.getElementById('csvStatus').textContent = '';
@@ -982,11 +1072,45 @@ async function saveDeploy(resumeSessionId = null) {
     renderProgress(0, 'init');
 
     let sessionId = resumeSessionId || null;
+    let existingSuccessData = [];
+    let existingFailData = [];
     try {
         let options = {...body};
         delete options.employee_ids;
         delete options.employee_id;
         delete options.all_employees;
+
+        if (sessionId) {
+            // 기존 세션의 completed/failed 태스크 결과 사전 로드
+            const tasksRes = await fetch(`/api/perspective/deploy-session/tasks?session_id=${sessionId}`);
+            const tasksData = await tasksRes.json();
+            if (tasksData.success) {
+                tasksData.tasks.forEach(t => {
+                    if (t.status === 'completed' && t.result_path) {
+                        try {
+                            const rd = JSON.parse(t.result_path);
+                            existingSuccessData.push({...rd, employee_id: t.employee_id});
+                        } catch(_) {}
+                    } else if (t.status === 'failed') {
+                        existingFailData.push({employee_id: t.employee_id, error: t.error_message || '처리 실패'});
+                    }
+                });
+            }
+            // failed 태스크를 pending으로 리셋
+            await fetch('/api/perspective/deploy-session/retry', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId})
+            });
+            // total을 기존 전체 태스크 수로 설정
+            total = existingSuccessData.length + existingFailData.length;
+        }
+
+        // 기존 결과를 successData/failData에 사전 로드
+        successData = [...existingSuccessData];
+        failData = [...existingFailData];
+        doneCount = existingSuccessData.length;
+        failCount = existingFailData.length;
 
         if (!sessionId) {
             let employeeIds = [];
@@ -1068,6 +1192,12 @@ async function saveDeploy(resumeSessionId = null) {
                         successData.push({...d, employee_id: eid});
                         doneCount++;
                         addLine(`✅ ${d.name || eid} 완료`, 'done');
+                        // 재시도 성공 시 실패 목록에서 제거
+                        const fi = failData.findIndex(f => f.employee_id === eid);
+                        if (fi !== -1) {
+                            failData.splice(fi, 1);
+                            failCount--;
+                        }
                     } else {
                         failedItems.push({employee_id: eid, error: d.error || '처리 실패'});
                         failData.push({employee_id: eid, error: d.error || '처리 실패'});
@@ -1115,7 +1245,14 @@ async function saveDeploy(resumeSessionId = null) {
         }
     }
 
+    window._lastDeploySessionId = sessionId;
     renderDeployComplete({success: successData, fail: failData, total});
+}
+
+function downloadDeployZip() {
+    const sid = window._lastDeploySessionId;
+    if (!sid) return;
+    window.location.href = `/api/perspective/deploy-session/download?session_id=${sid}`;
 }
 
 function showDeployToast(message, linkUrl) {
@@ -1138,29 +1275,18 @@ function renderDeployComplete(summary) {
     const successCount = successItems.length;
     const failCountItems = failItems.length;
 
-    // 전부 성공 시: 토스트만, 상세 모달은 띄우지 않음
-    if (failCountItems === 0 && successCount > 0) {
-        showDeployToast('✅ ' + successCount + '명 저장 완료', '/deploy-gallery');
-        let h = '<div class="summary-bar" style="background:#d4edda;border-color:#c3e6cb;color:#155724;">';
-        h += '<span><strong>✅ 저장 완료</strong></span>';
-        h += '<span>' + successCount + '명의 이미지가 갤러리에 저장되었습니다.</span>';
-        h += '<a href="/deploy-gallery" style="margin-left:auto;color:#155724;font-weight:bold;text-decoration:underline;">갤러리에서 확인 →</a>';
-        h += '</div>';
-        const resultArea = document.getElementById('resultArea');
-        resultArea.innerHTML = h;
-        setStatus('완료 (' + successCount + '/' + totalItems + ')');
-        document.body.style.height = 'auto';
-        document.body.style.overflow = 'auto';
-        resultArea.style.flex = 'none';
-        resultArea.style.overflow = 'visible';
-        resultArea.style.minHeight = '';
-        return;
-    }
+    if (successCount > 0) showDeployToast('✅ ' + successCount + '명 저장 완료', '/deploy-gallery');
 
     let h = '<div class="summary-bar" style="background:#d4edda;border-color:#c3e6cb;">';
     h += `<span><strong>✅ 제출용 저장 완료</strong></span>`;
     h += `<span>${successCount}/${totalItems} 성공</span>`;
     if (failCountItems > 0) h += `<span style="color:#dc3545;">${failCountItems}건 실패</span>`;
+    if (failCountItems > 0 && window._lastDeploySessionId) {
+        const safeJson = JSON.stringify(failItems.map(f => f.employee_id || f.employee || '?')).replace(/"/g, '&quot;');
+        const _sid = window._lastDeploySessionId;
+        h += `<button onclick="openIdInputModal(${safeJson}, '${_sid}')" style="margin-left:12px;padding:4px 10px;background:#dc3545;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏️ 실패 사번 수정 →</button>`;
+    }
+    if (successCount > 0) h += '<a href="/deploy-gallery" style="margin-left:auto;color:#155724;font-size:12px;font-weight:bold;text-decoration:underline;">갤러리에서 확인 →</a>';
     h += '</div>';
 
     h += `<div class="progress-container"><div class="deploy-bar" style="width:100%;background:#00b894;"></div><div class="progress-text light">${successCount}/${totalItems} (100%)</div></div>`;
@@ -1183,7 +1309,16 @@ function renderDeployComplete(summary) {
                      ['긍정', positiveUrl, rowData.positive_sentences || [], '#28a745'],
                      ['부정', negativeUrl, rowData.negative_sentences || [], '#dc3545']].forEach(([label, url, sentences, color]) => {
                         h += '<div style="flex:1;">';
-                        h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
+                        if (url) {
+                            const cleanUrl = url.split('?')[0];
+                            const filename = cleanUrl.split('/').pop();
+                            h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">`;
+                            h += `<span style="font-size:11px;font-weight:700;text-align:center;color:${color};">${label}</span>`;
+                            h += `<a href="${cleanUrl}" download="${filename}" style="font-size:10px;color:#0d6efd;text-decoration:none;">⬇️ 다운</a>`;
+                            h += `</div>`;
+                        } else {
+                            h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
+                        }
                         h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
                         if (url) {
                             h += `<img src="${url}" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
@@ -1208,7 +1343,16 @@ function renderDeployComplete(summary) {
                  ['긍정', positiveUrl, res.positive_sentences || res['긍정_문장'] || [], '#28a745'],
                  ['부정', negativeUrl, res.negative_sentences || res['부정_문장'] || [], '#dc3545']].forEach(([label, url, sentences, color]) => {
                     h += '<div style="flex:1;">';
-                    h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
+                    if (url) {
+                        const cleanUrl = url.split('?')[0];
+                        const filename = cleanUrl.split('/').pop();
+                        h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">`;
+                        h += `<span style="font-size:11px;font-weight:700;text-align:center;color:${color};">${label}</span>`;
+                        h += `<a href="${cleanUrl}" download="${filename}" style="font-size:10px;color:#0d6efd;text-decoration:none;">⬇️ 다운</a>`;
+                        h += `</div>`;
+                    } else {
+                        h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
+                    }
                     h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
                     if (url) {
                         h += `<img src="${url}" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
@@ -1248,7 +1392,9 @@ function renderDeployComplete(summary) {
         const failedIds = failItems.map(f => f.employee_id || f.employee || '?');
         h += `<div style="margin-top:10px;padding:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;">`;
         h += `<strong>❌ 실패한 직원 (${failCountItems}명)</strong>: ${failedIds.join(', ')}<br>`;
-        h += `<button class="retry-btn" onclick="retryFailed(${JSON.stringify(failedIds).replace(/"/g,"'")})">🔄 다시 시도</button>`;
+        const safeJson = JSON.stringify(failedIds).replace(/"/g, '&quot;');
+        const _sid2 = window._lastDeploySessionId ? `,'${window._lastDeploySessionId}'` : '';
+        h += `<button onclick="openIdInputModal(${safeJson}${_sid2})" style="margin-top:8px;padding:6px 12px;background:#dc3545;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">✏️ 실패 사번 수정 →</button>`;
         h += '</div>';
     }
 
@@ -1260,6 +1406,16 @@ function renderDeployComplete(summary) {
     resultArea.style.flex = 'none';
     resultArea.style.overflow = 'visible';
     resultArea.style.minHeight = '';
+
+    // ZIP 다운로드 버튼 표시/숨김
+    const zipBtn = document.getElementById('zipDownloadBtn');
+    if (zipBtn) {
+        if (successCount > 0 && window._lastDeploySessionId) {
+            zipBtn.style.display = 'inline-block';
+        } else {
+            zipBtn.style.display = 'none';
+        }
+    }
 }
 
 async function showDeployResults(sessionId) {
@@ -1287,12 +1443,6 @@ async function showDeployResults(sessionId) {
     } catch(e) {
         resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">네트워크 오류로 결과를 불러올 수 없습니다.</p>';
     }
-}
-
-function retryFailed(failedIds) {
-    _csvEmployeeIds = failedIds;
-    document.getElementById('csvStatus').textContent = `CSV: ${failedIds.length}명 재시도`;
-    saveDeploy();
 }
 
 function renderMatrix(data, container, analysisTypes) {
