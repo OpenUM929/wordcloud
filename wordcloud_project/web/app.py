@@ -48,11 +48,6 @@ from src.routes.admin_routes import admin_bp
 from src.routes.wordcloud_data_routes import wordcloud_data_bp
 from src.routes.wordcloud_preview_routes import wordcloud_preview_bp
 
-# One-time migration: users/*.json → evaluations DB (deploy_session_service에서 테이블 생성 완료 후 실행)
-from src.services.deploy_session_service import _auto_migrate_evaluations
-_auto_migrate_evaluations()
-
-
 def create_app():
     """Create and configure Flask application instance."""
     app = Flask(__name__, 
@@ -116,6 +111,9 @@ def create_app():
 if __name__ == '__main__':
     """Run the Flask application."""
     app = create_app()
+
+    from src.services.deploy_session_service import _auto_migrate_evaluations
+    _auto_migrate_evaluations()
     
     # Load models before running (optional, can be loaded lazily)
     print("=== WordCloud Application ===")

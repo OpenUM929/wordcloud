@@ -1200,14 +1200,24 @@ async function saveDeploy(resumeSessionId = null) {
                         }
                     } else {
                         failedItems.push({employee_id: eid, error: d.error || '처리 실패'});
-                        failData.push({employee_id: eid, error: d.error || '처리 실패'});
-                        failCount++;
+                        const fi = failData.findIndex(f => f.employee_id === eid);
+                        if (fi === -1) {
+                            failData.push({employee_id: eid, error: d.error || '처리 실패'});
+                            failCount++;
+                        } else {
+                            failData[fi].error = d.error || '처리 실패';
+                        }
                         addLine(`❌ ${eid} 실패 - ${d.error || '처리 실패'}`, 'fail');
                     }
                 } catch(_e) {
                     failedItems.push({employee_id: eid, error: '네트워크 오류'});
-                    failData.push({employee_id: eid, error: '네트워크 오류'});
-                    failCount++;
+                    const fi = failData.findIndex(f => f.employee_id === eid);
+                    if (fi === -1) {
+                        failData.push({employee_id: eid, error: '네트워크 오류'});
+                        failCount++;
+                    } else {
+                        failData[fi].error = '네트워크 오류';
+                    }
                     addLine(`❌ ${eid} 실패 - 네트워크 오류`, 'fail');
                 }
                 renderProgress(doneCount + failCount);

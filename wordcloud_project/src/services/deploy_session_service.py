@@ -43,13 +43,168 @@ def _init_db():
                 PRIMARY KEY (session_id, employee_id)
             );
             CREATE INDEX IF NOT EXISTS idx_tasks_session_status ON deploy_tasks (session_id, status);
+
+            -- gallery_entries (deploy_manifest.json 대체)
+            CREATE TABLE IF NOT EXISTS gallery_entries (
+                id               TEXT PRIMARY KEY,
+                employee_id      TEXT NOT NULL,
+                deploy_name      TEXT,
+                batch_title      TEXT,
+                timestamp        TEXT NOT NULL,
+                created_at       TEXT DEFAULT (datetime('now')),
+                output_mode      TEXT DEFAULT 'real',
+                source           TEXT DEFAULT 'deploy',
+                analysis_type    TEXT,
+                row_field        TEXT,
+                row_values       TEXT,
+                row_combine_all  INTEGER DEFAULT 0,
+                images           TEXT,
+                row_results      TEXT,
+                options          TEXT,
+                extra            TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_ge_employee    ON gallery_entries (employee_id);
+            CREATE INDEX IF NOT EXISTS idx_ge_timestamp   ON gallery_entries (timestamp DESC);
+            CREATE INDEX IF NOT EXISTS idx_ge_batch_title ON gallery_entries (batch_title);
+            CREATE INDEX IF NOT EXISTS idx_ge_source      ON gallery_entries (source);
+            CREATE INDEX IF NOT EXISTS idx_ge_date        ON gallery_entries (substr(timestamp, 1, 8));
+
+            -- employees + evaluations (users/*.json 대체)
+            CREATE TABLE IF NOT EXISTS employees (
+                employee_id  TEXT PRIMARY KEY,
+                name         TEXT,
+                department   TEXT,
+                position     TEXT,
+                updated_at   TEXT DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS evaluations (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id      TEXT NOT NULL REFERENCES employees(employee_id),
+                evaluator_id     TEXT,
+                evaluation_date  TEXT,
+                batch_id         TEXT,
+                data             TEXT NOT NULL,
+                fingerprint      TEXT,
+                created_at       TEXT DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_ev_employee  ON evaluations (employee_id);
+            CREATE INDEX IF NOT EXISTS idx_ev_batch     ON evaluations (batch_id);
+            CREATE INDEX IF NOT EXISTS idx_ev_evaluator ON evaluations (evaluator_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_fp ON evaluations (employee_id, fingerprint);
+
+            -- 스키마 버전 관리
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version    INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL,
+                note       TEXT
+            );
+            INSERT OR IGNORE INTO schema_version (version, applied_at, note)
+                VALUES (1, datetime('now'), 'initial: gallery_entries, employees, evaluations');
         """)
         conn.commit()
     finally:
         conn.close()
 
 
+def _apply_schema_migrations():
+    """스키마 버전별 마이그레이션 실행."""
+    conn = _get_conn()
+    try:
+        current = conn.execute("SELECT COALESCE(MAX(version), 0) FROM schema_version").fetchone()[0]
+
+        if current < 2:
+            conn.execute("DROP INDEX IF EXISTS idx_ev_fp")
+            conn.execute("DELETE FROM evaluations")
+            conn.execute("DELETE FROM employees")
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_fp ON evaluations (employee_id, batch_id, fingerprint)"
+            )
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (2, datetime('now'), ?)",
+                ('fix fingerprint index scope: (employee_id, batch_id, fingerprint)',)
+            )
+            conn.commit()
+            print("[DB] Schema v2: fingerprint 인덱스 재정의, 평가 데이터 초기화 완료")
+            current = 2
+
+        if current < 3:
+            # 동일 직원의 동일 평가가 배치가 달라도 중복 저장되지 않도록
+            # UNIQUE 범위를 (employee_id, batch_id, fingerprint) → (employee_id, fingerprint)로 축소.
+            # 기존 중복 행은 id가 가장 작은(먼저 삽입된) 행만 남기고 제거.
+            conn.execute("""
+                DELETE FROM evaluations
+                WHERE id NOT IN (
+                    SELECT MIN(id) FROM evaluations
+                    GROUP BY employee_id, fingerprint
+                )
+            """)
+            conn.execute("DROP INDEX IF EXISTS idx_ev_fp")
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_fp ON evaluations (employee_id, fingerprint)"
+            )
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (3, datetime('now'), ?)",
+                ('dedup: unique index (employee_id, fingerprint) — no cross-batch duplicates',)
+            )
+            conn.commit()
+            print("[DB] Schema v3: 배치 간 중복 평가 제거, 인덱스 재정의 완료")
+    finally:
+        conn.close()
+
+
+def _auto_migrate_manifest():
+    """deploy_manifest.json → gallery_entries 자동 마이그레이션 (DB 비어있을 때 1회)."""
+    conn = _get_conn()
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM gallery_entries").fetchone()[0]
+        if count > 0:
+            return
+    finally:
+        conn.close()
+
+    from src.config.settings import OUTPUTS_DIR_PATH
+    manifest_path = os.path.join(OUTPUTS_DIR_PATH, 'deploy_manifest.json')
+    if not os.path.exists(manifest_path):
+        return
+
+    from src.services.gallery_db_service import migrate_from_manifest
+    result = migrate_from_manifest(manifest_path)
+    print(f"[GalleryDB] 마이그레이션 완료: {result['migrated']}건")
+    import shutil
+    shutil.move(manifest_path, manifest_path + '.bak')
+
+
+def _auto_migrate_evaluations():
+    """users/*.json → evaluations 자동 마이그레이션 (DB 비어있을 때 1회)."""
+    from src.config.settings import PROCESSED_DATA_DIR_PATH
+    conn = _get_conn()
+    try:
+        count = conn.execute("SELECT COUNT(*) FROM evaluations").fetchone()[0]
+        if count > 0:
+            return
+    finally:
+        conn.close()
+
+    users_dir = os.path.join(PROCESSED_DATA_DIR_PATH, 'users')
+    if not os.path.exists(users_dir):
+        return
+
+    import subprocess
+    import sys
+    script = os.path.join(os.path.dirname(__file__), '..', '..', 'scripts', 'migrate_evaluations.py')
+    if not os.path.exists(script):
+        print(f"[EvalDB] 마이그레이션 스크립트 없음: {script}")
+        return
+    print("[EvalDB] 자동 마이그레이션 실행 중...")
+    subprocess.run([sys.executable, script], check=False)
+    import shutil
+    shutil.move(users_dir, users_dir + '.bak')
+    print(f"[EvalDB] 마이그레이션 완료: {users_dir} → {users_dir}.bak")
+
+
 _init_db()
+_apply_schema_migrations()
+_auto_migrate_manifest()
 
 
 def create_session(options, employee_ids):

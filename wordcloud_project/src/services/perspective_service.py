@@ -15,9 +15,21 @@ from src.config.settings import (
     PSEUDONYM_MAPPINGS_PATH, PROCESSED_DATA_DIR_PATH,
     POSITION_HIERARCHY_PATH, PROJECT_ROOT
 )
+import sqlite3
 import threading
+from collections import defaultdict
 from src.modules.wordcloud_generator import WordCloudGenerator
 from src.modules.pseudonym_manager import PseudonymManager
+
+_EVAL_DB_DIR = os.path.join(os.path.dirname(__file__), '..', '..', '.sessions')
+_EVAL_DB_PATH = os.path.join(_EVAL_DB_DIR, 'deploy_sessions.db')
+
+
+def _get_eval_conn():
+    os.makedirs(_EVAL_DB_DIR, exist_ok=True)
+    conn = sqlite3.connect(_EVAL_DB_PATH, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
 
 SKIP_COLUMNS = {
     'evaluation_id', 'session_id', 'evaluator_id',
@@ -533,98 +545,90 @@ def load_batch_summary(batch_path):
         return json.load(f)
 
 
+def _load_batch_list(processed_data_dir):
+    """batch/ 디렉토리에서 배치 목록 로드 (batches 키용)."""
+    batch_dir = os.path.join(processed_data_dir, 'batch')
+    batches = []
+    if not os.path.exists(batch_dir):
+        return batches
+    for item in sorted(os.listdir(batch_dir)):
+        item_path = os.path.join(batch_dir, item)
+        if not os.path.isdir(item_path) or not item.startswith('batch_'):
+            continue
+        summary = load_batch_summary(item_path)
+        if not summary:
+            continue
+        batches.append({
+            'batch_id': item, 'path': item_path,
+            'created_at': summary.get('batch_info', {}).get('created_at', ''),
+            'employee_count': summary.get('batch_info', {}).get('unique_employees', 0),
+            'total_evaluations': summary.get('batch_info', {}).get('total_evaluations', 0),
+        })
+    return batches
+
+
+def _count_batches(processed_data_dir):
+    """배치 디렉토리 수 반환."""
+    batch_dir = os.path.join(processed_data_dir, 'batch')
+    if not os.path.exists(batch_dir):
+        return 0
+    return sum(
+        1 for item in os.listdir(batch_dir)
+        if os.path.isdir(os.path.join(batch_dir, item)) and item.startswith('batch_')
+    )
+
+
 def load_all_batches(processed_data_dir=None):
     if processed_data_dir is None:
         processed_data_dir = PROCESSED_DATA_DIR_PATH
-    batch_dir = os.path.join(processed_data_dir, 'batch')
-    users_dir = os.path.join(processed_data_dir, 'users')
 
-    merged = {
-        'batch_info': {'total_evaluations': 0, 'unique_employees': 0, 'batch_count': 0},
-        'employee_results': [],
-        'batches': [],
-    }
-    seen_employees = set()
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute("""
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            ORDER BY e.employee_id, ev.id
+        """).fetchall()
+    finally:
+        conn.close()
+
+    emp_evals = defaultdict(list)
+    emp_meta = {}
+    for emp_id, name, dept, pos, data in rows:
+        if emp_id not in emp_meta:
+            emp_meta[emp_id] = {
+                'target_employee_name': name or '',
+                'target_employee_department': dept or '',
+                'target_employee_position': pos or '',
+            }
+        if data:
+            emp_evals[emp_id].append(json.loads(data))
+
+    employee_results = []
     total_evals = 0
+    for emp_id, meta in emp_meta.items():
+        evals = emp_evals[emp_id]
+        total_evals += len(evals)
+        employee_results.append({
+            'metadata': {
+                'target_employee_id': emp_id,
+                'target_employee_name': meta['target_employee_name'],
+                'target_employee_department': meta['target_employee_department'],
+                'target_employee_position': meta['target_employee_position'],
+                'evaluations': evals,
+            }
+        })
 
-    # 1. Build batch list from lightweight batch_summary.json
-    if os.path.exists(batch_dir):
-        for item in sorted(os.listdir(batch_dir)):
-            item_path = os.path.join(batch_dir, item)
-            if not os.path.isdir(item_path) or not item.startswith('batch_'):
-                continue
-            summary = load_batch_summary(item_path)
-            if not summary:
-                continue
-            merged['batches'].append({
-                'batch_id': item, 'path': item_path,
-                'created_at': summary.get('batch_info', {}).get('created_at', ''),
-                'employee_count': summary.get('batch_info', {}).get('unique_employees', 0),
-                'total_evaluations': summary.get('batch_info', {}).get('total_evaluations', 0),
-            })
-            # Collect employee IDs from lightweight employee_ids list
-            for emp_id in summary.get('employee_ids', []):
-                if emp_id:
-                    seen_employees.add(emp_id)
-
-    # 2. Read user data from users/*.json (primary source)
-    if os.path.exists(users_dir):
-        for fname in sorted(os.listdir(users_dir)):
-            if not fname.endswith('.json'):
-                continue
-            path = os.path.join(users_dir, fname)
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    user = json.load(f)
-            except Exception:
-                continue
-            emp_id = user.get('employee_id', '')
-            if not emp_id:
-                continue
-            evals = user.get('evaluations', [])
-            total_evals += len(evals)
-            merged['employee_results'].append({
-                'metadata': {
-                    'target_employee_id': emp_id,
-                    'target_employee_name': user.get('name', ''),
-                    'target_employee_department': user.get('department', ''),
-                    'target_employee_position': user.get('position', ''),
-                    'evaluations': evals,
-                }
-            })
-
-    # 3. Fallback: if no users/*.json yet, read from old batch_summary format
-    if not merged['employee_results'] and os.path.exists(batch_dir):
-        for item in sorted(os.listdir(batch_dir)):
-            item_path = os.path.join(batch_dir, item)
-            if not os.path.isdir(item_path) or not item.startswith('batch_'):
-                continue
-            summary = load_batch_summary(item_path)
-            if not summary:
-                continue
-            old_results = summary.get('employee_results', [])
-            if not old_results:
-                continue
-            for er in old_results:
-                meta = er.get('metadata', {})
-                emp_id = meta.get('target_employee_id')
-                if emp_id:
-                    seen_employees.add(emp_id)
-                meta.setdefault('evaluations', [])
-                for ev in meta['evaluations']:
-                    ev['batch_id'] = item
-                merged['employee_results'].append(er)
-            break  # Only use old format once (all batches have same structure)
-
-    total_evals = max(total_evals, sum(
-        len(er.get('metadata', {}).get('evaluations', []))
-        for er in merged['employee_results']
-    ))
-
-    merged['batch_info']['total_evaluations'] = total_evals
-    merged['batch_info']['unique_employees'] = max(len(seen_employees), len(merged['employee_results']))
-    merged['batch_info']['batch_count'] = len(merged['batches'])
-    return merged
+    return {
+        'batch_info': {
+            'total_evaluations': total_evals,
+            'unique_employees': len(emp_meta),
+            'batch_count': _count_batches(processed_data_dir),
+        },
+        'employee_results': employee_results,
+        'batches': _load_batch_list(processed_data_dir),
+    }
 
 
 def filter_evaluations(batch_summary, filters, employee_id=None, enrich=False):
