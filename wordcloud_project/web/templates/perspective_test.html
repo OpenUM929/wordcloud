@@ -115,6 +115,7 @@ body {
 }
 .btn-primary { background: #007bff; color: white; border: none; padding: 6px 20px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .btn-primary:hover { background: #0069d9; }
+.btn-primary:disabled, .btn-success:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(30%); }
 .btn-secondary { background: #6c757d; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 12px; }
 .btn-secondary:hover { background: #5a6268; }
 .btn-success { background: #28a745; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 12px; }
@@ -308,8 +309,13 @@ body {
     </div>
 
     <div class="action-row">
-        <button class="btn-primary" onclick="generateMatrix()">매트릭스 생성</button>
-        <button class="btn-success" onclick="saveDeploy()">제출용 저장</button>
+        <input type="text" id="batchTitleInput" maxlength="100"
+               placeholder="배치 명칭을 입력해주세요 (필수)"
+               oninput="_doBatchTitleCheck()"
+               style="flex:1;max-width:320px;padding:6px 10px;font-size:13px;border:1px solid #ccc;border-radius:5px;">
+        <span id="batchTitleStatus" style="font-size:12px;margin-left:4px;white-space:nowrap;"></span>
+        <button id="btnGenerateMatrix" class="btn-primary" onclick="generateMatrix()" disabled>매트릭스 저장</button>
+        <button id="btnSaveDeploy" class="btn-success" onclick="saveDeploy()" disabled>제출용 저장</button>
         <button id="zipDownloadBtn" class="btn-secondary" style="display:none;margin-left:8px;" onclick="downloadDeployZip()">⬇️ 결과물 ZIP</button>
         <span id="statusMsg"></span>
         <span style="margin-left:auto;font-size:11px;color:#888;display:flex;align-items:center;gap:4px;">
@@ -905,6 +911,51 @@ function cancelIdInput() {
     document.getElementById('allEmployeesCheck').disabled = false;
 }
 
+let _batchTitleDebounce = null;
+function _doBatchTitleCheck() {
+    clearTimeout(_batchTitleDebounce);
+    _batchTitleDebounce = setTimeout(async () => {
+        const val = (document.getElementById('batchTitleInput')?.value || '').trim();
+        const status = document.getElementById('batchTitleStatus');
+        const btnGen = document.getElementById('btnGenerateMatrix');
+        const btnSave = document.getElementById('btnSaveDeploy');
+        if (!val) {
+            status.textContent = '배치 명칭을 입력해주세요';
+            status.style.color = '#dc3545';
+            if (btnGen) btnGen.disabled = true;
+            if (btnSave) btnSave.disabled = true;
+            return;
+        }
+        try {
+            const r = await fetch('/api/perspective/deploy-title/check', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({batch_title: val})
+            });
+            const d = await r.json();
+            if (d.exists) {
+                const hasDeploy = d.sources?.includes('deploy');
+                const hasMatrix = d.sources?.includes('matrix');
+                const both = hasDeploy && hasMatrix;
+                const color = both ? '#dc3545' : (hasDeploy ? '#28a745' : '#007bff');
+                const label = both ? '배포+매트릭스' : (hasDeploy ? '배포용' : '매트릭스');
+                status.style.color = color;
+                status.textContent = `이미 존재하는 명칭 [${label}] (${d.count}개)`;
+                if (btnGen) btnGen.disabled = true;
+                if (btnSave) btnSave.disabled = true;
+            } else {
+                status.textContent = '';
+                status.style.color = '';
+                if (btnGen) btnGen.disabled = false;
+                if (btnSave) btnSave.disabled = false;
+            }
+        } catch (e) {
+            status.textContent = '';
+            if (btnGen) btnGen.disabled = false;
+            if (btnSave) btnSave.disabled = false;
+        }
+    }, 300);
+}
+
 async function generateMatrix() {
     const empId = document.getElementById('employeeSelect').value;
     const allEmp = document.getElementById('allEmployeesCheck').checked;
@@ -926,6 +977,7 @@ async function generateMatrix() {
     const rowCombineAll = isRowCombineAll();
 
     const _wco = getWcOptions();
+    const batchTitle = (document.getElementById('batchTitleInput')?.value || '').trim();
     const body = {
         row_field: rowField,
         col_mode: colMode,
@@ -943,6 +995,7 @@ async function generateMatrix() {
         apply_emotion_colors: _wco.apply_emotion_colors,
         remove_profanity: _wco.remove_profanity,
         wordcloud_pos: _wco.wordcloud_pos,
+        batch_title: batchTitle || null,
     };
 
     if (csvIds) {
@@ -952,6 +1005,11 @@ async function generateMatrix() {
     } else {
         body.employee_id = empId;
     }
+
+    const _btnGen = document.getElementById('btnGenerateMatrix');
+    const _btnSave = document.getElementById('btnSaveDeploy');
+    if (_btnGen) _btnGen.disabled = true;
+    if (_btnSave) _btnSave.disabled = true;
 
     try {
         const r = await fetch('/api/perspective/matrix', {
@@ -978,6 +1036,8 @@ async function generateMatrix() {
         console.error('Matrix generation failed:', e);
         resultArea.innerHTML = '<p class="error">' + e.message + '</p>';
         setStatus('오류', true);
+    } finally {
+        _doBatchTitleCheck();
     }
 }
 
@@ -1014,6 +1074,7 @@ async function saveDeploy(resumeSessionId = null) {
     const includeId   = document.getElementById('includeIdInFilename')?.checked ?? true;
 
     const _wco2 = getWcOptions();
+    const batchTitleDeploy = (document.getElementById('batchTitleInput')?.value || '').trim();
     const body = {
         row_field: rowField,
         col_mode: colMode,
@@ -1032,6 +1093,7 @@ async function saveDeploy(resumeSessionId = null) {
         apply_emotion_colors: _wco2.apply_emotion_colors,
         remove_profanity: _wco2.remove_profanity,
         wordcloud_pos: _wco2.wordcloud_pos,
+        batch_title: batchTitleDeploy || null,
     };
 
     if (csvIds) {
@@ -1070,6 +1132,11 @@ async function saveDeploy(resumeSessionId = null) {
 
     setStatus('');
     renderProgress(0, 'init');
+
+    const _btnGenS = document.getElementById('btnGenerateMatrix');
+    const _btnSaveS = document.getElementById('btnSaveDeploy');
+    if (_btnGenS) _btnGenS.disabled = true;
+    if (_btnSaveS) _btnSaveS.disabled = true;
 
     let sessionId = resumeSessionId || null;
     let existingSuccessData = [];
@@ -1257,6 +1324,7 @@ async function saveDeploy(resumeSessionId = null) {
 
     window._lastDeploySessionId = sessionId;
     renderDeployComplete({success: successData, fail: failData, total});
+    _doBatchTitleCheck();
 }
 
 function downloadDeployZip() {
@@ -1984,6 +2052,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateWcOptionsSummary();
     toggleAllEmployees();
     checkResume();
+    _doBatchTitleCheck();
 });
 </script>
 {% endblock %}

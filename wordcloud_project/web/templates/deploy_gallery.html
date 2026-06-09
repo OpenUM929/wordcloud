@@ -951,16 +951,18 @@ function renderGalleryGrid(entries) {
             const mm    = dateKey.slice(4, 6);
             const dd    = dateKey.slice(6, 8);
             const label = dateKey ? `${mm}/${dd}` : '날짜 미상';
+            const primaryKey = batchKey ? `${batchKey}||${dateKey}` : dateKey;
 
             const header = document.createElement('div');
             header.className = 'date-group-header';
             header.dataset.dateGroup = dateKey;
+            header.dataset.primaryKey = primaryKey;
             groupIndex++;
 
             const groupCb = document.createElement('input');
             groupCb.type = 'checkbox';
             groupCb.className = 'date-group-select-all';
-            groupCb.addEventListener('change', () => toggleGroupSelect(dateKey, groupCb.checked));
+            groupCb.addEventListener('change', () => toggleGroupSelect(primaryKey, groupCb.checked));
 
             const groupSpan = document.createElement('span');
             groupSpan.textContent = `${label} (${dateGroups[dateKey].length}개)`;
@@ -974,7 +976,7 @@ function renderGalleryGrid(entries) {
                 if (e.target.closest('input[type="checkbox"]')) return;
                 const newState = !groupCb.checked || groupCb.indeterminate;
                 groupCb.checked = newState;
-                toggleGroupSelect(dateKey, newState);
+                toggleGroupSelect(primaryKey, newState);
             };
             grid.appendChild(header);
 
@@ -1072,10 +1074,12 @@ function toggleCardSelect(id, checked) {
     updateDeleteCount();
 }
 
-function toggleGroupSelect(dateKey, checked) {
+function toggleGroupSelect(primaryKey, checked) {
     galleryEntries.forEach(entry => {
-        const cardDateKey = (entry.timestamp || '').slice(0, 8);
-        if (cardDateKey !== dateKey) return;
+        const eb = entry.batch_title || '';
+        const ed = (entry.timestamp || '').slice(0, 8);
+        const entryKey = eb ? `${eb}||${ed}` : ed;
+        if (entryKey !== primaryKey) return;
         checked ? selectedEntryIds.add(entry.id) : selectedEntryIds.delete(entry.id);
         const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(entry.id)}"]`);
         if (card) {
@@ -1089,12 +1093,16 @@ function toggleGroupSelect(dateKey, checked) {
 
 function syncGroupCheckboxes() {
     document.querySelectorAll('.date-group-header').forEach(header => {
-        const dateKey    = header.dataset.dateGroup;
+        const primaryKey = header.dataset.primaryKey;
         const groupCb    = header.querySelector('.date-group-select-all');
-        if (!groupCb) return;
-        const groupItems = galleryEntries.filter(e => (e.timestamp || '').slice(0, 8) === dateKey);
-        const allSel     = groupItems.length > 0 && groupItems.every(e => selectedEntryIds.has(e.id));
-        const anySel     = groupItems.some(e => selectedEntryIds.has(e.id));
+        if (!groupCb || !primaryKey) return;
+        const groupItems = galleryEntries.filter(e => {
+            const eb = e.batch_title || '';
+            const ed = (e.timestamp || '').slice(0, 8);
+            return (eb ? `${eb}||${ed}` : ed) === primaryKey;
+        });
+        const allSel = groupItems.length > 0 && groupItems.every(e => selectedEntryIds.has(e.id));
+        const anySel = groupItems.some(e => selectedEntryIds.has(e.id));
         groupCb.checked       = allSel;
         groupCb.indeterminate = !allSel && anySel;
     });

@@ -386,6 +386,7 @@ def api_generate_matrix():
         'row_combine_all': data.get('row_combine_all', False),
         'deploy_mode': data.get('deploy_mode', 'combined+individual'),
         'analysis_types': data.get('analysis_types'),
+        'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
     enrich, err = _resolve_output_mode(data)
@@ -455,6 +456,7 @@ def api_save_deploy():
         'include_name': data.get('include_name', True),
         'include_id': data.get('include_id', True),
         'apply_emotion_colors': data.get('apply_emotion_colors', True),
+        'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
     unified = load_all_batches()
@@ -546,6 +548,7 @@ def api_save_deploy_stream():
         'include_name': data.get('include_name', True),
         'include_id': data.get('include_id', True),
         'apply_emotion_colors': data.get('apply_emotion_colors', True),
+        'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
     unified = load_all_batches()
@@ -860,9 +863,10 @@ def api_deploy_gallery_list():
     output_mode = request.args.get('output_mode', '').strip()
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
-    
+    batch_title_filter = request.args.get('batch_title', '').strip()
+
     is_admin = _is_admin()
-    
+
     # Load manifest
     manifest = {"version": "1.0", "entries": []}
     if os.path.exists(DEPLOY_MANIFEST_PATH):
@@ -871,36 +875,46 @@ def api_deploy_gallery_list():
                 manifest = json_lib.load(f)
         except Exception as e:
             print(f"[DeployGallery] Manifest read error: {e}")
-    
+
     entries = manifest.get('entries', [])
     source_filter = request.args.get('source', '').strip()
-    
+    dates_filter = request.args.get('dates', '').strip()
+    date_list = [d.strip() for d in dates_filter.split(',') if d.strip()] if dates_filter else []
+
     # Filter
     filtered = []
     for entry in entries:
         # Non-admin: exclude real mode entirely
         if not is_admin and entry.get('output_mode') == 'real':
             continue
-        
+
         # source 역호환: 필드 없으면 'deploy'로 간주
         entry_source = entry.get('source', 'deploy')
         if source_filter and entry_source != source_filter:
             continue
-        
+
         if employee_id and entry.get('employee_id') != employee_id:
             continue
-        
+
         if output_mode and entry.get('output_mode') != output_mode:
             continue
-        
-        if date_from or date_to:
-            ts = entry.get('timestamp', '')  # format: 20260604_143052
-            date_part = ts[:8] if len(ts) >= 8 else ts
-            if date_from and date_part < date_from:
+
+        ts = entry.get('timestamp', '')
+        date_part = ts[:8] if len(ts) >= 8 else ts
+
+        if date_list and date_part not in date_list:
+            continue
+
+        if date_from and date_part < date_from:
+            continue
+        if date_to and date_part > date_to:
+            continue
+
+        if batch_title_filter:
+            entry_bt = (entry.get('batch_title') or '').lower()
+            if batch_title_filter.lower() not in entry_bt:
                 continue
-            if date_to and date_part > date_to:
-                continue
-        
+
         # Build list item
         images = entry.get('images', {})
         row_results = entry.get('row_results', {})
@@ -910,10 +924,13 @@ def api_deploy_gallery_list():
             for v in (rv.values() if isinstance(rv, dict) else [])
             if v
         )
+        bt = entry.get('batch_title') or None
         list_item = {
             "id": entry.get('id'),
             "employee_id": entry.get('employee_id'),
             "deploy_name": entry.get('deploy_name'),
+            "batch_title": bt,
+            "display_title": bt or entry.get('deploy_name') or entry.get('employee_id'),
             "timestamp": entry.get('timestamp'),
             "output_mode": entry.get('output_mode'),
             "source": entry_source,
@@ -921,9 +938,13 @@ def api_deploy_gallery_list():
             "thumbnail_url": images.get('combined'),
         }
         filtered.append(list_item)
-    
-    # Sort by timestamp desc
-    filtered.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+
+    # batch_title 있는 항목 먼저, 그 다음 batch_title asc, timestamp asc
+    filtered.sort(key=lambda x: (
+        not bool(x.get('batch_title')),
+        x.get('batch_title') or '',
+        x.get('timestamp', ''),
+    ))
     
     total = len(filtered)
     start = (page - 1) * per_page
@@ -1000,4 +1021,121 @@ def api_employee_entries(employee_id):
         'employee_id': employee_id,
         'deploy': latest['deploy'],
         'matrix': latest['matrix'],
+    })
+
+
+def _load_manifest_entries():
+    from src.services.perspective_service import DEPLOY_MANIFEST_PATH
+    if not os.path.exists(DEPLOY_MANIFEST_PATH):
+        return []
+    try:
+        with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
+            return json_lib.load(f).get('entries', [])
+    except Exception:
+        return []
+
+
+@perspective_bp.route('/deploy-gallery/dates', methods=['GET'])
+def api_deploy_gallery_dates():
+    """갤러리 항목에 존재하는 날짜(YYYYMMDD) 목록 반환."""
+    entries = _load_manifest_entries()
+    is_admin = _is_admin()
+    dates = set()
+    for e in entries:
+        if not is_admin and e.get('output_mode') == 'real':
+            continue
+        ts = e.get('timestamp', '')
+        if len(ts) >= 8:
+            dates.add(ts[:8])
+    return jsonify({'success': True, 'dates': sorted(dates, reverse=True)})
+
+
+@perspective_bp.route('/deploy-gallery/batch-titles', methods=['GET'])
+def api_deploy_gallery_batch_titles():
+    """갤러리 항목에 존재하는 배치 명칭 목록 반환."""
+    entries = _load_manifest_entries()
+    is_admin = _is_admin()
+    titles = set()
+    for e in entries:
+        if not is_admin and e.get('output_mode') == 'real':
+            continue
+        bt = (e.get('batch_title') or '').strip()
+        if bt:
+            titles.add(bt)
+    return jsonify({'success': True, 'batch_titles': sorted(titles)})
+
+
+@perspective_bp.route('/deploy-gallery/entries', methods=['DELETE'])
+def api_deploy_gallery_delete():
+    """갤러리 항목 삭제 (관리자 전용)."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    from src.services.perspective_service import DEPLOY_MANIFEST_PATH
+    data = request.get_json(silent=True) or {}
+    entry_ids = set(data.get('entry_ids', []))
+    if not entry_ids:
+        return jsonify({'success': False, 'error': 'entry_ids가 필요합니다.'}), 400
+
+    manifest = {"version": "1.0", "entries": []}
+    if os.path.exists(DEPLOY_MANIFEST_PATH):
+        try:
+            with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
+                manifest = json_lib.load(f)
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Manifest 읽기 실패: {e}'}), 500
+
+    to_delete = [e for e in manifest.get('entries', []) if e.get('id') in entry_ids]
+    remaining = [e for e in manifest.get('entries', []) if e.get('id') not in entry_ids]
+
+    # 이미지 파일 best-effort 삭제
+    from src.config.settings import OUTPUTS_DIR_PATH
+    for entry in to_delete:
+        images = entry.get('images', {})
+        row_results = entry.get('row_results', {})
+        all_paths = list(images.values())
+        for rv in row_results.values():
+            if isinstance(rv, dict):
+                all_paths.extend(rv.values())
+        for url_or_path in all_paths:
+            if not url_or_path:
+                continue
+            # URL → 파일 경로 변환 (/outputs/배포/xxx.png → 실제 경로)
+            rel = url_or_path.lstrip('/')
+            if rel.startswith('outputs/'):
+                rel = rel[len('outputs/'):]
+            fpath = os.path.join(OUTPUTS_DIR_PATH, rel)
+            try:
+                if os.path.exists(fpath):
+                    os.remove(fpath)
+            except Exception:
+                pass
+
+    manifest['entries'] = remaining
+    try:
+        with open(DEPLOY_MANIFEST_PATH, 'w', encoding='utf-8') as f:
+            json_lib.dump(manifest, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Manifest 저장 실패: {e}'}), 500
+
+    log_action('gallery_delete', {'entry_ids': list(entry_ids), 'deleted_count': len(to_delete)}, request)
+    return jsonify({'success': True, 'deleted_count': len(to_delete)})
+
+
+@perspective_bp.route('/deploy-title/check', methods=['POST'])
+def api_deploy_title_check():
+    """배치 명칭 중복 확인."""
+    data = request.get_json(silent=True) or {}
+    batch_title = (data.get('batch_title') or '').strip()
+    if not batch_title:
+        return jsonify({'success': True, 'exists': False, 'count': 0, 'sources': []})
+
+    entries = _load_manifest_entries()
+    matches = [e for e in entries if (e.get('batch_title') or '').strip() == batch_title]
+    sources = list({e.get('source', 'deploy') for e in matches})
+    return jsonify({
+        'success': True,
+        'exists': len(matches) > 0,
+        'count': len(matches),
+        'sources': sources,
     })
