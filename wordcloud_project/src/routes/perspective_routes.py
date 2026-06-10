@@ -1,5 +1,6 @@
 """Perspective analysis routes - X/Y matrix group analysis API."""
 import os
+import re
 import json as json_lib
 import zipfile
 import tempfile
@@ -864,214 +865,98 @@ def api_test_sentence_sentiment():
 @perspective_bp.route('/deploy-gallery/list', methods=['GET'])
 def api_deploy_gallery_list():
     """List deployment gallery entries with filtering and pagination."""
-    from src.services.perspective_service import DEPLOY_MANIFEST_PATH
-    
+    from src.services import gallery_db_service
+
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 20, type=int), 100)
-    employee_id = request.args.get('employee_id', '').strip()
-    output_mode = request.args.get('output_mode', '').strip()
-    date_from = request.args.get('date_from', '').strip()
-    date_to = request.args.get('date_to', '').strip()
-    batch_title_filter = request.args.get('batch_title', '').strip()
+    employee_id = request.args.get('employee_id', '').strip() or None
+    output_mode = request.args.get('output_mode', '').strip() or None
+    source = request.args.get('source', '').strip() or None
+    date_from = request.args.get('date_from', '').strip() or None
+    date_to = request.args.get('date_to', '').strip() or None
+    dates_str = request.args.get('dates', '').strip()
+    dates = set(d.strip() for d in dates_str.split(',') if d.strip()) if dates_str else None
+    batch_title_filter = request.args.get('batch_title', '').strip() or None
+    batch_titles = {batch_title_filter} if batch_title_filter else None
 
-    is_admin = _is_admin()
+    result = gallery_db_service.list_entries(
+        page=page, per_page=per_page,
+        employee_id=employee_id, source=source,
+        output_mode=output_mode, date_from=date_from, date_to=date_to,
+        dates=dates, batch_titles=batch_titles,
+        is_admin=_is_admin(),
+    )
 
-    # Load manifest
-    manifest = {"version": "1.0", "entries": []}
-    if os.path.exists(DEPLOY_MANIFEST_PATH):
-        try:
-            with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
-                manifest = json_lib.load(f)
-        except Exception as e:
-            print(f"[DeployGallery] Manifest read error: {e}")
-
-    entries = manifest.get('entries', [])
-    source_filter = request.args.get('source', '').strip()
-    dates_filter = request.args.get('dates', '').strip()
-    date_list = [d.strip() for d in dates_filter.split(',') if d.strip()] if dates_filter else []
-
-    # Filter
-    filtered = []
-    for entry in entries:
-        # Non-admin: exclude real mode entirely
-        if not is_admin and entry.get('output_mode') == 'real':
-            continue
-
-        # source 역호환: 필드 없으면 'deploy'로 간주
-        entry_source = entry.get('source', 'deploy')
-        if source_filter and entry_source != source_filter:
-            continue
-
-        if employee_id and entry.get('employee_id') != employee_id:
-            continue
-
-        if output_mode and entry.get('output_mode') != output_mode:
-            continue
-
-        ts = entry.get('timestamp', '')
-        date_part = ts[:8] if len(ts) >= 8 else ts
-
-        if date_list and date_part not in date_list:
-            continue
-
-        if date_from and date_part < date_from:
-            continue
-        if date_to and date_part > date_to:
-            continue
-
-        if batch_title_filter:
-            entry_bt = (entry.get('batch_title') or '').lower()
-            if batch_title_filter.lower() not in entry_bt:
-                continue
-
-        # Build list item
-        images = entry.get('images', {})
-        row_results = entry.get('row_results', {})
-        top_count = sum(1 for v in images.values() if v)
-        row_count = sum(
-            1 for rv in row_results.values()
-            for v in (rv.values() if isinstance(rv, dict) else [])
-            if v
-        )
-        bt = entry.get('batch_title') or None
-        list_item = {
-            "id": entry.get('id'),
-            "employee_id": entry.get('employee_id'),
-            "deploy_name": entry.get('deploy_name'),
-            "batch_title": bt,
-            "display_title": bt or entry.get('deploy_name') or entry.get('employee_id'),
-            "timestamp": entry.get('timestamp'),
-            "output_mode": entry.get('output_mode'),
-            "source": entry_source,
-            "image_count": top_count + row_count,
-            "thumbnail_url": images.get('combined'),
-        }
-        filtered.append(list_item)
-
-    # batch_title 있는 항목 먼저, 그 다음 batch_title asc, timestamp asc
-    filtered.sort(key=lambda x: (
-        not bool(x.get('batch_title')),
-        x.get('batch_title') or '',
-        x.get('timestamp', ''),
-    ))
-    
-    total = len(filtered)
-    start = (page - 1) * per_page
-    end = start + per_page
-    paginated = filtered[start:end]
-    
     return jsonify({
         'success': True,
-        'total': total,
+        'total': result['total'],
         'page': page,
         'per_page': per_page,
-        'entries': paginated,
+        'entries': result['entries'],
     })
 
 
 @perspective_bp.route('/deploy-gallery/detail/<entry_id>', methods=['GET'])
 def api_deploy_gallery_detail(entry_id):
     """Get detailed information for a single gallery entry."""
-    from src.services.perspective_service import DEPLOY_MANIFEST_PATH
-    
-    is_admin = _is_admin()
-    
-    manifest = {"entries": []}
-    if os.path.exists(DEPLOY_MANIFEST_PATH):
-        try:
-            with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
-                manifest = json_lib.load(f)
-        except Exception as e:
-            print(f"[DeployGallery] Manifest read error: {e}")
-    
-    for entry in manifest.get('entries', []):
-        if entry.get('id') == entry_id:
-            # Permission check
-            if not is_admin and entry.get('output_mode') == 'real':
-                return jsonify({'success': False, 'error': '접근 권한이 없습니다.'}), 403
-            
-            return jsonify({
-                'success': True,
-                'entry': entry,
-            })
-    
-    return jsonify({'success': False, 'error': 'Entry not found'}), 404
+    from src.services import gallery_db_service
+
+    entry = gallery_db_service.get_entry(entry_id)
+    if not entry:
+        return jsonify({'success': False, 'error': 'Entry not found'}), 404
+
+    if not _is_admin() and entry.get('output_mode') == 'real':
+        return jsonify({'success': False, 'error': '접근 권한이 없습니다.'}), 403
+
+    return jsonify({'success': True, 'entry': entry})
 
 
 @perspective_bp.route('/deploy-gallery/employee-entries/<employee_id>', methods=['GET'])
 def api_employee_entries(employee_id):
     """같은 직원의 deploy/matrix 양쪽 최신 entry를 반환."""
-    from src.services.perspective_service import DEPLOY_MANIFEST_PATH
-    
-    is_admin = _is_admin()
-    manifest = {"entries": []}
-    if os.path.exists(DEPLOY_MANIFEST_PATH):
-        try:
-            with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
-                manifest = json_lib.load(f)
-        except Exception:
-            pass
+    from src.services import gallery_db_service
 
-    latest = {'deploy': None, 'matrix': None}
-    for entry in manifest.get('entries', []):
-        if entry.get('employee_id') != employee_id:
+    is_admin = _is_admin()
+    result = gallery_db_service.list_entries(
+        per_page=1000, employee_id=employee_id, is_admin=is_admin
+    )
+
+    latest_id = {'deploy': None, 'matrix': None}
+    latest_ts = {'deploy': '', 'matrix': ''}
+    for e in result['entries']:
+        src = e.get('source', 'deploy')
+        if src not in latest_id:
             continue
-        if not is_admin and entry.get('output_mode') == 'real':
-            continue
-        src = entry.get('source', 'deploy')
-        if src not in latest:
-            continue
-        current = latest[src]
-        if current is None or entry.get('timestamp', '') > current.get('timestamp', ''):
-            latest[src] = entry
+        ts = e.get('timestamp', '')
+        if ts > latest_ts[src]:
+            latest_ts[src] = ts
+            latest_id[src] = e['id']
+
+    deploy = gallery_db_service.get_entry(latest_id['deploy']) if latest_id['deploy'] else None
+    matrix = gallery_db_service.get_entry(latest_id['matrix']) if latest_id['matrix'] else None
 
     return jsonify({
         'success': True,
         'employee_id': employee_id,
-        'deploy': latest['deploy'],
-        'matrix': latest['matrix'],
+        'deploy': deploy,
+        'matrix': matrix,
     })
-
-
-def _load_manifest_entries():
-    from src.services.perspective_service import DEPLOY_MANIFEST_PATH
-    if not os.path.exists(DEPLOY_MANIFEST_PATH):
-        return []
-    try:
-        with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
-            return json_lib.load(f).get('entries', [])
-    except Exception:
-        return []
 
 
 @perspective_bp.route('/deploy-gallery/dates', methods=['GET'])
 def api_deploy_gallery_dates():
     """갤러리 항목에 존재하는 날짜(YYYYMMDD) 목록 반환."""
-    entries = _load_manifest_entries()
-    is_admin = _is_admin()
-    dates = set()
-    for e in entries:
-        if not is_admin and e.get('output_mode') == 'real':
-            continue
-        ts = e.get('timestamp', '')
-        if len(ts) >= 8:
-            dates.add(ts[:8])
+    from src.services import gallery_db_service
+    dates = gallery_db_service.get_distinct_dates(is_admin=_is_admin())
     return jsonify({'success': True, 'dates': sorted(dates, reverse=True)})
 
 
 @perspective_bp.route('/deploy-gallery/batch-titles', methods=['GET'])
 def api_deploy_gallery_batch_titles():
     """갤러리 항목에 존재하는 배치 명칭 목록 반환."""
-    entries = _load_manifest_entries()
-    is_admin = _is_admin()
-    titles = set()
-    for e in entries:
-        if not is_admin and e.get('output_mode') == 'real':
-            continue
-        bt = (e.get('batch_title') or '').strip()
-        if bt:
-            titles.add(bt)
-    return jsonify({'success': True, 'batch_titles': sorted(titles)})
+    from src.services import gallery_db_service
+    titles = gallery_db_service.get_distinct_batch_titles(is_admin=_is_admin())
+    return jsonify({'success': True, 'batch_titles': titles})
 
 
 @perspective_bp.route('/deploy-gallery/entries', methods=['DELETE'])
@@ -1080,55 +965,102 @@ def api_deploy_gallery_delete():
     if not _is_admin():
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
 
-    from src.services.perspective_service import DEPLOY_MANIFEST_PATH
+    from src.services import gallery_db_service
     data = request.get_json(silent=True) or {}
-    entry_ids = set(data.get('entry_ids', []))
+    entry_ids = list(set(data.get('entry_ids', [])))
     if not entry_ids:
         return jsonify({'success': False, 'error': 'entry_ids가 필요합니다.'}), 400
 
-    manifest = {"version": "1.0", "entries": []}
-    if os.path.exists(DEPLOY_MANIFEST_PATH):
-        try:
-            with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
-                manifest = json_lib.load(f)
-        except Exception as e:
-            return jsonify({'success': False, 'error': f'Manifest 읽기 실패: {e}'}), 500
+    result = gallery_db_service.delete_entries(entry_ids)
+    log_action('gallery_delete', {'entry_ids': entry_ids, 'deleted_count': result['deleted_count']}, request)
+    return jsonify({'success': True, 'deleted_count': result['deleted_count']})
 
-    to_delete = [e for e in manifest.get('entries', []) if e.get('id') in entry_ids]
-    remaining = [e for e in manifest.get('entries', []) if e.get('id') not in entry_ids]
 
-    # 이미지 파일 best-effort 삭제
-    from src.config.settings import OUTPUTS_DIR_PATH
-    for entry in to_delete:
+@perspective_bp.route('/deploy-gallery/download', methods=['POST'])
+def api_deploy_gallery_download():
+    """갤러리 선택 항목 이미지 ZIP 다운로드."""
+    data = request.get_json(silent=True) or {}
+    entry_ids = data.get('entry_ids', [])
+    folder_mode = data.get('folder_mode', 'flat')  # 'flat' | 'by_type'
+    if not entry_ids:
+        return jsonify({'success': False, 'error': 'entry_ids가 필요합니다.'}), 400
+
+    from src.services import gallery_db_service
+    is_admin = _is_admin()
+    selected = gallery_db_service.get_entries_by_ids(entry_ids, is_admin=is_admin)
+
+    if not selected:
+        return jsonify({'success': False, 'error': '다운로드할 항목이 없습니다.'}), 404
+
+    # 이미지 수집
+    file_items = []  # [(abs_path, arc_name)]
+    for entry in selected:
+        emp_id = entry.get('employee_id', 'unknown')
         images = entry.get('images', {})
         row_results = entry.get('row_results', {})
-        all_paths = list(images.values())
-        for rv in row_results.values():
-            if isinstance(rv, dict):
-                all_paths.extend(rv.values())
-        for url_or_path in all_paths:
-            if not url_or_path:
+
+        # 최상위 images
+        for img_type, url in images.items():
+            if not url:
                 continue
-            # URL → 파일 경로 변환 (/outputs/배포/xxx.png → 실제 경로)
-            rel = url_or_path.lstrip('/')
-            if rel.startswith('outputs/'):
-                rel = rel[len('outputs/'):]
-            fpath = os.path.join(OUTPUTS_DIR_PATH, rel)
-            try:
-                if os.path.exists(fpath):
-                    os.remove(fpath)
-            except Exception:
-                pass
+            abs_path = _url_to_abs_path(url)
+            if abs_path and os.path.exists(abs_path):
+                arc_name = _build_arc_name(folder_mode, emp_id, None, img_type, abs_path)
+                file_items.append((abs_path, arc_name))
 
-    manifest['entries'] = remaining
-    try:
-        with open(DEPLOY_MANIFEST_PATH, 'w', encoding='utf-8') as f:
-            json_lib.dump(manifest, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Manifest 저장 실패: {e}'}), 500
+        # row_results (연도별)
+        for year, row_data in row_results.items():
+            if not isinstance(row_data, dict):
+                continue
+            for img_type, url in row_data.items():
+                if not url:
+                    continue
+                abs_path = _url_to_abs_path(url)
+                if abs_path and os.path.exists(abs_path):
+                    arc_name = _build_arc_name(folder_mode, emp_id, year, img_type, abs_path)
+                    file_items.append((abs_path, arc_name))
 
-    log_action('gallery_delete', {'entry_ids': list(entry_ids), 'deleted_count': len(to_delete)}, request)
-    return jsonify({'success': True, 'deleted_count': len(to_delete)})
+    if not file_items:
+        return jsonify({'success': False, 'error': '다운로드할 이미지 파일이 없습니다.'}), 404
+
+    # ZIP 생성
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+    with zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for abs_path, arc_name in file_items:
+            zf.write(abs_path, arc_name)
+
+    return send_file(tmp.name, mimetype='application/zip',
+                     as_attachment=True,
+                     download_name=f'gallery_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip')
+
+
+def _url_to_abs_path(url):
+    """URL/경로 문자열을 실제 파일 절대 경로로 변환."""
+    if not url:
+        return None
+    clean = url.split('?')[0].lstrip('/')
+    if clean.startswith('outputs/'):
+        clean = clean[8:]
+    return os.path.join(OUTPUTS_DIR_PATH, clean) if OUTPUTS_DIR_PATH else None
+
+
+def _build_arc_name(folder_mode, emp_id, year, img_type, abs_path):
+    """ZIP 내부 파일 경로 생성."""
+    base_name = os.path.basename(abs_path)
+    name_part = base_name.rsplit('.', 1)[0]
+    ext = base_name.rsplit('.', 1)[1] if '.' in base_name else 'png'
+    # 기본명: 직원ID_연도_종류
+    label = f"{emp_id}"
+    if year:
+        label += f"_{year}"
+    type_ko = {'combined': '통합', 'positive': '긍정', 'negative': '부정'}.get(img_type, img_type)
+    label += f"_{type_ko}"
+    safe_name = re.sub(r'[\\/:*?"<>|]', '_', label)
+    arc_file = f"{safe_name}.{ext}"
+    if folder_mode == 'by_type':
+        type_folder = {'combined': 'combined', 'positive': 'positive', 'negative': 'negative'}.get(img_type, 'other')
+        return f"{type_folder}/{arc_file}"
+    return arc_file
 
 
 @perspective_bp.route('/deploy-title/check', methods=['POST'])
@@ -1139,12 +1071,6 @@ def api_deploy_title_check():
     if not batch_title:
         return jsonify({'success': True, 'exists': False, 'count': 0, 'sources': []})
 
-    entries = _load_manifest_entries()
-    matches = [e for e in entries if (e.get('batch_title') or '').strip() == batch_title]
-    sources = list({e.get('source', 'deploy') for e in matches})
-    return jsonify({
-        'success': True,
-        'exists': len(matches) > 0,
-        'count': len(matches),
-        'sources': sources,
-    })
+    from src.services import gallery_db_service
+    info = gallery_db_service.check_batch_title(batch_title)
+    return jsonify({'success': True, **info})

@@ -65,10 +65,7 @@ USER_OUTPUT_DIR = os.path.join(OUTPUTS_DIR_PATH, '유저')
 DEPLOY_OUTPUT_DIR = os.path.join(OUTPUTS_DIR_PATH, '배포')
 DEPLOY_MANIFEST_PATH = os.path.join(OUTPUTS_DIR_PATH, 'deploy_manifest.json')
 
-try:
-    from filelock import FileLock
-except ImportError:
-    FileLock = None
+FileLock = None  # legacy — manifest 파일 락 불필요 (DB 전환 완료)
 
 # ── 반전(역접) 표지어 목록 ────────────────────────────────────────────────────
 # 한국어 국어 문법 체계 기반으로 정리한 역접·양보·대조 표지어 목록.
@@ -1415,37 +1412,24 @@ def _save_cell_wordcloud(cell_items, sentiment_filter, options, cell_path):
     return None
 
 
-def _write_manifest_entry(entry):
-    """Atomic write helper for deploy manifest."""
-    manifest = {"version": "1.0", "last_updated": "", "entries": []}
-    if os.path.exists(DEPLOY_MANIFEST_PATH):
-        try:
-            with open(DEPLOY_MANIFEST_PATH, 'r', encoding='utf-8') as f:
-                manifest = json.load(f)
-        except json.JSONDecodeError:
-            import shutil
-            bak_path = DEPLOY_MANIFEST_PATH + '.bak'
-            shutil.copy(DEPLOY_MANIFEST_PATH, bak_path)
-    
-    manifest.setdefault('entries', []).append(entry)
-    manifest['last_updated'] = datetime.now().isoformat()
-    
-    tmp_path = DEPLOY_MANIFEST_PATH + '.tmp'
-    with open(tmp_path, 'w', encoding='utf-8') as f:
-        json.dump(manifest, f, ensure_ascii=False, indent=2)
-    
-    os.replace(tmp_path, DEPLOY_MANIFEST_PATH)
-
-
 def _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, options):
-    """Append a deployment result entry to the manifest index."""
+    """배포 결과를 gallery_entries DB에 저장."""
+    row_results = {}
+    for row_key, row_val in result.get('row_results', {}).items():
+        row_results[row_key] = {
+            "combined": row_val.get('combined'),
+            "positive": row_val.get('positive'),
+            "negative": row_val.get('negative'),
+        }
+
     entry = {
         "id": str(uuid.uuid4()),
         "employee_id": employee_id,
         "deploy_name": result.get('name', ''),
         "batch_title": options.get('batch_title') or None,
         "timestamp": result.get('timestamp', ''),
-        "output_mode": options.get('output_mode', 'pseudonym'),
+        "output_mode": options.get('output_mode', 'real'),
+        "source": "deploy",
         "row_field": row_field,
         "row_values": options.get('row_values'),
         "row_combine_all": options.get('row_combine_all', False),
@@ -1464,32 +1448,19 @@ def _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, op
             "positive": result.get('positive'),
             "negative": result.get('negative'),
         },
-        "row_results": {},
+        "row_results": row_results,
     }
-    
-    # Store only image URLs in row_results (no sentence text)
-    raw_row_results = result.get('row_results', {})
-    for row_key, row_val in raw_row_results.items():
-        entry["row_results"][row_key] = {
-            "combined": row_val.get('combined'),
-            "positive": row_val.get('positive'),
-            "negative": row_val.get('negative'),
-        }
-    
-    lock_path = DEPLOY_MANIFEST_PATH + '.lock'
+
     try:
-        if FileLock:
-            with FileLock(lock_path, timeout=10):
-                _write_manifest_entry(entry)
-        else:
-            _write_manifest_entry(entry)
+        from src.services.gallery_db_service import upsert_entry
+        upsert_entry(entry)
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f"Manifest write failed: {e}")
+        logging.getLogger(__name__).warning(f"Gallery DB write failed: {e}")
 
 
 def _index_matrix_to_manifest(matrix_result, employee_id, row_field, col_mode, analysis_type, options):
-    """매트릭스 결과를 deploy_manifest.json에 인덱싱."""
+    """매트릭스 결과를 gallery_entries DB에 저장."""
     matrix = matrix_result.get('matrix', {})
     rows = matrix_result.get('rows', [])
     columns = matrix_result.get('columns', [])
@@ -1515,10 +1486,9 @@ def _index_matrix_to_manifest(matrix_result, employee_id, row_field, col_mode, a
         "deploy_name": employee_id,
         "batch_title": options.get('batch_title') or None,
         "timestamp": ts,
-        "output_mode": options.get('output_mode', 'pseudonym'),
+        "output_mode": options.get('output_mode', 'real'),
         "source": "matrix",
         "row_field": row_field,
-        "col_mode": col_mode,
         "analysis_type": analysis_type,
         "options": {
             "wordcloud_pos": options.get('wordcloud_pos', ['Noun']),
@@ -1533,16 +1503,12 @@ def _index_matrix_to_manifest(matrix_result, employee_id, row_field, col_mode, a
         "row_results": row_results,
     }
 
-    lock_path = DEPLOY_MANIFEST_PATH + '.lock'
     try:
-        if FileLock:
-            with FileLock(lock_path, timeout=10):
-                _write_manifest_entry(entry)
-        else:
-            _write_manifest_entry(entry)
+        from src.services.gallery_db_service import upsert_entry
+        upsert_entry(entry)
     except Exception as e:
         import logging
-        logging.getLogger(__name__).warning(f"Matrix manifest write failed: {e}")
+        logging.getLogger(__name__).warning(f"Gallery DB write (matrix) failed: {e}")
 
 
 def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type, options, request=None):

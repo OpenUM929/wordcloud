@@ -589,6 +589,64 @@
     .confirm-breakdown li::before { content: '· '; }
     .confirm-date-label { font-size: 12px; color: #6c757d; margin: 6px 0 2px; font-weight: 600; }
     .confirm-warning { font-size: 12px; color: #dc3545; margin: 10px 0 0; }
+
+    /* ── 다운로드 모드 패널 ── */
+    #downloadModePanel {
+        display: none;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 20px;
+        padding: 10px 16px;
+        background: #f0f7ff;
+        border: 1px solid #b8daff;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+    #downloadModePanel.visible { display: flex; }
+    .download-filter-row { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .download-filter-label { font-size: 11px; font-weight: 700; color: #6c757d; flex-shrink: 0; text-transform: uppercase; white-space: nowrap; }
+    .download-chip-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .download-chip {
+        padding: 3px 12px;
+        font-size: 12px;
+        border-radius: 20px;
+        border: 1px solid #adb5bd;
+        background: white;
+        color: #495057;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        white-space: nowrap;
+    }
+    .download-chip:hover { border-color: #007bff; color: #007bff; }
+    .download-chip--active { background: #007bff; color: white; border-color: #007bff; }
+    .download-chip--disabled { opacity: 0.4; cursor: not-allowed; border-color: #ced4da; color: #adb5bd; }
+    .download-select-row {
+        flex-basis: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #b8daff;
+        margin-top: 2px;
+    }
+    #downloadBottomBar {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #343a40;
+        color: white;
+        padding: 12px 24px;
+        z-index: 500;
+        align-items: center;
+        gap: 16px;
+        justify-content: flex-end;
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
+    }
+    #downloadBottomBar.visible { display: flex; }
+    #downloadCountBar { font-size: 14px; flex: 1; }
 </style>
 {% endblock %}
 
@@ -636,6 +694,7 @@
     <div style="display:flex;gap:8px;align-items:flex-end;">
         <button class="btn btn-primary" onclick="loadGallery(1)" style="padding:6px 18px;font-size:13px;">검색</button>
         <button class="btn btn-secondary" id="deleteModeBtn" onclick="toggleDeleteMode()" style="padding:6px 14px;font-size:13px;">삭제 모드</button>
+        <button class="btn btn-secondary" id="downloadModeBtn" onclick="toggleDownloadMode()" style="padding:6px 14px;font-size:13px;">다운로드 모드</button>
     </div>
 </div>
 
@@ -671,6 +730,46 @@
     </div>
 </div>
 
+<!-- 다운로드 모드 패널 -->
+<div id="downloadModePanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;color:#666;">필터 조건</span>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="toggleAdvancedDownloadFilter()">고급 필터</button>
+    </div>
+    <div class="download-filter-row">
+        <span class="download-filter-label">소스</span>
+        <div id="downloadSourceChips" class="download-chip-group"></div>
+    </div>
+    <div class="download-filter-row">
+        <span class="download-filter-label">배치 명칭</span>
+        <div id="downloadBatchTitleChips" class="download-chip-group"></div>
+    </div>
+    <div class="download-filter-row" id="downloadYearRow" style="display:none;">
+        <span class="download-filter-label">연도</span>
+        <div id="downloadYearChips" class="download-chip-group"></div>
+    </div>
+    <div class="download-filter-row">
+        <span class="download-filter-label">날짜</span>
+        <div id="downloadDateChips" class="download-chip-group"></div>
+    </div>
+    <div class="download-select-row">
+        <label class="select-all-label">
+            <input type="checkbox" id="downloadSelectAllChk" onchange="toggleDownloadSelectAll(this.checked)">
+            전체 선택
+        </label>
+        <span id="downloadSelectedCount">0개 선택됨</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;margin:0;font-weight:400;">
+                <input type="radio" name="folderMode" value="by_type" checked> 종류별 저장
+            </label>
+            <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;margin:0;font-weight:400;">
+                <input type="radio" name="folderMode" value="flat"> 통합 저장
+            </label>
+        </div>
+        <button class="btn btn-primary download-confirm-btn" onclick="executeDownload()" disabled style="padding:5px 14px;font-size:13px;">선택 다운로드</button>
+    </div>
+</div>
+
 <div id="galleryGrid" class="gallery-grid"></div>
 <div id="galleryEmpty" style="display:none;">
     <h4>저장된 이미지가 없습니다</h4>
@@ -684,6 +783,13 @@
     <span id="deleteCountBar" style="font-size:14px;flex:1;"></span>
     <button class="btn btn-secondary" onclick="toggleDeleteMode()" style="padding:6px 14px;font-size:13px;">취소</button>
     <button class="btn btn-danger delete-confirm-btn" onclick="openDeleteConfirm()" style="padding:6px 14px;font-size:13px;" disabled>선택 삭제</button>
+</div>
+
+<!-- 다운로드 하단 바 -->
+<div id="downloadBottomBar">
+    <span id="downloadCountBar" style="font-size:14px;flex:1;"></span>
+    <button class="btn btn-secondary" onclick="toggleDownloadMode()" style="padding:6px 14px;font-size:13px;">취소</button>
+    <button class="btn btn-primary download-confirm-btn" onclick="executeDownload()" style="padding:6px 14px;font-size:13px;" disabled>선택 다운로드</button>
 </div>
 
 <!-- 삭제 확인 다이얼로그 -->
@@ -768,6 +874,15 @@ let deleteFilterYear   = '';         // 삭제 필터 - 연도
 let deleteFilterDates  = new Set();  // 삭제 필터 - 날짜
 let selectedDeleteBatchTitles = new Set();  // 삭제 필터 - 배치 명칭
 let _pendingDeleteAction = null;
+
+// ── 다운로드 모드 상태 ──
+let downloadMode = false;
+let selectedDownloadEntryIds = new Set();
+let allDownloadEntries = [];     // 다운로드 모드 전용: 전체 로드된 항목
+let downloadFilterSource = new Set();  // 다운로드 필터 - 소스 (단일 선택)
+let downloadFilterYear   = '';         // 다운로드 필터 - 연도
+let downloadFilterDates  = new Set();  // 다운로드 필터 - 날짜
+let selectedDownloadBatchTitles = new Set();  // 다운로드 필터 - 배치 명칭
 
 // ── 날짜 칩 ──────────────────────────────────────────────────────
 async function loadAvailableDates() {
@@ -916,7 +1031,7 @@ async function loadGallery(page) {
 function renderGalleryGrid(entries) {
     const grid = document.getElementById('galleryGrid');
     grid.innerHTML = '';
-    grid.classList.toggle('delete-mode-active', deleteMode);
+    grid.classList.toggle('delete-mode-active', deleteMode || downloadMode);
 
     // 1차: batch_title 그룹핑
     const batchGroups = {};
@@ -962,7 +1077,8 @@ function renderGalleryGrid(entries) {
             const groupCb = document.createElement('input');
             groupCb.type = 'checkbox';
             groupCb.className = 'date-group-select-all';
-            groupCb.addEventListener('change', () => toggleGroupSelect(primaryKey, groupCb.checked));
+            const groupToggleFn = deleteMode ? toggleGroupSelect : toggleDownloadGroupSelect;
+            groupCb.addEventListener('change', () => groupToggleFn(primaryKey, groupCb.checked));
 
             const groupSpan = document.createElement('span');
             groupSpan.textContent = `${label} (${dateGroups[dateKey].length}개)`;
@@ -970,13 +1086,13 @@ function renderGalleryGrid(entries) {
             header.appendChild(groupCb);
             header.appendChild(groupSpan);
 
-            // 삭제 모드에서 헤더 행 클릭 → 날짜 그룹 전체 선택 토글
+            // 선택 모드에서 헤더 행 클릭 → 날짜 그룹 전체 선택 토글
             header.onclick = (e) => {
-                if (!deleteMode) return;
+                if (!deleteMode && !downloadMode) return;
                 if (e.target.closest('input[type="checkbox"]')) return;
                 const newState = !groupCb.checked || groupCb.indeterminate;
                 groupCb.checked = newState;
-                toggleGroupSelect(primaryKey, newState);
+                groupToggleFn(primaryKey, newState);
             };
             grid.appendChild(header);
 
@@ -987,8 +1103,10 @@ function renderGalleryGrid(entries) {
 
 function buildGalleryCard(item) {
     const card = document.createElement('div');
-    card.className = 'gallery-card' + (deleteMode ? ' delete-mode' : '');
+    const isSelectMode = deleteMode || downloadMode;
+    card.className = 'gallery-card' + (isSelectMode ? ' delete-mode' : '');
     if (deleteMode && selectedEntryIds.has(item.id)) card.classList.add('selected');
+    if (downloadMode && selectedDownloadEntryIds.has(item.id)) card.classList.add('selected');
     card.dataset.entryId = item.id;
 
     const thumbHtml = item.thumbnail_url
@@ -1000,12 +1118,13 @@ function buildGalleryCard(item) {
         : '-';
 
     const src = item.source || 'deploy';
-    const cbChecked = deleteMode && selectedEntryIds.has(item.id) ? ' checked' : '';
+    const cbChecked = ((deleteMode && selectedEntryIds.has(item.id)) || (downloadMode && selectedDownloadEntryIds.has(item.id))) ? ' checked' : '';
+    const toggleFn = deleteMode ? 'toggleCardSelect' : 'toggleDownloadCardSelect';
     card.innerHTML = `
         <div class="thumb-wrap" style="position:relative;">
             <div class="card-checkbox-wrap">
                 <input type="checkbox" data-entry-id="${escapeHtml(item.id)}"${cbChecked}
-                       onclick="event.stopPropagation(); toggleCardSelect('${escapeHtml(item.id)}', this.checked)">
+                       onclick="event.stopPropagation(); ${toggleFn}('${escapeHtml(item.id)}', this.checked)">
             </div>
             ${thumbHtml}
             <div class="source-badge source-badge--${escapeHtml(src)}">
@@ -1026,6 +1145,10 @@ function buildGalleryCard(item) {
             const cb = card.querySelector('input[type="checkbox"]');
             cb.checked = !cb.checked;
             toggleCardSelect(item.id, cb.checked);
+        } else if (downloadMode) {
+            const cb = card.querySelector('input[type="checkbox"]');
+            cb.checked = !cb.checked;
+            toggleDownloadCardSelect(item.id, cb.checked);
         } else {
             openDetail(item.id, item.employee_id);
         }
@@ -1034,7 +1157,57 @@ function buildGalleryCard(item) {
 }
 
 // ── 삭제 모드 ────────────────────────────────────────────────────
+async function toggleDownloadMode() {
+    // 상호 배타: 삭제 모드가 켜져 있으면 끔
+    if (deleteMode) {
+        deleteMode = false;
+        selectedEntryIds.clear();
+        document.getElementById('deleteModeBtn').textContent = '삭제 모드';
+        document.getElementById('deleteModeBtn').className = 'btn btn-secondary';
+        document.getElementById('deleteModePanel').classList.remove('visible');
+        document.getElementById('deleteBottomBar').classList.remove('visible');
+    }
+    downloadMode = !downloadMode;
+    selectedDownloadEntryIds.clear();
+    downloadFilterSource.clear();
+    downloadFilterYear  = '';
+    downloadFilterDates.clear();
+
+    const modeBtn = document.getElementById('downloadModeBtn');
+    modeBtn.textContent = downloadMode ? '다운로드 모드 끄기' : '다운로드 모드';
+    modeBtn.className   = downloadMode ? 'btn btn-primary' : 'btn btn-secondary';
+
+    const panel      = document.getElementById('downloadModePanel');
+    const bottomBar  = document.getElementById('downloadBottomBar');
+    const pagination = document.getElementById('paginationBar');
+
+    if (downloadMode) {
+        panel.classList.add('visible');
+        bottomBar.classList.add('visible');
+        pagination.style.display = 'none';
+        document.getElementById('galleryGrid').innerHTML =
+            '<p style="grid-column:1/-1;text-align:center;color:#999;padding:40px;">전체 데이터 로드 중...</p>';
+        await _loadAllForDownload();
+        renderDownloadPanel();
+        renderDownloadGrid();
+    } else {
+        panel.classList.remove('visible');
+        bottomBar.classList.remove('visible');
+        allDownloadEntries = [];
+        await loadGallery(1);
+    }
+}
+
 async function toggleDeleteMode() {
+    // 상호 배타: 다운로드 모드가 켜져 있으면 끔
+    if (downloadMode) {
+        downloadMode = false;
+        selectedDownloadEntryIds.clear();
+        document.getElementById('downloadModeBtn').textContent = '다운로드 모드';
+        document.getElementById('downloadModeBtn').className = 'btn btn-secondary';
+        document.getElementById('downloadModePanel').classList.remove('visible');
+        document.getElementById('downloadBottomBar').classList.remove('visible');
+    }
     deleteMode = !deleteMode;
     selectedEntryIds.clear();
     deleteFilterSource.clear();
@@ -1066,6 +1239,31 @@ async function toggleDeleteMode() {
     }
 }
 
+function toggleDownloadCardSelect(id, checked) {
+    checked ? selectedDownloadEntryIds.add(id) : selectedDownloadEntryIds.delete(id);
+    const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(id)}"]`);
+    if (card) card.classList.toggle('selected', checked);
+    syncGroupCheckboxes();
+    updateDownloadCount();
+}
+
+function toggleDownloadGroupSelect(primaryKey, checked) {
+    galleryEntries.forEach(entry => {
+        const eb = entry.batch_title || '';
+        const ed = (entry.timestamp || '').slice(0, 8);
+        const entryKey = eb ? `${eb}||${ed}` : ed;
+        if (entryKey !== primaryKey) return;
+        checked ? selectedDownloadEntryIds.add(entry.id) : selectedDownloadEntryIds.delete(entry.id);
+        const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(entry.id)}"]`);
+        if (card) {
+            card.classList.toggle('selected', checked);
+            const cb = card.querySelector('input[type="checkbox"]');
+            if (cb) cb.checked = checked;
+        }
+    });
+    updateDownloadCount();
+}
+
 function toggleCardSelect(id, checked) {
     checked ? selectedEntryIds.add(id) : selectedEntryIds.delete(id);
     const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(id)}"]`);
@@ -1092,6 +1290,7 @@ function toggleGroupSelect(primaryKey, checked) {
 }
 
 function syncGroupCheckboxes() {
+    const selectedSet = deleteMode ? selectedEntryIds : (downloadMode ? selectedDownloadEntryIds : new Set());
     document.querySelectorAll('.date-group-header').forEach(header => {
         const primaryKey = header.dataset.primaryKey;
         const groupCb    = header.querySelector('.date-group-select-all');
@@ -1101,8 +1300,8 @@ function syncGroupCheckboxes() {
             const ed = (e.timestamp || '').slice(0, 8);
             return (eb ? `${eb}||${ed}` : ed) === primaryKey;
         });
-        const allSel = groupItems.length > 0 && groupItems.every(e => selectedEntryIds.has(e.id));
-        const anySel = groupItems.some(e => selectedEntryIds.has(e.id));
+        const allSel = groupItems.length > 0 && groupItems.every(e => selectedSet.has(e.id));
+        const anySel = groupItems.some(e => selectedSet.has(e.id));
         groupCb.checked       = allSel;
         groupCb.indeterminate = !allSel && anySel;
     });
@@ -1142,6 +1341,282 @@ function updateDeleteCount() {
         } else {
             selectAllChk.checked = selectAllChk.indeterminate = false;
         }
+    }
+}
+
+function updateDownloadCount() {
+    const count = selectedDownloadEntryIds.size;
+    const allCtx = downloadMode ? allDownloadEntries : galleryEntries;
+    const selected = allCtx.filter(e => selectedDownloadEntryIds.has(e.id));
+    const deployCount = selected.filter(e => (e.source || 'deploy') === 'deploy').length;
+    const matrixCount = selected.filter(e => e.source === 'matrix').length;
+
+    let countText = `${count}개 선택됨`;
+    if (count > 0) {
+        const parts = [];
+        if (deployCount > 0) parts.push(`배포용 ${deployCount}개`);
+        if (matrixCount > 0) parts.push(`매트릭스 ${matrixCount}개`);
+        if (parts.length > 0) countText += ` (${parts.join(' · ')})`;
+    }
+
+    const countPanelEl = document.getElementById('downloadSelectedCount');
+    if (countPanelEl) countPanelEl.textContent = countText;
+    const countBarEl = document.getElementById('downloadCountBar');
+    if (countBarEl) countBarEl.textContent = count > 0 ? countText : '';
+
+    document.querySelectorAll('.download-confirm-btn').forEach(btn => { btn.disabled = count === 0; });
+
+    // 전체 선택 체크박스 — 현재 화면(galleryEntries) 기준
+    const selectAllChk = document.getElementById('downloadSelectAllChk');
+    if (selectAllChk) {
+        if (galleryEntries.length > 0) {
+            const allSel = galleryEntries.every(e => selectedDownloadEntryIds.has(e.id));
+            const anySel = galleryEntries.some(e => selectedDownloadEntryIds.has(e.id));
+            selectAllChk.checked       = allSel;
+            selectAllChk.indeterminate = !allSel && anySel;
+        } else {
+            selectAllChk.checked = selectAllChk.indeterminate = false;
+        }
+    }
+}
+
+// ── 다운로드 모드 전체 데이터 로드 ───────────────────────────────────
+async function _loadAllForDownload() {
+    try {
+        const params = new URLSearchParams();
+        params.set('page', 1);
+        params.set('per_page', 9999);
+        const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
+        if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
+        const res  = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
+        const data = await res.json();
+        if (data.success) allDownloadEntries = data.entries;
+    } catch (e) {
+        console.error('전체 데이터 로드 실패:', e);
+    }
+}
+
+function _getDownloadFiltered() {
+    return allDownloadEntries.filter(e => {
+        const src  = e.source || 'deploy';
+        const ts   = e.timestamp || '';
+        const bt   = e.batch_title || '';
+        if (downloadFilterSource.size > 0 && !downloadFilterSource.has(src)) return false;
+        if (selectedDownloadBatchTitles.size > 0 && !selectedDownloadBatchTitles.has(bt)) return false;
+        if (downloadFilterYear  && ts.slice(0, 4) !== downloadFilterYear)     return false;
+        if (downloadFilterDates.size > 0 && !downloadFilterDates.has(ts.slice(0, 8))) return false;
+        return true;
+    });
+}
+
+function renderDownloadGrid() {
+    galleryEntries = _getDownloadFiltered();
+    renderGalleryGrid(galleryEntries);
+    updateDownloadCount();
+}
+
+function toggleAdvancedDownloadFilter() {
+    const advancedRows = document.querySelectorAll('#downloadYearRow, .download-filter-row:has(#downloadDateChips)');
+    advancedRows.forEach(row => {
+        row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+    });
+}
+
+function renderDownloadPanel() {
+    // 소스 칩 (단일 선택)
+    const allSources = new Set(allDownloadEntries.map(e => e.source || 'deploy'));
+    const srcContainer = document.getElementById('downloadSourceChips');
+    srcContainer.innerHTML = '';
+    [['deploy', '배포용'], ['matrix', '매트릭스']].forEach(([src, label]) => {
+        if (!allSources.has(src)) return;
+        const chip = document.createElement('button');
+        chip.className = 'download-chip' + (downloadFilterSource.has(src) ? ' download-chip--active' : '');
+        chip.textContent = label;
+        chip.onclick = () => {
+            // 단일 선택: 이미 선택된 것을 다시 클릭하면 해제, 아니면 해당 항목만 선택
+            if (downloadFilterSource.has(src)) {
+                downloadFilterSource.clear();
+            } else {
+                downloadFilterSource.clear();
+                downloadFilterSource.add(src);
+            }
+            downloadFilterYear = '';
+            downloadFilterDates.clear();
+            renderDownloadPanel();
+            renderDownloadGrid();
+        };
+        srcContainer.appendChild(chip);
+    });
+
+    // 배치 명칭 칩
+    const allBatchTitles = [...new Set(allDownloadEntries.map(e => e.batch_title).filter(Boolean))].sort();
+    const btContainer = document.getElementById('downloadBatchTitleChips');
+    btContainer.innerHTML = '';
+    allBatchTitles.forEach(bt => {
+        const chip = document.createElement('button');
+        chip.className = 'download-chip' + (selectedDownloadBatchTitles.has(bt) ? ' download-chip--active' : '');
+        chip.textContent = bt;
+        chip.onclick = () => {
+            selectedDownloadBatchTitles.has(bt) ? selectedDownloadBatchTitles.delete(bt) : selectedDownloadBatchTitles.add(bt);
+            const isNowActive = selectedDownloadBatchTitles.has(bt);
+            allDownloadEntries.forEach(e => {
+                if (e.batch_title === bt) {
+                    isNowActive ? selectedDownloadEntryIds.add(e.id) : selectedDownloadEntryIds.delete(e.id);
+                }
+            });
+            renderDownloadPanel();
+            renderDownloadGrid();
+            galleryEntries.forEach(entry => {
+                const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(entry.id)}"]`);
+                if (card) {
+                    card.classList.toggle('selected', selectedDownloadEntryIds.has(entry.id));
+                    const cb = card.querySelector('input[type="checkbox"]');
+                    if (cb) cb.checked = selectedDownloadEntryIds.has(entry.id);
+                }
+            });
+            syncGroupCheckboxes();
+            updateDownloadCount();
+        };
+        btContainer.appendChild(chip);
+    });
+
+    _renderDownloadYearAndDateChips();
+}
+
+function _renderDownloadYearAndDateChips() {
+    const srcFiltered = allDownloadEntries.filter(e =>
+        downloadFilterSource.size === 0 || downloadFilterSource.has(e.source || 'deploy')
+    );
+    const years = [...new Set(srcFiltered.map(e => (e.timestamp || '').slice(0, 4)).filter(Boolean))].sort();
+    const yearRow = document.getElementById('downloadYearRow');
+
+    if (years.length > 1) {
+        yearRow.style.display = 'flex';
+        const yrContainer = document.getElementById('downloadYearChips');
+        yrContainer.innerHTML = '';
+        years.forEach(yr => {
+            const chip = document.createElement('button');
+            chip.className = 'download-chip' + (downloadFilterYear === yr ? ' download-chip--active' : '');
+            chip.textContent = yr;
+            chip.onclick = () => {
+                downloadFilterYear = (downloadFilterYear === yr) ? '' : yr;
+                downloadFilterDates.clear();
+                _renderDownloadYearAndDateChips();
+                renderDownloadGrid();
+            };
+            yrContainer.appendChild(chip);
+        });
+    } else {
+        yearRow.style.display = 'none';
+        downloadFilterYear = '';
+    }
+    _renderDownloadDateChips(srcFiltered);
+}
+
+function _renderDownloadDateChips(srcFiltered) {
+    const yrFiltered = srcFiltered.filter(e =>
+        !downloadFilterYear || (e.timestamp || '').slice(0, 4) === downloadFilterYear
+    );
+    const dates = [...new Set(
+        yrFiltered.map(e => (e.timestamp || '').slice(0, 8)).filter(d => d.length === 8)
+    )].sort();
+
+    const dateContainer = document.getElementById('downloadDateChips');
+    dateContainer.innerHTML = '';
+    dates.forEach(d => {
+        const chip = document.createElement('button');
+        const isDisabled = !!downloadFilterYear;
+        chip.className = 'download-chip' + (downloadFilterDates.has(d) ? ' download-chip--active' : '') + (isDisabled ? ' download-chip--disabled' : '');
+        chip.textContent = `${d.slice(4, 6)}/${d.slice(6, 8)}`;
+        chip.disabled = isDisabled;
+        chip.onclick = () => {
+            if (downloadFilterYear) return;
+            downloadFilterDates.has(d) ? downloadFilterDates.delete(d) : downloadFilterDates.add(d);
+            chip.classList.toggle('download-chip--active', downloadFilterDates.has(d));
+            renderDownloadGrid();
+        };
+        dateContainer.appendChild(chip);
+    });
+}
+
+function toggleDownloadSelectAll(checked) {
+    galleryEntries.forEach(entry => {
+        checked ? selectedDownloadEntryIds.add(entry.id) : selectedDownloadEntryIds.delete(entry.id);
+        const card = document.querySelector(`.gallery-card[data-entry-id="${CSS.escape(entry.id)}"]`);
+        if (card) {
+            card.classList.toggle('selected', checked);
+            const cb = card.querySelector('input[type="checkbox"]');
+            if (cb) cb.checked = checked;
+        }
+    });
+    syncGroupCheckboxes();
+    updateDownloadCount();
+}
+
+function _buildDownloadFileName() {
+    const parts = [];
+    // 소스
+    if (downloadFilterSource.size === 1) {
+        const src = Array.from(downloadFilterSource)[0];
+        parts.push(src === 'deploy' ? '배포용' : '매트릭스');
+    }
+    // 배치 명칭
+    if (selectedDownloadBatchTitles.size > 0) {
+        const titles = Array.from(selectedDownloadBatchTitles);
+        if (titles.length === 1) {
+            parts.push(titles[0]);
+        } else {
+            parts.push(`${titles[0]}_외_${titles.length - 1}건`);
+        }
+    }
+    // 연도
+    if (downloadFilterYear) {
+        parts.push(downloadFilterYear);
+    }
+    // 날짜
+    if (downloadFilterDates.size > 0) {
+        const dates = Array.from(downloadFilterDates).sort();
+        if (dates.length === 1) {
+            parts.push(dates[0].slice(4, 6) + dates[0].slice(6, 8));
+        } else {
+            parts.push(`${dates[0].slice(4, 6)}${dates[0].slice(6, 8)}_외_${dates.length - 1}건`);
+        }
+    }
+    // 아무 필터도 없으면 '전체'
+    if (parts.length === 0) {
+        parts.push('전체');
+    }
+    const safe = parts.map(p => p.replace(/[\\/:*?"<>|]/g, '_')).join('_');
+    return `${safe}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
+}
+
+async function executeDownload() {
+    if (selectedDownloadEntryIds.size === 0) return;
+    const ids = Array.from(selectedDownloadEntryIds);
+    const folderMode = document.querySelector('input[name="folderMode"]:checked')?.value || 'by_type';
+    const fileName = _buildDownloadFileName();
+    try {
+        const res = await fetch('/api/perspective/deploy-gallery/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entry_ids: ids, folder_mode: folderMode }),
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            alert(`다운로드 실패: ${data.error || '알 수 없음'}`);
+            return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        alert(`다운로드 중 오류: ${e.message}`);
     }
 }
 

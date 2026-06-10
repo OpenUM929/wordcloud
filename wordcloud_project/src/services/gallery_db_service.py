@@ -311,6 +311,44 @@ def get_distinct_batch_titles(is_admin=False):
         conn.close()
 
 
+def get_entries_by_ids(entry_ids, is_admin=False):
+    """여러 ID로 전체 엔트리 조회 (이미지·row_results 포함)."""
+    if not entry_ids:
+        return []
+    id_list = list(entry_ids)
+    ph = ','.join('?' for _ in id_list)
+    conn = _get_conn()
+    try:
+        rows = conn.execute(
+            f"SELECT * FROM gallery_entries WHERE id IN ({ph})", id_list
+        ).fetchall()
+        result = []
+        for row in rows:
+            e = _row_to_dict(row)
+            if not is_admin and e.get('output_mode') == 'real':
+                continue
+            result.append(e)
+        return result
+    finally:
+        conn.close()
+
+
+def check_batch_title(batch_title):
+    """배치 명칭 중복 확인. {exists, count, sources} 반환."""
+    if not batch_title:
+        return {'exists': False, 'count': 0, 'sources': []}
+    conn = _get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT source FROM gallery_entries WHERE batch_title = ?",
+            (batch_title,)
+        ).fetchall()
+        sources = list({r[0] for r in rows if r[0]})
+        return {'exists': len(rows) > 0, 'count': len(rows), 'sources': sources}
+    finally:
+        conn.close()
+
+
 def migrate_from_manifest(manifest_path):
     """deploy_manifest.json → gallery_entries 1회 마이그레이션."""
     with open(manifest_path, 'r', encoding='utf-8') as f:
