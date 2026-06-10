@@ -163,7 +163,9 @@ def analyze():
                 word_freq, word_scores, output_path,
                 background_color=background_color,
                 width=width, height=height, max_words=max_words,
-                remove_stopwords=not remove_profanity
+                remove_stopwords=not remove_profanity,
+                apply_emotion_colors=apply_emotion_colors,
+                word_color=data.get('word_color'),
             )
 
             if success:

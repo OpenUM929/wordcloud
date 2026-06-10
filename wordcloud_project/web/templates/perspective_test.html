@@ -313,7 +313,8 @@ body {
         <span id="statusMsg"></span>
         <span style="margin-left:auto;font-size:11px;color:#888;display:flex;align-items:center;gap:4px;">
             배포모드:
-            <label><input type="radio" name="deployMode" value="combined+individual" checked> 통합+개별</label>
+            <label><input type="radio" name="deployMode" value="combined" checked> 통합</label>
+            <label><input type="radio" name="deployMode" value="combined+individual"> 통합+개별</label>
             <label><input type="radio" name="deployMode" value="individual"> 개별만</label>
         </span>
     </div>
@@ -413,7 +414,10 @@ body {
                     <span id="wco-max-words-val" style="font-size:12px;font-weight:600;min-width:24px;">80</span>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
-                    <label><input type="checkbox" id="wco-emotion-colors" checked onchange="updateWcOptionsSummary()"> 감정 색상 적용</label>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <label style="font-size:12px;color:#555;white-space:nowrap;">단어 색상:</label>
+                        <input type="color" id="wco-word-color" value="#333333" onchange="updateWcOptionsSummary()">
+                    </div>
                     <label><input type="checkbox" id="wco-remove-profanity" onchange="updateWcOptionsSummary()"> 욕설 단어 제거</label>
                 </div>
             </div>
@@ -940,79 +944,144 @@ async function generateMatrix() {
     const outputMode = getOutputMode();
 
     if (analysisTypes.length === 0) { setStatus('분석 유형을 선택하세요.', true); return; }
-
     if (!allEmp && !empId && !csvIds) { setStatus('직원을 선택하세요.', true); return; }
-
-    const resultArea = document.getElementById('resultArea');
-    setStatus('매트릭스 생성 중...');
-    resultArea.innerHTML = '<p style="text-align:center;padding:40px;"><span class="spinner"></span> 생성 중...</p>';
 
     const rowValues = getSelectedRowValues();
     const rowCombineAll = isRowCombineAll();
-
     const _wco = getWcOptions();
     const batchTitle = (document.getElementById('batchTitleInput')?.value || '').trim();
-    const body = {
-        row_field: rowField,
-        col_mode: colMode,
-        analysis_type: analysisTypes[0],
-        analysis_types: analysisTypes,
-        output_mode: outputMode,
-        generate_png: analysisTypes.includes('nlp'),
-        deploy_mode: getDeployMode(),
-        row_values: rowValues,
-        row_combine_all: rowCombineAll,
-        background_color: _wco.background_color,
-        width: _wco.width,
-        height: _wco.height,
-        max_words: _wco.max_words,
-        apply_emotion_colors: _wco.apply_emotion_colors,
-        remove_profanity: _wco.remove_profanity,
-        wordcloud_pos: _wco.wordcloud_pos,
+
+    const baseOptions = {
+        row_field: rowField, col_mode: colMode,
+        analysis_type: analysisTypes[0], analysis_types: analysisTypes,
+        output_mode: outputMode, generate_png: analysisTypes.includes('nlp'),
+        deploy_mode: getDeployMode(), row_values: rowValues, row_combine_all: rowCombineAll,
+        background_color: _wco.background_color, width: _wco.width, height: _wco.height,
+        max_words: _wco.max_words, apply_emotion_colors: _wco.apply_emotion_colors,
+        word_color: _wco.word_color,
+        remove_profanity: _wco.remove_profanity, wordcloud_pos: _wco.wordcloud_pos,
         batch_title: batchTitle || null,
     };
 
+    // 직원 목록 수집
+    let employeeIds = [];
     if (csvIds) {
-        body.employee_ids = csvIds;
+        employeeIds = csvIds;
     } else if (allEmp) {
-        body.all_employees = true;
-    } else {
-        body.employee_id = empId;
+        const _m = _meta || await loadMeta().then(() => _meta);
+        employeeIds = (_m.employees || []).map(e => e.employee_id);
+    } else if (empId) {
+        employeeIds = [empId];
     }
+    if (employeeIds.length === 0) { setStatus('처리할 직원이 없습니다.', true); return; }
+
+    const resultArea = document.getElementById('resultArea');
+    const total = employeeIds.length;
+    let statusLines = [];
+    let doneCount = 0;
+    let failCount = 0;
+    let successResults = {};  // { employee_id: apiResponse }
+    let failData = [];
 
     const _btnGen = document.getElementById('btnGenerateMatrix');
     const _btnSave = document.getElementById('btnSaveDeploy');
     if (_btnGen) _btnGen.disabled = true;
     if (_btnSave) _btnSave.disabled = true;
 
-    try {
-        const r = await fetch('/api/perspective/matrix', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-        });
-        const d = await r.json();
-        console.log('Matrix response:', d);
-
-        if (!d.success) {
-            resultArea.innerHTML = '<p class="error" style="padding:30px;text-align:center;">' + (d.error || '생성 실패') + '</p>';
-            setStatus('실패', true);
-            return;
-        }
-
-        if (d.all_employees) {
-            renderAllEmployees(d, resultArea);
-        } else {
-            renderMatrix(d, resultArea, analysisTypes);
-        }
-        setStatus('완료');
-    } catch(e) {
-        console.error('Matrix generation failed:', e);
-        resultArea.innerHTML = '<p class="error">' + e.message + '</p>';
-        setStatus('오류', true);
-    } finally {
-        _doBatchTitleCheck();
+    function renderProgress(current) {
+        const pct = total > 0 ? current / total * 100 : 0;
+        const barColor = pct >= 100 ? '#00b894' : '#007bff';
+        let h = '<div class="summary-bar"><span><strong>매트릭스 저장 중...</strong></span>';
+        h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
+        h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div>`;
+        h += `<div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
+        h += '<div class="deploy-status">';
+        statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
+        h += '</div>';
+        resultArea.innerHTML = h;
     }
+
+    function addLine(msg, cls) {
+        statusLines.push({msg, cls});
+        if (statusLines.length > 50) statusLines = statusLines.slice(-50);
+    }
+
+    setStatus('');
+    renderProgress(0);
+
+    const WORKER_COUNT = 4;
+    const yieldToRenderer = () => new Promise(r => setTimeout(r, 0));
+
+    try {
+        const processOne = async (eid) => {
+            addLine(`⏳ ${eid} 처리 중...`, 'processing');
+            renderProgress(doneCount + failCount);
+            await yieldToRenderer();
+            try {
+                const res = await fetch('/api/perspective/matrix', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({...baseOptions, employee_id: eid})
+                });
+                const d = await res.json();
+                if (d.success) {
+                    successResults[eid] = d;
+                    doneCount++;
+                    const label = d.name || d.employee_name || eid;
+                    addLine(`✅ ${label} 완료`, 'done');
+                } else {
+                    failData.push({employee_id: eid, error: d.error || '처리 실패'});
+                    failCount++;
+                    addLine(`❌ ${eid} 실패 — ${d.error || '처리 실패'}`, 'fail');
+                }
+            } catch (_e) {
+                failData.push({employee_id: eid, error: '네트워크 오류'});
+                failCount++;
+                addLine(`❌ ${eid} 실패 — 네트워크 오류`, 'fail');
+            }
+            renderProgress(doneCount + failCount);
+            await yieldToRenderer();
+        };
+
+        const workerPromises = [];
+        for (let w = 0; w < WORKER_COUNT; w++) {
+            const subset = employeeIds.filter((_, i) => i % WORKER_COUNT === w);
+            if (subset.length > 0) workerPromises.push((async () => { for (const eid of subset) await processOne(eid); })());
+        }
+        await Promise.all(workerPromises);
+    } catch (e) {
+        console.error('Matrix generation failed:', e);
+        setStatus('오류', true);
+        addLine('❌ 네트워크 오류', 'fail');
+        renderProgress(doneCount + failCount);
+    }
+
+    // 완료 헤더
+    const totalSuccess = Object.keys(successResults).length;
+    let h = '<div class="summary-bar" style="background:#d4edda;border-color:#c3e6cb;">';
+    h += `<span><strong>✅ 매트릭스 저장 완료</strong></span>`;
+    h += `<span>${totalSuccess}/${total} 성공</span>`;
+    if (failCount > 0) h += `<span style="color:#dc3545;">${failCount}건 실패</span>`;
+    h += '</div>';
+    h += `<div class="progress-container"><div class="deploy-bar" style="width:100%;background:#00b894;"></div>`;
+    h += `<div class="progress-text light">${totalSuccess}/${total} (100%)</div></div>`;
+    resultArea.innerHTML = h;
+
+    // 매트릭스 결과 렌더링
+    if (totalSuccess > 0) {
+        const matrixDiv = document.createElement('div');
+        resultArea.appendChild(matrixDiv);
+        if (totalSuccess === 1 && employeeIds.length === 1) {
+            renderMatrix(successResults[employeeIds[0]], matrixDiv, analysisTypes);
+        } else {
+            const collectedData = { employee_results: {}, analysis_types: analysisTypes, analysis_type: analysisTypes[0] };
+            Object.entries(successResults).forEach(([eid, d]) => { collectedData.employee_results[eid] = d; });
+            renderAllEmployees(collectedData, matrixDiv);
+        }
+    }
+
+    setStatus('완료');
+    _doBatchTitleCheck();
 }
 
 async function saveDeploy(resumeSessionId = null) {
@@ -1060,6 +1129,7 @@ async function saveDeploy(resumeSessionId = null) {
         height: _wco2.height,
         max_words: _wco2.max_words,
         apply_emotion_colors: _wco2.apply_emotion_colors,
+        word_color: _wco2.word_color,
         remove_profanity: _wco2.remove_profanity,
         wordcloud_pos: _wco2.wordcloud_pos,
         batch_title: batchTitleDeploy || null,
@@ -1856,7 +1926,7 @@ function updateWcOptionsSummary() {
     parts.push(opts.background_color);
     parts.push(opts.width + 'x' + opts.height);
     parts.push(opts.max_words + '단어');
-    if (opts.apply_emotion_colors) parts.push('감정색상');
+    if (opts.word_color) parts.push('색상:' + opts.word_color);
     if (opts.remove_profanity) parts.push('욕설제거');
     const posLabels = {Noun:'명사', Verb:'동사', Adjective:'형용사', Adverb:'부사'};
     const posNames = opts.wordcloud_pos.map(p => posLabels[p] || p).join(',');
@@ -1873,7 +1943,8 @@ function getWcOptions() {
         width: w,
         height: h,
         max_words: parseInt(document.getElementById('wco-max-words').value),
-        apply_emotion_colors: document.getElementById('wco-emotion-colors').checked,
+        apply_emotion_colors: false,
+        word_color: document.getElementById('wco-word-color').value,
         remove_profanity: document.getElementById('wco-remove-profanity').checked,
         wordcloud_pos: Array.from(posCbs).map(cb => cb.value),
     };
@@ -1896,8 +1967,9 @@ function applyWcOptions(options) {
         document.getElementById('wco-max-words').value = options.max_words;
         document.getElementById('wco-max-words-val').textContent = options.max_words;
     }
-    if (options.apply_emotion_colors != null)
-        document.getElementById('wco-emotion-colors').checked = options.apply_emotion_colors;
+    if (options.word_color) {
+        document.getElementById('wco-word-color').value = options.word_color;
+    }
     if (options.remove_profanity != null)
         document.getElementById('wco-remove-profanity').checked = options.remove_profanity;
     if (options.wordcloud_pos != null) {

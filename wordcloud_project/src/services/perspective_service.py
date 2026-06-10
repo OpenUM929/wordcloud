@@ -847,6 +847,7 @@ def _save_wordcloud_to_path(word_freq, word_scores, output_path, options):
         width=options.get('width', 400),
         height=options.get('height', 300),
         apply_emotion_colors=options.get('apply_emotion_colors', True),
+        word_color=options.get('word_color'),
     )
     return success
 
@@ -1442,6 +1443,7 @@ def _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, op
             "max_words": options.get('max_words', 100),
             "apply_emotion_colors": options.get('apply_emotion_colors', True),
             "remove_profanity": options.get('remove_profanity', False),
+            "word_color": options.get('word_color'),
         },
         "images": {
             "combined": result.get('combined'),
@@ -1498,6 +1500,7 @@ def _index_matrix_to_manifest(matrix_result, employee_id, row_field, col_mode, a
             "max_words": options.get('max_words', 80),
             "apply_emotion_colors": options.get('apply_emotion_colors', True),
             "remove_profanity": options.get('remove_profanity', False),
+            "word_color": options.get('word_color'),
         },
         "images": {"combined": thumbnail, "positive": None, "negative": None},
         "row_results": row_results,
@@ -1556,12 +1559,15 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
     wordcloud_pos = options.get('wordcloud_pos', ['Noun'])
     os.makedirs(DEPLOY_OUTPUT_DIR, exist_ok=True)
 
+    deploy_mode = options.get('deploy_mode', 'combined+individual')
+
     wc_options = {
         'background_color': options.get('background_color', 'white'),
         'max_words': options.get('max_words', 100),
         'width': options.get('width', 800),
         'height': options.get('height', 600),
         'apply_emotion_colors': options.get('apply_emotion_colors', True),
+        'word_color': options.get('word_color'),
     }
 
     def _save_wc(wf, scores, suffix, filename):
@@ -1593,6 +1599,37 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
         positive_sent = _extract_sentences_for_words(items, wf_positive, word_scores)
         negative_sent = _extract_sentences_for_words(items, wf_negative, word_scores)
         return combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent
+
+    # combined 모드: row 분리 없이 전체 아이템을 하나의 그룹으로 처리
+    if deploy_mode == 'combined':
+        filtered_items = []
+        for item in all_items:
+            ev = item['evaluation']
+            row_vals = _extract_row_values(ev, row_field)
+            if row_values and not any(v in row_values for v in row_vals):
+                continue
+            filtered_items.append(item)
+        if not filtered_items:
+            return None
+        combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent = _generate_wc_for_items(filtered_items, '통합')
+        result = {
+            'name': deploy_name,
+            'timestamp': ts,
+            'combined': combined_url,
+            'positive': positive_url,
+            'negative': negative_url,
+            '통합': combined_url,
+            '긍정': positive_url,
+            '부정': negative_url,
+            'combined_sentences': combined_sent,
+            'positive_sentences': positive_sent,
+            'negative_sentences': negative_sent,
+            '통합_문장': combined_sent,
+            '긍정_문장': positive_sent,
+            '부정_문장': negative_sent,
+        }
+        _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, options)
+        return result
 
     # 통합 출력: 선택된 값들을 하나로 합산
     if row_combine_all:

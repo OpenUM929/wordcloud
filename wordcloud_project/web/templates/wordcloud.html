@@ -377,7 +377,10 @@
                 <span>개</span>
             </div>
             <div class="emotion-colors-group">
-                <label><input type="checkbox" id="applyEmotionColors" checked> <span>감정 기반 색상 적용</span></label>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-size:12px;white-space:nowrap;">단어 색상:</label>
+                    <input type="color" id="wordcloudWordColor" value="#333333" oninput="updatePreviewSummary && updatePreviewSummary()">
+                </div>
             </div>
             <div class="emotion-colors-group">
                 <label><input type="checkbox" id="removeProfanity"> <span>비속어 제거</span></label>
@@ -863,10 +866,11 @@ function showWordcloud(metadata) {
 function saveOptions() {
     const options = {
         morphology: Array.from(document.querySelectorAll('#wordcloudOptions input[type="checkbox"]:checked'))
-            .filter(cb => cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity')
+            .filter(cb => cb.id !== 'removeProfanity')
             .map(cb => cb.value),
         backgroundColor: document.getElementById('backgroundColor').value,
-        applyEmotionColors: document.getElementById('applyEmotionColors').checked,
+        applyEmotionColors: false,
+        wordColor: document.getElementById('wordcloudWordColor').value,
         removeProfanity: document.getElementById('removeProfanity').checked,
 
         sizePreset: document.querySelector('input[name="sizePreset"]:checked').value,
@@ -883,7 +887,7 @@ function loadOptions() {
         
         // 형태소 선택 복원
         document.querySelectorAll('#wordcloudOptions input[type="checkbox"]').forEach(cb => {
-            if (cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity') {
+            if (cb.id !== 'removeProfanity') {
                 cb.checked = options.morphology.includes(cb.value);
             }
         });
@@ -897,8 +901,12 @@ function loadOptions() {
         });
         document.getElementById('backgroundColor').value = options.backgroundColor;
         
-        // 감정 색상 적용 복원
-        document.getElementById('applyEmotionColors').checked = options.applyEmotionColors;
+        // 단어 색상 복원
+        if (options.wordColor) {
+            document.getElementById('wordcloudWordColor').value = options.wordColor;
+        } else if (options.word_color) {
+            document.getElementById('wordcloudWordColor').value = options.word_color;
+        }
         
         // 비속어 제거 복원
         document.getElementById('removeProfanity').checked = options.removeProfanity;
@@ -920,12 +928,12 @@ function loadOptions() {
 
 // 형태소 선택 변경 이벤트
 document.querySelectorAll('#wordcloudOptions input[type="checkbox"]').forEach(cb => {
-    if (cb.id !== 'applyEmotionColors') {
+    if (cb.id !== 'removeProfanity') {
         cb.addEventListener('change', function() {
             // 선택된 형태소 업데이트
             const selectedPos = [];
             document.querySelectorAll('#wordcloudOptions input[type="checkbox"]:checked').forEach(c => {
-                if (c.id !== 'applyEmotionColors') {
+                if (c.id !== 'removeProfanity') {
                     selectedPos.push(c.value);
                 }
             });
@@ -961,8 +969,8 @@ document.querySelectorAll('input[name="sizePreset"]').forEach(radio => {
     });
 });
 
-// 감정 색상 적용 체크박스 이벤트
-document.getElementById('applyEmotionColors').addEventListener('change', saveOptions);
+// 단어 색상 변경 이벤트
+document.getElementById('wordcloudWordColor').addEventListener('input', saveOptions);
 
 // 비속어 제거 체크박스 이벤트
 document.getElementById('removeProfanity').addEventListener('change', saveOptions);
@@ -991,7 +999,7 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
     // 옵션 값 수집
     const selectedPos = [];
     document.querySelectorAll('#wordcloudOptions input[type="checkbox"]:checked').forEach(cb => {
-        if (cb.id !== 'applyEmotionColors') {  // 감정 색상 적용 체크박스는 제외
+        if (cb.id !== 'removeProfanity') {
             selectedPos.push(cb.value);
         }
     });
@@ -1002,7 +1010,7 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
     }
 
     const backgroundColor = document.getElementById('backgroundColor').value;
-    const applyEmotionColors = document.getElementById('applyEmotionColors').checked;
+    const wordColor = document.getElementById('wordcloudWordColor').value;
     const removeProfanity = document.getElementById('removeProfanity').checked;
     const sizePreset = document.querySelector('input[name="sizePreset"]:checked').value;
     const [width, height] = sizePreset.split('x').map(n => parseInt(n));
@@ -1017,7 +1025,7 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
     const optionInfo = `
         형태소: ${selectedPos.join(', ')}
         배경색: ${backgroundColor}
-        감정색상: ${applyEmotionColors ? '적용' : '미적용'}
+        단어색상: ${wordColor}
         비속어제거: ${removeProfanity ? '적용' : '미적용'}
         크기: ${sizePreset}
         최대단어수: ${maxWords}
@@ -1028,7 +1036,7 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
     console.log('선택된 워드클라우드 생성 옵션:', {
         morphology: selectedPos,
         backgroundColor,
-        applyEmotionColors,
+        word_color: wordColor,
         removeProfanity,
         sizePreset,
         maxWords
@@ -1042,7 +1050,8 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
         batch_path: selectedBatch.path,
         wordcloud_pos: selectedPos,
         background_color: backgroundColor,
-        apply_emotion_colors: applyEmotionColors,
+        apply_emotion_colors: false,
+        word_color: wordColor,
         remove_profanity: removeProfanity,
         wordcloud_sentiment_mode: sentimentMode,
         generate_png: generatePng
@@ -1057,7 +1066,8 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
                 batch_path: selectedBatch.path,
                 wordcloud_pos: selectedPos,
                 background_color: backgroundColor,
-                apply_emotion_colors: applyEmotionColors,
+                apply_emotion_colors: false,
+                word_color: wordColor,
                 remove_profanity: removeProfanity,
                 width: width,
                 height: height,
@@ -1097,7 +1107,7 @@ renderBatchTree();
 
 function getCurrentOptions() {
     const morphology = Array.from(document.querySelectorAll('#wordcloudOptions input[type="checkbox"]:checked'))
-        .filter(cb => cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity')
+        .filter(cb => cb.id !== 'removeProfanity')
         .map(cb => cb.value);
     const sizePreset = (document.querySelector('input[name="sizePreset"]:checked') || {value:'800x600'}).value;
     const [w, h] = sizePreset.split('x').map(Number);
@@ -1106,7 +1116,8 @@ function getCurrentOptions() {
         background_color: document.getElementById('backgroundColor').value || 'white',
         width: w, height: h,
         max_words: parseInt(document.getElementById('maxWords').value),
-        apply_emotion_colors: document.getElementById('applyEmotionColors').checked,
+        apply_emotion_colors: false,
+        word_color: document.getElementById('wordcloudWordColor').value,
         remove_profanity: document.getElementById('removeProfanity').checked,
         sentiment_mode: (document.querySelector('input[name="sentimentMode"]:checked') || {value:'combined'}).value,
     };
@@ -1116,7 +1127,7 @@ function applyPageOptions(options) {
     if (!options) return;
     if (options.wordcloud_pos) {
         document.querySelectorAll('#wordcloudOptions input[type="checkbox"]').forEach(cb => {
-            if (cb.id !== 'applyEmotionColors' && cb.id !== 'removeProfanity')
+            if (cb.id !== 'removeProfanity')
                 cb.checked = options.wordcloud_pos.includes(cb.value);
         });
     }
@@ -1132,8 +1143,9 @@ function applyPageOptions(options) {
         if (r) r.checked = true;
     }
     if (options.max_words != null) document.getElementById('maxWords').value = options.max_words;
-    if (options.apply_emotion_colors != null)
-        document.getElementById('applyEmotionColors').checked = options.apply_emotion_colors;
+    if (options.word_color) {
+        document.getElementById('wordcloudWordColor').value = options.word_color;
+    }
     if (options.remove_profanity != null)
         document.getElementById('removeProfanity').checked = options.remove_profanity;
     if (options.sentiment_mode) {

@@ -276,7 +276,8 @@ class WordCloudGenerator:
                                        output_path: Optional[str] = None, background_color: str = 'white',
                                        max_words: int = 100, width: int = 800, height: int = 600,
                                        remove_stopwords: bool = True,
-                                       apply_emotion_colors: bool = True) -> bool:
+                                       apply_emotion_colors: bool = True,
+                                       word_color: Optional[str] = None) -> bool:
         """test_wordcloud2.py generate_wordcloud_bitmap() 동일 로직 — PIL 비트맵 충돌 감지 + 중앙 나선형 배치"""
         self.logger.info(f"워드클라우드 생성 시작: {len(word_freq)}개 단어, {width}x{height}")
 
@@ -323,6 +324,10 @@ class WordCloudGenerator:
             def get_font_size(freq):
                 ratio = freq / max_freq
                 return max(min_font, int(min_font + (ratio ** 0.6) * (max_font - min_font)))
+
+            def hex_to_rgb(hex_color):
+                hex_color = hex_color.lstrip('#')
+                return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
             def get_emotion_color(word):
                 score = word_scores.get(word, 0.0)
@@ -381,7 +386,12 @@ class WordCloudGenerator:
                             (x1 + margin - bbox[0], y1 + margin - bbox[1]),
                             word, font=font, fill=255
                         )
-                        fill_color = get_emotion_color(word) if apply_emotion_colors else (50, 50, 50)
+                        if word_color:
+                            fill_color = hex_to_rgb(word_color)
+                        elif apply_emotion_colors:
+                            fill_color = get_emotion_color(word)
+                        else:
+                            fill_color = (50, 50, 50)
                         draw_color.text(
                             (x1 + margin - bbox[0], y1 + margin - bbox[1]),
                             word, font=font, fill=fill_color

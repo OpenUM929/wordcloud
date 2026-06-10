@@ -171,7 +171,9 @@ def regenerate_wordcloud(data):
                 background_color=background_color,
                 max_words=max_words,
                 width=width,
-                height=height
+                height=height,
+                apply_emotion_colors=apply_emotion_colors,
+                word_color=data.get('word_color'),
             )
             return (ok, f"/api/wordcloud/outputs/{out_name}")
 

@@ -466,12 +466,13 @@ def api_save_deploy():
         'include_name': data.get('include_name', True),
         'include_id': data.get('include_id', True),
         'apply_emotion_colors': data.get('apply_emotion_colors', True),
+        'word_color': data.get('word_color'),
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
     unified = load_all_batches()
     if not unified:
-        return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 404
+        return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 400
 
     if all_employees and not employee_ids:
         seen = set()
@@ -558,6 +559,7 @@ def api_save_deploy_stream():
         'include_name': data.get('include_name', True),
         'include_id': data.get('include_id', True),
         'apply_emotion_colors': data.get('apply_emotion_colors', True),
+        'word_color': data.get('word_color'),
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
@@ -867,8 +869,9 @@ def api_deploy_gallery_list():
     """List deployment gallery entries with filtering and pagination."""
     from src.services import gallery_db_service
 
+    fetch_all = request.args.get('all', '0') == '1'
     page = request.args.get('page', 1, type=int)
-    per_page = min(request.args.get('per_page', 20, type=int), 100)
+    per_page = min(request.args.get('per_page', 20, type=int), 200)
     employee_id = request.args.get('employee_id', '').strip() or None
     output_mode = request.args.get('output_mode', '').strip() or None
     source = request.args.get('source', '').strip() or None
@@ -880,7 +883,7 @@ def api_deploy_gallery_list():
     batch_titles = {batch_title_filter} if batch_title_filter else None
 
     result = gallery_db_service.list_entries(
-        page=page, per_page=per_page,
+        page=page, per_page=per_page, fetch_all=fetch_all,
         employee_id=employee_id, source=source,
         output_mode=output_mode, date_from=date_from, date_to=date_to,
         dates=dates, batch_titles=batch_titles,
@@ -1047,20 +1050,15 @@ def _url_to_abs_path(url):
 def _build_arc_name(folder_mode, emp_id, year, img_type, abs_path):
     """ZIP 내부 파일 경로 생성."""
     base_name = os.path.basename(abs_path)
-    name_part = base_name.rsplit('.', 1)[0]
     ext = base_name.rsplit('.', 1)[1] if '.' in base_name else 'png'
-    # 기본명: 직원ID_연도_종류
-    label = f"{emp_id}"
-    if year:
-        label += f"_{year}"
-    type_ko = {'combined': '통합', 'positive': '긍정', 'negative': '부정'}.get(img_type, img_type)
-    label += f"_{type_ko}"
-    safe_name = re.sub(r'[\\/:*?"<>|]', '_', label)
-    arc_file = f"{safe_name}.{ext}"
     if folder_mode == 'by_type':
         type_folder = {'combined': 'combined', 'positive': 'positive', 'negative': 'negative'}.get(img_type, 'other')
-        return f"{type_folder}/{arc_file}"
-    return arc_file
+        safe_name = re.sub(r'[\\/:*?"<>|]', '_', f"{emp_id}{'_' + year if year else ''}")
+        return f"{type_folder}/{safe_name}.{ext}"
+    # flat: 직원ID_연도_통합.png
+    type_ko = {'combined': '통합', 'positive': '긍정', 'negative': '부정'}.get(img_type, img_type)
+    safe_name = re.sub(r'[\\/:*?"<>|]', '_', f"{emp_id}{'_' + year if year else ''}_{type_ko}")
+    return f"{safe_name}.{ext}"
 
 
 @perspective_bp.route('/deploy-title/check', methods=['POST'])
