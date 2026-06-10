@@ -38,3 +38,6 @@ model/
 # Stdout/stderr
 *stdout.txt
 *stderr.txt
+
+# Vendor Python packages (offline pip install packages)
+wordcloud_project/vendor_python_pkgs/
