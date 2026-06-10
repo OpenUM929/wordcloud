@@ -44,7 +44,16 @@ def api_get_meta():
     employee_id = data.get('employee_id')
     unified = load_all_batches()
     if not unified:
-        return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 404
+        return jsonify({
+            'success': True,
+            'admin': _is_admin(),
+            'employees': [],
+            'row_options': [],
+            'col_modes': [],
+            'analysis_types': [],
+            'batch_count': 0,
+            'total_evaluations': 0,
+        })
     meta = get_matrix_meta(unified, employee_id=employee_id, enrich=_is_admin())
     return jsonify({'success': True, 'admin': _is_admin(), **meta})
 

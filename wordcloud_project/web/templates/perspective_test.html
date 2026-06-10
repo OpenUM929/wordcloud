@@ -535,7 +535,12 @@ async function loadMeta() {
         });
 
         onRowFieldChange();
-        setStatus(`${d.employees.length}명 직원, ${d.batch_count}개 배치, ${d.total_evaluations}개 평가 로드됨`);
+        const empCount = (d.employees || []).length;
+        if (empCount === 0) {
+            setStatus('배치 데이터 없음 — CSV를 업로드하여 배치를 생성하세요.');
+        } else {
+            setStatus(`${empCount}명 직원, ${d.batch_count}개 배치, ${d.total_evaluations}개 평가 로드됨`);
+        }
     } catch(e) {
         console.error('Meta load failed:', e);
         setStatus('메타 로드 실패', true);
