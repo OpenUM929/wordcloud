@@ -1753,6 +1753,7 @@ async function deleteBatch(batchId, btn) {
         const d = await r.json();
         if (d.success) {
             loadBatchHistory();
+            loadMeta();
         } else {
             alert('삭제 실패: ' + (d.error||''));
             btn.disabled = false;
