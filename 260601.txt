@@ -1,6 +1,0 @@
-🔍 구현 전 코드 대조 필요 사항 (총 3건)
-#	대상 파일	확인 내용
-1	src/services/perspective_service.py	_write_manifest_entry() 함수가 이미 존재하는지
-2	web/templates/deploy_gallery.html	.chip, .chip--active, .chip--disabled CSS 클래스가 이미 사용 중인지
-3	src/services/perspective_service.py	generate_perspective_matrix() 실제 반환 구조가 문서 4.1절과 일치하는지 (matrix→nlp→wordcloud_url)
-이 3건만 확인하면 rev-03 계획서로 구현에 무리 없습니다.

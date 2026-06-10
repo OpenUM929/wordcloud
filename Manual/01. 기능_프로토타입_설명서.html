@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>워드클라우드 시스템 — 기능 프로토타입 설명서</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Malgun Gothic', Arial, sans-serif; font-size: 14px; background: #f5f5f5; color: #333; }
+  .page { max-width: 1100px; margin: 0 auto; background: white; padding: 40px; }
+  h1 { font-size: 26px; font-weight: 700; color: #1a1a2e; border-bottom: 3px solid #007bff; padding-bottom: 12px; margin-bottom: 8px; }
+  h2 { font-size: 20px; font-weight: 700; color: #0056b3; margin: 40px 0 12px; border-left: 5px solid #007bff; padding-left: 12px; }
+  h3 { font-size: 16px; font-weight: 700; color: #333; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 700; color: #495057; margin: 16px 0 6px; }
+  p  { line-height: 1.7; margin-bottom: 10px; color: #444; }
+  .subtitle { font-size: 13px; color: #6c757d; margin-bottom: 30px; }
+  .toc { background: #f0f7ff; border: 1px solid #b8daff; border-radius: 8px; padding: 20px 24px; margin-bottom: 40px; }
+  .toc h3 { margin: 0 0 10px; font-size: 15px; color: #004085; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 4px 0; }
+  .toc a { color: #007bff; text-decoration: none; font-size: 13px; }
+  .toc a:hover { text-decoration: underline; }
+  .section-card { border: 1px solid #dee2e6; border-radius: 10px; padding: 24px; margin-bottom: 40px; }
+  .section-card.batch  { border-top: 4px solid #20c997; }
+  .section-card.group  { border-top: 4px solid #007bff; }
+  .section-card.gallery{ border-top: 4px solid #6f42c1; }
+
+  /* ── 기능 개요 배지 ── */
+  .feature-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .badge-url   { background: #e9ecef; color: #495057; }
+  .badge-green { background: #d4edda; color: #155724; }
+  .badge-blue  { background: #d1ecf1; color: #0c5460; }
+  .badge-purple{ background: #e9d6ff; color: #5a0e9e; }
+
+  /* ── 화면 목업 공통 ── */
+  .mockup { border: 2px solid #ced4da; border-radius: 8px; overflow: hidden; margin: 16px 0 24px; background: #f8f9fa; }
+  .mockup-bar { background: #343a40; color: #adb5bd; font-size: 11px; padding: 5px 12px; display: flex; align-items: center; gap: 6px; }
+  .mockup-bar .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .mockup-bar .dot-r { background: #ff5f57; }
+  .mockup-bar .dot-y { background: #febc2e; }
+  .mockup-bar .dot-g { background: #28c840; }
+  .mockup-bar .url   { margin-left: 8px; background: #495057; border-radius: 3px; padding: 2px 10px; font-size: 11px; color: #ced4da; }
+  .mockup-body { padding: 16px; background: white; }
+
+  /* ── UI 요소 시뮬레이션 ── */
+  .sim-header { background: #fff; border-bottom: 1px solid #dee2e6; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .sim-title  { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+  .sim-step-row { display: flex; align-items: center; justify-content: center; gap: 0; padding: 16px 0; background: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+  .sim-step { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .sim-step-circle { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: #fff; }
+  .sim-step-circle.active    { background: #007bff; }
+  .sim-step-circle.completed { background: #28a745; }
+  .sim-step-circle.pending   { background: #e0e0e0; color: #999; }
+  .sim-step-label { font-size: 11px; color: #666; }
+  .sim-arrow { color: #ccc; font-size: 18px; padding: 0 8px; margin-top: -16px; }
+  .sim-card { background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 14px; margin: 10px 0; }
+  .sim-card h5 { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+  .sim-field { display: flex; flex-direction: column; margin-bottom: 8px; }
+  .sim-label { font-size: 11px; font-weight: 600; color: #555; margin-bottom: 3px; }
+  .sim-input { background: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; padding: 5px 8px; font-size: 12px; color: #666; }
+  .sim-btn { display: inline-block; padding: 6px 16px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
+  .sim-btn-primary  { background: #007bff; color: white; }
+  .sim-btn-success  { background: #28a745; color: white; }
+  .sim-btn-secondary{ background: #6c757d; color: white; }
+  .sim-btn-danger   { background: #dc3545; color: white; }
+  .sim-btn-outline  { background: white; color: #007bff; border: 1px solid #007bff; }
+  .sim-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+  .sim-col { flex: 1; min-width: 160px; }
+  .sim-panel { border: 1px solid #dee2e6; border-radius: 6px; padding: 10px 12px; background: #f8f9fa; }
+  .sim-panel h6 { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 6px; }
+  .sim-tree-item { padding: 4px 8px; border-radius: 3px; font-size: 12px; margin-bottom: 2px; cursor: pointer; }
+  .sim-tree-item.mapped   { background: #28a745; color: white; }
+  .sim-tree-item.selected { background: #007bff; color: white; }
+  .sim-tree-item.normal   { background: #e9ecef; color: #333; }
+  .sim-chip { display: inline-block; padding: 3px 10px; border: 1px solid #ced4da; border-radius: 14px; font-size: 12px; margin: 2px; background: white; }
+  .sim-chip.active  { background: #007bff; color: white; border-color: #007bff; }
+  .sim-chip.delete  { background: #dc3545; color: white; border-color: #dc3545; }
+  .sim-chip.download{ background: #007bff; color: white; border-color: #007bff; }
+  .sim-progress { background: #e0e0e0; border-radius: 10px; height: 18px; overflow: hidden; margin: 6px 0; }
+  .sim-progress-fill { height: 100%; background: #007bff; border-radius: 10px; transition: width 0.3s; }
+  .sim-proc-row { display: flex; align-items: center; justify-content: center; gap: 2px; padding: 10px 0; flex-wrap: wrap; }
+  .sim-proc-step { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .sim-proc-circle { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: white; }
+  .sim-proc-text { font-size: 9px; color: #666; text-align: center; max-width: 60px; }
+  .sim-proc-arrow { color: #ccc; font-size: 14px; margin: -12px 2px 0; }
+  .sim-gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 10px 0; }
+  .sim-gallery-card { border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background: white; }
+  .sim-gallery-thumb { height: 100px; background: linear-gradient(135deg, #e8f0fe, #fce4ec); display: flex; align-items: center; justify-content: center; font-size: 11px; color: #888; border-bottom: 1px solid #eee; }
+  .sim-gallery-body { padding: 8px 10px; }
+  .sim-gallery-title { font-size: 12px; font-weight: 700; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sim-gallery-meta  { font-size: 11px; color: #888; margin-top: 3px; display: flex; justify-content: space-between; }
+  .sim-matrix-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .sim-matrix-table th, .sim-matrix-table td { border: 1px solid #dee2e6; padding: 6px 8px; text-align: center; }
+  .sim-matrix-table th { background: #f8f9fa; font-weight: 600; }
+  .sim-matrix-cell { background: #f0f7ff; height: 80px; vertical-align: top; padding: 4px; }
+  .sim-matrix-cell img-placeholder { display: block; width: 100%; height: 60px; background: linear-gradient(135deg, #e3f2fd, #e8f5e9); border-radius: 3px; font-size: 9px; color: #888; text-align: center; line-height: 60px; }
+  .sim-filter-bar { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px 14px; display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+  .sim-filter-group { display: flex; flex-direction: column; gap: 3px; }
+  .sim-filter-label { font-size: 11px; font-weight: 600; color: #495057; }
+  .sim-modal-box { border: 2px solid #007bff; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+  .sim-modal-header { background: #007bff; color: white; padding: 10px 14px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; }
+  .sim-modal-tabs { display: flex; border-bottom: 2px solid #dee2e6; }
+  .sim-tab { padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .sim-tab.active { color: #007bff; border-bottom-color: #007bff; }
+  .sim-tab.inactive { color: #6c757d; }
+  .sim-modal-body { padding: 14px; }
+  .sim-delete-panel { background: #fff8f8; border: 1px solid #f5c6cb; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
+  .sim-download-panel { background: #f0f7ff; border: 1px solid #b8daff; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
+  .sim-bottom-bar { background: #343a40; color: white; padding: 10px 16px; display: flex; gap: 10px; align-items: center; border-radius: 0 0 6px 6px; font-size: 12px; }
+
+  /* ── 주석 번호 ── */
+  .annot { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #dc3545; color: white; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+  /* ── 설명 테이블 ── */
+  .desc-table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  .desc-table th { background: #f0f7ff; color: #004085; padding: 8px 12px; text-align: left; border: 1px solid #b8daff; font-weight: 700; }
+  .desc-table td { padding: 8px 12px; border: 1px solid #dee2e6; vertical-align: top; line-height: 1.6; }
+  .desc-table tr:nth-child(even) td { background: #fafafa; }
+  .no-circle { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #007bff; color: white; font-size: 10px; font-weight: 700; }
+
+  /* ── 플로우 다이어그램 ── */
+  .flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 12px 0; }
+  .flow-box { background: white; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 600; color: #333; text-align: center; }
+  .flow-box.green { border-color: #28a745; color: #155724; background: #d4edda; }
+  .flow-box.blue  { border-color: #007bff; color: #004085; background: #d1ecf1; }
+  .flow-box.teal  { border-color: #20c997; color: #0c6b55; background: #d2f4e8; }
+  .flow-arrow { color: #adb5bd; font-size: 16px; }
+
+  /* ── 주의/팁 박스 ── */
+  .note-box { border-left: 4px solid; border-radius: 0 6px 6px 0; padding: 10px 14px; margin: 10px 0; font-size: 13px; line-height: 1.6; }
+  .note-box.info    { border-color: #17a2b8; background: #e3f7fb; color: #0c5460; }
+  .note-box.warning { border-color: #ffc107; background: #fff8e1; color: #856404; }
+  .note-box.success { border-color: #28a745; background: #e8f5e9; color: #155724; }
+
+  .divider { border: none; border-top: 1px solid #dee2e6; margin: 24px 0; }
+  .text-muted { color: #6c757d; font-size: 12px; }
+
+  /* ── 인라인 칩 표시 ── */
+  .inline-chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; border: 1px solid; }
+  .inline-chip.blue   { border-color: #007bff; color: #007bff; }
+  .inline-chip.green  { border-color: #28a745; color: #28a745; }
+  .inline-chip.red    { border-color: #dc3545; color: #dc3545; }
+
+  @media print {
+    .page { padding: 20px; }
+    h2 { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══════════════════════════════════════════
+     표지
+══════════════════════════════════════════ -->
+<h1>워드클라우드 시스템 — 기능 프로토타입 설명서</h1>
+<p class="subtitle">기획팀 검토용 | 작성일: 2026-06-10 | 대상 기능: 메타데이터 생성(배치) · 그룹 분석 · 저장 갤러리</p>
+
+<div class="toc">
+  <h3>목차</h3>
+  <ol>
+    <li><a href="#overview">시스템 개요</a></li>
+    <li><a href="#batch">메타데이터 생성 (배치 처리)</a>
+      <ol>
+        <li><a href="#batch-step1">Step 1 — 데이터 업로드</a></li>
+        <li><a href="#batch-step2">Step 2 — 메타데이터 매핑</a></li>
+        <li><a href="#batch-step3">Step 3 — 미리보기</a></li>
+        <li><a href="#batch-step4">Step 4 — 배치 처리 및 저장</a></li>
+      </ol>
+    </li>
+    <li><a href="#group">그룹 분석 (Perspective Analysis)</a>
+      <ol>
+        <li><a href="#group-condition">조건 설정</a></li>
+        <li><a href="#group-result">결과 매트릭스</a></li>
+        <li><a href="#group-save">저장 기능</a></li>
+      </ol>
+    </li>
+    <li><a href="#gallery">저장 갤러리</a>
+      <ol>
+        <li><a href="#gallery-browse">갤러리 탐색</a></li>
+        <li><a href="#gallery-delete">삭제 모드</a></li>
+        <li><a href="#gallery-download">다운로드 모드</a></li>
+        <li><a href="#gallery-detail">상세 모달</a></li>
+      </ol>
+    </li>
+  </ol>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     1. 시스템 개요
+══════════════════════════════════════════ -->
+<h2 id="overview">1. 시스템 개요</h2>
+<p>한국어 인사평가 문서를 분석하여 <strong>감정 분류</strong>, <strong>단어 빈도</strong>, <strong>워드클라우드 이미지</strong>를 생성하는 웹 기반 시스템입니다. 본 설명서는 기획팀 검토 대상인 3개 핵심 기능에 집중합니다.</p>
+
+<div class="mockup">
+  <div class="mockup-bar">
+    <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+    <span class="url">http://127.0.0.1:5001</span>
+  </div>
+  <div class="mockup-body">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <div class="sim-card" style="flex:1;min-width:200px;border-top:4px solid #20c997;">
+        <h5 style="color:#20c997;">📋 메타데이터 생성</h5>
+        <p style="font-size:12px;color:#555;">CSV/Excel 업로드 → 필드 매핑 → 배치 처리 (감정 분석 + 워드클라우드 생성)</p>
+        <div style="margin-top:6px;"><span class="badge badge-url">/metadata_batch</span></div>
+      </div>
+      <div class="sim-card" style="flex:1;min-width:200px;border-top:4px solid #007bff;">
+        <h5 style="color:#007bff;">📊 그룹 분석</h5>
+        <p style="font-size:12px;color:#555;">직원 × 시간 × 관점 3축 매트릭스로 워드클라우드·감정 결과 시각화</p>
+        <div style="margin-top:6px;"><span class="badge badge-url">/perspective_test</span></div>
+      </div>
+      <div class="sim-card" style="flex:1;min-width:200px;border-top:4px solid #6f42c1;">
+        <h5 style="color:#6f42c1;">🖼️ 저장 갤러리</h5>
+        <p style="font-size:12px;color:#555;">저장된 워드클라우드 이미지를 그리드로 탐색, 검색·삭제·다운로드</p>
+        <div style="margin-top:6px;"><span class="badge badge-url">/deploy_gallery</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow">
+  <div class="flow-box teal">① CSV/Excel 업로드</div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box teal">② 필드 매핑</div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box blue">③ 배치 처리<br><span style="font-size:10px;">(감정분석 + 워드클라우드)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box blue">④ 그룹 분석<br><span style="font-size:10px;">(매트릭스 뷰)</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box green">⑤ 저장 갤러리<br><span style="font-size:10px;">(조회·다운로드)</span></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     2. 메타데이터 생성 (배치 처리)
+══════════════════════════════════════════ -->
+<h2 id="batch">2. 메타데이터 생성 (배치 처리)</h2>
+
+<div class="section-card batch">
+  <div class="feature-meta">
+    <span class="badge badge-url">URL: /metadata_batch</span>
+    <span class="badge badge-green">CSV / Excel 지원</span>
+    <span class="badge badge-blue">4단계 위저드</span>
+  </div>
+  <p>대량의 인사평가 데이터를 한 번에 처리하는 핵심 워크플로우입니다. 파일 업로드부터 워드클라우드 생성까지 4단계 위저드로 안내합니다.</p>
+
+  <!-- 4단계 Step Indicator -->
+  <div class="mockup">
+    <div class="mockup-bar">
+      <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+      <span class="url">http://127.0.0.1:5001/metadata_batch</span>
+    </div>
+    <div class="mockup-body" style="padding:0;">
+      <div style="padding:12px 16px;border-bottom:1px solid #dee2e6;">
+        <span style="font-size:18px;font-weight:700;">메타데이터 생성 (배치 처리)</span>
+        <div style="margin-top:8px;">
+          <a style="font-size:12px;color:#17a2b8;text-decoration:none;">📊 그룹분석 (Perspective Analysis) →</a>
+        </div>
+      </div>
+      <!-- Step Indicator -->
+      <div class="sim-step-row">
+        <div class="sim-step">
+          <div class="sim-step-circle active">1</div>
+          <div class="sim-step-label">업로드</div>
+        </div>
+        <span class="sim-arrow">→</span>
+        <div class="sim-step">
+          <div class="sim-step-circle pending">2</div>
+          <div class="sim-step-label">매핑</div>
+        </div>
+        <span class="sim-arrow">→</span>
+        <div class="sim-step">
+          <div class="sim-step-circle pending">3</div>
+          <div class="sim-step-label">미리보기</div>
+        </div>
+        <span class="sim-arrow">→</span>
+        <div class="sim-step">
+          <div class="sim-step-circle pending">4</div>
+          <div class="sim-step-label">저장</div>
+        </div>
+      </div>
+      <div style="padding:8px 16px;background:#f8f9fa;font-size:13px;color:#495057;border-top:1px solid #dee2e6;display:flex;justify-content:space-between;align-items:center;">
+        <span>1단계: 데이터 업로드 대기 중</span>
+        <div style="display:flex;gap:8px;">
+          <button class="sim-btn sim-btn-secondary" style="opacity:0.5;">이전 단계</button>
+          <button class="sim-btn sim-btn-primary">다음 단계</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <table class="desc-table">
+    <tr><th colspan="3">단계 인디케이터 구성</th></tr>
+    <tr>
+      <th style="width:80px;">번호</th>
+      <th style="width:100px;">단계명</th>
+      <th>설명</th>
+    </tr>
+    <tr><td><span class="no-circle">1</span></td><td>업로드</td><td>CSV 또는 Excel 파일 선택 (파일 개별 선택 / 폴더 일괄 선택 탭 전환 가능)</td></tr>
+    <tr><td><span class="no-circle">2</span></td><td>매핑</td><td>업로드한 파일의 열(Column)을 시스템 메타데이터 필드와 연결</td></tr>
+    <tr><td><span class="no-circle">3</span></td><td>미리보기</td><td>직원 ID(target_employee_id)별로 그룹화된 데이터 구조 확인</td></tr>
+    <tr><td><span class="no-circle">4</span></td><td>저장</td><td>감정 분석 + 워드클라우드 배치 처리 실행 및 DB 저장</td></tr>
+  </table>
+</div>
+
+
+<!-- Step 1 -->
+<h3 id="batch-step1">2.1 Step 1 — 데이터 업로드</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <div style="margin-bottom:12px;display:flex;gap:8px;">
+      <button class="sim-btn sim-btn-primary">파일 선택</button>
+      <button class="sim-btn sim-btn-secondary" style="background:white;color:#6c757d;border:1px solid #6c757d;">폴더 선택</button>
+    </div>
+    <!-- 파일 업로드 영역 -->
+    <div style="border:2px dashed #007bff;border-radius:8px;padding:30px;text-align:center;background:#f0f7ff;">
+      <p style="color:#007bff;font-size:14px;font-weight:600;margin-bottom:8px;">CSV 파일을 드래그하거나 클릭하여 선택하세요</p>
+      <button class="sim-btn sim-btn-primary">파일 선택</button>
+      <p style="font-size:12px;color:#888;margin-top:10px;">지원 형식: CSV, Excel (.xlsx, .xls) | 최대 크기: 50MB</p>
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">업로드 탭 구성</th></tr>
+  <tr><th style="width:140px;">탭</th><th>설명</th></tr>
+  <tr><td>파일 선택</td><td>CSV 또는 Excel 파일을 개별 선택하거나 드래그&드롭으로 업로드</td></tr>
+  <tr><td>폴더 선택</td><td><code>wordcloud_project/inputs/</code> 폴더의 모든 CSV/Excel 파일을 병렬로 처리. 대용량 일괄 처리에 적합</td></tr>
+</table>
+
+<div class="note-box info">
+  💡 파일 업로드 후 자동으로 열(Column) 목록이 파싱되어 Step 2(매핑)에서 선택할 수 있게 됩니다.
+</div>
+
+
+<!-- Step 2 -->
+<h3 id="batch-step2">2.2 Step 2 — 메타데이터 매핑</h3>
+<p>시스템 메타데이터 구조(좌측 트리)와 사용자 데이터 열(우측 목록)을 클릭으로 연결합니다.</p>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-weight:700;font-size:15px;">2. 메타데이터 매핑</span>
+      <div style="display:flex;gap:8px;">
+        <button class="sim-btn sim-btn-outline" style="font-size:12px;">이전 매핑 불러오기</button>
+        <button class="sim-btn sim-btn-outline" style="font-size:12px;color:#17a2b8;border-color:#17a2b8;">📁 매핑 관리</button>
+      </div>
+    </div>
+    <div class="sim-row">
+      <!-- 메타데이터 구조 트리 -->
+      <div class="sim-col" style="max-width:280px;">
+        <div class="sim-panel">
+          <h6>메타데이터 구조</h6>
+          <div class="sim-tree-item mapped"><span style="font-size:10px;background:rgba(255,255,255,0.3);border-radius:3px;padding:1px 5px;margin-right:6px;">①</span> target_employee_id <span style="font-size:10px;color:#c8f7c5;">[필수]</span></div>
+          <div class="sim-tree-item mapped"><span style="font-size:10px;background:rgba(255,255,255,0.3);border-radius:3px;padding:1px 5px;margin-right:6px;">②</span> evaluation_document <span style="font-size:10px;color:#c8f7c5;">[필수]</span></div>
+          <div class="sim-tree-item selected">③ evaluator_id</div>
+          <div class="sim-tree-item normal">④ evaluation_date</div>
+          <div class="sim-tree-item normal">⑤ target_employee_department</div>
+          <div class="sim-tree-item normal">⑥ evaluator_position</div>
+          <div style="margin-top:10px;padding-top:8px;border-top:1px solid #dee2e6;">
+            <button class="sim-btn sim-btn-primary" style="font-size:11px;padding:4px 10px;">필드 추가</button>
+          </div>
+        </div>
+      </div>
+      <!-- 사용자 데이터 열 -->
+      <div class="sim-col">
+        <div class="sim-panel">
+          <h6>사용자 데이터 열</h6>
+          <div style="background:#d4edda;border-radius:4px;padding:5px 8px;margin-bottom:4px;font-size:12px;display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" checked style="accent-color:#28a745;">
+            <span>사번</span> <span style="color:#28a745;font-weight:700;font-size:11px;">→ ① target_employee_id</span>
+          </div>
+          <div style="background:#d4edda;border-radius:4px;padding:5px 8px;margin-bottom:4px;font-size:12px;display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" checked style="accent-color:#28a745;">
+            <span>평가내용</span> <span style="color:#28a745;font-weight:700;font-size:11px;">→ ② evaluation_document</span>
+          </div>
+          <div style="background:#e7f3ff;border-radius:4px;padding:5px 8px;margin-bottom:4px;font-size:12px;display:flex;align-items:center;gap:6px;border-left:3px solid #007bff;">
+            <input type="checkbox" style="accent-color:#007bff;">
+            <span>평가자ID</span> <span style="color:#888;font-size:11px;">클릭하여 ③에 연결</span>
+          </div>
+          <div style="background:#f8f9fa;border-radius:4px;padding:5px 8px;margin-bottom:4px;font-size:12px;display:flex;align-items:center;gap:6px;">
+            <input type="checkbox">
+            <span>평가일자</span>
+          </div>
+          <div style="background:#f8f9fa;border-radius:4px;padding:5px 8px;font-size:12px;display:flex;align-items:center;gap:6px;">
+            <input type="checkbox">
+            <span>부서명</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:8px 12px;background:#e8f5e9;border-radius:6px;font-size:12px;color:#155724;">
+      ✅ 매핑 상태: 필수 필드 2개 완료 — 다음 단계로 진행 가능
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">매핑 화면 구성 요소</th></tr>
+  <tr><th style="width:200px;">요소</th><th>설명</th></tr>
+  <tr><td>메타데이터 구조 (좌측)</td><td>시스템에서 요구하는 필드 목록. <span style="color:#28a745;font-weight:700;">초록</span> = 매핑 완료, <span style="color:#007bff;font-weight:700;">파랑</span> = 현재 선택됨, 회색 = 미매핑</td></tr>
+  <tr><td>사용자 데이터 열 (우측)</td><td>업로드한 CSV/Excel의 열 목록. 클릭하면 선택된 메타데이터 필드에 연결됨</td></tr>
+  <tr><td>이전 매핑 불러오기</td><td>과거에 저장한 매핑 설정을 즉시 적용 (같은 포맷 반복 사용 시 유용)</td></tr>
+  <tr><td>📁 매핑 관리</td><td>저장된 매핑 목록 조회, 이름 변경, 삭제, 새 이름으로 저장</td></tr>
+  <tr><td>필드 추가</td><td>시스템 기본 필드 외에 사용자 정의 필드를 메타데이터 구조에 추가 가능</td></tr>
+</table>
+
+<div class="note-box warning">
+  ⚠️ <strong>필수 필드</strong>: <code>target_employee_id</code>와 <code>evaluation_document</code>는 반드시 매핑해야 다음 단계로 진행됩니다.
+</div>
+
+
+<!-- Step 3 -->
+<h3 id="batch-step3">2.3 Step 3 — 미리보기</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <h4 style="margin-bottom:10px;">3. 미리보기</h4>
+    <p style="font-size:12px;color:#666;margin-bottom:12px;">target_employee_id별 그룹화된 데이터 미리보기</p>
+    <div style="border:1px solid #dee2e6;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+      <div style="background:#f8f9fa;padding:8px 12px;font-size:13px;font-weight:700;border-bottom:1px solid #dee2e6;cursor:pointer;">
+        ▶ EMP_001 <span style="font-weight:400;color:#888;margin-left:8px;">평가 건수: 3건</span>
+      </div>
+    </div>
+    <div style="border:1px solid #dee2e6;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+      <div style="background:#f8f9fa;padding:8px 12px;font-size:13px;font-weight:700;border-bottom:1px solid #dee2e6;cursor:pointer;">
+        ▶ EMP_002 <span style="font-weight:400;color:#888;margin-left:8px;">평가 건수: 5건</span>
+      </div>
+    </div>
+    <div style="border:1px solid #dee2e6;border-radius:6px;overflow:hidden;">
+      <div style="background:#e8f0fe;padding:8px 12px;font-size:13px;font-weight:700;border-bottom:1px solid #dee2e6;cursor:pointer;">
+        ▼ EMP_003 <span style="font-weight:400;color:#888;margin-left:8px;">평가 건수: 2건</span>
+      </div>
+      <div style="padding:10px 12px;">
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+          <tr style="background:#f0f4ff;">
+            <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #dee2e6;">평가자ID</th>
+            <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #dee2e6;">평가일자</th>
+            <th style="padding:5px 8px;text-align:left;border-bottom:1px solid #dee2e6;">평가내용 (앞 50자)</th>
+          </tr>
+          <tr>
+            <td style="padding:4px 8px;">MGR_011</td>
+            <td style="padding:4px 8px;">2025-12-01</td>
+            <td style="padding:4px 8px;color:#555;">업무 처리가 신속하고 책임감이 강합니다...</td>
+          </tr>
+          <tr style="background:#fafafa;">
+            <td style="padding:4px 8px;">MGR_012</td>
+            <td style="padding:4px 8px;">2025-12-03</td>
+            <td style="padding:4px 8px;color:#555;">동료와의 협력이 뛰어나며 성과가 우수...</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>직원별로 접힌 아코디언 형태로 표시되며, 클릭 시 해당 직원의 개별 평가 건 목록이 펼쳐집니다. 매핑 결과가 의도대로 그룹화되었는지 최종 확인합니다.</p>
+
+
+<!-- Step 4 -->
+<h3 id="batch-step4">2.4 Step 4 — 배치 처리 및 저장</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <h4 style="margin-bottom:10px;">4. 배치 처리 및 저장</h4>
+
+    <!-- 처리 설정 -->
+    <div class="sim-card" style="margin-bottom:12px;">
+      <h5>처리 설정</h5>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:5px;cursor:pointer;">
+        <input type="checkbox" checked> 데이터 정제 적용
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:10px;cursor:pointer;">
+        <input type="checkbox" checked> 감정 분석 적용
+      </label>
+      <div style="background:#e8f4fd;border-left:4px solid #007bff;border-radius:4px;padding:8px 12px;font-size:12px;">
+        🔒 <strong>가명 처리</strong> <span style="color:#666;margin-left:6px;">모든 PII 필드가 항상 가명처리됩니다</span>
+      </div>
+    </div>
+
+    <button class="sim-btn sim-btn-primary" style="margin-bottom:14px;">배치 처리 시작</button>
+
+    <!-- 처리 단계 인디케이터 -->
+    <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:12px;margin-bottom:12px;">
+      <h5 style="margin-bottom:8px;">처리 진행 상황</h5>
+      <div class="sim-proc-row">
+        <div class="sim-proc-step">
+          <div class="sim-proc-circle" style="background:#20c997;">1</div>
+          <div class="sim-proc-text">파일<br>로드</div>
+        </div>
+        <span class="sim-proc-arrow" style="color:#20c997;">→</span>
+        <div class="sim-proc-step">
+          <div class="sim-proc-circle" style="background:#20c997;">2</div>
+          <div class="sim-proc-text">초기화</div>
+        </div>
+        <span class="sim-proc-arrow" style="color:#20c997;">→</span>
+        <div class="sim-proc-step">
+          <div class="sim-proc-circle" style="background:#20c997;">3</div>
+          <div class="sim-proc-text">메타<br>데이터</div>
+        </div>
+        <span class="sim-proc-arrow" style="color:#007bff;">→</span>
+        <div class="sim-proc-step">
+          <div class="sim-proc-circle" style="background:#007bff;animation:pulse 1.5s infinite;">4</div>
+          <div class="sim-proc-text">imeta<br>저장</div>
+        </div>
+        <span class="sim-proc-arrow">→</span>
+        <div class="sim-proc-step">
+          <div class="sim-proc-circle" style="background:#6c757d;">5</div>
+          <div class="sim-proc-text">tmeta<br>저장</div>
+        </div>
+        <span class="sim-proc-arrow">→</span>
+        <div class="sim-proc-step">
+          <div class="sim-proc-circle" style="background:#6c757d;">6</div>
+          <div class="sim-proc-text">워드<br>클라우드</div>
+        </div>
+        <span class="sim-proc-arrow">→</span>
+        <div class="sim-proc-step">
+          <div class="sim-proc-circle" style="background:#6c757d;">✓</div>
+          <div class="sim-proc-text">완료</div>
+        </div>
+      </div>
+      <div class="sim-progress"><div class="sim-progress-fill" style="width:55%;background:linear-gradient(90deg,#20c997,#007bff);"></div></div>
+      <p style="font-size:12px;color:#666;text-align:center;margin-top:4px;">4단계 처리 중... (EMP_003 / 5명)</p>
+    </div>
+
+    <!-- 처리 결과 버튼 -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="sim-btn sim-btn-success">결과 다운로드</button>
+      <button class="sim-btn" style="background:#ffc107;color:#333;font-weight:600;">실패 건 재배치</button>
+      <button class="sim-btn sim-btn-danger">배치 결과 삭제</button>
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">처리 파이프라인 단계</th></tr>
+  <tr><th style="width:180px;">단계</th><th>설명</th></tr>
+  <tr><td>① 파일 로드 <span style="color:#20c997;">(연녹색)</span></td><td>업로드된 파일을 메모리에 로드하고 인코딩 처리</td></tr>
+  <tr><td>② 초기화 <span style="color:#20c997;">(연녹색)</span></td><td>배치 ID 생성, DB 준비, 작업 디렉터리 생성</td></tr>
+  <tr><td>③ 메타데이터 <span style="color:#20c997;">(연녹색)</span></td><td>필드 매핑 적용 및 메타데이터 오브젝트 구성</td></tr>
+  <tr><td>④ imeta 저장 <span style="color:#007bff;">(파랑)</span></td><td>개별 평가 메타데이터(imeta)를 DB에 저장</td></tr>
+  <tr><td>⑤ tmeta 저장 <span style="color:#007bff;">(파랑)</span></td><td>집계 메타데이터(tmeta)를 DB에 저장</td></tr>
+  <tr><td>⑥ 워드클라우드 <span style="color:#28a745;">(녹색)</span></td><td>KoTE 감정 분석 결과를 바탕으로 워드클라우드 이미지 생성</td></tr>
+  <tr><td>✓ 완료</td><td>결과를 갤러리 DB에 등록, 다운로드 가능 상태로 전환</td></tr>
+</table>
+
+<table class="desc-table">
+  <tr><th colspan="2">처리 결과 버튼</th></tr>
+  <tr><th style="width:180px;">버튼</th><th>설명</th></tr>
+  <tr><td>결과 다운로드</td><td>처리된 메타데이터 JSON 및 워드클라우드 이미지를 ZIP으로 다운로드</td></tr>
+  <tr><td>실패 건 재배치</td><td>처리 중 오류 발생한 건만 선별하여 재처리. 오류 건이 있을 때만 표시</td></tr>
+  <tr><td>배치 결과 삭제</td><td>현재 배치의 DB 데이터 및 파일을 모두 삭제 (되돌릴 수 없음)</td></tr>
+</table>
+
+
+<!-- ══════════════════════════════════════════
+     3. 그룹 분석
+══════════════════════════════════════════ -->
+<h2 id="group">3. 그룹 분석 (Perspective Analysis)</h2>
+
+<div class="section-card group">
+  <div class="feature-meta">
+    <span class="badge badge-url">URL: /perspective_test</span>
+    <span class="badge badge-blue">3축 매트릭스</span>
+    <span class="badge badge-green">5종 분석 유형</span>
+  </div>
+  <p>저장된 메타데이터를 <strong>직원 × X축(시간/회차) × Y축(평가자 관점)</strong>의 3차원으로 교차 분석하는 화면입니다. 결과는 셀 단위 워드클라우드 이미지 또는 수치 지표로 표시됩니다.</p>
+</div>
+
+<h3 id="group-condition">3.1 조건 설정</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+    <span class="url">http://127.0.0.1:5001/perspective_test</span>
+  </div>
+  <div class="mockup-body" style="padding:0;background:#eef1f5;">
+    <div style="background:white;border:1px solid #ddd;border-radius:10px;padding:14px 16px;margin:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08);">
+      <h4 style="margin-bottom:2px;font-size:17px;">그룹 분석 테스트 — 다면평가 워드클라우드</h4>
+      <p style="font-size:12px;color:#888;margin-bottom:10px;">X축(시간/회차) × Y축(평가자 관점) | 셀 내용(분석 유형) — 3개 모두 독립 선택</p>
+      <div style="display:flex;gap:10px;">
+        <!-- ① 대상 직원 -->
+        <div style="flex:1;background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:8px 10px;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;">① 대상 직원</div>
+          <select style="width:100%;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;">
+            <option>EMP_001 — 홍길동</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;margin-top:4px;cursor:pointer;">
+            <input type="checkbox"> 전체 직원 대상
+          </label>
+          <div style="margin-top:6px;padding:5px 7px;background:#f0f4ff;border-radius:4px;border:1px solid #c8d8ff;">
+            <label style="font-size:11px;color:#334;display:flex;align-items:center;gap:4px;cursor:pointer;">
+              <input type="checkbox" checked> 파일명에 이름 포함
+            </label>
+            <label style="font-size:11px;color:#334;display:flex;align-items:center;gap:4px;margin-top:2px;cursor:pointer;">
+              <input type="checkbox" checked> 파일명에 사번 포함
+            </label>
+          </div>
+        </div>
+        <!-- ② X축 -->
+        <div style="flex:1;background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:8px 10px;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;">② X축 (시간/회차)</div>
+          <select style="width:100%;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;">
+            <option>평가 연도</option>
+          </select>
+          <div style="margin-top:6px;font-size:12px;display:flex;flex-direction:column;gap:3px;">
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" checked> 2023</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" checked> 2024</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" checked> 2025</label>
+          </div>
+        </div>
+        <!-- ③ Y축 -->
+        <div style="flex:1;background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:8px 10px;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;">③ Y축 (평가자 관점)</div>
+          <select style="width:100%;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;">
+            <option>전체</option>
+          </select>
+          <p style="font-size:11px;color:#999;margin-top:6px;text-align:center;">평가자 기준으로 그룹핑합니다</p>
+        </div>
+        <!-- ④ 셀 내용 -->
+        <div style="flex:1;background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:8px 10px;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:6px;">④ 셀 내용 (분석 유형)</div>
+          <div style="font-size:12px;display:flex;flex-direction:column;gap:3px;">
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" checked> ◎ NLP 단어 (워드클라우드)</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"> ○ 감정 분석 (점수)</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"> ○ 리더십 분석 (역량)</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"> ○ 욕설 분석 (탐지)</label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox"> ○ 비꼼 분석 (Sarcasm)</label>
+          </div>
+        </div>
+      </div>
+      <!-- 액션 행 -->
+      <div style="display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid #e9ecef;margin-top:10px;flex-wrap:wrap;">
+        <input type="text" placeholder="배치 명칭을 입력해주세요 (필수)" style="flex:1;max-width:320px;padding:6px 10px;font-size:13px;border:1px solid #ccc;border-radius:5px;">
+        <button class="sim-btn sim-btn-primary" style="opacity:0.5;" disabled>매트릭스 저장</button>
+        <button class="sim-btn sim-btn-success" style="opacity:0.5;" disabled>제출용 저장</button>
+        <button class="sim-btn sim-btn-secondary" style="display:none;">⬇️ 결과물 ZIP</button>
+        <span style="margin-left:auto;font-size:11px;color:#888;">
+          배포모드:
+          <label style="margin-left:4px;"><input type="radio" name="dm" value="ci" checked> 통합+개별</label>
+          <label style="margin-left:6px;"><input type="radio" name="dm" value="i"> 개별만</label>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="3">조건 설정 패널 상세</th></tr>
+  <tr><th style="width:60px;">셀렉터</th><th style="width:180px;">설정 항목</th><th>설명</th></tr>
+  <tr><td>①</td><td>대상 직원</td><td>드롭다운에서 특정 직원 선택 또는 "전체 직원 대상" 체크박스로 일괄 처리. CSV 파일 업로드로 특정 직원 목록 지정 가능. "사번 직접 입력" 버튼으로 사번을 텍스트로 입력 가능</td></tr>
+  <tr><td>②</td><td>X축 (시간/회차)</td><td>매트릭스의 열(Column)을 결정. 기본값은 "평가 연도". 분석할 연도/회차를 체크박스로 다중 선택</td></tr>
+  <tr><td>③</td><td>Y축 (평가자 관점)</td><td>매트릭스의 행(Row)을 결정. "전체" 선택 시 모든 평가자 통합. 평가자 직위/관계 등으로 그룹핑 가능</td></tr>
+  <tr><td>④</td><td>셀 내용 (분석 유형)</td><td>각 셀에 표시할 콘텐츠 선택. 복수 선택 가능 (NLP/감정/리더십/욕설/비꼼)</td></tr>
+</table>
+
+<div class="note-box warning">
+  ⚠️ <strong>배치 명칭 필수</strong>: 매트릭스 저장 및 제출용 저장 버튼은 배치 명칭이 입력되어야 활성화됩니다. 중복 명칭은 허용하지 않습니다.
+</div>
+
+
+<h3 id="group-result">3.2 결과 매트릭스</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <div style="overflow-x:auto;">
+      <table class="sim-matrix-table">
+        <thead>
+          <tr>
+            <th class="row-header" style="text-align:left;">Y축 \ X축</th>
+            <th>2023</th>
+            <th>2024</th>
+            <th>2025</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th style="text-align:left;background:#e9ecef;">전체</th>
+            <td style="background:#f0f7ff;min-width:140px;vertical-align:top;padding:6px;">
+              <div style="background:linear-gradient(135deg,#e3f2fd,#e8f5e9);height:80px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#555;margin-bottom:4px;">워드클라우드 이미지</div>
+              <div style="font-size:10px;color:#666;">
+                <span style="background:#d1ecf1;color:#0c5460;padding:1px 5px;border-radius:3px;margin-right:2px;">NLP</span>
+                <span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;">긍정 78%</span>
+              </div>
+            </td>
+            <td style="background:#f0f7ff;vertical-align:top;padding:6px;">
+              <div style="background:linear-gradient(135deg,#fce4ec,#f3e5f5);height:80px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#555;margin-bottom:4px;">워드클라우드 이미지</div>
+              <div style="font-size:10px;color:#666;">
+                <span style="background:#d1ecf1;color:#0c5460;padding:1px 5px;border-radius:3px;margin-right:2px;">NLP</span>
+                <span style="background:#d4edda;color:#155724;padding:1px 5px;border-radius:3px;">긍정 82%</span>
+              </div>
+            </td>
+            <td style="background:#f0f7ff;vertical-align:top;padding:6px;">
+              <div style="background:linear-gradient(135deg,#fff8e1,#fce4ec);height:80px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#555;margin-bottom:4px;">워드클라우드 이미지</div>
+              <div style="font-size:10px;color:#666;">
+                <span style="background:#d1ecf1;color:#0c5460;padding:1px 5px;border-radius:3px;margin-right:2px;">NLP</span>
+                <span style="background:#f8d7da;color:#721c24;padding:1px 5px;border-radius:3px;">부정 61%</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;padding:8px 12px;background:#e8f4fd;border-radius:6px;font-size:12px;color:#0c5460;">
+      셀 클릭 → 원본 이미지 확대 보기 (라이트박스)
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">매트릭스 셀 구성</th></tr>
+  <tr><th style="width:180px;">요소</th><th>설명</th></tr>
+  <tr><td>워드클라우드 이미지</td><td>해당 직원 × X축 × Y축 조합에 대한 워드클라우드 썸네일. 클릭 시 원본 확대</td></tr>
+  <tr><td>NLP 배지</td><td>분석 유형 표시</td></tr>
+  <tr><td>긍정/부정 배지</td><td>해당 셀의 감정 분석 결과 요약 (긍정 비율 % 또는 부정 비율 %)</td></tr>
+  <tr><td>빈 셀</td><td>해당 조합의 데이터가 없는 경우 표시 없음</td></tr>
+</table>
+
+
+<h3 id="group-save">3.3 저장 기능 및 부가 기능</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <!-- 배치 이력 -->
+    <div style="background:white;border:1px solid #ddd;border-radius:6px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;padding:6px 10px;cursor:pointer;background:#f8f9fa;border-radius:6px;">
+        <span style="font-size:12px;">▶</span>
+        <span style="font-size:12px;font-weight:600;margin-left:4px;">배치 이력</span>
+        <span style="font-size:11px;color:#888;margin-left:8px;">총 3건</span>
+        <span style="margin-left:auto;">
+          <button class="sim-btn sim-btn-secondary" style="padding:1px 8px;font-size:10px;">새로고침</button>
+        </span>
+      </div>
+    </div>
+    <!-- 단어 가점 설정 -->
+    <div style="background:white;border:1px solid #dde3ff;border-radius:6px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;padding:6px 10px;cursor:pointer;background:#f4f6ff;border-radius:6px;">
+        <span style="font-size:12px;">▶</span>
+        <span style="font-size:12px;font-weight:600;margin-left:4px;">단어 가점 설정</span>
+        <span style="font-size:11px;color:#888;margin-left:8px;">협업: +2, 리더십: +3</span>
+        <span style="margin-left:auto;">
+          <button class="sim-btn sim-btn-secondary" style="padding:1px 8px;font-size:10px;">새로고침</button>
+        </span>
+      </div>
+    </div>
+    <!-- 저장 완료 토스트 -->
+    <div style="border:1px solid #28a745;border-radius:8px;padding:12px 16px;background:white;display:flex;align-items:center;gap:10px;font-size:13px;max-width:320px;margin-top:8px;">
+      <span style="color:#28a745;font-size:18px;">✅</span>
+      <span>제출용 저장 완료 — <a style="color:#28a745;font-weight:700;text-decoration:underline;">갤러리에서 확인하기 →</a></span>
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">저장 및 부가 기능</th></tr>
+  <tr><th style="width:200px;">기능</th><th>설명</th></tr>
+  <tr><td>매트릭스 저장</td><td>전체 매트릭스 형태의 이미지를 DB에 저장 (갤러리 "매트릭스" 탭에 표시)</td></tr>
+  <tr><td>제출용 저장</td><td>직원별 개별 워드클라우드 이미지를 DB에 저장 (갤러리 "제출용 저장" 탭에 표시)</td></tr>
+  <tr><td>결과물 ZIP</td><td>저장 완료 후 표시. 현재 배치의 모든 이미지를 ZIP으로 일괄 다운로드</td></tr>
+  <tr><td>배치 이력</td><td>과거 저장된 배치 목록과 각 배치의 요약 정보(건수, 일시, 배치 명칭) 조회</td></tr>
+  <tr><td>단어 가점 설정</td><td>특정 단어에 가중치를 부여하여 워드클라우드에서 해당 단어를 더 크게 표시</td></tr>
+  <tr><td>저장 완료 토스트</td><td>저장 완료 시 우측 하단에 팝업 메시지 표시. "갤러리에서 확인하기" 링크로 이동</td></tr>
+</table>
+
+
+<!-- ══════════════════════════════════════════
+     4. 저장 갤러리
+══════════════════════════════════════════ -->
+<h2 id="gallery">4. 저장 갤러리</h2>
+
+<div class="section-card gallery">
+  <div class="feature-meta">
+    <span class="badge badge-url">URL: /deploy_gallery</span>
+    <span class="badge badge-purple">그리드 뷰</span>
+    <span class="badge badge-blue">삭제 / 다운로드 모드</span>
+  </div>
+  <p>그룹 분석에서 저장된 워드클라우드 이미지(제출용 저장 + 매트릭스)를 카드 그리드 형태로 탐색하는 화면입니다. 검색·필터·삭제·다운로드를 지원합니다.</p>
+</div>
+
+<h3 id="gallery-browse">4.1 갤러리 탐색 (기본 화면)</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+    <span class="url">http://127.0.0.1:5001/deploy_gallery</span>
+  </div>
+  <div class="mockup-body">
+    <h3 style="margin-bottom:4px;">📁 저장 갤러리</h3>
+    <p style="font-size:13px;color:#6c757d;margin-bottom:14px;">제출용 저장 및 매트릭스 결과 이미지를 조회합니다.</p>
+
+    <!-- 필터 바 -->
+    <div class="sim-filter-bar">
+      <div class="sim-filter-group">
+        <span class="sim-filter-label">직원 ID</span>
+        <input type="text" placeholder="예: EMP001" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:120px;">
+      </div>
+      <div class="sim-filter-group">
+        <span class="sim-filter-label">배치 명칭</span>
+        <input type="text" placeholder="배치 명칭 검색" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:140px;">
+      </div>
+      <div class="sim-filter-group" style="flex:1;">
+        <span class="sim-filter-label">날짜</span>
+        <div>
+          <span class="sim-chip active">2026-06-08</span>
+          <span class="sim-chip">2026-06-07</span>
+          <span class="sim-chip">2026-06-05</span>
+        </div>
+      </div>
+      <div class="sim-filter-group" style="flex:1;">
+        <span class="sim-filter-label">배치 명칭</span>
+        <div>
+          <span class="sim-chip active">2026 상반기</span>
+          <span class="sim-chip">1차 평가</span>
+        </div>
+      </div>
+      <div class="sim-filter-group">
+        <span class="sim-filter-label">출력 모드</span>
+        <div style="display:flex;gap:8px;font-size:12px;padding:4px 0;">
+          <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio" checked> 전체</label>
+          <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio"> 가명</label>
+          <label style="display:flex;align-items:center;gap:3px;cursor:pointer;"><input type="radio"> 실명</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-end;">
+        <button class="sim-btn sim-btn-primary" style="padding:5px 14px;font-size:12px;">검색</button>
+        <button class="sim-btn sim-btn-secondary" style="padding:5px 12px;font-size:12px;">삭제 모드</button>
+        <button class="sim-btn sim-btn-secondary" style="padding:5px 12px;font-size:12px;">다운로드 모드</button>
+      </div>
+    </div>
+
+    <!-- 갤러리 그리드 -->
+    <div class="sim-gallery-grid">
+      <div class="sim-gallery-card">
+        <div class="sim-gallery-thumb">워드클라우드</div>
+        <div class="sim-gallery-body">
+          <div class="sim-gallery-title">EMP_001</div>
+          <div class="sim-gallery-meta"><span>2026-06-08</span><span class="badge" style="background:#d1ecf1;color:#0c5460;font-size:10px;">제출</span></div>
+        </div>
+      </div>
+      <div class="sim-gallery-card">
+        <div class="sim-gallery-thumb" style="background:linear-gradient(135deg,#fce4ec,#e3f2fd);">워드클라우드</div>
+        <div class="sim-gallery-body">
+          <div class="sim-gallery-title">EMP_002</div>
+          <div class="sim-gallery-meta"><span>2026-06-08</span><span class="badge" style="background:#d1ecf1;color:#0c5460;font-size:10px;">제출</span></div>
+        </div>
+      </div>
+      <div class="sim-gallery-card">
+        <div class="sim-gallery-thumb" style="background:linear-gradient(135deg,#e8f5e9,#fff8e1);">워드클라우드</div>
+        <div class="sim-gallery-body">
+          <div class="sim-gallery-title">EMP_003</div>
+          <div class="sim-gallery-meta"><span>2026-06-07</span><span class="badge" style="background:#fce8b2;color:#6d4c0a;font-size:10px;">매트릭스</span></div>
+        </div>
+      </div>
+      <div class="sim-gallery-card">
+        <div class="sim-gallery-thumb" style="background:linear-gradient(135deg,#f3e5f5,#e8f5e9);">워드클라우드</div>
+        <div class="sim-gallery-body">
+          <div class="sim-gallery-title">EMP_004</div>
+          <div class="sim-gallery-meta"><span>2026-06-05</span><span class="badge" style="background:#d1ecf1;color:#0c5460;font-size:10px;">제출</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:16px;padding:8px;">
+      <button class="sim-btn sim-btn-secondary" style="padding:4px 10px;font-size:12px;" disabled>‹ 이전</button>
+      <button class="sim-btn sim-btn-primary" style="padding:4px 10px;font-size:12px;">1</button>
+      <button class="sim-btn sim-btn-secondary" style="padding:4px 10px;font-size:12px;">2</button>
+      <button class="sim-btn sim-btn-secondary" style="padding:4px 10px;font-size:12px;">3</button>
+      <button class="sim-btn sim-btn-secondary" style="padding:4px 10px;font-size:12px;">다음 ›</button>
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">필터 바 구성</th></tr>
+  <tr><th style="width:180px;">필터</th><th>설명</th></tr>
+  <tr><td>직원 ID</td><td>직원 ID 텍스트 검색 (부분 일치)</td></tr>
+  <tr><td>배치 명칭 (텍스트)</td><td>배치 명칭 텍스트 검색</td></tr>
+  <tr><td>날짜 (칩)</td><td>저장된 날짜 목록이 칩 형태로 표시. 클릭으로 필터 활성화/해제. 다중 선택 가능</td></tr>
+  <tr><td>배치 명칭 (칩)</td><td>사용된 배치 명칭 목록이 칩 형태로 표시. 클릭으로 필터 활성화/해제</td></tr>
+  <tr><td>출력 모드</td><td>전체 / 가명 / 실명 중 선택하여 필터링</td></tr>
+</table>
+
+<table class="desc-table">
+  <tr><th colspan="2">갤러리 카드 배지</th></tr>
+  <tr><th style="width:180px;">배지</th><th>설명</th></tr>
+  <tr><td><span class="badge" style="background:#d1ecf1;color:#0c5460;">제출</span> 제출용 저장</td><td>그룹 분석 화면에서 "제출용 저장"으로 저장된 이미지</td></tr>
+  <tr><td><span class="badge" style="background:#fce8b2;color:#6d4c0a;">매트릭스</span></td><td>그룹 분석 화면에서 "매트릭스 저장"으로 저장된 이미지</td></tr>
+</table>
+
+
+<h3 id="gallery-delete">4.2 삭제 모드</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <!-- 삭제 모드 패널 -->
+    <div class="sim-delete-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;color:#666;">필터 조건</span>
+        <button class="sim-btn sim-btn-secondary" style="padding:3px 8px;font-size:11px;">고급 필터</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;min-width:50px;">소스</span>
+        <span class="sim-chip delete">제출용</span>
+        <span class="sim-chip" style="border-color:#adb5bd;">매트릭스</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;min-width:50px;">배치 명칭</span>
+        <span class="sim-chip delete">2026 상반기</span>
+        <span class="sim-chip" style="border-color:#adb5bd;">1차 평가</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;min-width:50px;">날짜</span>
+        <span class="sim-chip delete">2026-06-08</span>
+        <span class="sim-chip" style="border-color:#adb5bd;">2026-06-07</span>
+      </div>
+      <div style="border-top:1px solid #f5c6cb;padding-top:8px;margin-top:6px;display:flex;align-items:center;gap:10px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;cursor:pointer;">
+          <input type="checkbox" style="accent-color:#dc3545;"> 전체 선택
+        </label>
+        <span style="font-size:13px;color:#495057;flex:1;">3개 선택됨</span>
+        <button class="sim-btn sim-btn-danger" style="padding:4px 12px;font-size:12px;">선택 삭제</button>
+      </div>
+    </div>
+
+    <!-- 카드 삭제 모드 예시 -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div style="border:2px solid #dc3545;border-radius:8px;overflow:hidden;background:white;position:relative;">
+        <div style="position:absolute;top:6px;left:6px;z-index:2;"><input type="checkbox" checked style="width:18px;height:18px;accent-color:#dc3545;"></div>
+        <div class="sim-gallery-thumb" style="background:linear-gradient(135deg,#fde8e8,#fce4ec);">워드클라우드</div>
+        <div class="sim-gallery-body"><div class="sim-gallery-title">EMP_001</div></div>
+      </div>
+      <div style="border:1px solid #dee2e6;border-radius:8px;overflow:hidden;background:white;position:relative;">
+        <div style="position:absolute;top:6px;left:6px;z-index:2;"><input type="checkbox" style="width:18px;height:18px;accent-color:#dc3545;"></div>
+        <div class="sim-gallery-thumb">워드클라우드</div>
+        <div class="sim-gallery-body"><div class="sim-gallery-title">EMP_002</div></div>
+      </div>
+    </div>
+
+    <!-- 하단 고정 바 -->
+    <div class="sim-bottom-bar" style="margin-top:12px;">
+      <span style="flex:1;font-size:13px;">3개 선택됨</span>
+      <button class="sim-btn sim-btn-secondary">취소</button>
+      <button class="sim-btn sim-btn-danger">선택 삭제</button>
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">삭제 모드 기능</th></tr>
+  <tr><th style="width:200px;">기능</th><th>설명</th></tr>
+  <tr><td>소스 필터 칩</td><td>"제출용" / "매트릭스" 선택으로 해당 유형의 항목만 표시</td></tr>
+  <tr><td>배치 명칭 필터 칩</td><td>배치 명칭별로 삭제 대상 범위 좁히기</td></tr>
+  <tr><td>날짜 필터 칩</td><td>날짜별로 삭제 대상 범위 좁히기</td></tr>
+  <tr><td>고급 필터</td><td>연도 필터 추가 노출</td></tr>
+  <tr><td>전체 선택</td><td>현재 필터된 모든 항목 일괄 선택</td></tr>
+  <tr><td>날짜 그룹 헤더 클릭</td><td>날짜 그룹 헤더 클릭으로 해당 날짜의 모든 항목 선택</td></tr>
+  <tr><td>삭제 확인 다이얼로그</td><td>선택 건수, 소스별 분류, 날짜 정보를 요약 표시 후 최종 확인</td></tr>
+  <tr><td>하단 고정 바</td><td>화면 하단에 고정되어 선택 건수 및 삭제 버튼 항상 노출</td></tr>
+</table>
+
+<div class="note-box warning">
+  ⚠️ 삭제된 데이터는 복구할 수 없습니다. 삭제 확인 다이얼로그에서 삭제 대상 목록을 반드시 확인하세요.
+</div>
+
+
+<h3 id="gallery-download">4.3 다운로드 모드</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <div class="sim-download-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:12px;color:#666;">필터 조건</span>
+        <button class="sim-btn sim-btn-secondary" style="padding:3px 8px;font-size:11px;">고급 필터</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;min-width:50px;">소스</span>
+        <span class="sim-chip download">제출용</span>
+        <span class="sim-chip" style="border-color:#adb5bd;opacity:0.4;cursor:not-allowed;">매트릭스</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;min-width:50px;">배치 명칭</span>
+        <span class="sim-chip download">2026 상반기</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;min-width:50px;">날짜</span>
+        <span class="sim-chip download">2026-06-08</span>
+        <span class="sim-chip" style="border-color:#adb5bd;">2026-06-07</span>
+      </div>
+      <div style="border-top:1px solid #b8daff;padding-top:8px;margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;cursor:pointer;">
+          <input type="checkbox" style="accent-color:#007bff;"> 전체 선택
+        </label>
+        <span style="font-size:13px;color:#495057;flex:1;">5개 선택됨</span>
+        <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;">
+          <input type="radio" name="fm" checked> 종류별 저장
+        </label>
+        <label style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;">
+          <input type="radio" name="fm"> 통합 저장
+        </label>
+        <button class="sim-btn sim-btn-primary" style="padding:4px 12px;font-size:12px;">선택 다운로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">다운로드 폴더 구조 옵션</th></tr>
+  <tr><th style="width:180px;">옵션</th><th>설명</th></tr>
+  <tr><td>종류별 저장</td><td>ZIP 내부를 <code>통합/</code>, <code>긍정/</code>, <code>부정/</code> 폴더로 분리하여 저장</td></tr>
+  <tr><td>통합 저장</td><td>모든 이미지를 하나의 폴더에 통합하여 저장</td></tr>
+</table>
+
+
+<h3 id="gallery-detail">4.4 상세 모달 (카드 클릭 시)</h3>
+
+<div class="mockup">
+  <div class="mockup-bar"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+  <div class="mockup-body">
+    <div class="sim-modal-box">
+      <!-- 모달 헤더 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #e9ecef;">
+        <span style="font-size:22px;font-weight:700;">EMP_001</span>
+        <button style="background:none;border:none;font-size:22px;color:#adb5bd;cursor:pointer;">×</button>
+      </div>
+      <!-- 탭 바 -->
+      <div class="sim-modal-tabs">
+        <button class="sim-tab active">제출용 저장</button>
+        <button class="sim-tab inactive">매트릭스</button>
+      </div>
+      <!-- 모달 본문 -->
+      <div class="sim-modal-body">
+        <!-- 필터 영역 -->
+        <div style="background:#f8f9fa;border:1px solid #e9ecef;border-radius:6px;padding:8px 12px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="font-size:12px;font-weight:700;color:#6c757d;min-width:34px;">종류</span>
+            <span class="sim-chip active">통합</span>
+            <span class="sim-chip">긍정</span>
+            <span class="sim-chip">부정</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;font-weight:700;color:#6c757d;min-width:34px;">연도</span>
+            <span class="sim-chip active">2025</span>
+            <span class="sim-chip">2024</span>
+          </div>
+        </div>
+        <!-- 이미지 그리드 -->
+        <p style="font-size:13px;font-weight:700;color:#495057;margin-bottom:10px;border-bottom:1px solid #e9ecef;padding-bottom:4px;">워드클라우드</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:12px;">
+          <div style="text-align:center;position:relative;">
+            <div style="background:linear-gradient(135deg,#e3f2fd,#e8f5e9);height:120px;border:1px solid #e9ecef;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;cursor:zoom-in;">통합 워드클라우드</div>
+            <p style="font-size:13px;font-weight:700;margin-top:5px;">2025 통합</p>
+            <button style="position:absolute;top:5px;right:5px;background:none;border:none;color:rgba(255,255,255,0.85);font-size:11px;cursor:pointer;text-shadow:0 1px 3px rgba(0,0,0,0.7);">⬇ 저장</button>
+          </div>
+          <div style="text-align:center;">
+            <div style="background:linear-gradient(135deg,#d4edda,#e8f5e9);height:120px;border:1px solid #e9ecef;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;cursor:zoom-in;">긍정 워드클라우드</div>
+            <p style="font-size:13px;font-weight:700;margin-top:5px;">2025 긍정</p>
+          </div>
+          <div style="text-align:center;">
+            <div style="background:linear-gradient(135deg,#f8d7da,#fce4ec);height:120px;border:1px solid #e9ecef;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;cursor:zoom-in;">부정 워드클라우드</div>
+            <p style="font-size:13px;font-weight:700;margin-top:5px;">2025 부정</p>
+          </div>
+        </div>
+        <!-- 상세 정보 (접기/펼치기) -->
+        <details style="border-top:1px solid #e9ecef;padding-top:4px;">
+          <summary style="cursor:pointer;font-size:13px;font-weight:700;color:#6c757d;padding:6px 0;list-style:none;display:flex;align-items:center;gap:5px;">
+            ▶ 상세 정보
+          </summary>
+          <div style="background:#f8f9fa;border-radius:4px;padding:10px;margin-top:6px;font-size:13px;color:#495057;">
+            <div style="display:flex;padding:3px 0;border-bottom:1px solid #e9ecef;">
+              <span style="width:130px;font-weight:600;color:#333;">직원 ID</span><span>EMP_001</span>
+            </div>
+            <div style="display:flex;padding:3px 0;border-bottom:1px solid #e9ecef;">
+              <span style="width:130px;font-weight:600;color:#333;">배치 명칭</span><span>2026 상반기</span>
+            </div>
+            <div style="display:flex;padding:3px 0;border-bottom:1px solid #e9ecef;">
+              <span style="width:130px;font-weight:600;color:#333;">저장 일시</span><span>2026-06-08 14:22</span>
+            </div>
+            <div style="display:flex;padding:3px 0;">
+              <span style="width:130px;font-weight:600;color:#333;">출력 모드</span><span>실명</span>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+    <!-- 라이트박스 안내 -->
+    <div style="text-align:center;font-size:12px;color:#888;margin-top:8px;">
+      이미지 클릭 → 라이트박스 (원본 크기 확대) | 이미지 호버 → "⬇ 저장" 개별 다운로드
+    </div>
+  </div>
+</div>
+
+<table class="desc-table">
+  <tr><th colspan="2">상세 모달 구성</th></tr>
+  <tr><th style="width:200px;">구성 요소</th><th>설명</th></tr>
+  <tr><td>탭 — 제출용 저장</td><td>그룹 분석에서 "제출용 저장"으로 저장된 이미지 목록</td></tr>
+  <tr><td>탭 — 매트릭스</td><td>그룹 분석에서 "매트릭스 저장"으로 저장된 이미지 목록</td></tr>
+  <tr><td>종류 필터 칩</td><td>통합 / 긍정 / 부정 이미지 유형별 필터</td></tr>
+  <tr><td>연도 필터 칩</td><td>연도별 필터 (데이터에 있는 연도가 자동 생성)</td></tr>
+  <tr><td>이미지 클릭</td><td>라이트박스로 원본 크기 확대 표시. ESC 또는 외부 클릭으로 닫기</td></tr>
+  <tr><td>⬇ 저장 버튼</td><td>이미지 호버 시 우상단에 나타나는 개별 이미지 다운로드 버튼</td></tr>
+  <tr><td>상세 정보 (접기/펼치기)</td><td>직원 ID, 배치 명칭, 저장 일시, 출력 모드 등 메타 정보 표시</td></tr>
+</table>
+
+
+<!-- ══════════════════════════════════════════
+     마무리
+══════════════════════════════════════════ -->
+<hr class="divider">
+<h2 style="border-left-color:#6c757d;color:#495057;">5. 요약 체크리스트</h2>
+<table class="desc-table">
+  <tr>
+    <th style="width:40px;">순</th>
+    <th style="width:200px;">기능</th>
+    <th>구현 포인트</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>배치 파일 업로드</td>
+    <td>파일 선택 / 폴더 선택 탭. CSV, Excel(.xlsx, .xls) 지원. 50MB 제한. 드래그&드롭</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>메타데이터 매핑</td>
+    <td>트리-컬럼 매핑 UI. 이전 매핑 불러오기. 매핑 저장/관리. 사용자 정의 필드 추가</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>배치 처리 파이프라인</td>
+    <td>6단계 컬러 인디케이터. 실시간 진행바. 실패 건 재배치. 결과 다운로드</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>3축 그룹 분석</td>
+    <td>직원 × X축 × Y축 매트릭스. 5종 분석 유형. 배치 명칭 중복 방지. CSV 일괄 대상</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>제출용 저장 / 매트릭스 저장</td>
+    <td>배치 명칭 필수 입력 후 저장. 저장 후 토스트 알림. ZIP 다운로드. 배포 모드 선택</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>갤러리 탐색</td>
+    <td>그리드 카드 뷰. 날짜/배치/소스 칩 필터. 출력 모드 필터. 페이지네이션</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>갤러리 삭제</td>
+    <td>소스/배치/날짜 복합 필터 + 개별/전체 선택. 확인 다이얼로그. 하단 고정 바</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>갤러리 다운로드</td>
+    <td>소스/배치/날짜 복합 필터 선택 다운로드. 종류별/통합 폴더 구조 선택</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>상세 모달</td>
+    <td>제출용/매트릭스 탭 전환. 종류/연도 칩 필터. 라이트박스 확대. 개별 이미지 다운로드</td>
+  </tr>
+</table>
+
+<p class="text-muted" style="margin-top:20px;text-align:right;">본 문서는 UI 소스코드 분석을 바탕으로 작성된 프로토타입 설명서입니다. 실제 화면과 레이아웃 차이가 있을 수 있으며, 스크린샷 교체 시 이미지 플레이스홀더 영역에 삽입하세요.</p>
+
+</div><!-- /page -->
+</body>
+</html>

@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>워드클라우드 시스템 — 실제 데이터 워크스루</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic', Arial, sans-serif; font-size: 14px; background: #f5f5f5; color: #333; }
+.page { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; }
+h1 { font-size: 26px; font-weight: 700; color: #1a1a2e; border-bottom: 3px solid #28a745; padding-bottom: 12px; margin-bottom: 8px; }
+h2 { font-size: 20px; font-weight: 700; color: #155724; margin: 44px 0 12px; border-left: 5px solid #28a745; padding-left: 12px; }
+h3 { font-size: 16px; font-weight: 700; color: #333; margin: 28px 0 10px; }
+h4 { font-size: 14px; font-weight: 700; color: #495057; margin: 18px 0 8px; }
+p  { line-height: 1.7; margin-bottom: 10px; color: #444; }
+.subtitle { font-size: 13px; color: #6c757d; margin-bottom: 32px; }
+code { background: #f8f9fa; padding: 1px 6px; border-radius: 3px; font-size: 12px; color: #c0392b; font-family: monospace; }
+
+/* ── 목차 ── */
+.toc { background: #f0fff4; border: 1px solid #b7e4c7; border-radius: 8px; padding: 18px 22px; margin-bottom: 40px; }
+.toc h3 { margin: 0 0 10px; font-size: 15px; color: #155724; }
+.toc ol { padding-left: 20px; line-height: 2; }
+.toc a { color: #28a745; text-decoration: none; font-size: 13px; }
+.toc a:hover { text-decoration: underline; }
+
+/* ── 배지 ── */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.badge-data   { background: #d4edda; color: #155724; }
+.badge-matrix { background: #fff3cd; color: #856404; }
+.badge-deploy { background: #d1ecf1; color: #0c5460; }
+.badge-url    { background: #e9ecef; color: #495057; font-size: 11px; font-family: monospace; }
+
+/* ── 섹션 카드 ── */
+.section-card { border: 1px solid #dee2e6; border-radius: 10px; padding: 24px; margin-bottom: 36px; }
+.section-card.input-data { border-top: 4px solid #6c757d; }
+.section-card.matrix     { border-top: 4px solid #007bff; }
+.section-card.deploy     { border-top: 4px solid #28a745; }
+
+/* ── 데이터 테이블 ── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+.data-table th { background: #f0f7ff; color: #004085; padding: 9px 12px; text-align: left; border: 1px solid #b8daff; font-weight: 700; }
+.data-table td { padding: 8px 12px; border: 1px solid #dee2e6; vertical-align: top; line-height: 1.5; }
+.data-table tr:nth-child(even) td { background: #fafcff; }
+.data-table tr:hover td { background: #f0f7ff; }
+
+/* ── 배치 요약 테이블 ── */
+.batch-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0 20px; }
+.batch-table th { background: #f8f9fa; padding: 9px 12px; text-align: left; border: 1px solid #dee2e6; font-weight: 700; color: #333; }
+.batch-table td { padding: 9px 12px; border: 1px solid #dee2e6; vertical-align: middle; }
+.batch-table .num { font-size: 22px; font-weight: 700; color: #007bff; text-align: center; }
+
+/* ── 매트릭스 테이블 ── */
+.matrix-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+.matrix-table th { background: #f8f9fa; padding: 8px 14px; text-align: center; border: 1px solid #dee2e6; font-weight: 700; position: sticky; top: 0; z-index: 1; }
+.matrix-table th.row-header { text-align: left; min-width: 130px; background: #e9ecef; }
+.matrix-table td { border: 1px solid #dee2e6; padding: 6px; vertical-align: top; background: white; }
+.matrix-table td.empty-cell { background: #f8f9fa; }
+.cell-img-wrap { position: relative; }
+.cell-img-wrap img { width: 100%; max-width: 200px; height: 120px; object-fit: contain; background: #f8f9fa; border-radius: 4px; cursor: zoom-in; display: block; border: 1px solid #e9ecef; }
+.cell-img-wrap img:hover { opacity: 0.85; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.cell-empty { display: flex; align-items: center; justify-content: center; height: 80px; color: #ccc; font-size: 18px; }
+.cell-dept { font-size: 11px; color: #888; margin-top: 4px; text-align: center; }
+
+/* ── 갤러리 그리드 ── */
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin: 14px 0 24px; }
+.gallery-card { border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+.gallery-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-2px); }
+.gallery-card .thumb { height: 130px; background: #f8f9fa; overflow: hidden; border-bottom: 1px solid #e9ecef; display: flex; align-items: center; justify-content: center; }
+.gallery-card .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.gallery-card .thumb img:hover { opacity: 0.9; }
+.gallery-card .card-body { padding: 8px 12px; }
+.gallery-card .card-title { font-size: 13px; font-weight: 700; color: #333; }
+.gallery-card .card-meta { font-size: 11px; color: #888; margin-top: 3px; }
+
+/* ── 직원 상세 뷰 ── */
+.employee-section { border: 1px solid #dee2e6; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+.employee-header { background: #f8f9fa; padding: 10px 16px; font-weight: 700; font-size: 14px; color: #333; border-bottom: 1px solid #dee2e6; display: flex; align-items: center; gap: 10px; }
+.employee-body { padding: 16px; }
+.year-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.year-col { flex: 1; min-width: 150px; text-align: center; }
+.year-label { font-size: 12px; font-weight: 700; color: #495057; margin-bottom: 6px; }
+.year-col img { width: 100%; height: 140px; object-fit: contain; border: 1px solid #e9ecef; border-radius: 6px; cursor: zoom-in; background: #f8f9fa; }
+.year-col img:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.sentiment-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sentiment-col { text-align: center; }
+.sentiment-label { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 3px; margin-bottom: 6px; display: inline-block; }
+.label-combined { background: #e9ecef; color: #333; }
+.label-positive { background: #d4edda; color: #155724; }
+.label-negative { background: #f8d7da; color: #721c24; }
+.sentiment-col img { width: 100%; height: 130px; object-fit: contain; border: 1px solid #e9ecef; border-radius: 6px; cursor: zoom-in; background: #f8f9fa; }
+.sentiment-col img:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.no-img { height: 130px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; border: 1px dashed #dee2e6; border-radius: 6px; color: #adb5bd; font-size: 12px; }
+
+/* ── 라이트박스 ── */
+#lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 9000; justify-content: center; align-items: center; cursor: zoom-out; }
+#lightbox.open { display: flex; }
+#lightbox img { max-width: 92vw; max-height: 90vh; border-radius: 6px; box-shadow: 0 4px 32px rgba(0,0,0,0.6); cursor: default; }
+#lightbox-close { position: fixed; top: 16px; right: 20px; color: white; font-size: 34px; cursor: pointer; line-height: 1; opacity: 0.8; background: none; border: none; }
+#lightbox-close:hover { opacity: 1; }
+
+/* ── 안내 박스 ── */
+.note-box { border-left: 4px solid; border-radius: 0 6px 6px 0; padding: 10px 14px; margin: 10px 0; font-size: 13px; line-height: 1.6; }
+.note-box.info    { border-color: #17a2b8; background: #e3f7fb; color: #0c5460; }
+.note-box.success { border-color: #28a745; background: #e8f5e9; color: #155724; }
+.note-box.warning { border-color: #ffc107; background: #fff8e1; color: #856404; }
+
+.divider { border: none; border-top: 1px solid #dee2e6; margin: 28px 0; }
+.text-muted { color: #6c757d; font-size: 12px; }
+
+/* ── 흐름도 ── */
+.flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 12px 0; }
+.flow-box { background: white; border: 1.5px solid; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 600; text-align: center; }
+.flow-box.green { border-color: #28a745; color: #155724; background: #d4edda; }
+.flow-box.blue  { border-color: #007bff; color: #004085; background: #d1ecf1; }
+.flow-box.gray  { border-color: #6c757d; color: #495057; background: #e9ecef; }
+.flow-arrow { color: #adb5bd; font-size: 16px; }
+
+/* ── 스크롤 가능 래퍼 ── */
+.scroll-x { overflow-x: auto; }
+
+@media print { h2 { page-break-before: always; } }
+</style>
+</head>
+<body>
+
+<!-- 라이트박스 -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
+<div class="page">
+
+<!-- ══════════════════════════════════════
+     표지
+══════════════════════════════════════ -->
+<h1>워드클라우드 시스템 — 실제 데이터 워크스루</h1>
+<p class="subtitle">
+  기획팀 검토용 · 작성일: 2026-06-10 &nbsp;|&nbsp;
+  실제 처리된 이미지와 데이터를 기반으로 <a href="기능_프로토타입_설명서.html" style="color:#28a745;">기능 프로토타입 설명서</a>의 내용을 검증합니다.
+</p>
+
+<div class="toc">
+  <h3>목차</h3>
+  <ol>
+    <li><a href="#input">입력 데이터 (evaluation_data.csv)</a></li>
+    <li><a href="#batch-summary">배치 처리 결과 요약</a></li>
+    <li><a href="#matrix">그룹 분석 매트릭스 — 배치 1 (평가자 × 연도)</a></li>
+    <li><a href="#deploy">제출용 저장 결과 — 배치 3 (직원별 워드클라우드)</a>
+      <ol>
+        <li><a href="#deploy-gallery">직원 갤러리 (U001~U010)</a></li>
+        <li><a href="#deploy-year">연도별 변화 비교 (U001)</a></li>
+        <li><a href="#deploy-sentiment">긍정·부정·통합 비교 (U003)</a></li>
+      </ol>
+    </li>
+  </ol>
+</div>
+
+<div class="flow">
+  <div class="flow-box gray">① CSV 업로드<br><span style="font-size:10px;">evaluation_data.csv</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box gray">② 필드 매핑</div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box blue">③ 배치 처리<br><span style="font-size:10px;">배치 1·2·3 생성</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box blue">④ 그룹 분석<br><span style="font-size:10px;">배치 1 매트릭스</span></div>
+  <span class="flow-arrow">→</span>
+  <div class="flow-box green">⑤ 갤러리<br><span style="font-size:10px;">배치 3 결과물</span></div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     1. 입력 데이터
+══════════════════════════════════════ -->
+<h2 id="input">1. 입력 데이터 — evaluation_data.csv</h2>
+
+<div class="section-card input-data">
+  <p>
+    <span class="badge badge-url">wordcloud_project/inputs/evaluation_data.csv</span>
+    &nbsp; 직원 15명 · 평가 건수 50건 · 기간 2025-12-22 ~ 2026-01-21
+  </p>
+  <p style="margin-top:10px;">아래 표는 파일의 실제 데이터 중 U001~U005 샘플입니다.</p>
+
+  <table class="data-table" style="margin-top:14px;">
+    <thead>
+      <tr>
+        <th style="width:110px;">사용자 인식 번호</th>
+        <th>사용자 다면평가 결과</th>
+        <th style="width:90px;">평가자 부서</th>
+        <th style="width:80px;">평가자 직책</th>
+        <th style="width:100px;">평가 실시 일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>U001</td><td>업무 역량이 꾸준히 향상되고 있습니다.</td><td>생산부</td><td>사원</td><td>2026-01-19</td></tr>
+      <tr><td>U001</td><td>문제 해결 능력이 뛰어납니다.</td><td>인사부</td><td>과장</td><td>2026-01-21</td></tr>
+      <tr><td>U001</td><td>팀워크를 잘 이끌어내는 리더십이 있습니다.</td><td>마케팅부</td><td>과장</td><td>2026-01-16</td></tr>
+      <tr><td>U002</td><td>개선이 필요한 부분이 있습니다.</td><td>마케팅부</td><td>사원</td><td>2026-01-11</td></tr>
+      <tr><td>U002</td><td>업무에 대한 열정이 높습니다.</td><td>재무부</td><td>사원</td><td>2025-12-22</td></tr>
+      <tr><td>U002</td><td>전반적으로 만족스러운 성과를 보입니다.</td><td>마케팅부</td><td>부장</td><td>2025-12-29</td></tr>
+      <tr><td>U003</td><td>창의적인 아이디어를 제시합니다.</td><td>생산부</td><td>과장</td><td>2026-01-04</td></tr>
+      <tr><td>U003</td><td>업무 처리 속도가 빠르고 정확합니다.</td><td>생산부</td><td>사원</td><td>2025-12-31</td></tr>
+      <tr><td>U003</td><td>개선이 필요한 부분이 있습니다.</td><td>마케팅부</td><td>과장</td><td>2026-01-02</td></tr>
+      <tr><td>U003</td><td>커뮤니케이션에서 개선의 여지가 있습니다.</td><td>생산부</td><td>차장</td><td>2025-12-26</td></tr>
+      <tr><td>U004</td><td>개선이 필요한 부분이 있습니다.</td><td>마케팅부</td><td>대리</td><td>2026-01-12</td></tr>
+      <tr><td>U004</td><td>성실하고 협력적인 태도를 보입니다.</td><td>재무부</td><td>사원</td><td>2025-12-23</td></tr>
+      <tr><td>U004</td><td>팀과의 협력이 부족한 부분이 있습니다.</td><td>인사부</td><td>사원</td><td>2026-01-06</td></tr>
+      <tr><td>U005</td><td>창의적인 아이디어를 제시합니다.</td><td>재무부</td><td>부장</td><td>2026-01-03</td></tr>
+      <tr><td>U005</td><td>업무 우선순위 설정이 필요합니다.</td><td>마케팅부</td><td>대리</td><td>2026-01-01</td></tr>
+      <tr><td>U005</td><td>동료들과의 관계가 원활합니다.</td><td>영업부</td><td>차장</td><td>2026-01-08</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note-box info" style="margin-top:14px;">
+    💡 <strong>매핑 설정</strong>: 배치 처리 시 적용한 열 매핑 —
+    <code>사용자 인식 번호</code> → <code>target_employee_id</code> &nbsp;|&nbsp;
+    <code>사용자 다면평가 결과</code> → <code>evaluation_document</code> &nbsp;|&nbsp;
+    <code>평가자 부서</code> → <code>evaluator_department</code> &nbsp;|&nbsp;
+    <code>평가자 직책</code> → <code>evaluator_position</code> &nbsp;|&nbsp;
+    <code>평가 실시 일</code> → <code>evaluation_date</code>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     2. 배치 처리 결과 요약
+══════════════════════════════════════ -->
+<h2 id="batch-summary">2. 배치 처리 결과 요약</h2>
+
+<p>아래 3개 배치가 DB에 저장되어 있습니다. 배치 1·2는 <strong>그룹 분석 → 매트릭스 저장</strong>, 배치 3은 <strong>그룹 분석 → 제출용 저장</strong>으로 생성되었습니다.</p>
+
+<table class="batch-table">
+  <thead>
+    <tr>
+      <th style="width:80px;text-align:center;">저장번호</th>
+      <th>저장 유형</th>
+      <th>Y축 (관점)</th>
+      <th>X축 (연도)</th>
+      <th style="width:80px;text-align:center;">직원 수</th>
+      <th>저장 일시</th>
+      <th>비고</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="num">1</td>
+      <td><span class="badge badge-matrix">매트릭스 저장</span></td>
+      <td>평가자별 (부서 그룹)</td>
+      <td>2024 / 2025 / 2026</td>
+      <td style="text-align:center;">50명</td>
+      <td style="font-size:12px;">2026-06-10</td>
+      <td style="font-size:12px; color:#555;">3개 연도 전체 포함</td>
+    </tr>
+    <tr style="background:#fafafa;">
+      <td class="num">2</td>
+      <td><span class="badge badge-matrix">매트릭스 저장</span></td>
+      <td>평가자별 (부서 그룹)</td>
+      <td>2025 / 2026</td>
+      <td style="text-align:center;">50명</td>
+      <td style="font-size:12px;">2026-06-10</td>
+      <td style="font-size:12px; color:#555;">최근 2개 연도만</td>
+    </tr>
+    <tr>
+      <td class="num">3</td>
+      <td><span class="badge badge-deploy">제출용 저장</span></td>
+      <td>직원별 (개인)</td>
+      <td>2024 / 2025 / 2026</td>
+      <td style="text-align:center;">50명</td>
+      <td style="font-size:12px;">2026-06-10</td>
+      <td style="font-size:12px; color:#555;">통합·긍정·부정 이미지 생성</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note-box success">
+  ✅ 총 생성 이미지: <strong>634개 PNG</strong>
+  &nbsp;(통합 172개 · 긍정 155개 · 부정 84개 · 유저별 223개)
+</div>
+
+
+<!-- ══════════════════════════════════════
+     3. 그룹 분석 매트릭스 — 배치 1
+══════════════════════════════════════ -->
+<h2 id="matrix">3. 그룹 분석 매트릭스 — 배치 1 (평가자 × 연도)</h2>
+
+<div class="section-card matrix">
+  <p>
+    <strong>Y축</strong>: 평가자 (부서별 그룹) &nbsp;|&nbsp;
+    <strong>X축</strong>: 평가 연도 (2024 / 2025 / 2026) &nbsp;|&nbsp;
+    <strong>분석 유형</strong>: NLP 단어 (워드클라우드)
+  </p>
+  <p>각 셀은 해당 평가자가 특정 연도에 작성한 평가 문서를 기반으로 생성된 워드클라우드입니다. 빈 셀(—)은 해당 연도에 작성한 평가 기록이 없음을 의미합니다.</p>
+  <p>이미지를 클릭하면 원본 크기로 확대됩니다.</p>
+</div>
+
+<div class="scroll-x">
+<table class="matrix-table">
+  <thead>
+    <tr>
+      <th class="row-header">평가자 (Y축)</th>
+      <th style="min-width:210px;">2024</th>
+      <th style="min-width:210px;">2025</th>
+      <th style="min-width:210px;">2026</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- 평가자_01EED6 개발부 — 3개 연도 모두 -->
+    <tr>
+      <th class="row-header">평가자_01EED6<br><span style="font-weight:400;color:#888;font-size:11px;">개발부</span></th>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_01EED6/evaluation_date__year_department_nlp/2024_개발부.png"
+               alt="평가자_01EED6 2024 개발부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2024 · 개발부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_01EED6/evaluation_date__year_department_nlp/2025_개발부.png"
+               alt="평가자_01EED6 2025 개발부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2025 · 개발부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_01EED6/evaluation_date__year_department_nlp/2026_개발부.png"
+               alt="평가자_01EED6 2026 개발부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2026 · 개발부</div>
+        </div>
+      </td>
+    </tr>
+    <!-- 평가자_DC0782 마케팅부 — 3개 연도 모두 -->
+    <tr>
+      <th class="row-header">평가자_DC0782<br><span style="font-weight:400;color:#888;font-size:11px;">마케팅부</span></th>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_DC0782/evaluation_date__year_department_nlp/2024_마케팅부.png"
+               alt="평가자_DC0782 2024 마케팅부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2024 · 마케팅부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_DC0782/evaluation_date__year_department_nlp/2025_마케팅부.png"
+               alt="평가자_DC0782 2025 마케팅부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2025 · 마케팅부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_DC0782/evaluation_date__year_department_nlp/2026_마케팅부.png"
+               alt="평가자_DC0782 2026 마케팅부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2026 · 마케팅부</div>
+        </div>
+      </td>
+    </tr>
+    <!-- 평가자_432042 개발부 — 2024/2025 -->
+    <tr>
+      <th class="row-header">평가자_432042<br><span style="font-weight:400;color:#888;font-size:11px;">개발부</span></th>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_432042/evaluation_date__year_department_nlp/2024_개발부.png"
+               alt="평가자_432042 2024 개발부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2024 · 개발부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_432042/evaluation_date__year_department_nlp/2025_개발부.png"
+               alt="평가자_432042 2025 개발부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2025 · 개발부</div>
+        </div>
+      </td>
+      <td class="empty-cell"><div class="cell-empty">—</div></td>
+    </tr>
+    <!-- 평가자_587CD0 인사부 — 2024/2025 -->
+    <tr>
+      <th class="row-header">평가자_587CD0<br><span style="font-weight:400;color:#888;font-size:11px;">인사부</span></th>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_587CD0/evaluation_date__year_department_nlp/2024_인사부.png"
+               alt="평가자_587CD0 2024 인사부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2024 · 인사부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_587CD0/evaluation_date__year_department_nlp/2025_인사부.png"
+               alt="평가자_587CD0 2025 인사부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2025 · 인사부</div>
+        </div>
+      </td>
+      <td class="empty-cell"><div class="cell-empty">—</div></td>
+    </tr>
+    <!-- 평가자_44F51E 기술부 — 2024/2026 -->
+    <tr>
+      <th class="row-header">평가자_44F51E<br><span style="font-weight:400;color:#888;font-size:11px;">기술부</span></th>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_44F51E/evaluation_date__year_department_nlp/2024_기술부.png"
+               alt="평가자_44F51E 2024 기술부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2024 · 기술부</div>
+        </div>
+      </td>
+      <td class="empty-cell"><div class="cell-empty">—</div></td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_44F51E/evaluation_date__year_department_nlp/2026_기술부.png"
+               alt="평가자_44F51E 2026 기술부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2026 · 기술부</div>
+        </div>
+      </td>
+    </tr>
+    <!-- 평가자_D6376C 마케팅부 — 2025/2026 -->
+    <tr>
+      <th class="row-header">평가자_D6376C<br><span style="font-weight:400;color:#888;font-size:11px;">마케팅부</span></th>
+      <td class="empty-cell"><div class="cell-empty">—</div></td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_D6376C/evaluation_date__year_department_nlp/2025_마케팅부.png"
+               alt="평가자_D6376C 2025 마케팅부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2025 · 마케팅부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_D6376C/evaluation_date__year_department_nlp/2026_마케팅부.png"
+               alt="평가자_D6376C 2026 마케팅부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2026 · 마케팅부</div>
+        </div>
+      </td>
+    </tr>
+    <!-- 평가자_D93F58 관리부 — 2024/2025 -->
+    <tr>
+      <th class="row-header">평가자_D93F58<br><span style="font-weight:400;color:#888;font-size:11px;">관리부</span></th>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_D93F58/evaluation_date__year_department_nlp/2024_관리부.png"
+               alt="평가자_D93F58 2024 관리부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2024 · 관리부</div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_D93F58/evaluation_date__year_department_nlp/2025_관리부.png"
+               alt="평가자_D93F58 2025 관리부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2025 · 관리부</div>
+        </div>
+      </td>
+      <td class="empty-cell"><div class="cell-empty">—</div></td>
+    </tr>
+    <!-- 평가자_C39FE4 개발부 — 2024/2026 -->
+    <tr>
+      <th class="row-header">평가자_C39FE4<br><span style="font-weight:400;color:#888;font-size:11px;">개발부</span></th>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_C39FE4/evaluation_date__year_department_nlp/2024_개발부.png"
+               alt="평가자_C39FE4 2024 개발부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2024 · 개발부</div>
+        </div>
+      </td>
+      <td class="empty-cell"><div class="cell-empty">—</div></td>
+      <td>
+        <div class="cell-img-wrap">
+          <img src="../wordcloud_project/outputs/유저/평가자_C39FE4/evaluation_date__year_department_nlp/2026_개발부.png"
+               alt="평가자_C39FE4 2026 개발부"
+               onclick="openLightbox(this.src)">
+          <div class="cell-dept">2026 · 개발부</div>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="note-box info" style="margin-top:14px;">
+  💡 위 표는 50명 평가자 중 <strong>2개 이상 연도에 걸쳐 평가를 작성한 8명</strong>을 발췌한 것입니다.
+  실제 갤러리에는 나머지 42명(단일 연도)의 이미지도 포함됩니다.
+  빈 칸(—)은 해당 연도에 평가 기록이 없는 셀입니다.
+</div>
+
+
+<!-- ══════════════════════════════════════
+     4. 제출용 저장 결과 — 배치 3
+══════════════════════════════════════ -->
+<h2 id="deploy">4. 제출용 저장 결과 — 배치 3 (직원별 워드클라우드)</h2>
+
+<div class="section-card deploy">
+  <p>
+    그룹 분석에서 <strong>제출용 저장</strong>을 실행하면, 직원 개인 단위로 워드클라우드가 생성됩니다.
+    저장 경로: <code>/outputs/배포/통합/</code> · <code>/outputs/배포/긍정/</code> · <code>/outputs/배포/부정/</code>
+  </p>
+  <p>
+    각 직원의 이미지는 <strong>통합(combined)</strong>, <strong>긍정(positive)</strong>, <strong>부정(negative)</strong> 3종으로 구분됩니다.
+    부정 의견이 없는 직원(예: U001)은 부정 이미지가 생성되지 않습니다.
+  </p>
+</div>
+
+<!-- 4-1. 갤러리 카드 그리드 -->
+<h3 id="deploy-gallery">4.1 직원 갤러리 (U001 ~ U010)</h3>
+<p>아래 카드는 저장 갤러리(<code>/deploy_gallery</code>)에 실제로 표시되는 형태입니다. 각 카드의 썸네일은 해당 직원의 <strong>통합 워드클라우드 최신연도(2026)</strong> 이미지입니다.</p>
+
+<div class="gallery-grid">
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U001_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U001_2026_개별.png" alt="U001 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U001</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U002_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U002_2026_개별.png" alt="U002 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U002</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U003_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U003_2026_개별.png" alt="U003 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U003</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U004_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U004_2026_개별.png" alt="U004 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U004</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U005_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U005_2026_개별.png" alt="U005 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U005</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U006_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U006_2026_개별.png" alt="U006 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U006</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U007_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U007_2026_개별.png" alt="U007 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U007</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U008_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U008_2026_개별.png" alt="U008 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U008</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U009_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U009_2026_개별.png" alt="U009 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U009</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+  <div class="gallery-card" onclick="openLightbox('../wordcloud_project/outputs/배포/통합/U010_2026_개별.png')">
+    <div class="thumb"><img src="../wordcloud_project/outputs/배포/통합/U010_2026_개별.png" alt="U010 통합 2026" onerror="this.style.display='none'"></div>
+    <div class="card-body">
+      <div class="card-title">U010</div>
+      <div class="card-meta"><span>배치 3</span> <span class="badge badge-deploy" style="font-size:10px;padding:1px 6px;">제출</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 4-2. U001 연도별 변화 -->
+<h3 id="deploy-year">4.2 연도별 변화 비교 — U001</h3>
+<p>동일 직원의 연도별 워드클라우드를 비교하면 평가 키워드의 변화 추이를 파악할 수 있습니다.</p>
+
+<div class="employee-section">
+  <div class="employee-header">
+    <span>U001</span>
+    <span class="badge badge-data" style="font-weight:400;font-size:11px;">평가 3건 · 2026년</span>
+    <span style="font-size:12px;color:#888;">평가 내용: 업무 역량 향상 · 문제 해결 · 리더십 (긍정 의견 위주)</span>
+  </div>
+  <div class="employee-body">
+    <div class="year-row">
+      <div class="year-col">
+        <div class="year-label">2024년 통합</div>
+        <img src="../wordcloud_project/outputs/배포/통합/U001_2024_개별.png"
+             alt="U001 2024 통합"
+             onclick="openLightbox(this.src)">
+      </div>
+      <div class="year-col">
+        <div class="year-label">2025년 통합</div>
+        <img src="../wordcloud_project/outputs/배포/통합/U001_2025_개별.png"
+             alt="U001 2025 통합"
+             onclick="openLightbox(this.src)">
+      </div>
+      <div class="year-col">
+        <div class="year-label">2026년 통합</div>
+        <img src="../wordcloud_project/outputs/배포/통합/U001_2026_개별.png"
+             alt="U001 2026 통합"
+             onclick="openLightbox(this.src)">
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 4-3. U003 긍정·부정·통합 비교 -->
+<h3 id="deploy-sentiment">4.3 긍정·부정·통합 비교 — U003 (2026년)</h3>
+<p>U003은 긍정("창의적인 아이디어", "업무 처리 속도") 및 부정("개선이 필요", "커뮤니케이션 개선") 평가가 모두 존재합니다. 세 가지 워드클라우드를 나란히 비교합니다.</p>
+
+<div class="employee-section">
+  <div class="employee-header">
+    <span>U003</span>
+    <span class="badge badge-data" style="font-weight:400;font-size:11px;">평가 4건 · 2026년</span>
+    <span style="font-size:12px;color:#888;">긍정 2건 / 부정 2건 혼재</span>
+  </div>
+  <div class="employee-body">
+    <h4 style="margin-bottom:10px;">2026년 — 통합·긍정·부정</h4>
+    <div class="sentiment-row">
+      <div class="sentiment-col">
+        <div class="sentiment-label label-combined">통합 (combined)</div>
+        <img src="../wordcloud_project/outputs/배포/통합/U003_2026_개별.png"
+             alt="U003 2026 통합"
+             onclick="openLightbox(this.src)">
+      </div>
+      <div class="sentiment-col">
+        <div class="sentiment-label label-positive">긍정 (positive)</div>
+        <img src="../wordcloud_project/outputs/배포/긍정/U003_2026_개별.png"
+             alt="U003 2026 긍정"
+             onclick="openLightbox(this.src)">
+      </div>
+      <div class="sentiment-col">
+        <div class="sentiment-label label-negative">부정 (negative)</div>
+        <img src="../wordcloud_project/outputs/배포/부정/U003_2026_개별.png"
+             alt="U003 2026 부정"
+             onclick="openLightbox(this.src)">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <h4 style="margin-bottom:10px;">2025년 — 통합·긍정·부정</h4>
+    <div class="sentiment-row">
+      <div class="sentiment-col">
+        <div class="sentiment-label label-combined">통합 (combined)</div>
+        <img src="../wordcloud_project/outputs/배포/통합/U003_2025_개별.png"
+             alt="U003 2025 통합"
+             onclick="openLightbox(this.src)">
+      </div>
+      <div class="sentiment-col">
+        <div class="sentiment-label label-positive">긍정 (positive)</div>
+        <img src="../wordcloud_project/outputs/배포/긍정/U003_2025_개별.png"
+             alt="U003 2025 긍정"
+             onclick="openLightbox(this.src)">
+      </div>
+      <div class="sentiment-col">
+        <div class="sentiment-label label-negative">부정 (negative)</div>
+        <img src="../wordcloud_project/outputs/배포/부정/U003_2025_개별.png"
+             alt="U003 2025 부정"
+             onclick="openLightbox(this.src)">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <h4 style="margin-bottom:10px;">2024년 — 통합·부정</h4>
+    <p style="font-size:12px;color:#888;margin-bottom:10px;">2024년은 긍정 평가 이미지가 생성되지 않았습니다 (해당 연도 긍정 기록 없음).</p>
+    <div class="sentiment-row">
+      <div class="sentiment-col">
+        <div class="sentiment-label label-combined">통합 (combined)</div>
+        <img src="../wordcloud_project/outputs/배포/통합/U003_2024_개별.png"
+             alt="U003 2024 통합"
+             onclick="openLightbox(this.src)">
+      </div>
+      <div class="sentiment-col">
+        <div class="sentiment-label label-positive">긍정 (positive)</div>
+        <div class="no-img">데이터 없음</div>
+      </div>
+      <div class="sentiment-col">
+        <div class="sentiment-label label-negative">부정 (negative)</div>
+        <img src="../wordcloud_project/outputs/배포/부정/U003_2024_개별.png"
+             alt="U003 2024 부정"
+             onclick="openLightbox(this.src)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note-box warning" style="margin-top:20px;">
+  ⚠️ <strong>긍정/부정 이미지 미생성 케이스</strong>: U001처럼 긍정 평가만 존재하는 직원은 부정 이미지가 생성되지 않습니다.
+  마찬가지로 U003의 2024년처럼 특정 연도에 한 방향의 평가만 존재할 경우 해당 감정의 이미지는 <code>null</code>로 처리됩니다.
+</div>
+
+<hr class="divider">
+<p class="text-muted" style="text-align:right;">
+  실제 이미지 경로: <code>../wordcloud_project/outputs/배포/</code> 및 <code>../wordcloud_project/outputs/유저/</code> &nbsp;|&nbsp;
+  이미지 클릭 시 원본 크기로 확대됩니다.
+</p>
+
+</div><!-- /page -->
+
+<script>
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLightbox();
+});
+</script>
+</body>
+</html>
