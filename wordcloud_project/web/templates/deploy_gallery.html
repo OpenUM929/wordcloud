@@ -6,9 +6,8 @@
 <style>
     .gallery-filter-bar {
         display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        align-items: flex-end;
+        flex-direction: column;
+        gap: 10px;
         padding: 14px 16px;
         background: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -657,44 +656,50 @@
 </p>
 
 <div class="gallery-filter-bar">
-    <div class="filter-group">
-        <label>직원 ID</label>
-        <input type="text" id="filterEmployeeId" placeholder="예: EMP001">
-    </div>
-    <div class="filter-group">
-        <label>배치 명칭</label>
-        <input type="text" id="filterBatchTitle" placeholder="배치 명칭 검색">
-    </div>
-    <div class="filter-group" style="flex:1;min-width:200px;">
-        <label>날짜</label>
-        <div id="dateChipsContainer">
-            <span style="color:#adb5bd;font-size:12px;">날짜 로드 중...</span>
+    <!-- 1행: 입력 필드 + 버튼 (wrap 없음) -->
+    <div style="display:flex;gap:12px;align-items:flex-end;width:100%;">
+        <div class="filter-group">
+            <label>직원 ID</label>
+            <input type="text" id="filterEmployeeId" placeholder="예: EMP001">
+        </div>
+        <div class="filter-group">
+            <label>배치 명칭</label>
+            <input type="text" id="filterBatchTitle" placeholder="배치 명칭 검색">
+        </div>
+        <div class="filter-group">
+            <label>출력 모드</label>
+            <div style="display:flex;gap:10px;align-items:center;padding:4px 0;">
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterOutputMode" value="" checked> 전체
+                </label>
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterOutputMode" value="pseudonym"> 가명
+                </label>
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterOutputMode" value="real"> 실명
+                </label>
+            </div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;">
+            <button class="btn btn-primary" onclick="loadGallery(1)" style="padding:6px 18px;font-size:13px;">검색</button>
+            <button class="btn btn-secondary" id="deleteModeBtn" onclick="toggleDeleteMode()" style="padding:6px 14px;font-size:13px;">삭제 모드</button>
+            <button class="btn btn-secondary" id="downloadModeBtn" onclick="toggleDownloadMode()" style="padding:6px 14px;font-size:13px;">다운로드 모드</button>
         </div>
     </div>
-    <div class="filter-group" style="flex:1;min-width:200px;">
-        <label>배치 명칭</label>
-        <div id="batchTitleChipsContainer">
-            <span style="color:#adb5bd;font-size:12px;">배치 명칭 로드 중...</span>
+    <!-- 2행: 칩 필터 -->
+    <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;padding-top:8px;border-top:1px solid #e9ecef;">
+        <div class="filter-group" style="flex:1;min-width:180px;">
+            <label>날짜</label>
+            <div id="dateChipsContainer">
+                <span style="color:#adb5bd;font-size:12px;">날짜 로드 중...</span>
+            </div>
         </div>
-    </div>
-    <div class="filter-group">
-        <label>출력 모드</label>
-        <div style="display:flex;gap:10px;align-items:center;padding:4px 0;">
-            <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
-                <input type="radio" name="filterOutputMode" value="" checked> 전체
-            </label>
-            <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
-                <input type="radio" name="filterOutputMode" value="pseudonym"> 가명
-            </label>
-            <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
-                <input type="radio" name="filterOutputMode" value="real"> 실명
-            </label>
+        <div class="filter-group" style="flex:2;min-width:200px;">
+            <label>배치 명칭</label>
+            <div id="batchTitleChipsContainer">
+                <span style="color:#adb5bd;font-size:12px;">배치 명칭 로드 중...</span>
+            </div>
         </div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:flex-end;">
-        <button class="btn btn-primary" onclick="loadGallery(1)" style="padding:6px 18px;font-size:13px;">검색</button>
-        <button class="btn btn-secondary" id="deleteModeBtn" onclick="toggleDeleteMode()" style="padding:6px 14px;font-size:13px;">삭제 모드</button>
-        <button class="btn btn-secondary" id="downloadModeBtn" onclick="toggleDownloadMode()" style="padding:6px 14px;font-size:13px;">다운로드 모드</button>
     </div>
 </div>
 
@@ -1162,6 +1167,7 @@ async function toggleDownloadMode() {
     if (deleteMode) {
         deleteMode = false;
         selectedEntryIds.clear();
+        selectedDeleteBatchTitles.clear();
         document.getElementById('deleteModeBtn').textContent = '삭제 모드';
         document.getElementById('deleteModeBtn').className = 'btn btn-secondary';
         document.getElementById('deleteModePanel').classList.remove('visible');
@@ -1169,12 +1175,13 @@ async function toggleDownloadMode() {
     }
     downloadMode = !downloadMode;
     selectedDownloadEntryIds.clear();
+    selectedDownloadBatchTitles.clear();
     downloadFilterSource.clear();
     downloadFilterYear  = '';
     downloadFilterDates.clear();
 
     const modeBtn = document.getElementById('downloadModeBtn');
-    modeBtn.textContent = downloadMode ? '다운로드 모드 끄기' : '다운로드 모드';
+    modeBtn.textContent = '다운로드 모드';
     modeBtn.className   = downloadMode ? 'btn btn-primary' : 'btn btn-secondary';
 
     const panel      = document.getElementById('downloadModePanel');
@@ -1202,7 +1209,9 @@ async function toggleDeleteMode() {
     // 상호 배타: 다운로드 모드가 켜져 있으면 끔
     if (downloadMode) {
         downloadMode = false;
+        allDownloadEntries = [];
         selectedDownloadEntryIds.clear();
+        selectedDownloadBatchTitles.clear();
         document.getElementById('downloadModeBtn').textContent = '다운로드 모드';
         document.getElementById('downloadModeBtn').className = 'btn btn-secondary';
         document.getElementById('downloadModePanel').classList.remove('visible');
@@ -1210,12 +1219,13 @@ async function toggleDeleteMode() {
     }
     deleteMode = !deleteMode;
     selectedEntryIds.clear();
+    selectedDeleteBatchTitles.clear();
     deleteFilterSource.clear();
     deleteFilterYear  = '';
     deleteFilterDates.clear();
 
     const modeBtn = document.getElementById('deleteModeBtn');
-    modeBtn.textContent = deleteMode ? '삭제 모드 끄기' : '삭제 모드';
+    modeBtn.textContent = '삭제 모드';
     modeBtn.className   = deleteMode ? 'btn btn-danger' : 'btn btn-secondary';
 
     const panel      = document.getElementById('deleteModePanel');
@@ -1384,8 +1394,7 @@ function updateDownloadCount() {
 async function _loadAllForDownload() {
     try {
         const params = new URLSearchParams();
-        params.set('page', 1);
-        params.set('per_page', 9999);
+        params.set('all', '1');
         const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
         if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
         const res  = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
@@ -1624,8 +1633,7 @@ async function executeDownload() {
 async function _loadAllForDelete() {
     try {
         const params = new URLSearchParams();
-        params.set('page', 1);
-        params.set('per_page', 9999);
+        params.set('all', '1');
         const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
         if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
         const res  = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
@@ -1868,6 +1876,7 @@ async function _executeDeleteSelected() {
         }
         deleteMode = false;
         selectedEntryIds.clear();
+        selectedDeleteBatchTitles.clear();
         allDeleteEntries = [];
         deleteFilterSource.clear();
         deleteFilterYear  = '';

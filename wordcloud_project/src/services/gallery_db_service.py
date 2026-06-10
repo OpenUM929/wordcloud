@@ -144,7 +144,7 @@ def get_entry(entry_id):
 
 
 def list_entries(
-    page=1, per_page=20,
+    page=1, per_page=20, fetch_all=False,
     employee_id=None, source=None,
     output_mode=None, date_from=None, date_to=None,
     dates=None, batch_titles=None,
@@ -200,11 +200,17 @@ def list_entries(
             f"SELECT COUNT(*) FROM gallery_entries {where}", params
         ).fetchone()[0]
 
-        offset = (page - 1) * per_page
-        rows = conn.execute(
-            f"SELECT * FROM gallery_entries {where} {order} LIMIT ? OFFSET ?",
-            params + [per_page, offset]
-        ).fetchall()
+        if fetch_all:
+            rows = conn.execute(
+                f"SELECT * FROM gallery_entries {where} {order}",
+                params
+            ).fetchall()
+        else:
+            offset = (page - 1) * per_page
+            rows = conn.execute(
+                f"SELECT * FROM gallery_entries {where} {order} LIMIT ? OFFSET ?",
+                params + [per_page, offset]
+            ).fetchall()
 
         entries = []
         for row in rows:

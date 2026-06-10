@@ -2,6 +2,8 @@
 
 | 계획서 | 작업 요약 | 상태 | 작성일 |
 |--------|-----------|------|--------|
+| 0610_01_deploy-mode-color-preset | 배포 모드 통합 추가 + 색상 선택 | 🟡 PND | 2026-06-10 |
+| 0610_01_gallery-download | 저장 갤러리 이미지 다운로드 | 🟡 PND | 2026-06-10 |
 | 0421_01_batch-scalability-plan | 배치 처리 대용량 최적화 | PND | 2026-04-21 |
 | 0602_01_profanity-eng-fix | 불용어 영문 처리 개선 | PND | 2026-06-02 |
 | 0604_01_deploy-gallery-v2 | 갤러리 v2 배포 | DN | 2026-06-04 |
@@ -13,3 +15,4 @@
 | 0605_02_deploy-ux-enhance | 저장 완료 후 UX 개선 | DN | 2026-06-05 |
 | 0605_03_deploy-retry-cascade | 실패 태스크 재시도 | DN | 2026-06-05 |
 | 0605_04_gallery-detail-load | 갤러리 상세 로드 | PND | 2026-06-05 |
+| 0609_01_deploy-retry-dup-fix | 재시도 failData 중복 누적 수정 | DN | 2026-06-09 |
