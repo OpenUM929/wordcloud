@@ -251,13 +251,7 @@ body {
                 <label><input type="checkbox" id="allEmployeesCheck" onchange="toggleAllEmployees()"> 전체 직원 대상</label>
             </div>
 
-            <div class="output-mode-bar" style="border-top:1px solid #eee;padding-top:4px;margin-top:2px;">
-                <span style="font-size:11px;font-weight:600;color:#555;">모드:</span>
-                <label><input type="radio" name="outputMode" value="pseudonym" checked onchange="toggleMode()"> 가명</label>
-                <label><input type="radio" name="outputMode" value="real" onchange="toggleMode()"> 원데이터</label>
-            </div>
-
-            <div id="rawDataSection" style="display:none;border-top:1px solid #eee;padding-top:4px;margin-top:2px;">
+            <div id="rawDataSection" style="border-top:1px solid #eee;padding-top:4px;margin-top:2px;">
                 <div id="csvArea">
                     <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:1px;">CSV 업로드 (일괄 대상)</div>
                     <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
@@ -274,7 +268,6 @@ body {
                             <input type="checkbox" id="includeIdInFilename" checked>
                             파일명에 사번 포함
                         </label>
-                        <div style="font-size:10px;color:#888;margin-top:3px;">모두 해제 시 가명(익명)으로 저장됩니다</div>
                     </div>
                 </div>
             </div>
@@ -650,7 +643,7 @@ function closeProfanityModal() {
 }
 
 function getOutputMode() {
-    return document.querySelector('input[name="outputMode"]:checked').value;
+    return 'real';
 }
 
 function getAnalysisTypes() {
@@ -668,30 +661,6 @@ function getDeployMode() {
     return document.querySelector('input[name="deployMode"]:checked')?.value || 'combined+individual';
 }
 
-function toggleMode() {
-    const mode = getOutputMode();
-    const rawSection = document.getElementById('rawDataSection');
-    const empSelect = document.getElementById('employeeSelect');
-    const allEmpCheck = document.getElementById('allEmployeesCheck');
-    const card = document.querySelector('.condition-card');
-
-    if (mode === 'real') {
-        rawSection.style.display = 'block';
-        card.style.height = '';
-        document.querySelector('.selector-row').style.minHeight = '0';
-        _csvEmployeeIds = null;
-        document.getElementById('csvStatus').textContent = '';
-        document.getElementById('csvFileInput').value = '';
-        empSelect.disabled = false;
-        allEmpCheck.disabled = false;
-    } else {
-        rawSection.style.display = 'none';
-        card.style.height = '';
-        document.querySelector('.selector-row').style.minHeight = '0';
-        empSelect.disabled = false;
-        allEmpCheck.disabled = false;
-    }
-}
 
 document.getElementById('csvFileInput').addEventListener('change', async function(e) {
     const file = e.target.files[0];
@@ -1047,11 +1016,6 @@ async function generateMatrix() {
 }
 
 async function saveDeploy(resumeSessionId = null) {
-    if (!resumeSessionId && getOutputMode() !== 'real') {
-        setStatus('제출용 저장은 원데이터 모드가 필요합니다.', true);
-        return;
-    }
-
     document.body.style.height = '';
     document.body.style.overflow = '';
     const _ra = document.getElementById('resultArea');
