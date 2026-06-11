@@ -1404,6 +1404,47 @@ function showDeployToast(message, linkUrl) {
 }
 
 let _sentGroupId = 0;
+function saveToCorpus(btn) {
+    const row = btn.closest('.sentence-row');
+    const rawText = row.dataset.fullText;
+    const text = rawText ? decodeURIComponent(rawText) : (row.querySelector('span') ? row.querySelector('span').textContent.replace(/^[•\s]+/, '').trim() : '');
+    const userLabel = row.querySelector('input[type="radio"]:checked')?.value || 'neutral';
+    const modelLabel = row.dataset.origSentiment || 'neutral';
+    const dbId = row.dataset.dbId;
+    const evalId = row.dataset.evalId;
+    const sentIdx = row.dataset.sentIdx;
+    const empId = row.closest('[data-employee-id]')?.dataset.employeeId || '';
+    const confidence = parseFloat(row.dataset.confidence || '0');
+    const batchId = row.dataset.batchId || (row.closest('[data-batch-id]') ? row.closest('[data-batch-id]').dataset.batchId : '');
+    const rawContext = row.dataset.context;
+    const context = rawContext ? decodeURIComponent(rawContext) : '';
+
+    if (!text) { showDeployToast('❌ 문장을 찾을 수 없습니다', ''); return; }
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    fetch('/api/perspective/acquired-sentences/save', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            sentence_text: text, user_label: userLabel, model_label: modelLabel,
+            confidence: confidence, source_employee_id: empId,
+            source_evaluation_id: evalId, source_batch_id: batchId,
+            sentence_index: sentIdx, db_id: dbId, context: context,
+        })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.success) {
+            btn.textContent = '✅';
+            showDeployToast('✅ 코퍼스에 저장됨', '/acquired-data');
+            setTimeout(function() { btn.textContent = '📋'; btn.disabled = false; }, 2000);
+        } else {
+            btn.textContent = '❌';
+            setTimeout(function() { btn.textContent = '📋'; btn.disabled = false; }, 2000);
+        }
+    }).catch(function() {
+        btn.textContent = '❌';
+        setTimeout(function() { btn.textContent = '📋'; btn.disabled = false; }, 2000);
+    });
+}
+
 function _renderDeploymentSentences(sentences, details) {
     const fs = 'var(--sent-font-size,7px)';
     if (details && details.length > 0) {
@@ -1419,7 +1460,11 @@ function _renderDeploymentSentences(sentences, details) {
         details.forEach(function(s) {
             const nm = 'sentgrp_' + (_sentGroupId++);
             const textContent = s.text_html || escapeHtml(s.text);
-            h += '<div class="sentence-row" data-db-id="' + s.db_id + '" data-eval-id="' + s.evaluation_id + '" data-sent-idx="' + s.sentence_index + '" data-orig-sentiment="' + s.sentiment + '" style="display:flex;align-items:flex-start;margin-bottom:2px;">';
+            const confidence = (s.confidence !== undefined) ? s.confidence : '';
+            const batchId = s.batch_id || '';
+            const context = s.context || '';
+            const fullTextEncoded = encodeURIComponent(s.text || '');
+            h += '<div class="sentence-row" data-db-id="' + s.db_id + '" data-eval-id="' + s.evaluation_id + '" data-sent-idx="' + s.sentence_index + '" data-orig-sentiment="' + s.sentiment + '" data-full-text="' + fullTextEncoded + '" data-confidence="' + confidence + '" data-batch-id="' + batchId + '" data-context="' + encodeURIComponent(context) + '" style="display:flex;align-items:flex-start;margin-bottom:2px;">';
             h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="positive"' + (s.sentiment === 'positive' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
             h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="negative"' + (s.sentiment === 'negative' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
             h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="neutral"' + (s.sentiment === 'neutral' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
@@ -1428,6 +1473,7 @@ function _renderDeploymentSentences(sentences, details) {
             var scoreColor = scoreVal > 0 ? '#28a745' : scoreVal < 0 ? '#dc3545' : '#888';
             var scoreText = scoreVal !== null ? ((scoreVal > 0 ? '+' : '') + scoreVal.toFixed(3)) : '-';
             h += '<span style="width:38px;text-align:right;font-size:' + fs + ';flex-shrink:0;padding-right:2px;color:' + scoreColor + ';">' + scoreText + '</span>';
+            h += '<button onclick="saveToCorpus(this)" style="flex-shrink:0;width:18px;height:18px;padding:0;border:none;background:transparent;cursor:pointer;font-size:12px;line-height:1;" title="코퍼스에 저장">📋</button>';
             h += '</div>';
         });
         h += '</div>';

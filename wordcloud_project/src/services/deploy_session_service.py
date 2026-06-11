@@ -158,6 +158,35 @@ def _apply_schema_migrations():
             )
             conn.commit()
             print("[DB] Schema v4: sentiment_corrections 컬럼 추가 완료")
+            current = 4
+
+        if current < 5:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS acquired_sentences (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sentence_text   TEXT NOT NULL,
+                    user_label      TEXT CHECK(user_label IN ('positive','negative','neutral')),
+                    model_label     TEXT CHECK(model_label IN ('positive','negative','neutral')),
+                    confidence      REAL DEFAULT 0.0,
+                    source_employee_id   TEXT DEFAULT '',
+                    source_evaluation_id TEXT DEFAULT '',
+                    source_batch_id      TEXT DEFAULT '',
+                    sentence_index        INTEGER DEFAULT 0,
+                    db_id                 INTEGER DEFAULT 0,
+                    context         TEXT DEFAULT '',
+                    memo            TEXT DEFAULT '',
+                    analysis_results TEXT DEFAULT '{}',
+                    created_at      TEXT DEFAULT (datetime('now','localtime')),
+                    updated_at      TEXT DEFAULT (datetime('now','localtime')),
+                    UNIQUE(sentence_text, source_evaluation_id, sentence_index)
+                );
+            """)
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (5, datetime('now'), ?)",
+                ('add acquired_sentences table for corpus collection',)
+            )
+            conn.commit()
+            print("[DB] Schema v5: acquired_sentences 테이블 추가 완료")
     finally:
         conn.close()
 

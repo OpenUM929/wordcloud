@@ -13,6 +13,9 @@ from src.services.perspective_service import (
     TEST_SENTENCES_100, split_sentences, has_contrastive,
     sentence_sentiment_override, _get_sentence_level_scores,
     _load_corrections_map,
+    save_acquired_sentence, list_acquired_sentences,
+    delete_acquired_sentence, analyze_acquired_sentences,
+    export_acquired_sentences_csv,
     OUTPUTS_DIR_PATH,
 )
 from src.services.deploy_session_service import (
@@ -1193,3 +1196,74 @@ def api_deploy_title_check():
     from src.services import gallery_db_service
     info = gallery_db_service.check_batch_title(batch_title)
     return jsonify({'success': True, **info})
+
+
+@perspective_bp.route('/acquired-sentences/save', methods=['POST'])
+def api_acquired_sentences_save():
+    """문장을 코퍼스(corpus)에 저장."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    required = ['sentence_text', 'user_label', 'model_label']
+    for field in required:
+        if not data.get(field):
+            return jsonify({'success': False, 'error': f'{field}가 필요합니다.'}), 400
+    ok = save_acquired_sentence(data)
+    return jsonify({'success': ok})
+
+
+@perspective_bp.route('/acquired-sentences/list', methods=['GET'])
+def api_acquired_sentences_list():
+    """저장된 문장 목록 조회 (페이지네이션 + 필터)."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 200)
+    mismatch_only = request.args.get('mismatch_only', '0') == '1'
+    label = request.args.get('label', '').strip() or None
+    date_from = request.args.get('date_from', '').strip() or None
+    date_to = request.args.get('date_to', '').strip() or None
+    result = list_acquired_sentences(
+        page=page, per_page=per_page,
+        mismatch_only=mismatch_only, label=label,
+        date_from=date_from, date_to=date_to,
+    )
+    return jsonify({'success': True, **result})
+
+
+@perspective_bp.route('/acquired-sentences/<int:sentence_id>', methods=['DELETE'])
+def api_acquired_sentences_delete(sentence_id):
+    """단건 삭제."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    ok = delete_acquired_sentence(sentence_id)
+    return jsonify({'success': ok})
+
+
+@perspective_bp.route('/acquired-sentences/analyze', methods=['POST'])
+def api_acquired_sentences_analyze():
+    """선택 문장 분석 실행."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    ids = data.get('ids', [])
+    analysis_types = data.get('analysis_types', ['emotion', 'profanity', 'sarcasm'])
+    if not ids:
+        return jsonify({'success': False, 'error': 'ids가 필요합니다.'}), 400
+    results = analyze_acquired_sentences(ids, analysis_types)
+    return jsonify({'success': True, 'results': results})
+
+
+@perspective_bp.route('/acquired-sentences/export', methods=['GET'])
+def api_acquired_sentences_export():
+    """CSV보내기."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    mismatch_only = request.args.get('mismatch_only', '0') == '1'
+    csv_content = export_acquired_sentences_csv(mismatch_only=mismatch_only)
+    from datetime import datetime as _dt
+    return Response(
+        csv_content,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=acquired_sentences_{_dt.now().strftime("%Y%m%d")}.csv'},
+    )

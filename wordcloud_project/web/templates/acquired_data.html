@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}습득한 데이터 — 코퍼스 분석{% endblock %}
+{% block extra_head %}
+<style>
+.page-container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+h1 { margin: 20px 0; font-size: 24px; color: #333; }
+.panel { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn-primary { background: #007bff; color: white; }
+.btn-success { background: #28a745; color: white; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-danger { background: #dc3545; color: white; }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+.summary { display: flex; gap: 30px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
+.summary-item { text-align: center; }
+.summary-item .number { font-size: 28px; font-weight: bold; color: #007bff; }
+.summary-item .label { font-size: 12px; color: #666; }
+.filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+.filters label { font-size: 13px; color: #555; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.filters select, .filters input[type="date"] { padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f0f0f0; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; position: sticky; top: 0; }
+td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+tr:hover { background: #f8f9fa; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-pos { background: #d4edda; color: #155724; }
+.badge-neg { background: #f8d7da; color: #721c24; }
+.badge-neu { background: #fff3cd; color: #856404; }
+.badge-match { background: #d4edda; color: #155724; }
+.badge-mismatch { background: #f8d7da; color: #721c24; }
+.text-cell { max-width: 300px; word-break: break-all; }
+.pagination { display: flex; gap: 5px; align-items: center; justify-content: center; margin-top: 15px; }
+.pagination button { padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.pagination button:hover { background: #f0f0f0; }
+.pagination button.active { background: #007bff; color: white; border-color: #007bff; }
+.pagination button:disabled { opacity: 0.5; cursor: default; }
+.loading { text-align: center; padding: 40px; color: #666; }
+.analysis-cell { font-size: 11px; white-space: nowrap; }
+.result-pos { color: #28a745; font-weight: 600; }
+.result-neg { color: #dc3545; font-weight: 600; }
+.result-neu { color: #6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <h1>습득한 데이터</h1>
+
+    <div class="panel">
+        <div class="summary" id="summaryArea">
+            <div class="summary-item"><div class="number" id="totalCount">0</div><div class="label">전체</div></div>
+            <div class="summary-item"><div class="number" id="mismatchCount" style="color:#dc3545;">0</div><div class="label">불일치</div></div>
+        </div>
+
+        <div class="filters">
+            <label><input type="checkbox" id="filterMismatch" onchange="loadData()"> 불일치만 보기</label>
+            <select id="filterLabel" onchange="loadData()">
+                <option value="">전체 라벨</option>
+                <option value="positive">긍정</option>
+                <option value="negative">부정</option>
+                <option value="neutral">중립</option>
+            </select>
+            <input type="date" id="filterDateFrom" onchange="loadData()">
+            <span>~</span>
+            <input type="date" id="filterDateTo" onchange="loadData()">
+            <button class="btn btn-primary" onclick="analyzeSelected()">분석 실행</button>
+            <button class="btn btn-secondary" onclick="exportCsv()">CSV보내기</button>
+        </div>
+
+        <div id="tableArea">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:30px;"><input type="checkbox" id="selectAll" onchange="toggleAll()"></th>
+                        <th>문장</th>
+                        <th style="width:70px;">사용자</th>
+                        <th style="width:70px;">모델</th>
+                        <th style="width:50px;">일치</th>
+                        <th style="width:80px;">감정분석</th>
+                        <th style="width:50px;">욕설</th>
+                        <th style="width:50px;">비꼼</th>
+                        <th style="width:50px;">삭제</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="paginationArea"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var _currentPage = 1;
+var _totalPages = 1;
+var _allItems = [];
+
+function loadData() {
+    const mismatch = document.getElementById('filterMismatch').checked ? '1' : '0';
+    const label = document.getElementById('filterLabel').value;
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo = document.getElementById('filterDateTo').value;
+    var params = 'page=' + _currentPage + '&per_page=50&mismatch_only=' + mismatch;
+    if (label) params += '&label=' + encodeURIComponent(label);
+    if (dateFrom) params += '&date_from=' + encodeURIComponent(dateFrom);
+    if (dateTo) params += '&date_to=' + encodeURIComponent(dateTo);
+
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="loading">로딩 중...</td></tr>';
+
+    fetch('/api/perspective/acquired-sentences/list?' + params, {credentials: 'include'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.success) { alert(d.error); return; }
+        _allItems = d.items || [];
+        document.getElementById('totalCount').textContent = d.total;
+        var mismatchCount = _allItems.filter(function(i) { return i.user_label !== i.model_label; }).length;
+        document.getElementById('mismatchCount').textContent = mismatchCount;
+
+        _totalPages = Math.ceil(d.total / d.per_page) || 1;
+        renderTable();
+        renderPagination();
+    })
+    .catch(function(e) { console.error(e); });
+}
+
+function renderTable() {
+    var h = '';
+    _allItems.forEach(function(item) {
+        var match = item.user_label === item.model_label;
+        var analysisResults = {};
+        try { analysisResults = JSON.parse(item.analysis_results || '{}'); } catch(e) {}
+
+        var emotionResult = analysisResults.emotion || {};
+        var emotionHtml = emotionResult.result ?
+            '<span class="result-' + emotionResult.result + '">' +
+            emotionResult.result + '<br><small>' +
+            (emotionResult.positive || 0).toFixed(2) + '/' +
+            (emotionResult.negative || 0).toFixed(2) + '/' +
+            (emotionResult.neutral || 0).toFixed(2) + '</small></span>' : '-';
+
+        var profanityHtml = analysisResults.profanity ?
+            (analysisResults.profanity.detected ? '⚠️' : '✓') : '-';
+
+        var sarcasmHtml = analysisResults.sarcasm ?
+            (analysisResults.sarcasm.detected ? '⚠️' : '✓') : '-';
+
+        h += '<tr>';
+        h += '<td><input type="checkbox" class="item-checkbox" value="' + item.id + '"></td>';
+        h += '<td class="text-cell">' + escapeHtml(item.sentence_text) + '</td>';
+        h += '<td><span class="badge badge-' + item.user_label.substr(0,3) + '">' + item.user_label + '</span></td>';
+        h += '<td><span class="badge badge-' + item.model_label.substr(0,3) + '">' + item.model_label + '</span></td>';
+        h += '<td><span class="badge ' + (match ? 'badge-match' : 'badge-mismatch') + '">' + (match ? '✅' : '❌') + '</span></td>';
+        h += '<td class="analysis-cell">' + emotionHtml + '</td>';
+        h += '<td class="analysis-cell">' + profanityHtml + '</td>';
+        h += '<td class="analysis-cell">' + sarcasmHtml + '</td>';
+        h += '<td><button onclick="deleteItem(' + item.id + ')" style="border:none;background:transparent;cursor:pointer;color:#dc3545;font-size:14px;">❌</button></td>';
+        h += '</tr>';
+    });
+    if (!_allItems.length) {
+        h = '<tr><td colspan="9" style="text-align:center;color:#888;padding:30px;">저장된 데이터가 없습니다.</td></tr>';
+    }
+    document.getElementById('tableBody').innerHTML = h;
+}
+
+function renderPagination() {
+    var h = '';
+    h += '<button onclick="goPage(1)"' + (_currentPage <= 1 ? ' disabled' : '') + '>«</button>';
+    h += '<button onclick="goPage(' + (_currentPage - 1) + ')"' + (_currentPage <= 1 ? ' disabled' : '') + '>이전</button>';
+    var start = Math.max(1, _currentPage - 2);
+    var end = Math.min(_totalPages, _currentPage + 2);
+    for (var i = start; i <= end; i++) {
+        h += '<button class="' + (i === _currentPage ? 'active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
+    }
+    h += '<button onclick="goPage(' + (_currentPage + 1) + ')"' + (_currentPage >= _totalPages ? ' disabled' : '') + '>다음</button>';
+    h += '<button onclick="goPage(' + _totalPages + ')"' + (_currentPage >= _totalPages ? ' disabled' : '') + '>»</button>';
+    document.getElementById('paginationArea').innerHTML = h;
+}
+
+function goPage(page) {
+    if (page < 1 || page > _totalPages) return;
+    _currentPage = page;
+    loadData();
+}
+
+function toggleAll() {
+    var checked = document.getElementById('selectAll').checked;
+    document.querySelectorAll('.item-checkbox').forEach(function(cb) { cb.checked = checked; });
+}
+
+function getSelectedIds() {
+    var ids = [];
+    document.querySelectorAll('.item-checkbox:checked').forEach(function(cb) { ids.push(parseInt(cb.value)); });
+    return ids;
+}
+
+function analyzeSelected() {
+    var ids = getSelectedIds();
+    if (!ids.length) { alert('분석할 항목을 선택하세요.'); return; }
+    var btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '분석 중...';
+    fetch('/api/perspective/acquired-sentences/analyze', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids: ids}),
+        credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { loadData(); }
+        else { alert(d.error); }
+    })
+    .catch(function(e) { alert('분석 실패'); })
+    .finally(function() { btn.disabled = false; btn.textContent = '분석 실행'; });
+}
+
+function deleteItem(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    fetch('/api/perspective/acquired-sentences/' + id, {
+        method: 'DELETE', credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) loadData();
+        else alert(d.error);
+    })
+    .catch(function(e) { alert('삭제 실패'); });
+}
+
+function exportCsv() {
+    var mismatch = document.getElementById('filterMismatch').checked ? '1' : '0';
+    window.open('/api/perspective/acquired-sentences/export?mismatch_only=' + mismatch, '_blank');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', function() { loadData(); });
+</script>
+{% endblock %}

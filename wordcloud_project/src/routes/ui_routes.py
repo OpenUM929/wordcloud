@@ -140,3 +140,9 @@ def profanity_test():
 def deploy_gallery():
     """Deployment gallery page for viewing saved images."""
     return render_template('deploy_gallery.html')
+
+
+@ui_bp.route('/acquired-data')
+def acquired_data():
+    """Acquired corpus data page."""
+    return render_template('acquired_data.html')

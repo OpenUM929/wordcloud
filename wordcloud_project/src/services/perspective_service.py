@@ -758,11 +758,12 @@ def _load_corrections_map(employee_id):
 def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None):
     """문서를 문장으로 분할하고 각 문장별로 감정 분석 후 교정 점수를 계산.
     
+    Returns list of (sent, score, pos, neg) 4-tuples.
     corrections: {sentence_index: "positive"|"negative"|"neutral"}
     """
     sentences = split_sentences(doc)
     if not sentences:
-        return [(None, 0.0)]
+        return [(None, 0.0, 0.0, 0.0)]
 
     from src.modules.emotion_analysis import analyze_emotion
     from src.modules.profanity_filter import advanced_filter_profanity
@@ -812,7 +813,7 @@ def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None
                 score = 0.0
         else:
             score = original_score
-        result.append((sent, score))
+        result.append((sent, score, pos, neg))
     return result
 
 
@@ -839,7 +840,7 @@ def calculate_word_scores(filtered_evaluations, word_frequency, threshold=0.20, 
             sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
             # 단어가 속한 문장의 점수 찾기
             word_sent_score = None
-            for sent, score in sent_scores:
+            for sent, score, _, _ in sent_scores:
                 if sent and word in sent:
                     word_sent_score = score
                     break
@@ -1015,7 +1016,7 @@ def _aggregate_emotion(filtered_items, threshold=0.20, weight=2.0, corrections_m
         doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
         eval_corrections = corrections_map.get(ev.get('_db_id')) if corrections_map else None
         sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
-        for sent, score in sent_scores:
+        for sent, score, _, _ in sent_scores:
             pos_sum += max(0, score)
             neg_sum += max(0, -score)
             count += 1
@@ -1085,9 +1086,11 @@ def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0, correctio
         db_id = ev.get('_db_id')
         eval_corrections = corrections_map.get(db_id) if corrections_map else None
         sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
-        for i, (sent, score) in enumerate(sent_scores):
+        for i, (sent, score, pos, neg) in enumerate(sent_scores):
             if not sent:
                 continue
+            confidence = abs(pos - neg)
+            batch_id = ev.get('batch_id', '')
             if score > 0:
                 positive_docs.append(sent)
                 positive_details.append({
@@ -1096,6 +1099,9 @@ def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0, correctio
                     'db_id': db_id,
                     'sentence_index': i,
                     'sentiment': 'positive',
+                    'confidence': confidence,
+                    'batch_id': batch_id,
+                    'context': doc,
                 })
             elif score < 0:
                 negative_docs.append(sent)
@@ -1105,6 +1111,9 @@ def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0, correctio
                     'db_id': db_id,
                     'sentence_index': i,
                     'sentiment': 'negative',
+                    'confidence': confidence,
+                    'batch_id': batch_id,
+                    'context': doc,
                 })
     return {
         'evaluation_count': len(filtered_items),
@@ -1709,7 +1718,11 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
             if eval_corr:
                 logger.info(f"[deploy][{label_suffix}] db_id={db_id} eval_id={eval_id} corrections={eval_corr}")
             sent_scores_list = _get_sentence_level_scores(doc, corrections=eval_corr)
-            sent_score_map = {idx: sc for idx, (_, sc) in enumerate(sent_scores_list)}
+            sent_score_map = {}
+            confidence_map = {}
+            for idx, (_, sc, pos, neg) in enumerate(sent_scores_list):
+                sent_score_map[idx] = sc
+                confidence_map[idx] = abs(pos - neg)
             for i, sent in enumerate(split_sentences(doc)):
                 if not sent:
                     continue
@@ -1717,8 +1730,9 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
                 if text_key in all_seen:
                     continue
                 all_seen.add(text_key)
-                base = {'text': sent, 'evaluation_id': eval_id, 'db_id': db_id, 'item_index': item_idx, 'sentence_index': i}
                 sent_score = sent_score_map.get(i, 0.0)
+                confidence = confidence_map.get(i, 0.0)
+                base = {'text': sent, 'evaluation_id': eval_id, 'db_id': db_id, 'item_index': item_idx, 'sentence_index': i, 'confidence': confidence, 'batch_id': ev.get('batch_id', ''), 'context': doc}
                 if sent_score > 0:
                     base['text_html'] = _highlight_words_in_sentence(sent, top_pos, word_scores)
                     pos_details.append({**base, 'sentiment': 'positive', 'score': round(sent_score, 3)})
@@ -1831,3 +1845,173 @@ def generate_all_employee_matrix(unified_data, row_field, col_mode, analysis_typ
             except Exception as e:
                 results[emp_id] = {'error': str(e)}
     return results
+
+
+def _get_acq_conn():
+    from src.services.deploy_session_service import _get_conn
+    return _get_conn()
+
+
+def save_acquired_sentence(data):
+    conn = _get_acq_conn()
+    try:
+        conn.execute("""
+            INSERT OR REPLACE INTO acquired_sentences
+                (sentence_text, user_label, model_label, confidence,
+                 source_employee_id, source_evaluation_id, source_batch_id,
+                 sentence_index, db_id, context)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            data['sentence_text'],
+            data.get('user_label', 'neutral'),
+            data.get('model_label', 'neutral'),
+            data.get('confidence', 0.0),
+            data.get('source_employee_id', ''),
+            data.get('source_evaluation_id', ''),
+            data.get('source_batch_id', ''),
+            data.get('sentence_index', 0),
+            data.get('db_id', 0),
+            data.get('context', ''),
+        ))
+        conn.commit()
+        return True
+    except Exception as e:
+        logger.error(f"[acquired] save error: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def list_acquired_sentences(page=1, per_page=50, mismatch_only=False, label=None, date_from=None, date_to=None):
+    conn = _get_acq_conn()
+    try:
+        where_clauses = []
+        params = []
+        if mismatch_only:
+            where_clauses.append("user_label != model_label")
+        if label:
+            where_clauses.append("(user_label = ? OR model_label = ?)")
+            params.extend([label, label])
+        if date_from:
+            where_clauses.append("created_at >= ?")
+            params.append(date_from)
+        if date_to:
+            where_clauses.append("created_at <= ?")
+            params.append(date_to + ' 23:59:59')
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+        total = conn.execute(f"SELECT COUNT(*) FROM acquired_sentences WHERE {where_sql}", params).fetchone()[0]
+        offset = (page - 1) * per_page
+        rows = conn.execute(f"""
+            SELECT * FROM acquired_sentences
+            WHERE {where_sql}
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        """, params + [per_page, offset]).fetchall()
+        return {
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'items': [dict(r) for r in rows],
+        }
+    finally:
+        conn.close()
+
+
+def delete_acquired_sentence(sentence_id):
+    conn = _get_acq_conn()
+    try:
+        conn.execute("DELETE FROM acquired_sentences WHERE id = ?", (sentence_id,))
+        conn.commit()
+        return True
+    except Exception as e:
+        logger.error(f"[acquired] delete error: {e}")
+        return False
+    finally:
+        conn.close()
+
+
+def analyze_acquired_sentences(sentence_ids, analysis_types=None):
+    if analysis_types is None:
+        analysis_types = ['emotion', 'profanity', 'sarcasm']
+    from src.modules.emotion_analysis import analyze_emotion
+    from src.modules.profanity_filter import advanced_filter_profanity
+    from src.modules.sarcasm_analysis import analyze_sarcasm
+    conn = _get_acq_conn()
+    try:
+        results = []
+        for sid in sentence_ids:
+            row = conn.execute("SELECT * FROM acquired_sentences WHERE id = ?", (sid,)).fetchone()
+            if not row:
+                continue
+            sent_data = dict(row)
+            text = sent_data['sentence_text']
+            analysis = {}
+            if 'emotion' in analysis_types:
+                try:
+                    er = analyze_emotion(text)
+                    scores = er.get('analysis', {}).get('base_result', {}).get('mapped', {}).get('sentiment_scores', {})
+                    pos = scores.get('positive', 0.0) or 0.0
+                    neg = scores.get('negative', 0.0) or 0.0
+                    neu = scores.get('neutral', 0.0) or 0.0
+                    result_label = 'positive' if pos > neg else 'negative' if neg > pos else 'neutral'
+                    analysis['emotion'] = {
+                        'positive': round(pos, 4),
+                        'negative': round(neg, 4),
+                        'neutral': round(neu, 4),
+                        'result': result_label,
+                    }
+                except Exception as e:
+                    analysis['emotion'] = {'error': str(e)}
+            if 'profanity' in analysis_types:
+                try:
+                    pr = advanced_filter_profanity(text)
+                    analysis['profanity'] = {
+                        'detected': pr.get('profanity_count', 0) > 0,
+                        'count': pr.get('profanity_count', 0),
+                    }
+                except Exception as e:
+                    analysis['profanity'] = {'error': str(e)}
+            if 'sarcasm' in analysis_types:
+                try:
+                    sr = analyze_sarcasm(text)
+                    analysis['sarcasm'] = {
+                        'detected': sr.get('detected', False),
+                        'score': sr.get('score', 0.0),
+                    }
+                except Exception as e:
+                    analysis['sarcasm'] = {'error': str(e)}
+            conn.execute(
+                "UPDATE acquired_sentences SET analysis_results = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+                (json.dumps(analysis, ensure_ascii=False), sid)
+            )
+            results.append({
+                'id': sid,
+                'sentence_text': text,
+                'user_label': sent_data.get('user_label'),
+                'model_label': sent_data.get('model_label'),
+                **analysis,
+            })
+        conn.commit()
+        return results
+    except Exception as e:
+        logger.error(f"[acquired] analyze error: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def export_acquired_sentences_csv(mismatch_only=False):
+    import csv, io
+    data = list_acquired_sentences(page=1, per_page=999999, mismatch_only=mismatch_only)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['id', 'sentence_text', 'user_label', 'model_label', 'confidence',
+                     'source_employee_id', 'source_evaluation_id', 'source_batch_id',
+                     'sentence_index', 'context', 'created_at'])
+    for item in data['items']:
+        writer.writerow([
+            item['id'], item['sentence_text'], item['user_label'], item['model_label'],
+            item['confidence'], item['source_employee_id'], item['source_evaluation_id'],
+            item['source_batch_id'], item['sentence_index'], item['context'], item['created_at'],
+        ])
+    return output.getvalue()
