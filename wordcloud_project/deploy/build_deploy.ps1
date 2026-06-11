@@ -217,23 +217,23 @@ echo.
 
 set "ZIPFILE=%~dp0wordcloud-project.zip"
 if not exist "%ZIPFILE%" (
-    echo [ERROR] wordcloud-project.zip 를 찾을 수 없습니다.
-    echo         이 폴더에 ZIP 파일을 복사한 뒤 다시 실행하세요.
+    echo [ERROR] wordcloud-project.zip not found.
+    echo         Copy the ZIP file here and run again.
     pause
     exit /b 1
 )
 
-echo [1/3] 기존 wordcloud_project 폴더 삭제 중...
+echo [1/3] Removing old wordcloud_project...
 if exist "%~dp0wordcloud_project" (
     rmdir /s /q "%~dp0wordcloud_project"
 )
 
-echo [2/3] ZIP 압축 해제 중...
+echo [2/3] Extracting ZIP...
 powershell -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%~dp0' -Force"
 
-echo [3/3] 완료!
-echo        wordcloud_project\ 가 최신 버전으로 교체되었습니다.
-echo        서버를 재시작하려면 start.bat 을 실행하세요.
+echo [3/3] Done.
+echo        wordcloud_project\ has been updated.
+echo        Run start.bat to restart the server.
 echo.
 pause
 '@
