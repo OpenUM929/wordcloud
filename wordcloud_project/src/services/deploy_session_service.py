@@ -187,6 +187,37 @@ def _apply_schema_migrations():
             )
             conn.commit()
             print("[DB] Schema v5: acquired_sentences 테이블 추가 완료")
+            current = 5
+
+        if current < 6:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS profanity_employees (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    batch_id        TEXT NOT NULL,
+                    employee_id     TEXT NOT NULL,
+                    profanity_count INTEGER NOT NULL,
+                    profanity_words TEXT,
+                    created_at      TEXT DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_pe_batch ON profanity_employees (batch_id);
+                CREATE INDEX IF NOT EXISTS idx_pe_employee ON profanity_employees (employee_id);
+
+                CREATE TABLE IF NOT EXISTS profanity_sentences (
+                    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                    profanity_employee_id INTEGER NOT NULL,
+                    original_text       TEXT,
+                    filtered_text       TEXT,
+                    detected_words      TEXT,
+                    evaluator_id        TEXT,
+                    FOREIGN KEY (profanity_employee_id) REFERENCES profanity_employees(id) ON DELETE CASCADE
+                );
+            """)
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (6, datetime('now'), ?)",
+                ('add profanity_employees and profanity_sentences tables for profanity tracking',)
+            )
+            conn.commit()
+            print("[DB] Schema v6: profanity_employees, profanity_sentences 테이블 추가 완료")
     finally:
         conn.close()
 

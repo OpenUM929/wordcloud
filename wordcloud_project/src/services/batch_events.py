@@ -116,5 +116,6 @@ def create_sse_response(global_state):
     """
     return Response(
         stream_batch_events(global_state),
-        mimetype='text/event-stream'
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
     )

@@ -808,25 +808,23 @@ def api_batch_delete(batch_id):
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
     from src.config.settings import PROCESSED_DATA_DIR_PATH
     from src.services.user_data_manager import remove_batch_from_all
-    batch_dir = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id)
-    if not os.path.isdir(batch_dir):
+
+    # 1. Remove batch data from DB
+    removed_count = remove_batch_from_all(batch_id, [])
+    if removed_count == 0:
         return jsonify({'success': False, 'error': f'배치({batch_id})를 찾을 수 없습니다.'}), 404
 
-    # 1. Get employee_ids from lightweight batch_summary
-    from src.services.perspective_service import load_batch_summary
-    summary = load_batch_summary(batch_dir)
-    employee_ids = summary.get('employee_ids', []) if summary else []
-
-    # 2. Remove batch data from user files
-    removed_count = remove_batch_from_all(batch_id, employee_ids)
-
-    # 3. Remove batch directory
+    # 2. Remove physical batch directory (if exists)
     import shutil
-    shutil.rmtree(batch_dir)
+    batch_dir = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id)
+    if os.path.isdir(batch_dir):
+        try:
+            shutil.rmtree(batch_dir)
+        except Exception:
+            pass
 
     log_action('batch_delete', {
         'batch_id': batch_id, 'path': batch_dir,
-        'affected_employees': len(employee_ids),
         'removed_evaluations': removed_count,
     }, request)
     return jsonify({'success': True, 'message': f'배치 {batch_id} 삭제 완료 ({removed_count}건 평가 제거)'})
@@ -846,9 +844,8 @@ def api_test_sentence_sentiment():
     include_idiomatic = data.get('include_idiomatic', True)
 
     from src.modules.emotion_analysis import analyze_emotion
-    from src.services.translation_service import back_translate
 
-    def analyze_one(sent_text, is_last=False, total=1, item_expected=None, include_bt=False):
+    def analyze_one(sent_text, is_last=False, total=1, item_expected=None):
         """한 문장 분석 + 교정."""
         try:
             result = analyze_emotion(sent_text)
@@ -865,7 +862,6 @@ def api_test_sentence_sentiment():
                 threshold=threshold, weight=weight, neutral=neutral
             ), 4)
 
-            # 판정
             if corrected_score > 0:
                 result_label = 'positive'
             elif corrected_score < 0:
@@ -893,36 +889,6 @@ def api_test_sentence_sentiment():
                 'match': match,
             }
 
-            # Back-translation comparison (optional)
-            if include_bt and sent_text.strip():
-                try:
-                    # opus-mt back-translation
-                    opus = back_translate(sent_text, 'opus')
-                    opus_result = analyze_emotion(opus['back_translated'])
-                    opus_scores = opus_result.get('analysis', {}).get('base_result', {}).get('mapped', {}).get('sentiment_scores', {})
-
-                    # nllb back-translation
-                    nllb = back_translate(sent_text, 'nllb')
-                    nllb_result = analyze_emotion(nllb['back_translated'])
-                    nllb_scores = nllb_result.get('analysis', {}).get('base_result', {}).get('mapped', {}).get('sentiment_scores', {})
-
-                    res['back_translation'] = {
-                        'opus': {
-                            'english': opus['english'],
-                            'back_translated': opus['back_translated'],
-                            'pos': round(opus_scores.get('positive', 0.0), 4),
-                            'neg': round(opus_scores.get('negative', 0.0), 4),
-                        },
-                        'nllb': {
-                            'english': nllb['english'],
-                            'back_translated': nllb['back_translated'],
-                            'pos': round(nllb_scores.get('positive', 0.0), 4),
-                            'neg': round(nllb_scores.get('negative', 0.0), 4),
-                        }
-                    }
-                except Exception as bt_err:
-                    res['back_translation_error'] = str(bt_err)
-
             return res
         except Exception as e:
             return {
@@ -945,7 +911,7 @@ def api_test_sentence_sentiment():
                 is_last = (i == total - 1)
                 # 마지막 문장의 판정만 평가 기준으로 삼음
                 expected = item['expected'] if is_last else None
-                res = analyze_one(sent, is_last, total, expected, include_bt=True)
+                res = analyze_one(sent, is_last, total, expected)
                 sent_results.append(res)
                 if is_last:
                     if res.get('match') is True:
@@ -975,7 +941,7 @@ def api_test_sentence_sentiment():
     sent_results = []
     for i, sent in enumerate(sentences):
         is_last = (i == total - 1)
-        res = analyze_one(sent, is_last, total, include_bt=True)
+        res = analyze_one(sent, is_last, total)
         sent_results.append(res)
 
     return jsonify({
@@ -1267,3 +1233,105 @@ def api_acquired_sentences_export():
         mimetype='text/csv',
         headers={'Content-Disposition': f'attachment; filename=acquired_sentences_{_dt.now().strftime("%Y%m%d")}.csv'},
     )
+
+
+@perspective_bp.route('/profanity-list', methods=['GET'])
+def api_profanity_list():
+    """전사 욕설 리스트 조회."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    search = request.args.get('search', '')
+    department = request.args.get('department', '')
+    min_count = request.args.get('min_count', 1, type=int)
+    sort = request.args.get('sort', 'count')
+    order = request.args.get('order', 'desc')
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 50, type=int)
+
+    from src.services.perspective_service import build_all_profanity_summary
+    result = build_all_profanity_summary(
+        search=search or None,
+        department=department or None,
+        min_count=min_count,
+        sort=sort,
+        order=order,
+        page=page,
+        limit=limit,
+    )
+    return jsonify({'success': True, **result})
+
+
+@perspective_bp.route('/profanity-list/csv', methods=['GET'])
+def api_profanity_list_csv():
+    """전사 욕설 리스트 CSV 다운로드."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    search = request.args.get('search', '')
+    department = request.args.get('department', '')
+    min_count = request.args.get('min_count', 1, type=int)
+    sort = request.args.get('sort', 'count')
+    order = request.args.get('order', 'desc')
+
+    from src.services.perspective_service import build_all_profanity_summary
+    result = build_all_profanity_summary(
+        search=search or None,
+        department=department or None,
+        min_count=min_count,
+        sort=sort,
+        order=order,
+        page=1,
+        limit=10000,  # CSV는 전체
+    )
+
+    import csv
+    import io
+    from datetime import datetime as _dt
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['사번', '이름', '부서', '총평가수', '욕설건수', '비율', '감지단어', '문장목록'])
+
+    for item in result.get('items', []):
+        sentences = []
+        for s in item.get('profanity_sentences', []):
+            sentences.append(s.get('original_text', ''))
+        writer.writerow([
+            item['employee_id'],
+            item['name'],
+            item['department'],
+            item['total_evaluations'],
+            item['profanity_count'],
+            f"{item['profanity_ratio']:.2%}",
+            ', '.join(item.get('profanity_words', [])),
+            ' | '.join(sentences),
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=profanity_list_{_dt.now().strftime("%Y%m%d")}.csv'},
+    )
+
+
+@perspective_bp.route('/profanity-list/sentences/<employee_id>', methods=['GET'])
+def api_profanity_list_sentences(employee_id):
+    """특정 직원의 욕설 문장 조회."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    from src.services.profanity_db_service import get_profanity_sentences
+    sentences = get_profanity_sentences(employee_id)
+    return jsonify({'success': True, 'sentences': sentences})
+
+
+@perspective_bp.route('/profanity-list/departments', methods=['GET'])
+def api_profanity_list_departments():
+    """욕설 데이터가 있는 부서 목록."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    from src.services.profanity_db_service import get_distinct_departments
+    departments = get_distinct_departments()
+    return jsonify({'success': True, 'departments': departments})

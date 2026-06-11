@@ -77,10 +77,7 @@ def initialize_batch_directory(processed_data_dir):
         batch_num += 1
     
     os.makedirs(batch_dir, exist_ok=True)
-    os.makedirs(os.path.join(batch_dir, "imeta"), exist_ok=True)  # 기본 인사데이터
-    os.makedirs(os.path.join(batch_dir, "tmeta"), exist_ok=True)   # 통합 인사데이터
-    os.makedirs(os.path.join(batch_dir, "word"), exist_ok=True)      # 워드클라우드
-    
+
     return batch_dir, batch_num
 
 
@@ -114,7 +111,7 @@ def group_data_by_employee(df, target_id_column, mappings):
         
         # evaluator_id가 없으면 evaluation_date에서 생성
         if 'evaluator_id' not in evaluation and 'evaluation_date' in evaluation:
-            date_str = evaluation.get('evaluation_date', '').replace('-', '')
+            date_str = str(evaluation.get('evaluation_date', '')).replace('-', '')
             evaluation['evaluator_id'] = f"eval-{target_id}-{date_str}"
         
         # evaluator_hierarchy_level 기본값 설정
@@ -189,32 +186,48 @@ def check_profanity_in_metadata(metadata, batch_state):
     Returns:
         list: List of profanity words found
     """
-    profanities = []
+    profanity_words = set()
+    profanity_sentences = []
+    total_count = 0
     
-    # Check consolidated analysis
-    if 'consolidated_analysis' in metadata and 'profanity_consolidated' in metadata['consolidated_analysis']:
-        profanity_consolidated = metadata['consolidated_analysis']['profanity_consolidated']
+    # Check individual evaluations for detailed sentence-level info
+    if 'evaluations' in metadata:
+        for eval_data in metadata.get('evaluations', []):
+            prof = eval_data.get('profanity_analysis_results', {})
+            if not isinstance(prof, dict):
+                continue
+            count = prof.get('profanity_count', 0)
+            detected = prof.get('detected_profanity', [])
+            if not isinstance(detected, list):
+                detected = []
+            if count > 0 and detected:
+                total_count += count
+                profanity_words.update(detected)
+                profanity_sentences.append({
+                    'evaluator_id': eval_data.get('evaluator_id', ''),
+                    'original_text': prof.get('original_text', ''),
+                    'filtered_text': prof.get('filtered_text', ''),
+                    'detected_words': detected,
+                    'detection_details': prof.get('detection_details', []),
+                })
+    
+    # Check consolidated analysis as fallback
+    if not profanity_words and 'consolidated_analysis' in metadata:
+        profanity_consolidated = metadata['consolidated_analysis'].get('profanity_consolidated', {})
         if profanity_consolidated.get('total_profanity_count', 0) > 0:
-            profanities = profanity_consolidated.get('profanity_words', [])
-            batch_state['profanity_employees'].append({
-                'employee_id': metadata.get('target_employee_id'),
-                'profanities': profanities
-            })
+            profanity_words.update(profanity_consolidated.get('profanity_words', []))
+            total_count = profanity_consolidated.get('total_profanity_count', 0)
     
-    # Check individual evaluations
-    elif 'evaluations' in metadata:
-        for eval_data in metadata['evaluations']:
-            if 'profanity_analysis_results' in eval_data:
-                eval_profanities = eval_data['profanity_analysis_results'].get('detected_profanity', [])
-                profanities.extend(eval_profanities)
-        
-        if profanities:
-            batch_state['profanity_employees'].append({
-                'employee_id': metadata.get('target_employee_id'),
-                'profanities': list(set(profanities))
-            })
+    if profanity_words:
+        batch_state['profanity_employees'].append({
+            'employee_id': metadata.get('target_employee_id'),
+            'profanity_count': total_count,
+            'profanity_words': list(profanity_words),
+            'profanities': list(profanity_words),
+            'profanity_sentences': profanity_sentences,
+        })
     
-    return profanities
+    return list(profanity_words)
 
 
 
@@ -653,123 +666,49 @@ def process_batch(processed_data_dir, data, session_data):
                 emp_df.to_csv(os.path.join(emp_dir, 'data.csv'), index=False, encoding='utf-8-sig')
     
     # ============================================================
-    # Stage 4: 병렬 imeta (개인 인사데이터) 저장
+    # Stage 4: DB 저장 (employees + evaluations)
     # ============================================================
-    from src.models.metadata_manager import MetadataManager
-    metadata_manager = MetadataManager(processed_data_dir)
-    
     successful_results = [r for r in employee_results if r['success']]
-    
     total_successful = len(successful_results)
-    batch_processing_state['status_message'] = f'Stage 4: imeta 병렬 저장 시작 ({total_successful}개)...'
-    batch_processing_state['current_step'] = 3
-    batch_processing_state['progress'] = 50
-    
-    def save_imeta_single(args):
-        """imeta 단일 저장 (병렬용) — MetadataManager에 위임"""
-        result = args
-        try:
-            metadata = result.get('metadata')
-            if metadata:
-                from src.models.metadata_manager import MetadataManager
-                mgr = MetadataManager()
-                mgr.save_individual_metadata(metadata, batch_dir)
-                return {'success': True, 'employee_id': metadata.get('target_employee_id')}
-            return {'success': False, 'employee_id': result.get('employee_id')}
-        except Exception as e:
-            return {'success': False, 'employee_id': result.get('employee_id'), 'error': str(e)}
-    
-    # imeta 저장: 50% ~ 70% (완료 1개마다 progress 업데이트)
-    imeta_completed = 0
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        imeta_futures = {
-            executor.submit(save_imeta_single, result): result
-            for result in successful_results
-        }
-        for future in as_completed(imeta_futures):
-            future.result()
-            imeta_completed += 1
-            batch_processing_state['progress'] = int(50 + (imeta_completed / total_successful) * 20)
-    
-    batch_processing_state['status_message'] = f'Stage 4 완료: imeta 저장 ({total_successful}개)'
-    batch_processing_state['current_step'] = 3
-    batch_processing_state['progress'] = 70
-    
-    # ============================================================
-    # Stage 5: 병렬 tmeta (통합 인사데이터) 저장
-    # ============================================================
-    batch_processing_state['status_message'] = f'Stage 5: tmeta 병렬 저장 시작 ({total_successful}개)...'
-    batch_processing_state['current_step'] = 4
-    batch_processing_state['progress'] = 70
-    
-    def save_tmeta_single(args):
-        """tmeta 단일 저장 (병렬용)"""
-        result = args
-        try:
-            metadata = result.get('metadata')
-            if metadata:
-                target_id = metadata.get('target_employee_id')
-                tmeta_dir = os.path.join(batch_dir, "tmeta")
-                
-                import hashlib
-                metadata_json = json.dumps(metadata, sort_keys=True, ensure_ascii=False)
-                metadata["data_integrity_hash"] = hashlib.sha256(metadata_json.encode('utf-8')).hexdigest()
-                
-                tmeta_path = os.path.join(tmeta_dir, f"employee_{target_id}.json")
-                with open(tmeta_path, 'w', encoding='utf-8') as f:
-                    json.dump(metadata, f, ensure_ascii=False, indent=2)
-                return {'success': True, 'employee_id': target_id}
-            return {'success': False, 'employee_id': result.get('employee_id')}
-        except Exception as e:
-            return {'success': False, 'employee_id': result.get('employee_id'), 'error': str(e)}
-    
-    # tmeta 저장: 70% ~ 90% (완료 1개마다 progress 업데이트)
-    tmeta_completed = 0
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        tmeta_futures = {
-            executor.submit(save_tmeta_single, result): result
-            for result in successful_results
-        }
-        for future in as_completed(tmeta_futures):
-            future.result()
-            tmeta_completed += 1
-            batch_processing_state['progress'] = int(70 + (tmeta_completed / total_successful) * 20)
-    
-    batch_processing_state['status_message'] = f'Stage 5 완료: tmeta 저장 ({total_successful}개)'
-    batch_processing_state['current_step'] = 5
-    batch_processing_state['progress'] = 90
-    batch_processing_state['total_employees'] = len(grouped_data)
-    batch_processing_state['processed_employees'] = len(employee_results)
-    batch_processing_state['success_count'] = sum(1 for r in employee_results if r['success'])
-    batch_processing_state['error_count'] = sum(1 for r in employee_results if not r['success'])
-    batch_processing_state['total_rows'] = len(df)
 
-    # completed 플래그 설정 (SSE 무한루프 방지)
-    batch_processing_state['completed'] = True
-    batch_processing_state['progress'] = 100
-    batch_processing_state['batch_dir'] = batch_dir
-    
-    # Upsert each successful employee to user_data_manager (users/*.json)
+    batch_processing_state['status_message'] = f'Stage 4: DB 저장 중 ({total_successful}명)...'
+    batch_processing_state['current_step'] = 3
+    batch_processing_state['progress'] = 60
+
     batch_id = os.path.basename(batch_dir)
     from src.services.user_data_manager import upsert
-    for er in employee_results:
-        if er.get('success'):
-            meta = er.get('metadata', {})
-            emp_id = er.get('employee_id') or meta.get('target_employee_id')
-            if emp_id:
-                upsert(emp_id, meta, meta.get('evaluations', []), batch_id)
-    
-    # Create summary (lightweight: employee_ids only, no full evaluation data)
-    batch_summary = create_batch_summary(
-        batch_dir, grouped_data, employee_results,
-        batch_processing_state, data
-    )
-    
-    # Store batch dir in session_data (plain dict, used for API calls)
+    for er in successful_results:
+        meta = er.get('metadata', {})
+        emp_id = er.get('employee_id') or meta.get('target_employee_id')
+        if emp_id:
+            upsert(emp_id, meta, meta.get('evaluations', []), batch_id)
+
+    batch_processing_state['total_employees'] = len(grouped_data)
+    batch_processing_state['processed_employees'] = len(employee_results)
+    batch_processing_state['success_count'] = total_successful
+    batch_processing_state['error_count'] = sum(1 for r in employee_results if not r['success'])
+    batch_processing_state['total_rows'] = len(df)
+    batch_processing_state['status_message'] = f'Stage 4 완료: DB 저장 ({total_successful}명)'
+    batch_processing_state['current_step'] = 4
+    batch_processing_state['progress'] = 100
+    batch_processing_state['completed'] = True
+    batch_processing_state['batch_dir'] = batch_dir
+
+    # Stage 5: 욕설 데이터 DB 저장
+    profanity_employees = batch_processing_state.get('profanity_employees', [])
+    if profanity_employees:
+        try:
+            from src.services.profanity_db_service import save_batch_profanity
+            save_batch_profanity(batch_id, profanity_employees)
+            batch_processing_state['status_message'] = f'Stage 5 완료: 욕설 데이터 저장 ({len(profanity_employees)}명)'
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'Profanity DB save failed: {e}')
+
     session_data['batch_dir'] = batch_dir
-    
+
     return {
         'success': True,
         'batch_dir': batch_dir,
-        'batch_summary': batch_summary
+        'batch_id': batch_id,
     }, 200

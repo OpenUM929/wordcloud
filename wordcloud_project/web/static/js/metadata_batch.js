@@ -758,118 +758,115 @@ function startBatchProcessing() {
     
     isProcessing = true;
     document.getElementById('processingStatus').classList.remove('hidden');
-    
+
     var settings = {
         enablePreprocessing: document.getElementById('enablePreprocessing').checked,
         enableEmotionAnalysis: document.getElementById('enableEmotionAnalysis').checked,
         mappings: columnMappings,
     };
-    
-    var eventSource = new EventSource('/api/batch/events');
-    
-    eventSource.onopen = function() {
-        console.log('SSE 연결 성공');
-    };
-    
-    eventSource.onmessage = function(event) {
-        if (!event.data || event.data.trim() === '') return;
-        var data;
-        try { data = JSON.parse(event.data); } catch(e) { return; }
-        
-        if (data.step !== undefined) {
-            var steps = [
-                '파일 로드 중...',
-                '메타데이터 생성 중...',
-                'imeta 저장 중...',
-                'tmeta 저장 중...',
-                '워드클라우드 생성 중...',
-                '처리 완료'
-            ];
-            
-            var currentStep = data.step;
-            document.getElementById('processingText').textContent = steps[currentStep] || '';
-            
-            var procSteps = document.querySelectorAll('.proc-step');
-            procSteps.forEach(function(step, index) {
-                if (index < currentStep) {
-                    step.classList.add('completed');
-                    step.classList.remove('active');
-                } else if (index === currentStep) {
-                    step.classList.add('active');
-                    step.classList.remove('completed');
+
+    function openSseAndListen() {
+        var eventSource = new EventSource('/api/batch/events');
+
+        eventSource.onmessage = function(event) {
+            if (!event.data || event.data.trim() === '') return;
+            var data;
+            try { data = JSON.parse(event.data); } catch(e) { return; }
+
+            if (data.step !== undefined) {
+                var steps = [
+                    '파일 로드 중...',
+                    '메타데이터 생성 중...',
+                    'imeta 저장 중...',
+                    'tmeta 저장 중...',
+                    '워드클라우드 생성 중...',
+                    '처리 완료'
+                ];
+
+                var currentStep = data.step;
+                document.getElementById('processingText').textContent = steps[currentStep] || '';
+
+                var procSteps = document.querySelectorAll('.proc-step');
+                procSteps.forEach(function(step, index) {
+                    if (index < currentStep) {
+                        step.classList.add('completed');
+                        step.classList.remove('active');
+                    } else if (index === currentStep) {
+                        step.classList.add('active');
+                        step.classList.remove('completed');
+                    } else {
+                        step.classList.remove('active', 'completed');
+                    }
+                });
+
+                if (data.progress !== undefined) {
+                    document.getElementById('progressFill').style.width = data.progress + '%';
                 } else {
-                    step.classList.remove('active', 'completed');
+                    var progress = (currentStep + 1) * 10;
+                    document.getElementById('progressFill').style.width = progress + '%';
                 }
-            });
-            
-            if (data.progress !== undefined) {
-                document.getElementById('progressFill').style.width = data.progress + '%';
-            } else {
-                var progress = (currentStep + 1) * 10;
-                document.getElementById('progressFill').style.width = progress + '%';
             }
-        }
-        
-        if (data.log) {
-            console.log(data.log);
-        }
-        
-        // 에러 발생 시 즉시 처리
-        if (data.error) {
-            eventSource.close();
-            alert(data.error);
-            isProcessing = false;
-            return;
-        }
-        
-        if (data.completed) {
-            eventSource.close();
-            document.getElementById('progressFill').style.width = '100%';
-            document.getElementById('processingText').textContent = '처리 완료!';
-            
-            var procSteps = document.querySelectorAll('.proc-step');
-            procSteps.forEach(function(step) {
-                step.classList.remove('active');
-            });
-            
-            var lastStep = procSteps[procSteps.length - 1];
-            if (lastStep) {
-                lastStep.classList.add('completed');
+
+            if (data.log) {
+                console.log(data.log);
             }
-            
-            // batch_dir 저장 (SSE에서 전달됨)
-            if (data.batch_dir) {
-                sessionStorage.setItem('batchDir', data.batch_dir);
+
+            if (data.error) {
+                eventSource.close();
+                alert(data.error);
+                isProcessing = false;
+                return;
             }
-            
-            setTimeout(function() {
-                document.getElementById('processingResults').classList.remove('hidden');
-                var hasFailures = data.failed_employees && data.failed_employees.length > 0;
-                var failedListHtml = '';
-                if (hasFailures) {
-                    var btn = document.getElementById('retryFailedBtn');
-                    btn.style.display = 'inline-block';
-                    btn.dataset.failedEmployees = JSON.stringify(data.failed_employees);
-                    failedListHtml = '<div style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 5px;"><strong style="color: #721c24;">실패 상세:</strong>';
-                    data.failed_employees.forEach(function(emp) {
-                        failedListHtml += '<div style="margin-top: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.error) + '</div>';
-                    });
-                    failedListHtml += '</div>';
+
+            if (data.completed) {
+                eventSource.close();
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('processingText').textContent = '처리 완료!';
+
+                var procSteps = document.querySelectorAll('.proc-step');
+                procSteps.forEach(function(step) {
+                    step.classList.remove('active');
+                });
+
+                var lastStep = procSteps[procSteps.length - 1];
+                if (lastStep) {
+                    lastStep.classList.add('completed');
                 }
-                var html = '<div class="status-success"><h4>✅ 배치 처리<br>완료</h4><div style="margin-top: 15px;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;"><thead><tr style="background: #f8f9fa;"><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">총 처리된 행</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">고유 직원 수</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">성공한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">실패한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">비속어 발견 직원</th></tr></thead><tbody><tr style="background: #ffffff;"><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #007bff;">' + (data.total_rows || data.total_processed || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #6c757d;">' + (data.total_employees || data.unique_employees || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #28a745;">' + (data.success_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #dc3545;">' + (data.error_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: left; color: #ffc107;">' + (data.profanity_employees && data.profanity_employees.length > 0 ? data.profanity_employees.map(function(emp) { return '<div style="margin-bottom: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.profanities.join(', ')) + '</div>'; }).join('') : '없음') + '</td></tr></tbody></table>' + failedListHtml + '</div></div>';
-                document.getElementById('resultsSummary').innerHTML = html;
-            }, 500);
-            
+
+                if (data.batch_dir) {
+                    sessionStorage.setItem('batchDir', data.batch_dir);
+                }
+
+                setTimeout(function() {
+                    document.getElementById('processingResults').classList.remove('hidden');
+                    var hasFailures = data.failed_employees && data.failed_employees.length > 0;
+                    var failedListHtml = '';
+                    if (hasFailures) {
+                        var btn = document.getElementById('retryFailedBtn');
+                        btn.style.display = 'inline-block';
+                        btn.dataset.failedEmployees = JSON.stringify(data.failed_employees);
+                        failedListHtml = '<div style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 5px;"><strong style="color: #721c24;">실패 상세:</strong>';
+                        data.failed_employees.forEach(function(emp) {
+                            failedListHtml += '<div style="margin-top: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.error) + '</div>';
+                        });
+                        failedListHtml += '</div>';
+                    }
+                    var html = '<div class="status-success"><h4>✅ 배치 처리<br>완료</h4><div style="margin-top: 15px;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;"><thead><tr style="background: #f8f9fa;"><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">총 처리된 행</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">고유 직원 수</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">성공한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">실패한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">비속어 발견 직원</th></tr></thead><tbody><tr style="background: #ffffff;"><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #007bff;">' + (data.total_rows || data.total_processed || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #6c757d;">' + (data.total_employees || data.unique_employees || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #28a745;">' + (data.success_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #dc3545;">' + (data.error_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: left; color: #ffc107;">' + (data.profanity_employees && data.profanity_employees.length > 0 ? data.profanity_employees.map(function(emp) { return '<div style="margin-bottom: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.profanities.join(', ')) + '</div>'; }).join('') : '없음') + '</td></tr></tbody></table>' + failedListHtml + '</div></div>';
+                    document.getElementById('resultsSummary').innerHTML = html;
+                }, 500);
+
+                isProcessing = false;
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            console.error('SSE 오류:', error);
+            eventSource.close();
             isProcessing = false;
-        }
-    };
-    
-    eventSource.onerror = function(error) {
-        console.error('SSE 오류:', error);
-        eventSource.close();
-        isProcessing = false;
-    };
-    
+        };
+    }
+
+    // POST 먼저 보내서 상태를 초기화한 뒤 SSE 연결 (이전 완료 상태 오독 방지)
     fetch('/api/batch/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -878,16 +875,17 @@ function startBatchProcessing() {
     .then(function(response) { return response.json(); })
     .then(function(data) {
         if (data.error) {
-            eventSource.close();
             alert(data.error);
             isProcessing = false;
-        } else if (data.batch_dir) {
+            return;
+        }
+        if (data.batch_dir) {
             sessionStorage.setItem('batchDir', data.batch_dir);
         }
+        openSseAndListen();
     })
     .catch(function(error) {
         console.error('배치 처리 오류:', error);
-        eventSource.close();
         alert('배치 처리 중 오류가 발생했습니다.');
         isProcessing = false;
     });

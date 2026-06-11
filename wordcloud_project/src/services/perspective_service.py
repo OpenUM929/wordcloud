@@ -550,36 +550,49 @@ def load_batch_summary(batch_path):
 
 
 def _load_batch_list(processed_data_dir):
-    """batch/ 디렉토리에서 배치 목록 로드 (batches 키용)."""
-    batch_dir = os.path.join(processed_data_dir, 'batch')
+    """DB에서 배치 목록 로드 (batches 키용)."""
+    from src.services.user_data_manager import _get_eval_conn
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute("""
+            SELECT batch_id,
+                   COUNT(DISTINCT employee_id) AS employee_count,
+                   COUNT(*) AS total_evaluations,
+                   MIN(created_at) AS created_at
+            FROM evaluations
+            GROUP BY batch_id
+            ORDER BY MIN(created_at) DESC
+        """).fetchall()
+    finally:
+        conn.close()
+
     batches = []
-    if not os.path.exists(batch_dir):
-        return batches
-    for item in sorted(os.listdir(batch_dir)):
-        item_path = os.path.join(batch_dir, item)
-        if not os.path.isdir(item_path) or not item.startswith('batch_'):
-            continue
-        summary = load_batch_summary(item_path)
-        if not summary:
-            continue
+    for row in rows:
+        batch_id = row['batch_id']
+        batch_path = os.path.join(processed_data_dir, 'batch', batch_id)
         batches.append({
-            'batch_id': item, 'path': item_path,
-            'created_at': summary.get('batch_info', {}).get('created_at', ''),
-            'employee_count': summary.get('batch_info', {}).get('unique_employees', 0),
-            'total_evaluations': summary.get('batch_info', {}).get('total_evaluations', 0),
+            'batch_id': batch_id,
+            'path': batch_path,
+            'created_at': (row['created_at'] or '')[:10],
+            'employee_count': row['employee_count'],
+            'total_evaluations': row['total_evaluations'],
         })
     return batches
 
 
 def _count_batches(processed_data_dir):
-    """배치 디렉토리 수 반환."""
-    batch_dir = os.path.join(processed_data_dir, 'batch')
-    if not os.path.exists(batch_dir):
+    """DB의 배치 수 반환."""
+    from src.services.user_data_manager import _get_eval_conn
+    conn = _get_eval_conn()
+    try:
+        row = conn.execute(
+            "SELECT COUNT(DISTINCT batch_id) FROM evaluations"
+        ).fetchone()
+        return row[0] if row else 0
+    except Exception:
         return 0
-    return sum(
-        1 for item in os.listdir(batch_dir)
-        if os.path.isdir(os.path.join(batch_dir, item)) and item.startswith('batch_')
-    )
+    finally:
+        conn.close()
 
 
 def load_all_batches(processed_data_dir=None):
@@ -1210,6 +1223,16 @@ def build_profanity_summary(unified, employee_id):
     return {'total_count': total_count, 'profanity_sentences': profanity_sentences}
 
 
+def build_all_profanity_summary(search=None, department=None, min_count=1,
+                                sort='count', order='desc', page=1, limit=50):
+    """전사 욕설 리스트 조회 (DB 기반)."""
+    from src.services.profanity_db_service import get_all_profanity_employees
+    return get_all_profanity_employees(
+        search=search, department=department, min_count=min_count,
+        sort=sort, order=order, page=page, limit=limit
+    )
+
+
 def _generate_sarcasm_cell(filtered_items):
     sarcasm_count = 0
     for item in filtered_items:
@@ -1770,6 +1793,7 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
         'positive_sentence_details': pos_det,
         'negative_sentence_details': neg_det,
         'neutral_sentence_details': neu_det,
+        'profanity_summary': build_profanity_summary(unified_data, resolved_id),
     }
     _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, options)
     return result

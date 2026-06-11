@@ -124,6 +124,12 @@ def perspective_test():
     return render_template('perspective_test.html')
 
 
+@ui_bp.route('/profanity-list')
+def profanity_list():
+    """Admin page for company-wide profanity list."""
+    return render_template('profanity_list.html')
+
+
 @ui_bp.route('/sentiment-test')
 def sentiment_test():
     """Sentence-level sentiment override test page."""
