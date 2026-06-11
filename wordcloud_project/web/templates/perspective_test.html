@@ -10,10 +10,11 @@ body {
 .container {
     background: #eef1f5 !important;
     box-shadow: none !important;
-    padding: 0 !important;
+    padding: 0 10% !important;
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
+    max-width: none !important;
 }
 #main-panel {
     flex: 1;
@@ -25,8 +26,8 @@ body {
     min-width: 0;
 }
 .condition-card {
-    width: 1605px;
-    max-width: 100%;
+    width: 100%;
+    max-width: 2500px;
     min-height: 280px;
     background: white;
     border: 1px solid #ddd;
@@ -293,7 +294,7 @@ body {
             <div class="label">④ 셀 내용 (분석 유형)</div>
             <div class="options" id="analysisOptions">
                 <label><input type="checkbox" name="analysisType" value="nlp" checked> ◎ NLP 단어 (워드클라우드)</label>
-                <label><input type="checkbox" name="analysisType" value="emotion"> ○ 감정 분석 (점수)</label>
+                <label><input type="checkbox" name="analysisType" value="emotion" checked> ○ 감정 분석 (점수)</label>
                 <label><input type="checkbox" name="analysisType" value="leadership"> ○ 리더십 분석 (역량)</label>
                 <label><input type="checkbox" name="analysisType" value="profanity"> ○ 욕설 분석 (탐지)</label>
                 <label><input type="checkbox" name="analysisType" value="sarcasm"> ○ 비꼼 분석 (Sarcasm)</label>
@@ -306,17 +307,12 @@ body {
                placeholder="배치 명칭을 입력해주세요 (필수)"
                oninput="_doBatchTitleCheck()"
                style="flex:1;max-width:320px;padding:6px 10px;font-size:13px;border:1px solid #ccc;border-radius:5px;">
-        <span id="batchTitleStatus" style="font-size:12px;margin-left:4px;white-space:nowrap;"></span>
         <button id="btnGenerateMatrix" class="btn-primary" onclick="generateMatrix()" disabled>매트릭스 저장</button>
         <button id="btnSaveDeploy" class="btn-success" onclick="saveDeploy()" disabled>제출용 저장</button>
         <button id="zipDownloadBtn" class="btn-secondary" style="display:none;margin-left:8px;" onclick="downloadDeployZip()">⬇️ 결과물 ZIP</button>
         <span id="statusMsg"></span>
-        <span style="margin-left:auto;font-size:11px;color:#888;display:flex;align-items:center;gap:4px;">
-            배포모드:
-            <label><input type="radio" name="deployMode" value="combined" checked> 통합</label>
-            <label><input type="radio" name="deployMode" value="combined+individual"> 통합+개별</label>
-            <label><input type="radio" name="deployMode" value="individual"> 개별만</label>
-        </span>
+        <span id="batchTitleStatus" style="font-size:12px;margin-left:8px;white-space:nowrap;"></span>
+        <span style="margin-left:auto;"></span>
     </div>
 </div>
 
@@ -413,12 +409,19 @@ body {
                            oninput="document.getElementById('wco-max-words-val').textContent=this.value;updateWcOptionsSummary()">
                     <span id="wco-max-words-val" style="font-size:12px;font-weight:600;min-width:24px;">80</span>
                 </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span style="font-size:12px;color:#555;white-space:nowrap;">문장 글자 크기:</span>
+                    <input type="range" id="wco-sent-font-size" min="6" max="14" value="7" style="flex:1;"
+                           oninput="document.getElementById('wco-sent-font-size-val').textContent=this.value+'px';document.documentElement.style.setProperty('--sent-font-size',this.value+'px')">
+                    <span id="wco-sent-font-size-val" style="font-size:12px;font-weight:600;min-width:28px;">7px</span>
+                </div>
                 <div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <label style="font-size:12px;color:#555;white-space:nowrap;">단어 색상:</label>
+                    <label><input type="radio" name="wcoColorMode" value="emotion" checked onchange="wcToggleColorMode();updateWcOptionsSummary()"> 긍/부정 색상 적용</label>
+                    <label><input type="radio" name="wcoColorMode" value="single" onchange="wcToggleColorMode();updateWcOptionsSummary()"> 단일 색상 선택</label>
+                    <div id="wcoSingleColorPicker" style="margin-left:18px;margin-bottom:2px;display:none;align-items:center;gap:6px;">
                         <input type="color" id="wco-word-color" value="#333333" onchange="updateWcOptionsSummary()">
                     </div>
-                    <label><input type="checkbox" id="wco-remove-profanity" onchange="updateWcOptionsSummary()"> 욕설 단어 제거</label>
+                    <label style="margin-top:2px;"><input type="checkbox" id="wco-remove-profanity" onchange="updateWcOptionsSummary()"> 욕설 단어 제거</label>
                 </div>
             </div>
             <!-- 추출 품사 카드 -->
@@ -659,10 +662,6 @@ function toggleAllEmployees() {
     const cb = document.getElementById('allEmployeesCheck');
     const sel = document.getElementById('employeeSelect');
     sel.disabled = cb.checked;
-}
-
-function getDeployMode() {
-    return document.querySelector('input[name="deployMode"]:checked')?.value || 'combined+individual';
 }
 
 
@@ -955,7 +954,7 @@ async function generateMatrix() {
         row_field: rowField, col_mode: colMode,
         analysis_type: analysisTypes[0], analysis_types: analysisTypes,
         output_mode: outputMode, generate_png: analysisTypes.includes('nlp'),
-        deploy_mode: getDeployMode(), row_values: rowValues, row_combine_all: rowCombineAll,
+        row_values: rowValues, row_combine_all: rowCombineAll,
         background_color: _wco.background_color, width: _wco.width, height: _wco.height,
         max_words: _wco.max_words, apply_emotion_colors: _wco.apply_emotion_colors,
         word_color: _wco.word_color,
@@ -968,8 +967,13 @@ async function generateMatrix() {
     if (csvIds) {
         employeeIds = csvIds;
     } else if (allEmp) {
-        const _m = _meta || await loadMeta().then(() => _meta);
-        employeeIds = (_m.employees || []).map(e => e.employee_id);
+        try {
+            const _m = _meta || await loadMeta().then(() => _meta);
+            employeeIds = (_m.employees || []).map(e => e.employee_id);
+        } catch (e) {
+            setStatus('직원 목록 로드 실패', true);
+            return;
+        }
     } else if (empId) {
         employeeIds = [empId];
     }
@@ -1118,7 +1122,7 @@ async function saveDeploy(resumeSessionId = null) {
         col_mode: colMode,
         analysis_type: analysisTypes[0],
         analysis_types: analysisTypes,
-        deploy_mode: getDeployMode(),
+
         row_values: rowValues,
         row_combine_all: rowCombineAll,
         output_mode: getOutputMode(),
@@ -1143,6 +1147,7 @@ async function saveDeploy(resumeSessionId = null) {
         body.employee_id = empId;
     }
 
+    window._lastDeployBody = body;
     let total = csvIds ? csvIds.length : (allEmp ? 0 : 1);
     const resultArea = document.getElementById('resultArea');
     let statusLines = [];
@@ -1167,6 +1172,19 @@ async function saveDeploy(resumeSessionId = null) {
     function addLine(msg, cls) {
         statusLines.push({msg, cls});
         if (statusLines.length > 50) statusLines = statusLines.slice(-50);
+    }
+
+    const corrections = collectSentenceCorrections();
+    if (Object.keys(corrections).length > 0 && !resumeSessionId) {
+        try {
+            await fetch('/api/perspective/sentence-corrections/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({corrections})
+            });
+        } catch (e) {
+            console.warn('감정 수정 내역 저장 실패 (기본 저장은 계속 진행):', e);
+        }
     }
 
     setStatus('');
@@ -1385,6 +1403,139 @@ function showDeployToast(message, linkUrl) {
     }, 3000);
 }
 
+let _sentGroupId = 0;
+function _renderDeploymentSentences(sentences, details) {
+    const fs = 'var(--sent-font-size,7px)';
+    if (details && details.length > 0) {
+        let h = '<div style="overflow-y:auto;max-height:120px;flex:1;padding:0 2px;">';
+        h += '<div style="display:flex;align-items:center;margin-bottom:2px;padding-bottom:2px;border-bottom:1px solid #eee;">';
+        h += '<span style="display:inline-flex;flex-shrink:0;">';
+        h += '<span style="width:22px;text-align:center;font-size:6px;font-weight:600;color:#888;">긍정</span>';
+        h += '<span style="width:22px;text-align:center;font-size:6px;font-weight:600;color:#888;">부정</span>';
+        h += '<span style="width:22px;text-align:center;font-size:6px;font-weight:600;color:#888;">중립</span>';
+        h += '</span><span style="flex:1;"></span>';
+        h += '<span style="width:38px;text-align:right;font-size:6px;font-weight:600;color:#888;padding-right:2px;">점수</span>';
+        h += '</div>';
+        details.forEach(function(s) {
+            const nm = 'sentgrp_' + (_sentGroupId++);
+            const textContent = s.text_html || escapeHtml(s.text);
+            h += '<div class="sentence-row" data-db-id="' + s.db_id + '" data-eval-id="' + s.evaluation_id + '" data-sent-idx="' + s.sentence_index + '" data-orig-sentiment="' + s.sentiment + '" style="display:flex;align-items:flex-start;margin-bottom:2px;">';
+            h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="positive"' + (s.sentiment === 'positive' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
+            h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="negative"' + (s.sentiment === 'negative' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
+            h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="neutral"' + (s.sentiment === 'neutral' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
+            h += '<span style="flex:1;font-size:' + fs + ';line-height:1.3;word-break:break-all;">• ' + textContent + '</span>';
+            var scoreVal = (s.score !== undefined) ? s.score : null;
+            var scoreColor = scoreVal > 0 ? '#28a745' : scoreVal < 0 ? '#dc3545' : '#888';
+            var scoreText = scoreVal !== null ? ((scoreVal > 0 ? '+' : '') + scoreVal.toFixed(3)) : '-';
+            h += '<span style="width:38px;text-align:right;font-size:' + fs + ';flex-shrink:0;padding-right:2px;color:' + scoreColor + ';">' + scoreText + '</span>';
+            h += '</div>';
+        });
+        h += '</div>';
+        return h;
+    }
+    if (sentences.length > 0) {
+        let h = '<div style="font-size:' + fs + ';color:#555;line-height:1.3;overflow-y:auto;max-height:80px;text-align:left;flex:1;word-break:break-all;padding:0 2px;">';
+        sentences.forEach(function(s) { h += '• ' + s + '<br>'; });
+        h += '</div>';
+        return h;
+    }
+    return '';
+}
+
+function _buildEmployeeResultHtml(res) {
+    const name = res.name || res.employee_id || '?';
+    const empId = res.employee_id || '';
+    let h = '<div style="padding:8px 12px;background:#f8f9fa;font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;">';
+    h += '<span>' + escapeHtml(name) + '</span>';
+    if (empId) {
+        h += '<button onclick="resubmitEmployee(event,\'' + empId.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">재제출</button>';
+    }
+    h += '</div>';
+
+    if (res.row_results && Object.keys(res.row_results).length > 0) {
+        Object.entries(res.row_results).forEach(function([rowKey, rowData]) {
+            const combinedUrl = rowData.combined || '';
+            const positiveUrl = rowData.positive || '';
+            const negativeUrl = rowData.negative || '';
+            h += '<div style="padding:4px 10px 2px;font-size:12px;font-weight:600;color:#555;background:#f0f4f8;border-top:1px solid #dee2e6;">' + rowKey + '</div>';
+            h += '<div style="display:flex;gap:6px;padding:8px 10px;">';
+            [
+                ['통합', combinedUrl, rowData.combined_sentences || [], '#333', null],
+                ['긍정', positiveUrl, rowData.positive_sentences || [], '#28a745', rowData.positive_sentence_details || null],
+                ['부정', negativeUrl, rowData.negative_sentences || [], '#dc3545', rowData.negative_sentence_details || null],
+                ['중립', '', [], '#6c757d', rowData.neutral_sentence_details || null]
+            ].forEach(function([label, url, sentences, color, details]) {
+                h += '<div style="flex:1;">';
+                if (url) {
+                    const cleanUrl = url.split('?')[0];
+                    const filename = cleanUrl.split('/').pop();
+                    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">';
+                    h += '<span style="font-size:11px;font-weight:700;text-align:center;color:' + color + ';">' + label + '</span>';
+                    h += '<a href="' + cleanUrl + '" download="' + filename + '" style="font-size:10px;color:#0d6efd;text-decoration:none;">⬇️ 다운</a>';
+                    h += '</div>';
+                } else {
+                    h += '<div style="font-size:11px;font-weight:700;text-align:center;color:' + color + ';margin-bottom:2px;">' + label + '</div>';
+                }
+                h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
+                if (url) {
+                    h += '<img src="' + url + '" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal(\'' + url + '\')">';
+                } else {
+                    h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
+                }
+                h += _renderDeploymentSentences(sentences, details);
+                h += '</div></div>';
+            });
+            h += '</div>';
+        });
+    } else {
+        const combinedUrl = res.combined || res['통합'] || '';
+        const positiveUrl = res.positive || res['긍정'] || '';
+        const negativeUrl = res.negative || res['부정'] || '';
+        h += '<div style="display:flex;gap:6px;padding:10px;">';
+        [
+            ['통합', combinedUrl, res.combined_sentences || res['통합_문장'] || [], '#333', null],
+            ['긍정', positiveUrl, res.positive_sentences || res['긍정_문장'] || [], '#28a745', res.positive_sentence_details || null],
+            ['부정', negativeUrl, res.negative_sentences || res['부정_문장'] || [], '#dc3545', res.negative_sentence_details || null],
+            ['중립', '', [], '#6c757d', res.neutral_sentence_details || null]
+        ].forEach(function([label, url, sentences, color, details]) {
+            h += '<div style="flex:1;">';
+            if (url) {
+                const cleanUrl = url.split('?')[0];
+                const filename = cleanUrl.split('/').pop();
+                h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">';
+                h += '<span style="font-size:11px;font-weight:700;text-align:center;color:' + color + ';">' + label + '</span>';
+                h += '<a href="' + cleanUrl + '" download="' + filename + '" style="font-size:10px;color:#0d6efd;text-decoration:none;">⬇️ 다운</a>';
+                h += '</div>';
+            } else {
+                h += '<div style="font-size:11px;font-weight:700;text-align:center;color:' + color + ';margin-bottom:2px;">' + label + '</div>';
+            }
+            h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
+            if (url) {
+                h += '<img src="' + url + '" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal(\'' + url + '\')">';
+            } else {
+                h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
+            }
+            h += _renderDeploymentSentences(sentences, details);
+            h += '</div>';
+            if (label === '부정') {
+                const ps = res.profanity_summary;
+                if (ps && ps.profanity_sentences && ps.profanity_sentences.length > 0) {
+                    h += '<div style="margin-top:4px;border-top:1px dashed #f5c6cb;padding-top:3px;">';
+                    h += '<div style="font-size:7px;color:#dc3545;font-weight:bold;margin-bottom:2px;">⚠ 욕설 감지 문장</div>';
+                    ps.profanity_sentences.forEach(function(s) {
+                        const hl = highlightProfanity(s.original_text, s.detection_details);
+                        h += '<div style="font-size:7px;color:#555;line-height:1.4;margin-bottom:3px;padding:2px 4px;background:#fff8f8;border-left:2px solid #dc3545;">' + hl + '</div>';
+                    });
+                    h += '</div>';
+                }
+            }
+            h += '</div>';
+        });
+        h += '</div>';
+    }
+    return h;
+}
+
 function renderDeployComplete(summary) {
     const successItems = summary.success || [];
     const failItems = summary.fail || [];
@@ -1410,96 +1561,11 @@ function renderDeployComplete(summary) {
 
     if (successCount > 0) {
         h += '<div style="margin-top:12px;">';
-        successItems.forEach(res => {
-            const name = res.name || res.employee_id || '?';
-            h += '<div style="margin-bottom:16px;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;">';
-            h += `<div style="padding:8px 12px;background:#f8f9fa;font-weight:bold;font-size:13px;">${name}</div>`;
-
-            if (res.row_results && Object.keys(res.row_results).length > 0) {
-                Object.entries(res.row_results).forEach(([rowKey, rowData]) => {
-                    const combinedUrl = rowData.combined || '';
-                    const positiveUrl = rowData.positive || '';
-                    const negativeUrl = rowData.negative || '';
-                    h += `<div style="padding:4px 10px 2px;font-size:12px;font-weight:600;color:#555;background:#f0f4f8;border-top:1px solid #dee2e6;">${rowKey}</div>`;
-                    h += '<div style="display:flex;gap:6px;padding:8px 10px;">';
-                    [['통합', combinedUrl, rowData.combined_sentences || [], '#333'],
-                     ['긍정', positiveUrl, rowData.positive_sentences || [], '#28a745'],
-                     ['부정', negativeUrl, rowData.negative_sentences || [], '#dc3545']].forEach(([label, url, sentences, color]) => {
-                        h += '<div style="flex:1;">';
-                        if (url) {
-                            const cleanUrl = url.split('?')[0];
-                            const filename = cleanUrl.split('/').pop();
-                            h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">`;
-                            h += `<span style="font-size:11px;font-weight:700;text-align:center;color:${color};">${label}</span>`;
-                            h += `<a href="${cleanUrl}" download="${filename}" style="font-size:10px;color:#0d6efd;text-decoration:none;">⬇️ 다운</a>`;
-                            h += `</div>`;
-                        } else {
-                            h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
-                        }
-                        h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
-                        if (url) {
-                            h += `<img src="${url}" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
-                        } else {
-                            h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
-                        }
-                        if (sentences.length > 0) {
-                            h += '<div style="font-size:7px;color:#555;line-height:1.3;overflow-y:auto;max-height:80px;text-align:left;flex:1;word-break:break-all;padding:0 2px;">';
-                            sentences.forEach(s => { h += '• ' + s + '<br>'; });
-                            h += '</div>';
-                        }
-                        h += '</div></div>';
-                    });
-                    h += '</div>';
-                });
-            } else {
-                const combinedUrl = res.combined || res['통합'] || '';
-                const positiveUrl = res.positive || res['긍정'] || '';
-                const negativeUrl = res.negative || res['부정'] || '';
-                h += '<div style="display:flex;gap:6px;padding:10px;">';
-                [['통합', combinedUrl, res.combined_sentences || res['통합_문장'] || [], '#333'],
-                 ['긍정', positiveUrl, res.positive_sentences || res['긍정_문장'] || [], '#28a745'],
-                 ['부정', negativeUrl, res.negative_sentences || res['부정_문장'] || [], '#dc3545']].forEach(([label, url, sentences, color]) => {
-                    h += '<div style="flex:1;">';
-                    if (url) {
-                        const cleanUrl = url.split('?')[0];
-                        const filename = cleanUrl.split('/').pop();
-                        h += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">`;
-                        h += `<span style="font-size:11px;font-weight:700;text-align:center;color:${color};">${label}</span>`;
-                        h += `<a href="${cleanUrl}" download="${filename}" style="font-size:10px;color:#0d6efd;text-decoration:none;">⬇️ 다운</a>`;
-                        h += `</div>`;
-                    } else {
-                        h += `<div style="font-size:11px;font-weight:700;text-align:center;color:${color};margin-bottom:2px;">${label}</div>`;
-                    }
-                    h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
-                    if (url) {
-                        h += `<img src="${url}" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal('${url}')">`;
-                    } else {
-                        h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
-                    }
-                    if (sentences.length > 0) {
-                        h += '<div style="font-size:7px;color:#555;line-height:1.3;overflow-y:auto;max-height:80px;text-align:left;flex:1;word-break:break-all;padding:0 2px;">';
-                        sentences.forEach(s => { h += '• ' + s + '<br>'; });
-                        h += '</div>';
-                    }
-                    h += '</div>';
-                    if (label === '부정') {
-                        const ps = res.profanity_summary;
-                        if (ps && ps.profanity_sentences && ps.profanity_sentences.length > 0) {
-                            h += '<div style="margin-top:4px;border-top:1px dashed #f5c6cb;padding-top:3px;">';
-                            h += '<div style="font-size:7px;color:#dc3545;font-weight:bold;margin-bottom:2px;">⚠ 욕설 감지 문장</div>';
-                            ps.profanity_sentences.forEach(s => {
-                                const hl = highlightProfanity(s.original_text, s.detection_details);
-                                h += '<div style="font-size:7px;color:#555;line-height:1.4;margin-bottom:3px;padding:2px 4px;background:#fff8f8;border-left:2px solid #dc3545;">';
-                                h += hl + '</div>';
-                            });
-                            h += '</div>';
-                        }
-                    }
-                    h += '</div>';
-                });
-                h += '</div>';
-            }
-
+        successItems.forEach(function(res) {
+            const empId = escapeHtml(res.employee_id || '');
+            const sectionId = empId ? 'emp-deploy-' + empId.replace(/[^a-zA-Z0-9]/g, '_') : '';
+            h += '<div' + (sectionId ? ' id="' + sectionId + '"' : '') + ' data-employee-id="' + empId + '" style="margin-bottom:16px;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;">';
+            h += _buildEmployeeResultHtml(res);
             h += '</div>';
         });
         h += '</div>';
@@ -1524,16 +1590,216 @@ function renderDeployComplete(summary) {
     resultArea.style.overflow = 'visible';
     resultArea.style.minHeight = '';
 
-    // ZIP 다운로드 버튼 표시/숨김
+    // ZIP 다운로드 버튼 상태 관리
     const zipBtn = document.getElementById('zipDownloadBtn');
     if (zipBtn) {
         if (successCount > 0 && window._lastDeploySessionId) {
             zipBtn.style.display = 'inline-block';
+            zipBtn.disabled = false;
+            zipBtn.textContent = '⬇️ 결과물 ZIP';
+            zipBtn.style.opacity = '1';
+            zipBtn.style.cursor = 'pointer';
         } else {
             zipBtn.style.display = 'none';
         }
     }
 }
+
+function _sentLabel(v) {
+    return v === 'positive' ? '긍정' : v === 'negative' ? '부정' : v === 'neutral' ? '중립' : v || '?';
+}
+
+function _buildResubmitLog(beforeRows, afterState) {
+    const changed = [], kept = [], removed = [];
+    beforeRows.forEach(function(r) {
+        const afterVal = afterState[r.key];
+        if (afterVal === undefined) {
+            removed.push(r);
+        } else if (r.requested !== afterVal) {
+            changed.push(Object.assign({}, r, {after: afterVal}));
+        } else {
+            kept.push(Object.assign({}, r, {after: afterVal}));
+        }
+    });
+
+    const arrowColor = {positive: '#28a745', negative: '#dc3545', neutral: '#888'};
+    let h = '<details style="margin:6px 10px;border:1px solid #dee2e6;border-radius:5px;font-size:11px;" open>';
+    h += '<summary style="padding:5px 10px;background:#f8f9fa;cursor:pointer;font-weight:600;color:#333;">📋 재제출 처리 결과 (변경 ' + changed.length + '건 / 유지 ' + kept.length + '건 / 목록제외 ' + removed.length + '건)</summary>';
+    h += '<div style="padding:6px 10px;max-height:200px;overflow-y:auto;">';
+
+    if (changed.length > 0) {
+        h += '<div style="font-weight:600;color:#007bff;margin-bottom:3px;">✅ 변경됨 (' + changed.length + '건)</div>';
+        changed.forEach(function(r) {
+            h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px;padding:2px 4px;background:#f0f7ff;border-radius:3px;">';
+            h += '<span style="color:' + (arrowColor[r.before]||'#888') + ';font-weight:600;white-space:nowrap;">' + _sentLabel(r.before) + '</span>';
+            h += '<span style="color:#555;">→</span>';
+            h += '<span style="color:' + (arrowColor[r.requested]||'#888') + ';font-weight:600;white-space:nowrap;">[요청: ' + _sentLabel(r.requested) + ']</span>';
+            h += '<span style="color:' + (arrowColor[r.after]||'#888') + ';font-weight:600;white-space:nowrap;">[결과: ' + _sentLabel(r.after) + ']</span>';
+            if (r.requested !== r.after) h += '<span style="color:#dc3545;font-weight:600;">⚠ 불일치</span>';
+            h += '<span style="color:#555;word-break:break-all;">• ' + escapeHtml(r.text) + '</span>';
+            h += '</div>';
+        });
+    }
+
+    if (removed.length > 0) {
+        h += '<div style="font-weight:600;color:#856404;margin:4px 0 3px;">⚠ 목록에서 제외됨 (' + removed.length + '건)</div>';
+        removed.forEach(function(r) {
+            h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px;padding:2px 4px;background:#fff8e1;border-radius:3px;">';
+            h += '<span style="color:' + (arrowColor[r.before]||'#888') + ';font-weight:600;white-space:nowrap;">' + _sentLabel(r.before) + '</span>';
+            h += '<span style="color:#555;">→ [요청: ' + _sentLabel(r.requested) + '] → 긍/부정 목록에서 제외</span>';
+            h += '<span style="color:#555;word-break:break-all;">• ' + escapeHtml(r.text) + '</span>';
+            h += '</div>';
+        });
+    }
+
+    if (kept.length > 0) {
+        h += '<div style="font-weight:600;color:#555;margin:4px 0 3px;">⏸ 유지됨 (' + kept.length + '건)</div>';
+        kept.forEach(function(r) {
+            h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px;padding:2px 4px;border-radius:3px;">';
+            h += '<span style="color:' + (arrowColor[r.after]||'#888') + ';font-weight:600;white-space:nowrap;">' + _sentLabel(r.after) + '</span>';
+            h += '<span style="color:#555;word-break:break-all;">• ' + escapeHtml(r.text) + '</span>';
+            h += '</div>';
+        });
+    }
+
+    h += '</div></details>';
+    return h;
+}
+
+async function resubmitEmployee(event, employeeId) {
+    const btn = event.target;
+    const prevText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '재생성 중...';
+
+    const sectionId = 'emp-deploy-' + (employeeId || '').replace(/[^a-zA-Z0-9]/g, '_');
+    const section = document.getElementById(sectionId);
+
+    // 재제출 전 상태 캡처
+    const beforeRows = [];
+    const rows = section ? section.querySelectorAll('.sentence-row') : document.querySelectorAll('.sentence-row');
+    const corrections = {};
+    rows.forEach(function(row) {
+        const dbId = row.dataset.dbId;
+        const sentIdx = row.dataset.sentIdx;
+        if (!dbId || sentIdx === undefined || sentIdx === '') return;
+        const selected = row.querySelector('input[type="radio"]:checked');
+        if (!selected) return;
+        const textSpan = row.querySelector('span[style*="word-break"]');
+        beforeRows.push({
+            key: dbId + '_' + sentIdx,
+            dbId, sentIdx,
+            before: row.dataset.origSentiment || selected.value,
+            requested: selected.value,
+            text: (textSpan ? textSpan.textContent : '').replace(/^[\s•]+/, '').trim()
+        });
+        if (!corrections[dbId]) corrections[dbId] = {};
+        corrections[dbId][sentIdx] = selected.value;
+    });
+
+    if (Object.keys(corrections).length > 0) {
+        try {
+            await fetch('/api/perspective/sentence-corrections/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({corrections: corrections})
+            });
+        } catch (e) {
+            console.warn('수정 저장 실패:', e);
+        }
+    }
+
+    if (!window._lastDeployBody) {
+        btn.disabled = false;
+        btn.textContent = prevText;
+        return;
+    }
+
+    try {
+        const reBody = Object.assign({}, window._lastDeployBody);
+        delete reBody.employee_ids;
+        delete reBody.all_employees;
+        reBody.employee_id = employeeId;
+
+        const r = await fetch('/api/perspective/matrix/save-deploy', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(reBody)
+        });
+        const d = await r.json();
+        if (d.success) {
+            // 재제출 후 상태 수집
+            const afterState = {};
+            const rr = d.row_results || {};
+            Object.values(rr).forEach(function(rv) {
+                (rv.positive_sentence_details || []).forEach(function(s) { afterState[s.db_id + '_' + s.sentence_index] = s.sentiment; });
+                (rv.negative_sentence_details || []).forEach(function(s) { afterState[s.db_id + '_' + s.sentence_index] = 'negative'; });
+                (rv.neutral_sentence_details || []).forEach(function(s) { afterState[s.db_id + '_' + s.sentence_index] = 'neutral'; });
+            });
+            if (!Object.keys(rr).length) {
+                (d.positive_sentence_details || []).forEach(function(s) { afterState[s.db_id + '_' + s.sentence_index] = s.sentiment; });
+                (d.negative_sentence_details || []).forEach(function(s) { afterState[s.db_id + '_' + s.sentence_index] = 'negative'; });
+                (d.neutral_sentence_details || []).forEach(function(s) { afterState[s.db_id + '_' + s.sentence_index] = 'neutral'; });
+            }
+
+            if (section) {
+                section.innerHTML = _buildEmployeeResultHtml(Object.assign({}, d, {employee_id: employeeId}));
+                // 처리 결과 로그 삽입
+                section.insertAdjacentHTML('beforeend', _buildResubmitLog(beforeRows, afterState));
+            }
+            showDeployToast('✅ 재생성 완료');
+            const zipBtn = document.getElementById('zipDownloadBtn');
+            if (zipBtn) {
+                zipBtn.disabled = false;
+                zipBtn.textContent = '⬇️ 결과물 ZIP';
+                zipBtn.style.opacity = '1';
+                zipBtn.style.cursor = 'pointer';
+            }
+        } else {
+            btn.disabled = false;
+            btn.textContent = prevText;
+            alert('재생성 실패: ' + (d.error || '알 수 없는 오류'));
+        }
+    } catch (e) {
+        btn.disabled = false;
+        btn.textContent = prevText;
+        alert('네트워크 오류: ' + e.message);
+    }
+}
+
+function onSentenceModified() {
+    const zipBtn = document.getElementById('zipDownloadBtn');
+    if (zipBtn && !zipBtn.disabled) {
+        zipBtn.disabled = true;
+        zipBtn.textContent = '⬇️ 수정 중 (재제출 필요)';
+        zipBtn.style.opacity = '0.5';
+        zipBtn.style.cursor = 'not-allowed';
+    }
+}
+
+function collectSentenceCorrections() {
+    const rows = document.querySelectorAll('.sentence-row');
+    if (!rows.length) return {};
+    const corrections = {};
+    rows.forEach(row => {
+        const dbId = row.dataset.dbId;
+        const sentIdx = row.dataset.sentIdx;
+        if (!dbId || sentIdx === undefined || sentIdx === '') return;
+        const selected = row.querySelector('input[type="radio"]:checked');
+        if (!selected) return;
+        if (!corrections[dbId]) corrections[dbId] = {};
+        corrections[dbId][sentIdx] = selected.value;
+    });
+    return corrections;
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target.matches('.sentence-row input[type="radio"]')) {
+        onSentenceModified();
+        const row = e.target.closest('.sentence-row');
+        if (row) row.style.background = '#fff8e1';
+    }
+});
 
 async function showDeployResults(sessionId) {
     dismissResume();
@@ -1632,13 +1898,29 @@ function renderCellSection(d, type) {
             const top = Object.entries(d.emotion_labels).slice(0,3);
             h += '<div class="top-words">' + top.map(([l,c]) => '<span>' + l + '(' + c + ')</span>').join('') + '</div>';
         }
-        if (d.positive_sentences && d.positive_sentences.length > 0) {
+        if (d.positive_sentence_details && d.positive_sentence_details.length > 0) {
+            h += '<details style="margin-top:4px;font-size:11px;" class="sentences-group" data-sentiment="positive">';
+            h += '<summary style="color:#28a745;cursor:pointer;">▼ 긍정 사유 ' + d.positive_sentence_details.length + '건</summary>';
+            h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
+            d.positive_sentence_details.forEach(s => {
+                h += '<div style="margin-bottom:3px;font-size:11px;padding-left:4px;">• ' + (s.text_html || escapeHtml(s.text)) + '</div>';
+            });
+            h += '</div></details>';
+        } else if (d.positive_sentences && d.positive_sentences.length > 0) {
             h += '<details style="margin-top:4px;font-size:11px;"><summary style="color:#28a745;cursor:pointer;">▼ 긍정 사유 ' + d.positive_sentences.length + '건</summary>';
             h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
             d.positive_sentences.forEach(s => { h += '• ' + s + '<br>'; });
             h += '</div></details>';
         }
-        if (d.negative_sentences && d.negative_sentences.length > 0) {
+        if (d.negative_sentence_details && d.negative_sentence_details.length > 0) {
+            h += '<details style="margin-top:4px;font-size:11px;" class="sentences-group" data-sentiment="negative">';
+            h += '<summary style="color:#dc3545;cursor:pointer;">▼ 부정 사유 ' + d.negative_sentence_details.length + '건</summary>';
+            h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
+            d.negative_sentence_details.forEach(s => {
+                h += '<div style="margin-bottom:3px;font-size:11px;padding-left:4px;">• ' + (s.text_html || escapeHtml(s.text)) + '</div>';
+            });
+            h += '</div></details>';
+        } else if (d.negative_sentences && d.negative_sentences.length > 0) {
             h += '<details style="margin-top:4px;font-size:11px;"><summary style="color:#dc3545;cursor:pointer;">▼ 부정 사유 ' + d.negative_sentences.length + '건</summary>';
             h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
             d.negative_sentences.forEach(s => { h += '• ' + s + '<br>'; });
@@ -1919,6 +2201,12 @@ function wcSelectColor(btn) {
     document.getElementById('wco-bg-color').value = btn.dataset.color;
 }
 
+function wcToggleColorMode() {
+    const isSingle = document.querySelector('input[name="wcoColorMode"]:checked').value === 'single';
+    const picker = document.getElementById('wcoSingleColorPicker');
+    if (picker) picker.style.display = isSingle ? 'flex' : 'none';
+}
+
 function updateWcOptionsSummary() {
     const el = document.getElementById('wcOptionsSummary');
     const opts = getWcOptions();
@@ -1926,7 +2214,8 @@ function updateWcOptionsSummary() {
     parts.push(opts.background_color);
     parts.push(opts.width + 'x' + opts.height);
     parts.push(opts.max_words + '단어');
-    if (opts.word_color) parts.push('색상:' + opts.word_color);
+    if (opts.apply_emotion_colors) parts.push('감정색상');
+    else if (opts.word_color) parts.push('색상:' + opts.word_color);
     if (opts.remove_profanity) parts.push('욕설제거');
     const posLabels = {Noun:'명사', Verb:'동사', Adjective:'형용사', Adverb:'부사'};
     const posNames = opts.wordcloud_pos.map(p => posLabels[p] || p).join(',');
@@ -1938,13 +2227,14 @@ function getWcOptions() {
     const sizeVal = (document.querySelector('input[name="wcoSize"]:checked') || {value: '800x600'}).value;
     const [w, h] = sizeVal.split('x').map(Number);
     const posCbs = document.querySelectorAll('.wco-pos-cb:checked');
+    const isEmotion = document.querySelector('input[name="wcoColorMode"]:checked').value === 'emotion';
     return {
         background_color: document.getElementById('wco-bg-color').value || 'white',
         width: w,
         height: h,
         max_words: parseInt(document.getElementById('wco-max-words').value),
-        apply_emotion_colors: false,
-        word_color: document.getElementById('wco-word-color').value,
+        apply_emotion_colors: isEmotion,
+        word_color: isEmotion ? null : document.getElementById('wco-word-color').value,
         remove_profanity: document.getElementById('wco-remove-profanity').checked,
         wordcloud_pos: Array.from(posCbs).map(cb => cb.value),
     };
@@ -1967,6 +2257,11 @@ function applyWcOptions(options) {
         document.getElementById('wco-max-words').value = options.max_words;
         document.getElementById('wco-max-words-val').textContent = options.max_words;
     }
+    if ('apply_emotion_colors' in options) {
+        const radioVal = options.apply_emotion_colors ? 'emotion' : 'single';
+        const radio = document.querySelector(`input[name="wcoColorMode"][value="${radioVal}"]`);
+        if (radio) radio.checked = true;
+    }
     if (options.word_color) {
         document.getElementById('wco-word-color').value = options.word_color;
     }
@@ -1977,6 +2272,7 @@ function applyWcOptions(options) {
             cb.checked = options.wordcloud_pos.includes(cb.value);
         });
     }
+    wcToggleColorMode();
     updateWcOptionsSummary();
 }
 
@@ -2091,6 +2387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sel.value = lastId;
         wcPresetLoad();
     }
+    wcToggleColorMode();
     updateWcOptionsSummary();
     toggleAllEmployees();
     checkResume();

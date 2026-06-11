@@ -148,6 +148,16 @@ def _apply_schema_migrations():
             )
             conn.commit()
             print("[DB] Schema v3: 배치 간 중복 평가 제거, 인덱스 재정의 완료")
+            current = 3
+
+        if current < 4:
+            conn.execute("ALTER TABLE evaluations ADD COLUMN sentiment_corrections TEXT DEFAULT '{}'")
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (4, datetime('now'), ?)",
+                ('add sentiment_corrections column for sentence-level sentiment override',)
+            )
+            conn.commit()
+            print("[DB] Schema v4: sentiment_corrections 컬럼 추가 완료")
     finally:
         conn.close()
 

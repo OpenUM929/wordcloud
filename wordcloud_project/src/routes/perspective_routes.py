@@ -12,6 +12,7 @@ from src.services.perspective_service import (
     build_profanity_summary, _get_pseudo_mgr,
     TEST_SENTENCES_100, split_sentences, has_contrastive,
     sentence_sentiment_override, _get_sentence_level_scores,
+    _load_corrections_map,
     OUTPUTS_DIR_PATH,
 )
 from src.services.deploy_session_service import (
@@ -394,8 +395,9 @@ def api_generate_matrix():
         'output_mode': data.get('output_mode', 'pseudonym'),
         'row_values': data.get('row_values'),
         'row_combine_all': data.get('row_combine_all', False),
-        'deploy_mode': data.get('deploy_mode', 'combined+individual'),
+
         'analysis_types': data.get('analysis_types'),
+        'word_color': data.get('word_color'),
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
@@ -460,7 +462,7 @@ def api_save_deploy():
         'remove_profanity': data.get('remove_profanity', False),
         'row_values': data.get('row_values'),
         'row_combine_all': data.get('row_combine_all', False),
-        'deploy_mode': data.get('deploy_mode', 'combined+individual'),
+
         'analysis_types': data.get('analysis_types'),
         'output_mode': output_mode,
         'include_name': data.get('include_name', True),
@@ -528,6 +530,125 @@ def api_save_deploy():
     return jsonify({'success': True, **results})
 
 
+@perspective_bp.route('/sentence-corrections/by-employee/<employee_id>', methods=['GET'])
+def api_get_sentence_corrections(employee_id):
+    """해당 직원의 문장 수정 내역을 조회."""
+    try:
+        corrections_map = _load_corrections_map(employee_id)
+        return jsonify({'success': True, 'corrections': corrections_map})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@perspective_bp.route('/sentence-corrections/save', methods=['POST'])
+def api_save_sentence_corrections():
+    """문장 수정 내역을 DB에 저장."""
+    import logging as _logging
+    _logger = _logging.getLogger(__name__)
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    corrections = data.get('corrections', {})
+
+    if not corrections:
+        return jsonify({'success': True, 'saved': 0})
+
+    from src.services.deploy_session_service import _get_conn
+    conn = _get_conn()
+    saved_count = 0
+    try:
+        # corrections는 {db_id(str): {sentence_index(str): sentiment}} 형태.
+        # evaluation_id는 중복될 수 있어 고유한 DB row id로 매칭한다.
+        for db_id, sent_corrections in corrections.items():
+            try:
+                db_id_int = int(db_id)
+            except (ValueError, TypeError):
+                _logger.warning(f"[corrections/save] 잘못된 db_id={db_id!r} 건너뜀")
+                continue
+            # 기존 corrections 로드 후 병합 (새 값 우선, 없던 인덱스 보존)
+            existing_row = conn.execute(
+                "SELECT sentiment_corrections FROM evaluations WHERE id = ?",
+                (db_id_int,)
+            ).fetchone()
+            existing_corr = {}
+            if existing_row and existing_row[0]:
+                try:
+                    existing_corr = json_lib.loads(existing_row[0])
+                    if not isinstance(existing_corr, dict):
+                        existing_corr = {}
+                except (json_lib.JSONDecodeError, TypeError):
+                    existing_corr = {}
+            merged = {**existing_corr, **sent_corrections}
+            corrections_json = json_lib.dumps(merged, ensure_ascii=False)
+            cursor = conn.execute(
+                "UPDATE evaluations SET sentiment_corrections = ? WHERE id = ?",
+                (corrections_json, db_id_int)
+            )
+            rows_affected = cursor.rowcount
+            saved_count += rows_affected
+            _logger.info(f"[corrections/save] db_id={db_id_int} rows={rows_affected} merged={merged}")
+        conn.commit()
+        _logger.info(f"[corrections/save] 완료: {saved_count}행 저장")
+        return jsonify({'success': True, 'saved': saved_count})
+    except Exception as e:
+        _logger.error(f"[corrections/save] 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        conn.close()
+
+
+@perspective_bp.route('/matrix/regenerate', methods=['POST'])
+def api_regenerate_matrix():
+    """수정된 감정으로 해당 직원의 매트릭스 + 워드클라우드 재생성."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    employee_id = data.get('employee_id')
+    if not employee_id:
+        return jsonify({'success': False, 'error': 'employee_id가 필요합니다.'}), 400
+
+    row_field = data.get('row_field', 'evaluation_date__year')
+    col_mode = data.get('col_mode', 'all')
+    analysis_type = data.get('analysis_type', 'nlp')
+
+    options = {
+        'wordcloud_pos': data.get('wordcloud_pos', ['Noun']),
+        'background_color': data.get('background_color', 'white'),
+        'apply_emotion_colors': data.get('apply_emotion_colors', True),
+        'remove_profanity': data.get('remove_profanity', False),
+        'generate_png': data.get('generate_png', True),
+        'width': data.get('width', 400),
+        'height': data.get('height', 300),
+        'max_words': data.get('max_words', 80),
+        'output_mode': data.get('output_mode', 'pseudonym'),
+        'row_values': data.get('row_values'),
+        'row_combine_all': data.get('row_combine_all', False),
+
+        'analysis_types': data.get('analysis_types'),
+        'word_color': data.get('word_color'),
+        'batch_title': (data.get('batch_title') or '').strip() or None,
+    }
+
+    unified = load_all_batches()
+    if not unified:
+        return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 404
+
+    try:
+        corrections_map = _load_corrections_map(employee_id)
+        result = generate_perspective_matrix(
+            unified, employee_id, row_field, col_mode, analysis_type, options,
+            corrections_map=corrections_map
+        )
+        if result is None:
+            return jsonify({
+                'success': False,
+                'error': f"'{employee_id}' 직원의 조건에 맞는 평가가 없습니다."
+            }), 400
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @perspective_bp.route('/matrix/save-deploy-stream', methods=['POST'])
 def api_save_deploy_stream():
     data = request.get_json(silent=True) or {}
@@ -553,7 +674,7 @@ def api_save_deploy_stream():
         'remove_profanity': data.get('remove_profanity', False),
         'row_values': data.get('row_values'),
         'row_combine_all': data.get('row_combine_all', False),
-        'deploy_mode': data.get('deploy_mode', 'combined+individual'),
+
         'analysis_types': data.get('analysis_types'),
         'output_mode': output_mode,
         'include_name': data.get('include_name', True),

@@ -4,6 +4,9 @@ matplotlib.use('Agg')
 import os
 import json
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 import hashlib
 import uuid
 from collections import Counter
@@ -358,6 +361,10 @@ def sentence_sentiment_override(pos, neg, sentence, is_last, total_sentences,
     strength = pos + neg
     has_contrast = has_contrastive(sentence)
 
+    # KoTE neutral 우세 또는 근접 우세(±0.05) → 중립 강제
+    if neutral > pos and neutral >= neg - 0.05:
+        return 0.0
+
     # 중립 규칙: 중립 문장이 부정으로 극단 오분류되는 케이스 방지
     # 중립→긍정은 허용이므로 긍정 방향 오분류는 교정하지 않음
     if any(word in sentence for word in NEUTRAL_KEYWORDS):
@@ -582,7 +589,7 @@ def load_all_batches(processed_data_dir=None):
     conn = _get_eval_conn()
     try:
         rows = conn.execute("""
-            SELECT e.employee_id, e.name, e.department, e.position, ev.data
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id
             FROM employees e
             INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
             ORDER BY e.employee_id, ev.id
@@ -592,7 +599,7 @@ def load_all_batches(processed_data_dir=None):
 
     emp_evals = defaultdict(list)
     emp_meta = {}
-    for emp_id, name, dept, pos, data in rows:
+    for emp_id, name, dept, pos, data, ev_db_id in rows:
         if emp_id not in emp_meta:
             emp_meta[emp_id] = {
                 'target_employee_name': name or '',
@@ -600,7 +607,10 @@ def load_all_batches(processed_data_dir=None):
                 'target_employee_position': pos or '',
             }
         if data:
-            emp_evals[emp_id].append(json.loads(data))
+            ev_obj = json.loads(data)
+            # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
+            ev_obj['_db_id'] = ev_db_id
+            emp_evals[emp_id].append(ev_obj)
 
     employee_results = []
     total_evals = 0
@@ -719,18 +729,57 @@ def extract_words(filtered_evaluations, wordcloud_pos=None, remove_profanity=Fal
     }
 
 
-def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0):
-    """문서를 문장으로 분할하고 각 문장별로 감정 분석 후 교정 점수를 계산."""
+def _load_corrections_map(employee_id):
+    """DB에서 해당 직원의 모든 evaluation에 대한 sentiment_corrections를 로드.
+
+    evaluation_id는 중복될 수 있으므로 고유한 DB row id(int)를 키로 사용한다.
+    """
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute(
+            "SELECT id, sentiment_corrections FROM evaluations WHERE employee_id = ?",
+            (employee_id,)
+        ).fetchall()
+        corrections_map = {}
+        for row in rows:
+            db_id = row[0]
+            corrections_str = row[1] or '{}'
+            try:
+                corrections = json.loads(corrections_str)
+            except (json.JSONDecodeError, TypeError):
+                corrections = {}
+            if corrections:
+                corrections_map[db_id] = corrections
+        return corrections_map
+    finally:
+        conn.close()
+
+
+def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None):
+    """문서를 문장으로 분할하고 각 문장별로 감정 분석 후 교정 점수를 계산.
+    
+    corrections: {sentence_index: "positive"|"negative"|"neutral"}
+    """
     sentences = split_sentences(doc)
     if not sentences:
         return [(None, 0.0)]
 
     from src.modules.emotion_analysis import analyze_emotion
+    from src.modules.profanity_filter import advanced_filter_profanity
 
     # 문장별 순차 감정 분석 (PyTorch 모델은 thread-safe하지 않아 병렬 처리 불가)
     sent_scores_raw = []
     for sent in sentences:
         try:
+            # 영어 문장: 한국어 전용 KoTE 우회, 영어 욕설 필터로 부정/중립 결정
+            _total = len(sent.replace(' ', ''))
+            if _total > 0 and len(re.findall(r'[a-zA-Z]', sent)) / _total > 0.7:
+                prof = advanced_filter_profanity(sent)
+                if prof.get('profanity_count', 0) > 0:
+                    sent_scores_raw.append((0.0, 1.0, 0.0))  # 욕설 있음 → 부정
+                else:
+                    sent_scores_raw.append((0.0, 0.0, 1.0))  # 욕설 없음 → 중립
+                continue
             res = analyze_emotion(sent)
             s = res.get('analysis', {}).get('base_result', {}).get('mapped', {}).get('sentiment_scores', {})
             sent_scores_raw.append((
@@ -746,15 +795,28 @@ def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0):
     for i, (pos, neg, neutral) in enumerate(sent_scores_raw):
         sent = sentences[i]
         is_last = (i == total - 1)
-        score = sentence_sentiment_override(
+        # KoTE 원점수 항상 계산 (보정 여부 무관)
+        original_score = sentence_sentiment_override(
             pos, neg, sent, is_last, total,
             threshold=threshold, weight=weight, neutral=neutral
         )
+        if corrections and str(i) in corrections:
+            corr_val = corrections[str(i)]
+            if corr_val == 'positive':
+                # 긍정 강제: 원래 강도 보존, 원래 중립(≈0)이면 +1.0
+                score = abs(original_score) if abs(original_score) > 0.01 else 1.0
+            elif corr_val == 'negative':
+                # 부정 강제: 원래 강도 보존(×-1), 원래 중립이면 -1.0
+                score = -abs(original_score) if abs(original_score) > 0.01 else -1.0
+            else:  # neutral
+                score = 0.0
+        else:
+            score = original_score
         result.append((sent, score))
     return result
 
 
-def calculate_word_scores(filtered_evaluations, word_frequency, threshold=0.20, weight=2.0):
+def calculate_word_scores(filtered_evaluations, word_frequency, threshold=0.20, weight=2.0, corrections_map=None):
     """단어별 감정 점수를 문장 단위로 계산."""
     word_scores = {}
     for word in word_frequency.keys():
@@ -773,7 +835,8 @@ def calculate_word_scores(filtered_evaluations, word_frequency, threshold=0.20, 
             if word not in meaningful_words:
                 continue
             doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
-            sent_scores = _get_sentence_level_scores(doc, threshold, weight)
+            eval_corrections = corrections_map.get(ev.get('_db_id')) if corrections_map else None
+            sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
             # 단어가 속한 문장의 점수 찾기
             word_sent_score = None
             for sent, score in sent_scores:
@@ -877,6 +940,18 @@ def _extract_row_values(ev, row_field):
     return [str(val)] if val is not None else []
 
 
+def _filter_items_by_row(all_items, row_field, row_values):
+    """row_values 필터를 적용해 매칭되는 아이템만 반환한다."""
+    if not row_values:
+        return list(all_items)
+    result = []
+    for item in all_items:
+        vals = _extract_row_values(item['evaluation'], row_field)
+        if any(v in row_values for v in vals):
+            result.append(item)
+    return result
+
+
 def _extract_col_group(evaluator_ev, col_mode, hierarchy, target_employee_meta, pseudo_mgr=None, output_mode='pseudonym'):
     def _resolve(val):
         if not val:
@@ -918,7 +993,7 @@ def _extract_col_group(evaluator_ev, col_mode, hierarchy, target_employee_meta, 
     return ['알수없음']
 
 
-def _aggregate_emotion(filtered_items, threshold=0.20, weight=2.0):
+def _aggregate_emotion(filtered_items, threshold=0.20, weight=2.0, corrections_map=None):
     """평가 문서를 문장 단위로 분할하여 감정 점수를 교정 후 문장별로 독립 집계."""
     pos_sum = 0.0
     neg_sum = 0.0
@@ -938,8 +1013,8 @@ def _aggregate_emotion(filtered_items, threshold=0.20, weight=2.0):
         if not isinstance(scores, dict):
             scores = {}
         doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
-        # 문장 단위 교정 적용 후 각 문장별로 독립 집계
-        sent_scores = _get_sentence_level_scores(doc, threshold, weight)
+        eval_corrections = corrections_map.get(ev.get('_db_id')) if corrections_map else None
+        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
         for sent, score in sent_scores:
             pos_sum += max(0, score)
             neg_sum += max(0, -score)
@@ -950,7 +1025,7 @@ def _aggregate_emotion(filtered_items, threshold=0.20, weight=2.0):
     }
 
 
-def _generate_nlp_cell(filtered_items, options, save_path):
+def _generate_nlp_cell(filtered_items, options, save_path, corrections_map=None):
     word_data = extract_words(filtered_items, wordcloud_pos=options.get('wordcloud_pos', ['Noun']),
                               remove_profanity=options.get('remove_profanity', False))
     wf = word_data['word_frequency']
@@ -963,8 +1038,8 @@ def _generate_nlp_cell(filtered_items, options, save_path):
         result['warning'] = '추출된 단어 없음'
         return result
 
-    word_scores = calculate_word_scores(filtered_items, wf)
-    emotion_agg = _aggregate_emotion(filtered_items)
+    word_scores = calculate_word_scores(filtered_items, wf, corrections_map=corrections_map)
+    emotion_agg = _aggregate_emotion(filtered_items, corrections_map=corrections_map)
     result['avg_sentiment'] = emotion_agg
 
     if save_path:
@@ -976,11 +1051,13 @@ def _generate_nlp_cell(filtered_items, options, save_path):
     return result
 
 
-def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0):
-    emotion_agg = _aggregate_emotion(filtered_items, threshold, weight)
+def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0, corrections_map=None):
+    emotion_agg = _aggregate_emotion(filtered_items, threshold, weight, corrections_map)
     all_labels = []
     positive_docs = []
     negative_docs = []
+    positive_details = []
+    negative_details = []
     for item in filtered_items:
         ev = item['evaluation']
         emotion = ev.get('emotion_analysis_results', {})
@@ -1004,21 +1081,39 @@ def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0):
                             pos_score = scores.get('positive', 0.0) or 0.0
                             neg_score = scores.get('negative', 0.0) or 0.0
         doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
-        # 문장 단위 교정으로 긍/부정 문장 분류
-        sent_scores = _get_sentence_level_scores(doc, threshold, weight)
-        for sent, score in sent_scores:
+        eval_id = ev.get('evaluation_id', '')
+        db_id = ev.get('_db_id')
+        eval_corrections = corrections_map.get(db_id) if corrections_map else None
+        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
+        for i, (sent, score) in enumerate(sent_scores):
             if not sent:
                 continue
             if score > 0:
                 positive_docs.append(sent)
+                positive_details.append({
+                    'text': sent,
+                    'evaluation_id': eval_id,
+                    'db_id': db_id,
+                    'sentence_index': i,
+                    'sentiment': 'positive',
+                })
             elif score < 0:
                 negative_docs.append(sent)
+                negative_details.append({
+                    'text': sent,
+                    'evaluation_id': eval_id,
+                    'db_id': db_id,
+                    'sentence_index': i,
+                    'sentiment': 'negative',
+                })
     return {
         'evaluation_count': len(filtered_items),
         'avg_sentiment': emotion_agg,
         'emotion_labels': dict(Counter(all_labels).most_common(10)),
         'positive_sentences': positive_docs[:5],
         'negative_sentences': negative_docs[:5],
+        'positive_sentence_details': positive_details,
+        'negative_sentence_details': negative_details,
     }
 
 
@@ -1129,14 +1224,14 @@ def _generate_sarcasm_cell(filtered_items):
     }
 
 
-def _generate_cell_content(filtered_items, analysis_types, options, save_path=None):
+def _generate_cell_content(filtered_items, analysis_types, options, save_path=None, corrections_map=None):
     if not filtered_items:
         return {'evaluation_count': 0, 'warning': '평가 없음'}
     if isinstance(analysis_types, str):
         analysis_types = [analysis_types]
     _dispatch = {
-        'nlp':        lambda: _generate_nlp_cell(filtered_items, options, save_path),
-        'emotion':    lambda: _generate_emotion_cell(filtered_items),
+        'nlp':        lambda: _generate_nlp_cell(filtered_items, options, save_path, corrections_map=corrections_map),
+        'emotion':    lambda: _generate_emotion_cell(filtered_items, corrections_map=corrections_map),
         'leadership': lambda: _generate_leadership_cell(filtered_items),
         'profanity':  lambda: _generate_profanity_cell(filtered_items),
         'sarcasm':    lambda: _generate_sarcasm_cell(filtered_items),
@@ -1278,7 +1373,7 @@ def _sort_col_keys(keys, col_mode, hierarchy):
     return sorted(keys)
 
 
-def generate_perspective_matrix(unified_data, employee_id, row_field, col_mode, analysis_type, options):
+def generate_perspective_matrix(unified_data, employee_id, row_field, col_mode, analysis_type, options, corrections_map=None):
     hierarchy = load_position_hierarchy()
     # 원본 ID가 입력된 경우 저장된 가명으로 resolve (새 가명 생성 없음)
     resolved_id = _resolve_to_pseudo(employee_id, _get_pseudo_mgr())
@@ -1332,7 +1427,7 @@ def generate_perspective_matrix(unified_data, employee_id, row_field, col_mode, 
                 'user', resolved_id, row_field, col_mode, analysis_types[0],
                 rk, ck, pseudo_mgr, options.get('output_mode', 'pseudonym')
             ) if cell_items else None
-            matrix[rk][ck] = _generate_cell_content(cell_items, analysis_types, options, save_path)
+            matrix[rk][ck] = _generate_cell_content(cell_items, analysis_types, options, save_path, corrections_map)
 
     def _deref(val):
         if not val or not pseudo_mgr:
@@ -1559,8 +1654,6 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
     wordcloud_pos = options.get('wordcloud_pos', ['Noun'])
     os.makedirs(DEPLOY_OUTPUT_DIR, exist_ok=True)
 
-    deploy_mode = options.get('deploy_mode', 'combined+individual')
-
     wc_options = {
         'background_color': options.get('background_color', 'white'),
         'max_words': options.get('max_words', 100),
@@ -1582,14 +1675,17 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
             return f"/outputs/{rel}?v={ts}"
         return None
 
+    deploy_corrections_map = _load_corrections_map(resolved_id)
+    logger.info(f"[deploy] employee={resolved_id} corrections_map keys={list(deploy_corrections_map.keys()) if deploy_corrections_map else []}")
+
     def _generate_wc_for_items(items, label_suffix):
         word_data = extract_words(items, wordcloud_pos=wordcloud_pos,
                                   remove_profanity=options.get('remove_profanity', False))
         wf_all = word_data['word_frequency']
         if not wf_all:
-            return None, None, None, [], [], []
-        word_scores = calculate_word_scores(items, wf_all)
-        wf_positive = {w: c for w, c in wf_all.items() if word_scores.get(w, 0) > 0}
+            return None, None, None, [], [], [], [], [], []
+        word_scores = calculate_word_scores(items, wf_all, corrections_map=deploy_corrections_map)
+        wf_positive = {w: c for w, c in wf_all.items() if word_scores.get(w, 0) >= 0}
         wf_negative = {w: c for w, c in wf_all.items() if word_scores.get(w, 0) < 0}
         filename = f"{safe_name}_{label_suffix}" if label_suffix else safe_name
         combined_url = _save_wc(wf_all, word_scores, '통합', filename)
@@ -1598,103 +1694,68 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
         combined_sent = _extract_sentences_for_words(items, wf_all, word_scores)
         positive_sent = _extract_sentences_for_words(items, wf_positive, word_scores)
         negative_sent = _extract_sentences_for_words(items, wf_negative, word_scores)
-        return combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent
-
-    # combined 모드: row 분리 없이 전체 아이템을 하나의 그룹으로 처리
-    if deploy_mode == 'combined':
-        filtered_items = []
-        for item in all_items:
+        top_pos = set([w for w, _ in sorted(wf_positive.items(), key=lambda x: -x[1])[:20]])
+        top_neg = set([w for w, _ in sorted(wf_negative.items(), key=lambda x: -x[1])[:20]])
+        pos_details, neg_details, neutral_details = [], [], []
+        all_seen = set()
+        for item_idx, item in enumerate(items):
             ev = item['evaluation']
-            row_vals = _extract_row_values(ev, row_field)
-            if row_values and not any(v in row_values for v in row_vals):
+            eval_id = ev.get('evaluation_id', '')
+            db_id = ev.get('_db_id')
+            doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
+            if not doc:
                 continue
-            filtered_items.append(item)
-        if not filtered_items:
-            return None
-        combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent = _generate_wc_for_items(filtered_items, '통합')
-        result = {
-            'name': deploy_name,
-            'timestamp': ts,
-            'combined': combined_url,
-            'positive': positive_url,
-            'negative': negative_url,
-            '통합': combined_url,
-            '긍정': positive_url,
-            '부정': negative_url,
-            'combined_sentences': combined_sent,
-            'positive_sentences': positive_sent,
-            'negative_sentences': negative_sent,
-            '통합_문장': combined_sent,
-            '긍정_문장': positive_sent,
-            '부정_문장': negative_sent,
-        }
-        _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, options)
-        return result
+            eval_corr = deploy_corrections_map.get(db_id, {}) if deploy_corrections_map else {}
+            if eval_corr:
+                logger.info(f"[deploy][{label_suffix}] db_id={db_id} eval_id={eval_id} corrections={eval_corr}")
+            sent_scores_list = _get_sentence_level_scores(doc, corrections=eval_corr)
+            sent_score_map = {idx: sc for idx, (_, sc) in enumerate(sent_scores_list)}
+            for i, sent in enumerate(split_sentences(doc)):
+                if not sent:
+                    continue
+                text_key = sent[:80]
+                if text_key in all_seen:
+                    continue
+                all_seen.add(text_key)
+                base = {'text': sent, 'evaluation_id': eval_id, 'db_id': db_id, 'item_index': item_idx, 'sentence_index': i}
+                sent_score = sent_score_map.get(i, 0.0)
+                if sent_score > 0:
+                    base['text_html'] = _highlight_words_in_sentence(sent, top_pos, word_scores)
+                    pos_details.append({**base, 'sentiment': 'positive', 'score': round(sent_score, 3)})
+                elif sent_score < 0:
+                    base['text_html'] = _highlight_words_in_sentence(sent, top_neg, word_scores)
+                    neg_details.append({**base, 'sentiment': 'negative', 'score': round(sent_score, 3)})
+                else:
+                    neutral_details.append({**base, 'sentiment': 'neutral', 'score': 0.0})
+        logger.info(f"[deploy][{label_suffix}] pos_details={len(pos_details)}건 neg_details={len(neg_details)}건 neutral_details={len(neutral_details)}건 top_pos={len(top_pos)}단어 top_neg={len(top_neg)}단어")
+        if pos_details:
+            logger.info(f"[deploy][{label_suffix}] pos_details 샘플: {[d['text'][:20] for d in pos_details[:3]]}")
+        if neg_details:
+            logger.info(f"[deploy][{label_suffix}] neg_details 샘플: {[d['text'][:20] for d in neg_details[:3]]}")
+        return combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent, pos_details, neg_details, neutral_details
 
-    # 통합 출력: 선택된 값들을 하나로 합산
-    if row_combine_all:
-        filtered_items = []
-        for item in all_items:
-            ev = item['evaluation']
-            row_vals = _extract_row_values(ev, row_field)
-            if row_values and not any(v in row_values for v in row_vals):
-                continue
-            filtered_items.append(item)
-        if not filtered_items:
-            return None
-        combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent = _generate_wc_for_items(filtered_items, '통합')
-        result = {
-            'name': deploy_name,
-            'timestamp': ts,
-            'combined': combined_url,
-            'positive': positive_url,
-            'negative': negative_url,
-            '통합': combined_url,
-            '긍정': positive_url,
-            '부정': negative_url,
-            'combined_sentences': combined_sent,
-            'positive_sentences': positive_sent,
-            'negative_sentences': negative_sent,
-            '통합_문장': combined_sent,
-            '긍정_문장': positive_sent,
-            '부정_문장': negative_sent,
-        }
-        _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, options)
-        return result
-
-    # 개별 출력: 선택된 각 값별로 별도 파일 생성
-    targets = row_values if row_values else sorted(set(
-        v for item in all_items
-        for v in _extract_row_values(item['evaluation'], row_field)
-    ))
-
-    row_results = {}
-    for rv in targets:
-        items_for_rv = []
-        for item in all_items:
-            ev = item['evaluation']
-            if rv in _extract_row_values(ev, row_field):
-                items_for_rv.append(item)
-        if not items_for_rv:
-            continue
-        safe_rv = re.sub(r'[\\/*?:"<>|]', '_', str(rv))
-        c_url, p_url, n_url, c_sent, p_sent, n_sent = _generate_wc_for_items(items_for_rv, f'{safe_rv}_개별')
-        row_results[rv] = {
-            'combined': c_url, 'positive': p_url, 'negative': n_url,
-            'combined_sentences': c_sent, 'positive_sentences': p_sent, 'negative_sentences': n_sent,
-        }
-
-    if not row_results:
+    filtered_items = _filter_items_by_row(all_items, row_field, row_values)
+    if not filtered_items:
         return None
-
+    combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent, pos_det, neg_det, neu_det = _generate_wc_for_items(filtered_items, '통합')
     result = {
         'name': deploy_name,
         'timestamp': ts,
-        'row_results': row_results,
-        # 첫 번째 결과를 대표값으로 노출 (기존 필드 호환)
-        'combined': next((v['combined'] for v in row_results.values() if v['combined']), None),
-        'positive': next((v['positive'] for v in row_results.values() if v['positive']), None),
-        'negative': next((v['negative'] for v in row_results.values() if v['negative']), None),
+        'combined': combined_url,
+        'positive': positive_url,
+        'negative': negative_url,
+        '통합': combined_url,
+        '긍정': positive_url,
+        '부정': negative_url,
+        'combined_sentences': combined_sent,
+        'positive_sentences': positive_sent,
+        'negative_sentences': negative_sent,
+        '통합_문장': combined_sent,
+        '긍정_문장': positive_sent,
+        '부정_문장': negative_sent,
+        'positive_sentence_details': pos_det,
+        'negative_sentence_details': neg_det,
+        'neutral_sentence_details': neu_det,
     }
     _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, options)
     return result

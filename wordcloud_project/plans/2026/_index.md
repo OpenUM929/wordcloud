@@ -16,3 +16,6 @@
 | 0605_03_deploy-retry-cascade | 실패 태스크 재시도 | DN | 2026-06-05 |
 | 0605_04_gallery-detail-load | 갤러리 상세 로드 | PND | 2026-06-05 |
 | 0609_01_deploy-retry-dup-fix | 재시도 failData 중복 누적 수정 | DN | 2026-06-09 |
+| 0610_03_sentiment-correction | 문장별 감정 수정 및 워드클라우드 재생성 | 🟡 PND | 2026-06-10 |
+| 0610_04_perspective-test-corpus | perspective_test 📋 복사 + 습득한 데이터 게시판 | 🟡 PND | 2026-06-10 |
+| 0610_05_neutral-sentence-display | 배포 카드 중립 문장 탭 추가 | ✅ DN | 2026-06-10 |
