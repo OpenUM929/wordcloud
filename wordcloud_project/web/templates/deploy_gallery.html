@@ -1611,8 +1611,9 @@ async function executeDownload() {
             body: JSON.stringify({ entry_ids: ids, folder_mode: folderMode }),
         });
         if (!res.ok) {
-            const data = await res.json();
-            alert(`다운로드 실패: ${data.error || '알 수 없음'}`);
+            let errMsg = `HTTP ${res.status}`;
+            try { const d = await res.json(); errMsg = d.error || errMsg; } catch { /* HTML 응답 무시 */ }
+            alert(`다운로드 실패: ${errMsg}`);
             return;
         }
         const blob = await res.blob();

@@ -363,12 +363,14 @@ def api_deploy_session_download():
 
     from datetime import datetime as _dt
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
-    with zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zf:
+    tmp_name = tmp.name
+    tmp.close()
+    with zipfile.ZipFile(tmp_name, 'w', zipfile.ZIP_DEFLATED) as zf:
         for fp in file_paths:
             arcname = os.path.relpath(fp, OUTPUTS_DIR_PATH).replace('\\', '/')
             zf.write(fp, arcname)
 
-    return send_file(tmp.name, mimetype='application/zip',
+    return send_file(tmp_name, mimetype='application/zip',
                      as_attachment=True,
                      download_name=f'deploy_{session_id[:8]}_{_dt.now().strftime("%Y%m%d")}.zip')
 
@@ -1072,59 +1074,65 @@ def api_deploy_gallery_delete():
 @perspective_bp.route('/deploy-gallery/download', methods=['POST'])
 def api_deploy_gallery_download():
     """갤러리 선택 항목 이미지 ZIP 다운로드."""
+    from datetime import datetime as _dt
     data = request.get_json(silent=True) or {}
     entry_ids = data.get('entry_ids', [])
     folder_mode = data.get('folder_mode', 'flat')  # 'flat' | 'by_type'
     if not entry_ids:
         return jsonify({'success': False, 'error': 'entry_ids가 필요합니다.'}), 400
 
-    from src.services import gallery_db_service
-    is_admin = _is_admin()
-    selected = gallery_db_service.get_entries_by_ids(entry_ids, is_admin=is_admin)
+    try:
+        from src.services import gallery_db_service
+        is_admin = _is_admin()
+        selected = gallery_db_service.get_entries_by_ids(entry_ids, is_admin=is_admin)
 
-    if not selected:
-        return jsonify({'success': False, 'error': '다운로드할 항목이 없습니다.'}), 404
+        if not selected:
+            return jsonify({'success': False, 'error': '다운로드할 항목이 없습니다.'}), 404
 
-    # 이미지 수집
-    file_items = []  # [(abs_path, arc_name)]
-    for entry in selected:
-        emp_id = entry.get('employee_id', 'unknown')
-        images = entry.get('images', {})
-        row_results = entry.get('row_results', {})
+        # 이미지 수집
+        file_items = []  # [(abs_path, arc_name)]
+        for entry in selected:
+            emp_id = entry.get('employee_id', 'unknown')
+            images = entry.get('images', {})
+            row_results = entry.get('row_results', {})
 
-        # 최상위 images
-        for img_type, url in images.items():
-            if not url:
-                continue
-            abs_path = _url_to_abs_path(url)
-            if abs_path and os.path.exists(abs_path):
-                arc_name = _build_arc_name(folder_mode, emp_id, None, img_type, abs_path)
-                file_items.append((abs_path, arc_name))
-
-        # row_results (연도별)
-        for year, row_data in row_results.items():
-            if not isinstance(row_data, dict):
-                continue
-            for img_type, url in row_data.items():
+            # 최상위 images
+            for img_type, url in images.items():
                 if not url:
                     continue
                 abs_path = _url_to_abs_path(url)
                 if abs_path and os.path.exists(abs_path):
-                    arc_name = _build_arc_name(folder_mode, emp_id, year, img_type, abs_path)
+                    arc_name = _build_arc_name(folder_mode, emp_id, None, img_type, abs_path)
                     file_items.append((abs_path, arc_name))
 
-    if not file_items:
-        return jsonify({'success': False, 'error': '다운로드할 이미지 파일이 없습니다.'}), 404
+            # row_results (연도별)
+            for year, row_data in row_results.items():
+                if not isinstance(row_data, dict):
+                    continue
+                for img_type, url in row_data.items():
+                    if not url:
+                        continue
+                    abs_path = _url_to_abs_path(url)
+                    if abs_path and os.path.exists(abs_path):
+                        arc_name = _build_arc_name(folder_mode, emp_id, year, img_type, abs_path)
+                        file_items.append((abs_path, arc_name))
 
-    # ZIP 생성
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
-    with zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for abs_path, arc_name in file_items:
-            zf.write(abs_path, arc_name)
+        if not file_items:
+            return jsonify({'success': False, 'error': '다운로드할 이미지 파일이 없습니다.'}), 404
 
-    return send_file(tmp.name, mimetype='application/zip',
-                     as_attachment=True,
-                     download_name=f'gallery_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip')
+        # ZIP 생성 — Windows: NamedTemporaryFile 핸들을 먼저 닫아야 같은 이름으로 재오픈 가능
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        tmp_name = tmp.name
+        tmp.close()
+        with zipfile.ZipFile(tmp_name, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for abs_path, arc_name in file_items:
+                zf.write(abs_path, arc_name)
+
+        return send_file(tmp_name, mimetype='application/zip',
+                         as_attachment=True,
+                         download_name=f'gallery_{_dt.now().strftime("%Y%m%d_%H%M%S")}.zip')
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 def _url_to_abs_path(url):
