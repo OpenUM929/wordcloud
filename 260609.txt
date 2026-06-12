@@ -1,7 +1,5 @@
-조회 결과 5명
-입력 사번	조회 결과
-U022	— 미확인
-U034	— 미확인
-U041	— 미확인
-U049	— 미확인
-U031	— 미확인
+<div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">×</button>
+        <h3 style="margin:0 0 10px 0;font-size:16px;">📋 욕설 문장 상세</h3>
+        <div id="modalBody"><table class="sentence-table"><thead><tr><th style="width:30px;">No</th><th>원본 문장</th><th>필터링</th><th>감지 단어</th><th>평가자</th></tr></thead><tbody><tr><td>1</td><td>이 직원은 업무 능력이 뛰어나지만 가끔 시발점이 안 맞아요. fuck this shit, 정말 병신 같은 행동을 자주 해.</td><td>이 직원은 업무 능력이 뛰어나지만 가끔 시발점이 안 맞아요. *** thi***, 정말 *** 같은 행동을 자주 해.</td><td class="highlight">shit, 병신, fuck</td><td>평가자_C087DE</td></tr><tr><td>2</td><td>This asshole is fucking annoying. 야동 같은 짓은 하지 마라. 정말 개새끼 같은 놈이야.</td><td>This *** is ***ing annoying. *** 같은 짓은 하지 마라. 정말 *** 같은 ***이야.</td><td class="highlight">asshole, 놈, ass, 야동, fuck, 개새끼</td><td>평가자_39F547</td></tr><tr><td>3</td><td>이 직원은 업무 능력이 뛰어나지만 가끔 시발점이 안 맞아요. fuck this shit, 정말 병신 같은 행동을 자주 해.</td><td>이 직원은 업무 능력이 뛰어나지만 가끔 시발점이 안 맞아요. *** thi***, 정말 *** 같은 행동을 자주 해.</td><td class="highlight">병신, shit, fuck</td><td>평가자_C087DE</td></tr><tr><td>4</td><td>This asshole is fucking annoying. 야동 같은 짓은 하지 마라. 정말 개새끼 같은 놈이야.</td><td>This *** is ***ing annoying. *** 같은 짓은 하지 마라. 정말 *** 같은 ***이야.</td><td class="highlight">fuck, 야동, asshole, 놈, ass, 개새끼</td><td>평가자_39F547</td></tr></tbody></table></div>
+    </div>

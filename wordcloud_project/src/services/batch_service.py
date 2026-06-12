@@ -83,7 +83,7 @@ def upload_batch_file(request_obj, session_obj):
                         common_columns &= set(file_cols)
                     
                     for _, row in df_sample.head(5).iterrows():
-                        row_data = row.to_dict()
+                        row_data = row.replace({float('nan'): None, float('inf'): None, float('-inf'): None}).to_dict()
                         row_data['_source_file'] = os.path.basename(file_path)
                         aggregated_preview.append(row_data)
                 except Exception as e:
@@ -131,25 +131,17 @@ def upload_batch_file(request_obj, session_obj):
             os.makedirs(temp_dir, exist_ok=True)
             
             all_dfs = []
-            for idx, file_path in enumerate(all_files):
+            for file_path in all_files:
                 try:
                     if file_path.endswith('.csv'):
-                        if idx == 0:
-                            df = pd.read_csv(file_path)
-                        else:
-                            df = pd.read_csv(file_path, skiprows=1, header=None)
-                            df.columns = common_columns
+                        df = pd.read_csv(file_path)
                     else:
-                        if idx == 0:
-                            df = pd.read_excel(file_path)
-                        else:
-                            df = pd.read_excel(file_path, skiprows=1, header=None)
-                            df.columns = common_columns
-                    
+                        df = pd.read_excel(file_path)
+
                     missing_cols = set(common_columns) - set(df.columns)
                     for col in missing_cols:
                         df[col] = None
-                    
+
                     df = df[common_columns]
                     all_dfs.append(df)
                 except Exception:

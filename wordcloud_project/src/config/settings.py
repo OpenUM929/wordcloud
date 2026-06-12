@@ -16,8 +16,8 @@ CONFIGS_DIR = os.getenv('CONFIGS_DIR', 'configs')
 OUTPUTS_DIR = os.getenv('OUTPUTS_DIR', 'outputs')
 PROCESSED_DATA_DIR = os.getenv('PROCESSED_DATA_DIR', 'processed_data')
 
-# Model paths
-MODEL_PATH = os.path.join(BASE_ROOT, "model", "kote_for_easygoing_people")
+# Model paths (PROJECT_ROOT 기준으로 고정 — os.getcwd() 의존 제거)
+MODEL_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', '..', 'model', 'kote_for_easygoing_people'))
 
 # Configuration file paths
 CONFIGS_DIR_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, CONFIGS_DIR))

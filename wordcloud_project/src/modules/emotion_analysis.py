@@ -36,7 +36,7 @@ class EmotionAnalysis:
 
         # 파인튜닝된 모델
         if self.config["model"]["use_fine_tuned"]:
-            ft_path = os.path.join(project_root, self.config["model"]["fine_tuned_path"])
+            ft_path = os.path.abspath(os.path.join(project_root, self.config["model"]["fine_tuned_path"]))
             if os.path.exists(ft_path):
                 try:
                     self.classifiers["fine_tuned"] = pipeline(
@@ -48,7 +48,8 @@ class EmotionAnalysis:
                     self.logger.error(f"파인튜닝 모델 로드 실패: {e}")
 
         # 기본 모델
-        base_path = os.path.join(project_root, self.config["model"]["base_path"])
+        from src.config.settings import MODEL_PATH
+        base_path = MODEL_PATH
         self.logger.info(f"기본 모델 경로 확인: {base_path}, 존재: {os.path.exists(base_path)}")
         if os.path.exists(base_path):
             try:

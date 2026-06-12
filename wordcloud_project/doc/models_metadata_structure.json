@@ -50,7 +50,7 @@
     },
     "nlp_analysis": {
       "kiwi_tokens": "array",
-      "okt_morphemes": "array",
+      "meaningful_words_with_pos": "array",
       "meaningful_words": "array",
       "sentence_boundaries": "array"
     },

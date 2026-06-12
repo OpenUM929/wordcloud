@@ -71,11 +71,6 @@ def delete():
         if not batch_path:
             return jsonify({'success': False, 'error': '배치 경로가 필요합니다.'}), 400
 
-        import os as _os
-        batch_id = _os.path.basename(batch_path)
-        from src.services.user_data_manager import remove_batch_from_all
-        remove_batch_from_all(batch_id, [])
-
         result, status = delete_batch(batch_path)
         return jsonify(result), status
     except Exception as e:

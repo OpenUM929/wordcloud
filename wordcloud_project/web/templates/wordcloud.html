@@ -550,7 +550,7 @@ function generateMetadataInfoHtml(metadata) {
                 sentiment = evaluation.emotion_analysis_results?.analysis?.base_result?.mapped?.sentiment || 'unknown';
                 confidence = evaluation.emotion_analysis_results?.analysis?.base_result?.mapped?.confidence || 0;
                 nlpWords = evaluation.nlp_analysis_results?.analysis?.meaningful_words || [];
-                posTags = evaluation.nlp_analysis_results?.analysis?.okt_morphemes || [];
+                posTags = [];
                 topEmotions = evaluation.emotion_analysis_results?.analysis?.base_result?.mapped?.top_3 || [];
             }
             
@@ -637,15 +637,14 @@ function generateMetadataInfoHtml(metadata) {
         };
 
     actualMetadata.evaluations.forEach(evaluation => {
-            if (evaluation.nlp_analysis_results && evaluation.nlp_analysis_results.analysis && evaluation.nlp_analysis_results.analysis.okt_morphemes) {
-                evaluation.nlp_analysis_results.analysis.okt_morphemes.forEach(([word, pos]) => {
-                    if (posMap[pos]) {
-                        if (!wordsByPos[pos].includes(word)) {
-                            wordsByPos[pos].push(word);
-                        }
+            const nlpWords = evaluation.nlp_analysis_results?.analysis?.meaningful_words_with_pos || [];
+            nlpWords.forEach(([word, pos]) => {
+                if (posMap[pos]) {
+                    if (!wordsByPos[pos].includes(word)) {
+                        wordsByPos[pos].push(word);
                     }
-                });
-            }
+                }
+            });
         });
 
         infoHtml += `

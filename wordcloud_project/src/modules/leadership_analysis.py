@@ -47,12 +47,9 @@ class LeadershipAnalysis:
             model_path (str): KOTE 모델 경로
             config_path (str): 리더십 분석 설정 파일 경로
         """
-        # 환경 변수에서 경로 설정
-        BASE_ROOT = os.getenv('BASE_ROOT', os.getcwd())
-        MODEL_DIR = os.getenv('MODEL_DIR', 'model')
-
         if model_path is None:
-            model_path = os.path.join(BASE_ROOT, MODEL_DIR, "kote_for_easygoing_people")
+            from src.config.settings import MODEL_PATH
+            model_path = MODEL_PATH
         if config_path is None:
             config_path = os.path.join(os.path.dirname(__file__), "../configs/leadership_config.json")
 

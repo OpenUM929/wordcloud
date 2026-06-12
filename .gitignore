@@ -41,3 +41,14 @@ model/
 
 # Vendor Python packages (offline pip install packages)
 wordcloud_project/vendor_python_pkgs/
+
+# Deployment build output
+wordcloud-internal/
+wordcloud-internal-test/
+
+# Backup archives / temp
+wordcloud-project.zip
+wordcloud-source/
+wordcloud-backup-*/
+wordcloud_project/failed/
+*.bak

@@ -148,7 +148,7 @@ def parse_uploaded_file(file):
         columns = extract_column_info(df)
         
         # Get preview data
-        preview_rows = df.head(10).to_dict('records')
+        preview_rows = df.head(10).replace({float('nan'): None, float('inf'): None, float('-inf'): None}).to_dict('records')
         
         return {
             'filename': file.filename,

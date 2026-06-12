@@ -16,8 +16,16 @@ _DB_PATH = os.path.join(_DB_DIR, 'deploy_sessions.db')
 USERS_DIR = os.path.join(PROCESSED_DATA_DIR_PATH, 'users')
 
 
+_db_initialized = False
+
+
 def _get_eval_conn():
+    global _db_initialized
     os.makedirs(_DB_DIR, exist_ok=True)
+    if not _db_initialized:
+        from src.services.deploy_session_service import _init_db
+        _init_db()
+        _db_initialized = True
     conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.row_factory = sqlite3.Row
@@ -105,6 +113,12 @@ def remove_batch_from_all(batch_id, employee_ids):
         cursor = conn.execute(
             "DELETE FROM evaluations WHERE batch_id = ?", (batch_id,)
         )
+        # 욕설 데이터 함께 삭제 (일원화)
+        try:
+            from src.services.profanity_db_service import delete_profanity_by_batch
+            delete_profanity_by_batch(batch_id)
+        except Exception:
+            pass
         conn.commit()
         return cursor.rowcount
     finally:

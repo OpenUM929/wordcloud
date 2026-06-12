@@ -19,3 +19,5 @@
 | 0610_03_sentiment-correction | 문장별 감정 수정 및 워드클라우드 재생성 | 🟡 PND | 2026-06-10 |
 | 0610_04_perspective-test-corpus | perspective_test 📋 복사 + 습득한 데이터 게시판 | 🟡 PND | 2026-06-10 |
 | 0610_05_neutral-sentence-display | 배포 카드 중립 문장 탭 추가 | ✅ DN | 2026-06-10 |
+| 0611_01_batch-db-unification | 배치 처리 DB 일원화 완성 | 🟡 PND | 2026-06-11 |
+| 0611_02_profanity-list-admin | 전사 욕설 리스트 (Admin) | ✅ DN | 2026-06-11 |
