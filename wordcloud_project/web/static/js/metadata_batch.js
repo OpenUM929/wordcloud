@@ -784,7 +784,8 @@ function startBatchProcessing() {
                 ];
 
                 var currentStep = data.step;
-                document.getElementById('processingText').textContent = steps[currentStep] || '';
+                var statusText = (data.status && data.status.trim()) ? data.status : (steps[currentStep] || '');
+                document.getElementById('processingText').textContent = statusText;
 
                 var procSteps = document.querySelectorAll('.proc-step');
                 procSteps.forEach(function(step, index) {
@@ -1154,8 +1155,245 @@ function saveMappingWithName() {
     });
 }
 
+// ============================================================
+// 배치 작업서(Work Order) — 게시판 / 이어서 작업(Resume)
+// ============================================================
+var selectedResumeBatchId = null;
+var workOrdersById = {};
+
+function toggleWorkOrderBoard() {
+    var body = document.getElementById('workOrderBody');
+    var icon = document.getElementById('woToggleIcon');
+    if (!body) return;
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (icon) icon.textContent = '▲';
+    } else {
+        body.style.display = 'none';
+        if (icon) icon.textContent = '▼';
+    }
+}
+
+function _woDoneCount(wo) {
+    // 완료 직원 수는 헤더 카운트(processed_employees)를 사용. 실제 skip 목록은
+    // 서버의 batch_work_order_items 테이블이 소스 오브 트루스다.
+    return wo.processed_employees || 0;
+}
+
+function _woFilename(wo) {
+    try {
+        var fi = JSON.parse(wo.file_info || '{}');
+        return fi.csv_filename || '(파일명 없음)';
+    } catch (e) { return '(파일명 없음)'; }
+}
+
+function loadWorkOrders() {
+    fetch('/api/batch/work-orders')
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        if (!res.success) return;
+        renderWorkOrders(res.data || []);
+    })
+    .catch(function(e) { console.error('작업 이력 로드 실패:', e); });
+}
+
+function renderWorkOrders(orders) {
+    workOrdersById = {};
+    var listEl = document.getElementById('workOrderList');
+    if (!listEl) return;
+
+    if (!orders.length) {
+        listEl.innerHTML = '<div style="color:#888;">작업 이력이 없습니다.</div>';
+        return;
+    }
+
+    var hasIncomplete = false;
+    var rows = '';
+    orders.forEach(function(wo) {
+        workOrdersById[wo.batch_id] = wo;
+        var total = wo.total_employees || 0;
+        var done = _woDoneCount(wo);
+        var st = wo.status;
+        var isComplete = (st === 'completed');
+        var isRunning = (st === 'running');
+        if (st === 'interrupted' || st === 'failed') hasIncomplete = true;
+        var statusLabel = isComplete ? '✅ 완료'
+            : (st === 'failed' ? '⛔ 실패'
+                : (st === 'interrupted' ? '⏸ 중단됨'
+                    : (st === 'running' ? '🔄 처리 중' : '⏸ 미완료')));
+        var actionCell = (isComplete || isRunning) ? ''
+            : '<button class="btn btn-warning" style="padding:4px 10px; font-size:13px;" onclick="resumeWorkOrder(\'' + wo.batch_id + '\')">이어서 작업</button>';
+        rows += '<tr style="border-bottom:1px solid #eee;">'
+            + '<td style="padding:8px;">' + escapeHtml(wo.batch_id) + '</td>'
+            + '<td style="padding:8px;">' + escapeHtml(_woFilename(wo)) + '</td>'
+            + '<td style="padding:8px;">' + escapeHtml(wo.created_at || '-') + '</td>'
+            + '<td style="padding:8px; text-align:center;">' + done + ' / ' + total + '</td>'
+            + '<td style="padding:8px; text-align:center;">' + statusLabel + '</td>'
+            + '<td style="padding:8px; text-align:center;">' + actionCell + '</td>'
+            + '</tr>';
+    });
+
+    listEl.innerHTML = '<table style="width:100%; border-collapse:collapse;">'
+        + '<thead><tr style="background:#f8f9fa; text-align:left;">'
+        + '<th style="padding:8px;">작업 ID</th><th style="padding:8px;">파일명</th>'
+        + '<th style="padding:8px;">작업 일시</th><th style="padding:8px; text-align:center;">진행/전체</th>'
+        + '<th style="padding:8px; text-align:center;">상태</th><th style="padding:8px; text-align:center;">액션</th>'
+        + '</tr></thead><tbody>' + rows + '</tbody></table>';
+
+    // 미완료 작업이 있으면 자동 펼침
+    if (hasIncomplete) {
+        var body = document.getElementById('workOrderBody');
+        var icon = document.getElementById('woToggleIcon');
+        if (body) body.style.display = 'block';
+        if (icon) icon.textContent = '▲';
+    }
+}
+
+function resumeWorkOrder(batchId) {
+    var wo = workOrdersById[batchId];
+    if (!wo) return;
+    selectedResumeBatchId = batchId;
+
+    // 설정 스냅샷으로 폼 자동 입력
+    try {
+        var settings = JSON.parse(wo.settings || '{}');
+        if (settings.mappings) {
+            columnMappings = settings.mappings;
+        }
+        var pre = document.getElementById('enablePreprocessing');
+        var emo = document.getElementById('enableEmotionAnalysis');
+        if (pre && settings.enablePreprocessing !== undefined) pre.checked = !!settings.enablePreprocessing;
+        if (emo && settings.enableEmotionAnalysis !== undefined) emo.checked = !!settings.enableEmotionAnalysis;
+    } catch (e) { console.error('설정 복원 실패:', e); }
+
+    // 4단계로 이동 + 이어서 버튼 활성화
+    showStep(4);
+    var rbtn = document.getElementById('resumeBtn');
+    if (rbtn) rbtn.style.display = 'inline-block';
+    var step4El = document.getElementById('step4');
+    if (step4El) step4El.scrollIntoView({ behavior: 'smooth' });
+}
+
+function showResumeModal() {
+    if (!selectedResumeBatchId) return;
+    var wo = workOrdersById[selectedResumeBatchId];
+    if (!wo) return;
+    var total = wo.total_employees || 0;
+    var done = _woDoneCount(wo);
+    var remain = Math.max(0, total - done);
+
+    document.getElementById('rmFile').textContent = _woFilename(wo);
+    document.getElementById('rmStarted').textContent = wo.created_at || '-';
+    document.getElementById('rmDone').textContent = done + '명 완료';
+    document.getElementById('rmRemain').textContent = remain + '명';
+    document.getElementById('rmTotal').textContent = total + '명';
+
+    document.getElementById('resumeModal').style.display = 'flex';
+}
+
+function closeResumeModal() {
+    document.getElementById('resumeModal').style.display = 'none';
+}
+
+function confirmResume() {
+    if (!selectedResumeBatchId) return;
+    closeResumeModal();
+
+    if (isProcessing) {
+        alert('이미 처리 중입니다.');
+        return;
+    }
+    isProcessing = true;
+    document.getElementById('processingStatus').classList.remove('hidden');
+
+    fetch('/api/batch/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_id: selectedResumeBatchId })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        if (data.error || data.success === false) {
+            alert(data.error || '이어서 처리에 실패했습니다.');
+            isProcessing = false;
+            return;
+        }
+        openBatchSse();
+    })
+    .catch(function(error) {
+        console.error('이어서 처리 오류:', error);
+        alert('이어서 처리 중 오류가 발생했습니다.');
+        isProcessing = false;
+    });
+}
+
+// 배치 진행상황 SSE 수신 (신규 처리/이어서 처리 공용)
+function openBatchSse() {
+    var eventSource = new EventSource('/api/batch/events');
+
+    eventSource.onmessage = function(event) {
+        if (!event.data || event.data.trim() === '') return;
+        var data;
+        try { data = JSON.parse(event.data); } catch (e) { return; }
+
+        if (data.step !== undefined) {
+            var steps = ['파일 로드 중...', '메타데이터 생성 중...', 'imeta 저장 중...',
+                         'tmeta 저장 중...', '워드클라우드 생성 중...', '처리 완료'];
+            var currentStepIdx = data.step;
+            var textEl = document.getElementById('processingText');
+            if (textEl) textEl.textContent = steps[currentStepIdx] || '';
+
+            var procSteps = document.querySelectorAll('.proc-step');
+            procSteps.forEach(function(step, index) {
+                if (index < currentStepIdx) {
+                    step.classList.add('completed');
+                    step.classList.remove('active');
+                } else if (index === currentStepIdx) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+
+            if (data.progress !== undefined) {
+                document.getElementById('progressFill').style.width = data.progress + '%';
+            }
+        }
+
+        if (data.log) { console.log(data.log); }
+
+        if (data.error) {
+            eventSource.close();
+            alert(data.error);
+            isProcessing = false;
+            return;
+        }
+
+        if (data.completed) {
+            eventSource.close();
+            document.getElementById('progressFill').style.width = '100%';
+            var textEl2 = document.getElementById('processingText');
+            if (textEl2) textEl2.textContent = '처리 완료!';
+            if (data.batch_dir) { sessionStorage.setItem('batchDir', data.batch_dir); }
+            isProcessing = false;
+            // 게시판 갱신 (완료 상태 반영)
+            loadWorkOrders();
+            var rbtn = document.getElementById('resumeBtn');
+            if (rbtn) rbtn.style.display = 'none';
+        }
+    };
+
+    eventSource.onerror = function(error) {
+        console.error('SSE 오류:', error);
+        eventSource.close();
+        isProcessing = false;
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     renderMetadataTree();
+    loadWorkOrders();
     
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (e.target.files.length > 0) {

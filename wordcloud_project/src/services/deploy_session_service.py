@@ -92,6 +92,34 @@ def _init_db():
             CREATE INDEX IF NOT EXISTS idx_ev_evaluator ON evaluations (evaluator_id);
             CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_fp ON evaluations (employee_id, fingerprint);
 
+            -- batch_work_orders (배치 작업서: 설정 스냅샷 + 진행상황 영구 보존 → Resume 지원)
+            CREATE TABLE IF NOT EXISTS batch_work_orders (
+                id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+                batch_id             TEXT UNIQUE NOT NULL,
+                batch_dir            TEXT NOT NULL,
+                status               TEXT NOT NULL DEFAULT 'running',
+                settings             TEXT NOT NULL,
+                file_info            TEXT NOT NULL,
+                total_employees      INTEGER DEFAULT 0,
+                processed_employees  INTEGER DEFAULT 0,
+                success_count        INTEGER DEFAULT 0,
+                error_count          INTEGER DEFAULT 0,
+                total_rows           INTEGER DEFAULT 0,
+                completed_employees  TEXT DEFAULT '[]',
+                created_at           TEXT DEFAULT (datetime('now','localtime')),
+                updated_at           TEXT DEFAULT (datetime('now','localtime')),
+                completed_at         TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_wo_status ON batch_work_orders (status);
+            CREATE INDEX IF NOT EXISTS idx_wo_created ON batch_work_orders (created_at DESC);
+
+            -- batch_work_order_items (작업서별 완료 직원 목록 — 1직원 1행, 대용량 O(델타) append)
+            CREATE TABLE IF NOT EXISTS batch_work_order_items (
+                batch_id    TEXT NOT NULL,
+                employee_id TEXT NOT NULL,
+                PRIMARY KEY (batch_id, employee_id)
+            );
+
             -- 스키마 버전 관리
             CREATE TABLE IF NOT EXISTS schema_version (
                 version    INTEGER PRIMARY KEY,
@@ -222,6 +250,26 @@ def _apply_schema_migrations():
         conn.close()
 
 
+def _cleanup_stale_running_orders():
+    """서버 기동 시 running 상태의 작업서를 interrupted로 전환 (좀비 배치 정리).
+    
+    서버가 강제 종료되면 백그라운드 배치 스레드도 함께 죽지만
+    DB의 status='running'은 그대로 남는다. 서버 기동 시점에 이들을
+    'interrupted'로 표시하여 사용자가 Resume할 수 있게 한다.
+    """
+    conn = _get_conn()
+    try:
+        conn.execute("""
+            UPDATE batch_work_orders
+            SET status = 'interrupted',
+                updated_at = datetime('now','localtime')
+            WHERE status = 'running'
+        """)
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def _auto_migrate_manifest():
     """deploy_manifest.json → gallery_entries 자동 마이그레이션 (DB 비어있을 때 1회)."""
     conn = _get_conn()
@@ -274,6 +322,7 @@ def _auto_migrate_evaluations():
 
 _init_db()
 _apply_schema_migrations()
+_cleanup_stale_running_orders()
 _auto_migrate_manifest()
 
 

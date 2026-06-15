@@ -10,7 +10,8 @@ from src.services.batch_service import (
     download_batch_results,
     get_sample_metadata,
     get_failed_list,
-    retry_failed_employees
+    retry_failed_employees,
+    resume_batch_metadata
 )
 
 batch_bp = Blueprint('batch', __name__, url_prefix='/api/batch')
@@ -115,6 +116,31 @@ def failed_list():
     try:
         result = get_failed_list()
         return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@batch_bp.route('/work-orders', methods=['GET'])
+def work_orders():
+    """게시판용 배치 작업서 전체 목록."""
+    try:
+        from src.services.batch_work_order_service import get_all_work_orders
+        orders = get_all_work_orders(limit=20)
+        return jsonify({'success': True, 'data': orders})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@batch_bp.route('/resume', methods=['POST'])
+def resume():
+    """작업서 기반으로 중단된 배치를 이어서 처리."""
+    try:
+        data = request.json or {}
+        batch_id = data.get('batch_id')
+        if not batch_id:
+            return jsonify({'success': False, 'error': 'batch_id가 필요합니다.'}), 400
+        result, status = resume_batch_metadata(batch_id, session)
+        return jsonify(result), status
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

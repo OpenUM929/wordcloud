@@ -281,6 +281,14 @@ def _run_batch_process(data, session_data):
     except Exception as e:
         batch_processing_state['status_message'] = f'오류: {str(e)}'
         batch_processing_state['error'] = str(e)
+        # 전체 배치 중단 → 작업서 failed 처리
+        bid = batch_processing_state.get('batch_id')
+        if bid:
+            try:
+                from src.services.batch_work_order_service import fail_work_order
+                fail_work_order(bid)
+            except Exception:
+                pass
     finally:
         with _batch_lock:
             _batch_busy = False
@@ -316,6 +324,8 @@ def process_batch_metadata(data, session_obj):
             del batch_processing_state['error']
         if 'batch_dir' in batch_processing_state:
             del batch_processing_state['batch_dir']
+        if 'batch_id' in batch_processing_state:
+            del batch_processing_state['batch_id']
 
         # Extract plain dict from Flask session to avoid thread-safety issues
         session_data = {
@@ -338,6 +348,61 @@ def process_batch_metadata(data, session_obj):
         with _batch_lock:
             _batch_busy = False
         return {'error': str(e)}, 500
+
+
+def resume_batch_metadata(batch_id, session_obj):
+    """작업서 기반으로 중단된 배치를 이어서 처리한다.
+
+    작업서에서 settings/file_info/completed_employees를 로드하여 data와 session을
+    재구성한 뒤, 기존 process_batch_metadata 진입점을 재사용한다(별도 스레드 생성 없음).
+    """
+    import os
+    from src.services.batch_work_order_service import (
+        get_work_order_by_batch_id, get_completed_employee_ids,
+    )
+
+    wo = get_work_order_by_batch_id(batch_id)
+    if not wo:
+        return {'success': False, 'error': '작업서를 찾을 수 없습니다.'}, 404
+    status = wo.get('status')
+    if status == 'completed':
+        return {'success': False, 'error': '이미 완료된 작업입니다.'}, 400
+    if status == 'running':
+        return {'success': False, 'error': '현재 처리 중인 작업입니다. 서버가 재시작된 후 다시 시도해주세요.'}, 400
+
+    try:
+        settings = json.loads(wo.get('settings') or '{}')
+        file_info = json.loads(wo.get('file_info') or '{}')
+        completed_employees = get_completed_employee_ids(batch_id)
+    except Exception:
+        return {'success': False, 'error': '작업서 데이터가 손상되었습니다.'}, 500
+
+    batch_dir = wo.get('batch_dir')
+
+    # CSV 파일 확인: 원본 경로 → batch_dir/original.csv fallback
+    csv_path = file_info.get('csv_file_path')
+    if not csv_path or not os.path.exists(csv_path):
+        fallback = os.path.join(batch_dir, 'original.csv') if batch_dir else None
+        if fallback and os.path.exists(fallback):
+            csv_path = fallback
+        else:
+            return {'success': False, 'error': '원본 파일을 찾을 수 없습니다. 데이터를 다시 업로드해주세요.'}, 400
+
+    # session 재구성 (process_batch_metadata가 여기서 session_data를 추출)
+    session_obj['csv_file_path'] = csv_path
+    session_obj['input_type'] = file_info.get('input_type', 'file')
+    session_obj['csv_filename'] = file_info.get('csv_filename')
+    session_obj['csv_rows'] = file_info.get('csv_rows')
+    session_obj['batch_id'] = batch_id
+
+    # data 재구성 (settings 스냅샷 + resume 플래그)
+    data = dict(settings)
+    data['resume'] = True
+    data['batch_id'] = batch_id
+    data['batch_dir'] = batch_dir
+    data['completed_employees'] = completed_employees
+
+    return process_batch_metadata(data, session_obj)
 
 
 def get_sample_metadata(session_obj):

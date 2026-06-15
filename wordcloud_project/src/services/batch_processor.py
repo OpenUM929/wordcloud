@@ -58,26 +58,32 @@ def load_checkpoint(batch_dir):
 def initialize_batch_directory(processed_data_dir):
     """
     Create batch directory with incremented number.
-    
+
     Args:
         processed_data_dir: Base directory for processed data
-        
+
     Returns:
         tuple: (batch_dir, batch_num)
     """
     current_date = datetime.now().strftime('%Y%m%d')
     batch_num = 0
-    
+
+    def _in_db(batch_name):
+        # 디렉토리가 삭제돼도 DB 레코드가 남아있으면 같은 batch_id 재사용 방지
+        try:
+            from src.services.batch_work_order_service import get_work_order_by_batch_id
+            return get_work_order_by_batch_id(batch_name) is not None
+        except Exception:
+            return False
+
     while True:
-        batch_dir = os.path.abspath(os.path.join(
-            processed_data_dir, "batch", f"batch_{current_date}_{batch_num}"
-        ))
-        if not os.path.exists(batch_dir):
+        batch_name = f"batch_{current_date}_{batch_num}"
+        batch_dir = os.path.abspath(os.path.join(processed_data_dir, "batch", batch_name))
+        if not os.path.exists(batch_dir) and not _in_db(batch_name):
             break
         batch_num += 1
-    
-    os.makedirs(batch_dir, exist_ok=True)
 
+    os.makedirs(batch_dir, exist_ok=True)
     return batch_dir, batch_num
 
 
@@ -443,10 +449,26 @@ def process_batch(processed_data_dir, data, session_data):
     
     # 파일 로드 완료: 5%
     batch_processing_state['progress'] = 5
-    
-    # Initialize batch directory
-    batch_dir, batch_num = initialize_batch_directory(processed_data_dir)
-    
+
+    # Initialize batch directory (resume 시 기존 디렉토리 재사용)
+    _is_resume = bool(data.get('resume'))
+    if _is_resume:
+        batch_dir = data.get('batch_dir')
+        if not batch_dir or not os.path.isdir(batch_dir):
+            return {'error': '이어서 작업할 배치 디렉토리를 찾을 수 없습니다.'}, 400
+    else:
+        batch_dir, batch_num = initialize_batch_directory(processed_data_dir)
+        # 원본 CSV 백업 (Resume fallback용) — 단일 파일일 때만
+        if os.path.isfile(csv_file_path):
+            try:
+                import shutil
+                shutil.copy2(csv_file_path, os.path.join(batch_dir, "original.csv"))
+            except Exception:
+                pass
+
+    batch_id = os.path.basename(batch_dir)
+    batch_processing_state['batch_id'] = batch_id
+
     # Get mappings
     mappings = data.get('mappings', {})
     target_id_column = mappings.get('target_employee_id')
@@ -489,6 +511,32 @@ def process_batch(processed_data_dir, data, session_data):
                 for ev in grouped_data[emp_id]
             ]
     
+    # 작업서(Work Order) 생성/연결 — 새 배치만 생성, resume 시 기존 작업서 재사용
+    from src.services.batch_work_order_service import (
+        create_work_order, update_work_order_progress, complete_work_order,
+        add_completed_employees,
+    )
+    prior_completed = set()
+    if _is_resume:
+        prior_completed = set(str(e) for e in data.get('completed_employees', []))
+    else:
+        _settings_snapshot = {
+            k: v for k, v in data.items()
+            if k not in ('resume', 'batch_dir', 'completed_employees', 'batch_id')
+        }
+        _file_info_snapshot = {
+            'csv_file_path': session_data.get('csv_file_path'),
+            'csv_filename': session_data.get('csv_filename'),
+            'csv_rows': session_data.get('csv_rows'),
+            'input_type': session_data.get('input_type'),
+        }
+        try:
+            create_work_order(batch_id, batch_dir, _settings_snapshot,
+                              _file_info_snapshot, total_employees=len(grouped_data))
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'Work order 생성 실패: {e}')
+
     # Initialize metadata manager
     metadata_manager = MetadataManager(processed_data_dir)
     
@@ -582,13 +630,44 @@ def process_batch(processed_data_dir, data, session_data):
                 'error': str(e)
             }
     
+    # 직원별 즉시 DB 저장용 (crash-safe resume: 메타 생성 즉시 영구 저장)
+    from src.services.user_data_manager import upsert
+
     # Prepare data for parallel processing
     employee_items = list(grouped_data.items())
-    
+
+    # Resume: 이미 완료된 직원 제외 (가명화 이후의 pseudo_id 기준)
+    if _is_resume and prior_completed:
+        employee_items = [
+            item for item in employee_items if str(item[0]) not in prior_completed
+        ]
+
+    # 작업서 진행 추적: 저장 완료 직원 수(_persisted_count)와 아직 items 테이블에
+    # 기록하지 않은 신규 직원 ID 델타(_pending_persisted)를 관리한다.
+    _persisted_count = 0
+    _pending_persisted = []
+
+    def _flush_work_order():
+        """저장된 신규 직원만 items 테이블에 append + 헤더 카운트 갱신 (O(델타))."""
+        nonlocal _pending_persisted
+        try:
+            if _pending_persisted:
+                add_completed_employees(batch_id, _pending_persisted)
+                _pending_persisted = []
+            update_work_order_progress(
+                batch_id,
+                processed_employees=len(prior_completed) + _persisted_count,
+                success_count=len(prior_completed) + _persisted_count,
+                error_count=sum(1 for r in employee_results if not r.get('success')),
+                total_rows=len(df),
+            )
+        except Exception:
+            pass
+
     if pre_init_success:
         total_employee_count = len(employee_items)
         batch_processing_state['status_message'] = f'메타데이터 생성 중 (0/{total_employee_count})'
-        
+
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             future_to_employee = {
                 executor.submit(process_single_employee, item): item[0] 
@@ -600,11 +679,29 @@ def process_batch(processed_data_dir, data, session_data):
                 result = future.result()
                 if result['success']:
                     check_profanity_in_metadata(result['metadata'], batch_processing_state)
+                    # 직원별 즉시 DB 영구 저장 — 이 직원이 완료된 즉시 저장되므로,
+                    # 이후 작업서에 '완료'로 기록되는 직원은 반드시 DB에 존재한다 (crash-safe).
+                    _persisted = False
+                    try:
+                        _meta = result['metadata'] or {}
+                        _eid = result['employee_id'] or _meta.get('target_employee_id')
+                        if _eid:
+                            upsert(_eid, _meta, _meta.get('evaluations', []), batch_id)
+                            _persisted = True
+                    except Exception as _ue:
+                        import logging
+                        logging.getLogger(__name__).warning(
+                            f'직원 DB 저장 실패({result["employee_id"]}): {_ue}'
+                        )
+                    if _persisted:
+                        _persisted_count += 1
+                        _pending_persisted.append(_eid)
                     employee_results.append({
                         'employee_id': result['employee_id'],
-                        'metadata': result['metadata'],
+                        'metadata': None,   # 저장 완료 후 메모리 해제 (이후 미사용)
                         'metadata_path': None,
-                        'success': True
+                        'success': True,
+                        'persisted': _persisted
                     })
                 else:
                     employee_results.append({
@@ -616,9 +713,12 @@ def process_batch(processed_data_dir, data, session_data):
                 completed += 1
                 # 10% ~ 50%: 메타데이터 생성 단계
                 batch_processing_state['progress'] = int(10 + (completed / total_employee_count) * 40)
-                if completed % 100 == 0 or completed == total_employee_count:
+                if completed % 10 == 0 or completed == total_employee_count:
                     batch_processing_state['status_message'] = f'메타데이터 생성 중 ({completed}/{total_employee_count})'
-                
+                    # 작업서 flush (10명 단위) — 신규 저장 직원만 items 테이블에 append.
+                    # 이어서 시작 시 items 테이블을 skip 대상으로 사용 (O(델타), 대용량 안전).
+                    _flush_work_order()
+
                 if completed % CHECKPOINT_INTERVAL == 0:
                     last_employee = result['employee_id']
                     save_checkpoint(
@@ -671,17 +771,13 @@ def process_batch(processed_data_dir, data, session_data):
     successful_results = [r for r in employee_results if r['success']]
     total_successful = len(successful_results)
 
-    batch_processing_state['status_message'] = f'Stage 4: DB 저장 중 ({total_successful}명)...'
+    batch_processing_state['status_message'] = f'Stage 4: DB 저장 완료 ({total_successful}명)'
     batch_processing_state['current_step'] = 3
     batch_processing_state['progress'] = 60
 
+    # 직원별 DB 저장(upsert)은 Stage 3 루프에서 완료 즉시 수행됨 (crash-safe).
+    # 여기서는 상태/카운트만 정리한다.
     batch_id = os.path.basename(batch_dir)
-    from src.services.user_data_manager import upsert
-    for er in successful_results:
-        meta = er.get('metadata', {})
-        emp_id = er.get('employee_id') or meta.get('target_employee_id')
-        if emp_id:
-            upsert(emp_id, meta, meta.get('evaluations', []), batch_id)
 
     batch_processing_state['total_employees'] = len(grouped_data)
     batch_processing_state['processed_employees'] = len(employee_results)
@@ -706,6 +802,14 @@ def process_batch(processed_data_dir, data, session_data):
             logging.getLogger(__name__).warning(f'Profanity DB save failed: {e}')
 
     session_data['batch_dir'] = batch_dir
+
+    # 작업서 완료 처리 (남은 델타 flush 후 status=completed)
+    try:
+        _flush_work_order()
+        complete_work_order(batch_id)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f'Work order 완료 처리 실패: {e}')
 
     return {
         'success': True,

@@ -1488,15 +1488,21 @@ function _renderDeploymentSentences(sentences, details) {
     return '';
 }
 
-function _buildEmployeeResultHtml(res) {
+function _buildEmployeeResultHtml(res, expandWc, expandSent) {
     const name = res.name || res.employee_id || '?';
     const empId = res.employee_id || '';
-    let h = '<div style="padding:8px 12px;background:#f8f9fa;font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;">';
-    h += '<span>' + escapeHtml(name) + '</span>';
+
+    let h = '<div class="emp-header" onclick="var c=this.nextElementSibling;c.classList.toggle(\'open\');this.querySelector(\'.arrow\').classList.toggle(\'open\')" style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f8f9fa;">';
+    h += '<span class="arrow" style="transition:transform 0.2s;font-size:12px;color:#999;">▶</span>';
+    h += '<span class="emp-name" style="font-weight:bold;font-size:14px;">' + escapeHtml(name) + '</span>';
     if (empId) {
-        h += '<button onclick="resubmitEmployee(event,\'' + empId.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">재제출</button>';
+        h += '<span class="emp-info" style="font-size:12px;color:#666;">(' + escapeHtml(empId) + ')</span>';
+        h += '<span style="display:inline-block;padding:2px 8px;background:#d4edda;color:#155724;border:1px solid #c3e6cb;border-radius:10px;font-size:11px;font-weight:600;">✅ 완료</span>';
+        h += '<span style="margin-left:auto;"><button onclick="event.stopPropagation();resubmitEmployee(event,\'' + empId.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">재제출</button></span>';
     }
     h += '</div>';
+
+    h += '<div class="emp-content" style="padding:12px;border-top:1px solid #dee2e6;">';
 
     if (res.row_results && Object.keys(res.row_results).length > 0) {
         Object.entries(res.row_results).forEach(function([rowKey, rowData]) {
@@ -1524,11 +1530,14 @@ function _buildEmployeeResultHtml(res) {
                 }
                 h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
                 if (url) {
-                    h += '<img src="' + url + '" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal(\'' + url + '\')">';
+                    h += '<img src="' + url + '" loading="lazy" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal(\'' + url + '\')">';
                 } else {
                     h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
                 }
+                h += '<details ' + (expandSent ? 'open' : '') + ' style="flex:1;">';
+                h += '<summary style="font-size:11px;color:#666;cursor:pointer;">문장 ' + sentences.length + '개</summary>';
                 h += _renderDeploymentSentences(sentences, details);
+                h += '</details>';
                 h += '</div></div>';
             });
             h += '</div>';
@@ -1557,11 +1566,14 @@ function _buildEmployeeResultHtml(res) {
             }
             h += '<div style="display:flex;gap:3px;align-items:flex-start;">';
             if (url) {
-                h += '<img src="' + url + '" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal(\'' + url + '\')">';
+                h += '<img src="' + url + '" loading="lazy" style="height:80px;width:auto;flex-shrink:0;border:1px solid #eee;border-radius:4px;cursor:pointer;object-fit:contain;" onclick="openModal(\'' + url + '\')">';
             } else {
                 h += '<div style="height:80px;width:80px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#aaa;font-size:11px;border-radius:4px;border:1px solid #eee;flex-shrink:0;">데이터 없음</div>';
             }
+            h += '<details ' + (expandSent ? 'open' : '') + ' style="flex:1;">';
+            h += '<summary style="font-size:11px;color:#666;cursor:pointer;">문장 ' + sentences.length + '개</summary>';
             h += _renderDeploymentSentences(sentences, details);
+            h += '</details>';
             h += '</div>';
             if (label === '부정') {
                 const ps = res.profanity_summary;
@@ -1579,8 +1591,17 @@ function _buildEmployeeResultHtml(res) {
         });
         h += '</div>';
     }
+    h += '</div>';
     return h;
 }
+
+// ── 페이징 + 확장 옵션 상태 ──
+let _deployResults = [];
+let _deployFailItems = [];
+let _deployTotalItems = 0;
+let _deployPage = 1;
+let _deployPerPage = 10;
+const _deployPerPageOptions = [10, 20, 40, 100];
 
 function renderDeployComplete(summary) {
     const successItems = summary.success || [];
@@ -1588,6 +1609,11 @@ function renderDeployComplete(summary) {
     const totalItems = summary.total || (successItems.length + failItems.length);
     const successCount = successItems.length;
     const failCountItems = failItems.length;
+
+    _deployResults = successItems;
+    _deployFailItems = failItems;
+    _deployTotalItems = totalItems;
+    _deployPage = 1;
 
     if (successCount > 0) showDeployToast('✅ ' + successCount + '명 저장 완료', '/deploy-gallery');
 
@@ -1605,17 +1631,23 @@ function renderDeployComplete(summary) {
 
     h += `<div class="progress-container"><div class="deploy-bar" style="width:100%;background:#00b894;"></div><div class="progress-text light">${successCount}/${totalItems} (100%)</div></div>`;
 
-    if (successCount > 0) {
-        h += '<div style="margin-top:12px;">';
-        successItems.forEach(function(res) {
-            const empId = escapeHtml(res.employee_id || '');
-            const sectionId = empId ? 'emp-deploy-' + empId.replace(/[^a-zA-Z0-9]/g, '_') : '';
-            h += '<div' + (sectionId ? ' id="' + sectionId + '"' : '') + ' data-employee-id="' + empId + '" style="margin-bottom:16px;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;">';
-            h += _buildEmployeeResultHtml(res);
-            h += '</div>';
-        });
-        h += '</div>';
-    }
+    // ── 옵션 바 ──
+    h += '<div class="summary-bar" style="background:#f8f9fa;border-color:#dee2e6;margin-top:8px;gap:16px;flex-wrap:wrap;">';
+    h += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin:0;font-weight:normal;">';
+    h += '<input type="checkbox" id="optExpandWc" onchange="onDeployOptionChange()"> 워드클라우드 기본 펼침</label>';
+    h += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin:0;font-weight:normal;">';
+    h += '<input type="checkbox" id="optExpandSent" onchange="onDeployOptionChange()"> 문장 기본 펼침</label>';
+    h += '<span style="margin-left:auto;font-size:13px;color:#6c757d;" id="deployPageInfo"></span>';
+    h += '</div>';
+
+    // ── 상단 페이지바 ──
+    h += '<div id="deployPaginationTop" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>';
+
+    // ── 결과 컨테이너 ──
+    h += '<div id="deployResultsContainer" style="margin-top:12px;"></div>';
+
+    // ── 하단 페이지바 ──
+    h += '<div id="deployPaginationBottom" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>';
 
     if (failCountItems > 0) {
         const failedIds = failItems.map(f => f.employee_id || f.employee || '?');
@@ -1636,7 +1668,6 @@ function renderDeployComplete(summary) {
     resultArea.style.overflow = 'visible';
     resultArea.style.minHeight = '';
 
-    // ZIP 다운로드 버튼 상태 관리
     const zipBtn = document.getElementById('zipDownloadBtn');
     if (zipBtn) {
         if (successCount > 0 && window._lastDeploySessionId) {
@@ -1649,6 +1680,117 @@ function renderDeployComplete(summary) {
             zipBtn.style.display = 'none';
         }
     }
+
+    renderDeployPage(1);
+}
+
+function onDeployOptionChange() {
+    renderDeployPage(_deployPage);
+}
+
+function renderDeployPage(page) {
+    _deployPage = page;
+    const items = _deployResults;
+    const totalPages = Math.ceil(items.length / _deployPerPage) || 1;
+    if (page < 1) _deployPage = 1;
+    if (page > totalPages) _deployPage = totalPages;
+    page = _deployPage;
+
+    const start = (page - 1) * _deployPerPage;
+    const end = Math.min(start + _deployPerPage, items.length);
+    const pageItems = items.slice(start, end);
+    const expandWc = document.getElementById('optExpandWc')?.checked ?? false;
+    const expandSent = document.getElementById('optExpandSent')?.checked ?? false;
+
+    let h = '';
+    pageItems.forEach(function(res) {
+        const empId = escapeHtml(res.employee_id || '');
+        const sectionId = empId ? 'emp-deploy-' + empId.replace(/[^a-zA-Z0-9]/g, '_') : '';
+        h += '<div' + (sectionId ? ' id="' + sectionId + '"' : '') + ' data-employee-id="' + empId + '" style="margin-bottom:16px;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;">';
+        h += _buildEmployeeResultHtml(res, expandWc, expandSent);
+        h += '</div>';
+    });
+
+    const container = document.getElementById('deployResultsContainer');
+    if (container) container.innerHTML = h;
+
+    // ── 자동 펼침 (expandWc) ──
+    if (expandWc) {
+        container.querySelectorAll('.emp-header').forEach(function(header) {
+            const content = header.nextElementSibling;
+            if (content && !content.classList.contains('open')) {
+                content.classList.add('open');
+                const arrow = header.querySelector('.arrow');
+                if (arrow) arrow.classList.add('open');
+            }
+        });
+    }
+
+    const info = document.getElementById('deployPageInfo');
+    if (info) {
+        if (items.length > 0) {
+            info.textContent = start + 1 + '-' + end + ' / ' + items.length + '명';
+        } else {
+            info.textContent = '0명';
+        }
+    }
+
+    const paginationHtml = buildDeployPaginationHtml(page, totalPages);
+    const topBar = document.getElementById('deployPaginationTop');
+    const bottomBar = document.getElementById('deployPaginationBottom');
+    if (topBar) topBar.innerHTML = paginationHtml;
+    if (bottomBar) bottomBar.innerHTML = paginationHtml;
+}
+
+function buildDeployPaginationHtml(page, totalPages) {
+    if (totalPages <= 1) return '';
+
+    let h = '<select onchange="changeDeployPerPage(this.value)" style="padding:4px 8px;font-size:12px;border:1px solid #ccc;border-radius:4px;margin-right:8px;">';
+    _deployPerPageOptions.forEach(function(n) {
+        h += '<option value="' + n + '"' + (_deployPerPage === n ? ' selected' : '') + '>' + n + '명</option>';
+    });
+    h += '</select>';
+
+    h += '<button onclick="changeDeployPage(-1)" style="padding:6px 14px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;' + (page <= 1 ? 'opacity:0.5;cursor:not-allowed;' : '') + '"' + (page <= 1 ? ' disabled' : '') + '>이전</button>';
+
+    const maxVisible = 10;
+    let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+        h += '<button onclick="goToDeployPage(1)" style="padding:6px 12px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;">1</button>';
+        if (startPage > 2) h += '<span style="color:#6c757d;font-size:13px;padding:0 4px;">...</span>';
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const active = i === page;
+        h += '<button onclick="goToDeployPage(' + i + ')" style="padding:6px 12px;border:1px solid ' + (active ? '#007bff' : '#dee2e6') + ';background:' + (active ? '#007bff' : 'white') + ';border-radius:4px;cursor:pointer;font-size:13px;color:' + (active ? 'white' : '#495057') + ';font-weight:' + (active ? 'bold' : 'normal') + ';">' + i + '</button>';
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) h += '<span style="color:#6c757d;font-size:13px;padding:0 4px;">...</span>';
+        h += '<button onclick="goToDeployPage(' + totalPages + ')" style="padding:6px 12px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;">' + totalPages + '</button>';
+    }
+
+    h += '<button onclick="changeDeployPage(1)" style="padding:6px 14px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;' + (page >= totalPages ? 'opacity:0.5;cursor:not-allowed;' : '') + '"' + (page >= totalPages ? ' disabled' : '') + '>다음</button>';
+
+    return h;
+}
+
+function changeDeployPage(delta) {
+    renderDeployPage(_deployPage + delta);
+}
+
+function goToDeployPage(page) {
+    renderDeployPage(page);
+}
+
+function changeDeployPerPage(perPage) {
+    _deployPerPage = parseInt(perPage);
+    renderDeployPage(1);
 }
 
 function _sentLabel(v) {
@@ -1789,7 +1931,7 @@ async function resubmitEmployee(event, employeeId) {
             }
 
             if (section) {
-                section.innerHTML = _buildEmployeeResultHtml(Object.assign({}, d, {employee_id: employeeId}));
+                section.innerHTML = _buildEmployeeResultHtml(Object.assign({}, d, {employee_id: employeeId}), true, true);
                 // 처리 결과 로그 삽입
                 section.insertAdjacentHTML('beforeend', _buildResubmitLog(beforeRows, afterState));
             }
@@ -2025,6 +2167,14 @@ function renderCell(cell, types) {
     return h;
 }
 
+// ── 매트릭스 페이징 상태 ──
+let _matrixResults = {};
+let _matrixEmpIds = [];
+let _matrixTypes = [];
+let _matrixContainer = null;
+let _matrixPage = 1;
+let _matrixPerPage = 10;
+
 function renderAllEmployees(data, container) {
     const results = data.employee_results || {};
     const empIds = Object.keys(results).sort();
@@ -2033,12 +2183,53 @@ function renderAllEmployees(data, container) {
         return;
     }
 
-    const allTypesArr = data.analysis_types || [data.analysis_type || 'nlp'];
+    _matrixResults = results;
+    _matrixEmpIds = empIds;
+    _matrixTypes = data.analysis_types || [data.analysis_type || 'nlp'];
+    _matrixContainer = container;
+    _matrixPage = 1;
+
+    const allTypesArr = _matrixTypes;
     let html = '<div class="summary-bar">';
     html += '<span><strong>전체 직원 (' + empIds.length + '명)</strong></span>';
     html += '<span>분석=' + allTypesArr.join(', ') + '</span></div>';
 
-    empIds.forEach(empId => {
+    // ── 옵션 바 ──
+    html += '<div class="summary-bar" style="background:#f8f9fa;border-color:#dee2e6;margin-top:8px;gap:16px;flex-wrap:wrap;">';
+    html += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin:0;font-weight:normal;">';
+    html += '<input type="checkbox" id="optMatrixExpand" onchange="renderMatrixPage()"> 기본 펼침</label>';
+    html += '<span style="margin-left:auto;font-size:13px;color:#6c757d;" id="matrixPageInfo"></span>';
+    html += '</div>';
+
+    // ── 상단 페이지바 ──
+    html += '<div id="matrixPaginationTop" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>';
+
+    // ── 결과 컨테이너 ──
+    html += '<div id="matrixResultsContainer" style="margin-top:12px;"></div>';
+
+    // ── 하단 페이지바 ──
+    html += '<div id="matrixPaginationBottom" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>';
+
+    container.innerHTML = html;
+    renderMatrixPage();
+}
+
+function renderMatrixPage() {
+    const empIds = _matrixEmpIds;
+    const results = _matrixResults;
+    const allTypesArr = _matrixTypes;
+    const totalPages = Math.ceil(empIds.length / _matrixPerPage) || 1;
+
+    if (_matrixPage < 1) _matrixPage = 1;
+    if (_matrixPage > totalPages) _matrixPage = totalPages;
+
+    const start = (_matrixPage - 1) * _matrixPerPage;
+    const end = Math.min(start + _matrixPerPage, empIds.length);
+    const pageIds = empIds.slice(start, end);
+    const expandAll = document.getElementById('optMatrixExpand')?.checked ?? false;
+
+    let h = '';
+    pageIds.forEach(function(empId) {
         const er = results[empId];
         if (!er || er.error) { return; }
         const rows = er.rows || [];
@@ -2046,35 +2237,114 @@ function renderAllEmployees(data, container) {
         const matrix = er.matrix || {};
         const erTypes = er.analysis_types || allTypesArr;
 
-        html += '<div class="emp-section">';
-        html += '<div class="emp-header" onclick="var c=this.nextElementSibling;c.classList.toggle(\'open\');this.querySelector(\'.arrow\').classList.toggle(\'open\')">';
+        h += '<div class="emp-section">';
+        h += '<div class="emp-header" onclick="var c=this.nextElementSibling;c.classList.toggle(\'open\');this.querySelector(\'.arrow\').classList.toggle(\'open\')">';
+        h += '<span class="arrow">▶</span>';
         const realId = er.employee_id_real || empId;
-        const displayId = er.employee_name ? `${er.employee_name} (${realId})` : realId;
-        html += '<span class="arrow">▶</span><span class="emp-name">' + displayId + '</span>';
-        html += '<span class="emp-badge badge badge-info">' + rows.length + '행x' + cols.length + '열</span></div>';
-        html += '<div class="emp-content">';
+        const displayId = er.employee_name ? er.employee_name + ' (' + realId + ')' : realId;
+        h += '<span class="emp-name">' + displayId + '</span>';
+        h += '<span class="emp-badge badge badge-info">' + rows.length + '행x' + cols.length + '열</span></div>';
+        h += '<div class="emp-content">';
 
         if (rows.length > 0 && cols.length > 0) {
-            html += '<div class="scroll-wrapper"><table class="matrix-table" style="font-size:12px;">';
-            html += '<tr><th class="row-header"></th>';
-            cols.forEach(c => { html += '<th>' + c + '</th>'; });
-            html += '</tr>';
-            rows.forEach(rk => {
-                html += '<tr><th class="row-header">' + rk + '</th>';
-                cols.forEach(ck => {
+            h += '<div class="scroll-wrapper"><table class="matrix-table" style="font-size:12px;">';
+            h += '<tr><th class="row-header"></th>';
+            cols.forEach(function(c) { h += '<th>' + c + '</th>'; });
+            h += '</tr>';
+            rows.forEach(function(rk) {
+                h += '<tr><th class="row-header">' + rk + '</th>';
+                cols.forEach(function(ck) {
                     const cell = matrix[rk]?.[ck] || {};
-                    html += '<td class="cell">' + renderCell(cell, erTypes) + '</td>';
+                    h += '<td class="cell">' + renderCell(cell, erTypes) + '</td>';
                 });
-                html += '</tr>';
+                h += '</tr>';
             });
-            html += '</table></div>';
+            h += '</table></div>';
         } else {
-            html += '<p style="color:#999;padding:8px;">데이터 없음</p>';
+            h += '<p style="color:#999;padding:8px;">데이터 없음</p>';
         }
-        html += '</div></div>';
+        h += '</div></div>';
     });
 
-    container.innerHTML = html;
+    const container = document.getElementById('matrixResultsContainer');
+    if (container) container.innerHTML = h;
+
+    // ── 자동 펼침 ──
+    if (expandAll) {
+        container.querySelectorAll('.emp-header').forEach(function(header) {
+            const content = header.nextElementSibling;
+            if (content && !content.classList.contains('open')) {
+                content.classList.add('open');
+                const arrow = header.querySelector('.arrow');
+                if (arrow) arrow.classList.add('open');
+            }
+        });
+    }
+
+    const info = document.getElementById('matrixPageInfo');
+    if (info) {
+        info.textContent = (start + 1) + '-' + end + ' / ' + empIds.length + '명';
+    }
+
+    const paginationHtml = buildMatrixPaginationHtml(_matrixPage, totalPages);
+    const topBar = document.getElementById('matrixPaginationTop');
+    const bottomBar = document.getElementById('matrixPaginationBottom');
+    if (topBar) topBar.innerHTML = paginationHtml;
+    if (bottomBar) bottomBar.innerHTML = paginationHtml;
+}
+
+function buildMatrixPaginationHtml(page, totalPages) {
+    if (totalPages <= 1) return '';
+
+    let h = '<select onchange="changeMatrixPerPage(this.value)" style="padding:4px 8px;font-size:12px;border:1px solid #ccc;border-radius:4px;margin-right:8px;">';
+    [10, 20, 40, 100].forEach(function(n) {
+        h += '<option value="' + n + '"' + (_matrixPerPage === n ? ' selected' : '') + '>' + n + '명</option>';
+    });
+    h += '</select>';
+
+    h += '<button onclick="changeMatrixPage(-1)" style="padding:6px 14px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;' + (page <= 1 ? 'opacity:0.5;cursor:not-allowed;' : '') + '"' + (page <= 1 ? ' disabled' : '') + '>이전</button>';
+
+    const maxVisible = 10;
+    let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    if (startPage > 1) {
+        h += '<button onclick="goToMatrixPage(1)" style="padding:6px 12px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;">1</button>';
+        if (startPage > 2) h += '<span style="color:#6c757d;font-size:13px;padding:0 4px;">...</span>';
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const active = i === page;
+        h += '<button onclick="goToMatrixPage(' + i + ')" style="padding:6px 12px;border:1px solid ' + (active ? '#007bff' : '#dee2e6') + ';background:' + (active ? '#007bff' : 'white') + ';border-radius:4px;cursor:pointer;font-size:13px;color:' + (active ? 'white' : '#495057') + ';font-weight:' + (active ? 'bold' : 'normal') + ';">' + i + '</button>';
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) h += '<span style="color:#6c757d;font-size:13px;padding:0 4px;">...</span>';
+        h += '<button onclick="goToMatrixPage(' + totalPages + ')" style="padding:6px 12px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;">' + totalPages + '</button>';
+    }
+
+    h += '<button onclick="changeMatrixPage(1)" style="padding:6px 14px;border:1px solid #dee2e6;background:white;border-radius:4px;cursor:pointer;font-size:13px;color:#495057;' + (page >= totalPages ? 'opacity:0.5;cursor:not-allowed;' : '') + '"' + (page >= totalPages ? ' disabled' : '') + '>다음</button>';
+
+    return h;
+}
+
+function changeMatrixPage(delta) {
+    _matrixPage += delta;
+    renderMatrixPage();
+}
+
+function goToMatrixPage(page) {
+    _matrixPage = page;
+    renderMatrixPage();
+}
+
+function changeMatrixPerPage(perPage) {
+    _matrixPerPage = parseInt(perPage);
+    _matrixPage = 1;
+    renderMatrixPage();
 }
 
 async function loadBatchHistory() {
