@@ -844,12 +844,13 @@ def api_batch_update_display_name(batch_id):
     from src.config.settings import PROCESSED_DATA_DIR_PATH
     summary_path = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tmeta', 'batch_summary.json')
 
-    if not os.path.exists(summary_path):
-        return jsonify({'success': False, 'error': f'배치({batch_id})의 summary 파일을 찾을 수 없습니다.'}), 404
-
     try:
-        with open(summary_path, 'r', encoding='utf-8') as f:
-            summary = json_lib.load(f)
+        if os.path.exists(summary_path):
+            with open(summary_path, 'r', encoding='utf-8') as f:
+                summary = json_lib.load(f)
+        else:
+            os.makedirs(os.path.dirname(summary_path), exist_ok=True)
+            summary = {'batch_info': {'batch_id': batch_id}}
 
         if 'batch_info' not in summary:
             summary['batch_info'] = {}

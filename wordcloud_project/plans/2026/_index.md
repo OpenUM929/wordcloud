@@ -31,3 +31,6 @@
 | 0615_01_batch-csv-stream | 배치 CSV 스트리밍 + Staging DB + 2단계 진행 표시 | 🟡 PND | 2026-06-15 |
 | 0615_02_batch-display-name | 배치 명칭 지정 및 수정 | 🔴 PND | 2026-06-15 |
 | 0615_03_profanity-pseudonym | 비속어 기능 가명 복원 누락 수정 | ✅ DN | 2026-06-15 |
+| 0615_04_perspective-title-recall | 그룹 분석 테스트 배치 명칭 기반 재호출 | 🟡 PND | 2026-06-15 |
+| 0615_05_group-save-option | 그룹 분석 페이지 설정 저장, 전체직원 기본 체크, x축 통합출력 기본 | ✅ DN | 2026-06-15 |
+| 0615_06_emp-id-match-fix | 그룹분석·제출용저장 회귀 수정 (target_employee_id 매칭 키 복원) | ✅ DN | 2026-06-15 |

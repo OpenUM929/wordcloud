@@ -111,15 +111,24 @@ def _load_evaluations(batch_id: str, employee_id: str = None) -> tuple:
         label = f"{batch_id}/{employee_id}" if employee_id else batch_id
         return None, None, f"데이터 없음: {label}"
 
+    from src.modules.pseudonym_manager import PseudonymManager
+    from src.config.settings import PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD
+    pseudo_mgr = PseudonymManager(PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD)
+
     emp_info = {}
     emp_evals = {}
     for row in rows:
         eid = row['employee_id']
         if eid not in emp_info:
+            real_id = pseudo_mgr.get_real_id(eid) if eid else eid
+            real_name = pseudo_mgr.get_real_id(row['name']) if row['name'] else row['name']
+            real_dept = pseudo_mgr.get_real_id(row['department']) if row['department'] else row['department']
+            real_pos = pseudo_mgr.get_real_id(row['position']) if row['position'] else row['position']
             emp_info[eid] = {
-                'name': row['name'] or '',
-                'department': row['department'] or '',
-                'position': row['position'] or '',
+                'name': real_name or real_id or '',
+                'department': real_dept or '',
+                'position': real_pos or '',
+                'real_employee_id': real_id or eid,
             }
             emp_evals[eid] = []
         if row['data']:

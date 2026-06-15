@@ -9,6 +9,12 @@ def _get_conn():
     return _get_eval_conn()
 
 
+def _get_pseudo_mgr():
+    from src.modules.pseudonym_manager import PseudonymManager
+    from src.config.settings import PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD
+    return PseudonymManager(PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD)
+
+
 def get_batch_list(processed_data_dir=None):
     """Get list of available batches from DB."""
     conn = _get_conn()
@@ -65,7 +71,7 @@ def delete_batch_directory(batch_path):
 
 
 def load_batch_metadata(processed_data_dir, batch_dir):
-    """Load metadata for all employees in a batch from DB."""
+    """Load metadata for all employees in a batch from DB (가명 복원 포함)."""
     batch_id = os.path.basename(batch_dir) if batch_dir else None
     if not batch_id:
         return []
@@ -82,15 +88,20 @@ def load_batch_metadata(processed_data_dir, batch_dir):
     finally:
         conn.close()
 
+    pseudo_mgr = _get_pseudo_mgr()
     emp_evals = {}
     emp_info = {}
     for row in rows:
         eid = row['employee_id']
         if eid not in emp_info:
+            real_id = pseudo_mgr.get_real_id(eid) if eid else eid
+            real_name = pseudo_mgr.get_real_id(row['name']) if row['name'] else row['name']
+            real_dept = pseudo_mgr.get_real_id(row['department']) if row['department'] else row['department']
+            real_pos = pseudo_mgr.get_real_id(row['position']) if row['position'] else row['position']
             emp_info[eid] = {
-                'name': row['name'] or '',
-                'department': row['department'] or '',
-                'position': row['position'] or '',
+                'name': real_name or real_id or '',
+                'department': real_dept or '',
+                'position': real_pos or '',
             }
             emp_evals[eid] = []
         if row['data']:
@@ -98,10 +109,11 @@ def load_batch_metadata(processed_data_dir, batch_dir):
 
     result = []
     for eid, info in emp_info.items():
+        display_name = info['name'] or eid
         result.append({
-            'employee_id': eid,
+            'employee_id': display_name,
             'metadata': {
-                'target_employee_id': eid,
+                'target_employee_id': display_name,
                 'target_employee_name': info['name'],
                 'target_employee_department': info['department'],
                 'target_employee_position': info['position'],
@@ -144,7 +156,7 @@ def get_batch_summary(processed_data_dir, batch_path):
 
 
 def get_sample_metadata_from_results(session_results, batch_dir, processed_data_dir):
-    """Get sample metadata from DB for a given batch."""
+    """Get sample metadata from DB for a given batch (가명 복원 포함)."""
     batch_id = os.path.basename(batch_dir) if batch_dir else None
     if not batch_id:
         return {'error': 'batch_id가 없습니다.'}, 400
@@ -164,14 +176,22 @@ def get_sample_metadata_from_results(session_results, batch_dir, processed_data_
     if not row:
         return {'error': '처리된 직원이 없습니다.'}, 400
 
+    pseudo_mgr = _get_pseudo_mgr()
+    eid = row['employee_id']
+    real_id = pseudo_mgr.get_real_id(eid) if eid else eid
+    real_name = pseudo_mgr.get_real_id(row['name']) if row['name'] else row['name']
+    real_dept = pseudo_mgr.get_real_id(row['department']) if row['department'] else row['department']
+    real_pos = pseudo_mgr.get_real_id(row['position']) if row['position'] else row['position']
+
     ev_data = json.loads(row['data']) if row['data'] else {}
+    display_name = real_name or real_id or eid
     return {
-        'employee_id': row['employee_id'],
+        'employee_id': display_name,
         'metadata': {
-            'target_employee_id': row['employee_id'],
-            'target_employee_name': row['name'] or '',
-            'target_employee_department': row['department'] or '',
-            'target_employee_position': row['position'] or '',
+            'target_employee_id': display_name,
+            'target_employee_name': real_name or '',
+            'target_employee_department': real_dept or '',
+            'target_employee_position': real_pos or '',
             'evaluations': [ev_data],
         }
     }, 200

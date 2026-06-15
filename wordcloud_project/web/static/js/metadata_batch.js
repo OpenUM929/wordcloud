@@ -763,6 +763,7 @@ function startBatchProcessing() {
         enablePreprocessing: document.getElementById('enablePreprocessing').checked,
         enableEmotionAnalysis: document.getElementById('enableEmotionAnalysis').checked,
         mappings: columnMappings,
+        batch_display_name: (document.getElementById('batchDisplayName').value || '').trim(),
     };
 
     function openSseAndListen() {

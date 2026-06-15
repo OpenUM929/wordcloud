@@ -249,7 +249,7 @@ body {
             <div class="label">① 대상 직원</div>
             <select id="employeeSelect"><option value="">로딩...</option></select>
             <div class="options" style="flex:none;margin-top:4px;">
-                <label><input type="checkbox" id="allEmployeesCheck" onchange="toggleAllEmployees()"> 전체 직원 대상</label>
+                <label><input type="checkbox" id="allEmployeesCheck" onchange="toggleAllEmployees()" checked> 전체 직원 대상</label>
             </div>
 
             <div id="rawDataSection" style="border-top:1px solid #eee;padding-top:4px;margin-top:2px;">
@@ -302,11 +302,23 @@ body {
         </div>
     </div>
 
-    <div class="action-row">
-        <input type="text" id="batchTitleInput" maxlength="100"
-               placeholder="배치 명칭을 입력해주세요 (필수)"
-               oninput="_doBatchTitleCheck()"
-               style="flex:1;max-width:320px;padding:6px 10px;font-size:13px;border:1px solid #ccc;border-radius:5px;">
+    <div class="action-row" style="position:relative;">
+        <div style="position:relative;flex:1;max-width:340px;display:flex;gap:4px;">
+            <input type="text" id="batchTitleInput" maxlength="100"
+                   placeholder="배치 명칭을 입력해주세요 (필수)"
+                   oninput="_doBatchTitleCheck()"
+                   style="flex:1;padding:6px 10px;font-size:13px;border:1px solid #ccc;border-radius:5px;">
+            <button type="button" title="이전 저장 명칭으로 불러오기"
+                    onclick="toggleBatchTitlePicker(this)"
+                    style="padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:5px;background:#f8f9fa;cursor:pointer;white-space:nowrap;">📂</button>
+            <div id="batchTitlePickerDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:220px;overflow-y:auto;margin-top:2px;">
+                <div style="padding:6px 10px;font-size:11px;color:#888;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+                    <span>제출용 저장 명칭 선택</span>
+                    <span style="cursor:pointer;color:#999;" onclick="closeBatchTitlePicker()">✕</span>
+                </div>
+                <div id="batchTitlePickerList" style="padding:4px 0;font-size:12px;color:#999;text-align:center;">로딩...</div>
+            </div>
+        </div>
         <button id="btnGenerateMatrix" class="btn-primary" onclick="generateMatrix()" disabled>매트릭스 저장</button>
         <button id="btnSaveDeploy" class="btn-success" onclick="saveDeploy()" disabled>제출용 저장</button>
         <button id="zipDownloadBtn" class="btn-secondary" style="display:none;margin-left:8px;" onclick="downloadDeployZip()">⬇️ 결과물 ZIP</button>
@@ -541,6 +553,21 @@ async function loadMeta() {
         } else {
             setStatus(`${empCount}명 직원, ${d.batch_count}개 배치, ${d.total_evaluations}개 평가 로드됨`);
         }
+
+        // 이전 분석 세션 복원 배너
+        try {
+            const _savedRun = sessionStorage.getItem('pt_last_run');
+            if (_savedRun) _showRestoreBanner(JSON.parse(_savedRun));
+        } catch(e) {}
+
+        // 페이지 상태 자동 복원
+        try {
+            const _savedState = sessionStorage.getItem('pt_page_state');
+            if (_savedState) await _restorePageState(JSON.parse(_savedState));
+        } catch(e) {}
+
+        // 복원 후 현재 상태 저장 (초기 상태 캡처)
+        _autoSavePageState();
     } catch(e) {
         console.error('Meta load failed:', e);
         setStatus('메타 로드 실패', true);
@@ -563,8 +590,8 @@ function onRowFieldChange() {
         html += `<label><input type="checkbox" class="rowValueCb" value="${v.value}" checked> ${v.value} (${v.count}건)</label>`;
     });
     html += '<div style="border-top:1px solid #eee;margin-top:4px;padding-top:4px;display:flex;gap:10px;">';
-    html += '<label style="font-size:12px;"><input type="radio" name="rowOutputMode" value="individual" checked> 개별 출력</label>';
-    html += '<label style="font-size:12px;"><input type="radio" name="rowOutputMode" value="combined"> 통합 출력</label>';
+    html += '<label style="font-size:12px;"><input type="radio" name="rowOutputMode" value="combined" checked> 통합 출력</label>';
+    html += '<label style="font-size:12px;"><input type="radio" name="rowOutputMode" value="individual"> 개별 출력</label>';
     html += '</div>';
     container.innerHTML = html;
 }
@@ -861,6 +888,7 @@ async function confirmIdInput() {
         document.getElementById('idInputModal').classList.remove('open');
         document.getElementById('employeeSelect').disabled = true;
         document.getElementById('allEmployeesCheck').disabled = true;
+        _autoSavePageState();
 
         // 재시도 모드일 때 saveDeploy 자동 호출
         if (window._retrySessionId) {
@@ -886,6 +914,7 @@ function cancelIdInput() {
     _csvEmployeeIds = null;
     document.getElementById('employeeSelect').disabled = false;
     document.getElementById('allEmployeesCheck').disabled = false;
+    _autoSavePageState();
 }
 
 let _batchTitleDebounce = null;
@@ -1086,6 +1115,292 @@ async function generateMatrix() {
 
     setStatus('완료');
     _doBatchTitleCheck();
+    _saveLastRunParams();
+    _autoSavePageState();
+}
+
+// ── 배치 명칭 불러오기 ────────────────────────────────────────────────────────
+
+async function toggleBatchTitlePicker(btn) {
+    const dropdown = document.getElementById('batchTitlePickerDropdown');
+    if (dropdown.style.display !== 'none') { closeBatchTitlePicker(); return; }
+    dropdown.style.display = 'block';
+    const list = document.getElementById('batchTitlePickerList');
+    list.innerHTML = '로딩...';
+    try {
+        const r = await fetch('/api/perspective/deploy-gallery/batch-titles', { credentials: 'include' });
+        const d = await r.json();
+        const titles = (d.batch_titles || []).filter(t => t);
+        if (titles.length === 0) {
+            list.innerHTML = '<div style="padding:8px 12px;color:#aaa;">저장된 명칭 없음</div>';
+            return;
+        }
+        list.innerHTML = titles.map(t =>
+            `<div style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;"
+                  onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background=''"
+                  onclick="selectBatchTitleForRestore('${t.replace(/'/g,'\\\'')}')">${t}</div>`
+        ).join('');
+    } catch(e) {
+        list.innerHTML = '<div style="padding:8px 12px;color:#dc3545;">로드 실패</div>';
+    }
+    // 외부 클릭 시 닫기
+    setTimeout(() => document.addEventListener('click', _batchPickerOutsideClick, {once:true}), 0);
+}
+
+function _batchPickerOutsideClick(e) {
+    const dropdown = document.getElementById('batchTitlePickerDropdown');
+    if (dropdown && !dropdown.contains(e.target)) closeBatchTitlePicker();
+}
+
+function closeBatchTitlePicker() {
+    const dropdown = document.getElementById('batchTitlePickerDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+}
+
+async function selectBatchTitleForRestore(title) {
+    closeBatchTitlePicker();
+    document.getElementById('batchTitleInput').value = title;
+    _doBatchTitleCheck();
+    setStatus('배치 불러오는 중...');
+
+    try {
+        const url = `/api/perspective/deploy-gallery/list?source=deploy&batch_title=${encodeURIComponent(title)}&all=1`;
+        const r = await fetch(url, { credentials: 'include' });
+        const d = await r.json();
+        const entries = d.entries || [];
+        if (entries.length === 0) {
+            setStatus('해당 명칭의 저장 결과 없음', true);
+            return;
+        }
+
+        // 직원 ID 목록 수집
+        const empIds = [...new Set(entries.map(e => e.employee_id).filter(Boolean))];
+        _csvEmployeeIds = empIds;
+        document.getElementById('csvStatus').textContent = `✅ "${title}" — ${empIds.length}명 복원됨`;
+        document.getElementById('allEmployeesCheck').checked = false;
+        document.getElementById('employeeSelect').disabled = true;
+        _autoSavePageState();
+
+        // 설정 복원 (첫 번째 항목 기준)
+        const ref = entries[0];
+        if (ref.row_field) {
+            document.getElementById('rowFieldSelect').value = ref.row_field;
+            onRowFieldChange();
+            await new Promise(r => setTimeout(r, 30));
+            const rowVals = ref.row_values;
+            if (rowVals && rowVals.length > 0) {
+                document.querySelectorAll('.rowValueCb').forEach(cb => {
+                    cb.checked = rowVals.includes(cb.value);
+                });
+            }
+            if (ref.row_combine_all) {
+                const radio = document.querySelector('input[name="rowOutputMode"][value="combined"]');
+                if (radio) radio.checked = true;
+            }
+        }
+        if (ref.analysis_type) {
+            document.querySelectorAll('input[name="analysisType"]').forEach(cb => {
+                cb.checked = cb.value === ref.analysis_type;
+            });
+        }
+        if (ref.options) applyWcOptions(ref.options);
+
+        setStatus(`"${title}" 복원 완료 — ${empIds.length}명 / 매트릭스 저장을 눌러 재실행하세요`);
+    } catch(e) {
+        _origError('Batch title restore failed:', e);
+        setStatus('복원 실패', true);
+    }
+}
+
+// ── 세션 복원 ─────────────────────────────────────────────────────────────────
+
+function _saveLastRunParams() {
+    try {
+        const params = {
+            empId: document.getElementById('employeeSelect').value,
+            allEmp: document.getElementById('allEmployeesCheck').checked,
+            csvIds: _csvEmployeeIds,
+            rowField: document.getElementById('rowFieldSelect').value,
+            rowValues: getSelectedRowValues(),
+            rowCombineAll: isRowCombineAll(),
+            colMode: document.getElementById('colModeSelect').value,
+            analysisTypes: getAnalysisTypes(),
+            batchTitle: (document.getElementById('batchTitleInput')?.value || '').trim(),
+            wco: getWcOptions(),
+            includeNameInFilename: document.getElementById('includeNameInFilename')?.checked ?? true,
+            includeIdInFilename: document.getElementById('includeIdInFilename')?.checked ?? true,
+            savedAt: new Date().toISOString(),
+        };
+        sessionStorage.setItem('pt_last_run', JSON.stringify(params));
+    } catch(e) { /* 저장 실패 무시 */ }
+}
+
+function _showRestoreBanner(params) {
+    const resultArea = document.getElementById('resultArea');
+    const t = params.savedAt ? new Date(params.savedAt).toLocaleString('ko-KR') : '';
+    let empInfo;
+    if (params.allEmp) {
+        empInfo = '전체 직원';
+    } else if (params.csvIds && params.csvIds.length > 0) {
+        empInfo = `${params.csvIds.length}명 (사번 목록)`;
+    } else {
+        empInfo = params.empId || '?';
+    }
+    const batchInfo = params.batchTitle ? ` · ${params.batchTitle}` : '';
+    resultArea.innerHTML = `
+        <div style="padding:30px;text-align:center;">
+            <div style="background:#f0f7ff;border:1px solid #b8daff;border-radius:8px;padding:16px 20px;max-width:500px;margin:0 auto;text-align:left;">
+                <div style="font-size:13px;font-weight:600;color:#004085;margin-bottom:6px;">이전 분석 결과를 복원할 수 있습니다</div>
+                <div style="font-size:12px;color:#555;margin-bottom:12px;">${t ? t + '<br>' : ''}<span style="color:#333;">${empInfo}${batchInfo}</span></div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-primary" style="font-size:12px;" onclick="_restoreLastMatrix()">복원하기 (재실행)</button>
+                    <button class="btn-secondary" style="font-size:12px;" onclick="_dismissRestore()">무시</button>
+                </div>
+            </div>
+        </div>`;
+}
+
+function _dismissRestore() {
+    sessionStorage.removeItem('pt_last_run');
+    document.getElementById('resultArea').innerHTML = '<p style="color:#999;text-align:center;padding:50px;">직원을 선택하고 매트릭스를 생성하세요.</p>';
+}
+
+async function _restoreLastMatrix() {
+    const saved = sessionStorage.getItem('pt_last_run');
+    if (!saved) return;
+    let params;
+    try { params = JSON.parse(saved); } catch(e) { return; }
+
+    // 직원 선택 복원
+    if (params.allEmp) {
+        document.getElementById('allEmployeesCheck').checked = true;
+        toggleAllEmployees();
+    } else if (params.csvIds && params.csvIds.length > 0) {
+        _csvEmployeeIds = params.csvIds;
+        document.getElementById('csvStatus').textContent = `✅ ${params.csvIds.length}명 (복원됨)`;
+    } else if (params.empId) {
+        document.getElementById('employeeSelect').value = params.empId;
+    }
+
+    // X축 복원
+    if (params.rowField) {
+        document.getElementById('rowFieldSelect').value = params.rowField;
+        onRowFieldChange();
+        await new Promise(r => setTimeout(r, 30));
+        if (params.rowValues && params.rowValues.length > 0) {
+            document.querySelectorAll('.rowValueCb').forEach(cb => {
+                cb.checked = params.rowValues.includes(cb.value);
+            });
+        }
+        if (params.rowCombineAll) {
+            const radio = document.querySelector('input[name="rowOutputMode"][value="combined"]');
+            if (radio) radio.checked = true;
+        }
+    }
+
+    // Y축 복원
+    if (params.colMode) document.getElementById('colModeSelect').value = params.colMode;
+
+    // 분석 유형 복원
+    if (params.analysisTypes && params.analysisTypes.length > 0) {
+        document.querySelectorAll('input[name="analysisType"]').forEach(cb => {
+            cb.checked = params.analysisTypes.includes(cb.value);
+        });
+    }
+
+    // 배치 명칭 복원
+    const inp = document.getElementById('batchTitleInput');
+    if (inp && params.batchTitle) inp.value = params.batchTitle;
+
+    // WC 옵션 복원
+    if (params.wco) applyWcOptions(params.wco);
+
+    // 파일명 옵션 복원
+    const cbName = document.getElementById('includeNameInFilename');
+    if (cbName && params.includeNameInFilename != null) cbName.checked = params.includeNameInFilename;
+    const cbId = document.getElementById('includeIdInFilename');
+    if (cbId && params.includeIdInFilename != null) cbId.checked = params.includeIdInFilename;
+
+    generateMatrix();
+}
+
+// ── 페이지 상태 자동 저장/복원 ──────────────────────────────────────────────────
+
+function _autoSavePageState() {
+    try {
+        const params = {
+            empId: document.getElementById('employeeSelect').value,
+            allEmp: document.getElementById('allEmployeesCheck').checked,
+            csvIds: _csvEmployeeIds,
+            rowField: document.getElementById('rowFieldSelect').value,
+            rowValues: getSelectedRowValues(),
+            rowCombineAll: isRowCombineAll(),
+            colMode: document.getElementById('colModeSelect').value,
+            analysisTypes: getAnalysisTypes(),
+            batchTitle: (document.getElementById('batchTitleInput')?.value || '').trim(),
+            wco: getWcOptions(),
+            includeNameInFilename: document.getElementById('includeNameInFilename')?.checked ?? true,
+            includeIdInFilename: document.getElementById('includeIdInFilename')?.checked ?? true,
+        };
+        sessionStorage.setItem('pt_page_state', JSON.stringify(params));
+    } catch(e) { /* 저장 실패 무시 */ }
+}
+
+async function _restorePageState(params) {
+    // 직원 선택 복원
+    if (params.allEmp) {
+        document.getElementById('allEmployeesCheck').checked = true;
+        toggleAllEmployees();
+    } else if (params.csvIds && params.csvIds.length > 0) {
+        _csvEmployeeIds = params.csvIds;
+        document.getElementById('csvStatus').textContent = `✅ ${params.csvIds.length}명 (복원됨)`;
+        document.getElementById('allEmployeesCheck').checked = false;
+        document.getElementById('employeeSelect').disabled = true;
+        document.getElementById('allEmployeesCheck').disabled = true;
+    } else if (params.empId) {
+        document.getElementById('allEmployeesCheck').checked = false;
+        document.getElementById('employeeSelect').disabled = false;
+        document.getElementById('employeeSelect').value = params.empId;
+    }
+
+    // X축 복원
+    if (params.rowField) {
+        document.getElementById('rowFieldSelect').value = params.rowField;
+        onRowFieldChange();
+        await new Promise(r => setTimeout(r, 30));
+        if (params.rowValues && params.rowValues.length > 0) {
+            document.querySelectorAll('.rowValueCb').forEach(cb => {
+                cb.checked = params.rowValues.includes(cb.value);
+            });
+        }
+        if (params.rowCombineAll) {
+            const radio = document.querySelector('input[name="rowOutputMode"][value="combined"]');
+            if (radio) radio.checked = true;
+        }
+    }
+
+    // Y축 복원
+    if (params.colMode) document.getElementById('colModeSelect').value = params.colMode;
+
+    // 분석 유형 복원
+    if (params.analysisTypes && params.analysisTypes.length > 0) {
+        document.querySelectorAll('input[name="analysisType"]').forEach(cb => {
+            cb.checked = params.analysisTypes.includes(cb.value);
+        });
+    }
+
+    // 배치 명칭 복원
+    const inp = document.getElementById('batchTitleInput');
+    if (inp && params.batchTitle) inp.value = params.batchTitle;
+
+    // WC 옵션 복원
+    if (params.wco) applyWcOptions(params.wco);
+
+    // 파일명 옵션 복원
+    const cbName = document.getElementById('includeNameInFilename');
+    if (cbName && params.includeNameInFilename != null) cbName.checked = params.includeNameInFilename;
+    const cbId = document.getElementById('includeIdInFilename');
+    if (cbId && params.includeIdInFilename != null) cbId.checked = params.includeIdInFilename;
 }
 
 async function saveDeploy(resumeSessionId = null) {
@@ -1445,6 +1760,42 @@ function saveToCorpus(btn) {
     });
 }
 
+function saveProfanityToCorpus(btn) {
+    const row = btn.closest('.profanity-sentence-row');
+    const rawText = row.dataset.fullText;
+    const text = rawText ? decodeURIComponent(rawText) : '';
+    const userLabel = row.querySelector('input[type="radio"]:checked')?.value || '';
+    const evalId = row.dataset.evalId || '';
+    const empId = row.closest('[data-employee-id]')?.dataset.employeeId || '';
+    const rawContext = row.dataset.profanityContext;
+    const context = rawContext ? decodeURIComponent(rawContext) : '';
+
+    if (!text) { showDeployToast('❌ 문장을 찾을 수 없습니다', ''); return; }
+    if (!userLabel) { showDeployToast('❌ 감정(긍/부/중)을 먼저 선택해주세요', ''); return; }
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    fetch('/api/perspective/acquired-sentences/save', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            sentence_text: text, user_label: userLabel, model_label: 'profanity',
+            confidence: 0, source_employee_id: empId, source_evaluation_id: evalId,
+            source_batch_id: '', sentence_index: 0, db_id: 0, context: context,
+        })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.success) {
+            btn.textContent = '✅';
+            showDeployToast('✅ 코퍼스에 저장됨', '/acquired-data');
+            setTimeout(function() { btn.textContent = '📋'; btn.disabled = false; }, 2000);
+        } else {
+            btn.textContent = '❌';
+            setTimeout(function() { btn.textContent = '📋'; btn.disabled = false; }, 2000);
+        }
+    }).catch(function() {
+        btn.textContent = '❌';
+        setTimeout(function() { btn.textContent = '📋'; btn.disabled = false; }, 2000);
+    });
+}
+
 function _renderDeploymentSentences(sentences, details) {
     const fs = 'var(--sent-font-size,7px)';
     if (details && details.length > 0) {
@@ -1579,10 +1930,29 @@ function _buildEmployeeResultHtml(res, expandWc, expandSent) {
                 const ps = res.profanity_summary;
                 if (ps && ps.profanity_sentences && ps.profanity_sentences.length > 0) {
                     h += '<div style="margin-top:4px;border-top:1px dashed #f5c6cb;padding-top:3px;">';
-                    h += '<div style="font-size:7px;color:#dc3545;font-weight:bold;margin-bottom:2px;">⚠ 욕설 감지 문장</div>';
+                    h += '<div style="font-size:7px;color:#dc3545;font-weight:bold;margin-bottom:2px;">⚠ 욕설 감지 문장 (' + ps.profanity_sentences.length + '건)</div>';
+                    h += '<div style="display:flex;align-items:center;margin-bottom:2px;padding-bottom:2px;border-bottom:1px dashed #f5c6cb;">';
+                    h += '<span style="width:22px;text-align:center;font-size:6px;font-weight:600;color:#28a745;">긍</span>';
+                    h += '<span style="width:22px;text-align:center;font-size:6px;font-weight:600;color:#dc3545;">부</span>';
+                    h += '<span style="width:22px;text-align:center;font-size:6px;font-weight:600;color:#6c757d;">중</span>';
+                    h += '<span style="flex:1;"></span>';
+                    h += '</div>';
                     ps.profanity_sentences.forEach(function(s) {
                         const hl = highlightProfanity(s.original_text, s.detection_details);
-                        h += '<div style="font-size:7px;color:#555;line-height:1.4;margin-bottom:3px;padding:2px 4px;background:#fff8f8;border-left:2px solid #dc3545;">' + hl + '</div>';
+                        const nm = 'profgrp_' + (_sentGroupId++);
+                        const textEncoded = encodeURIComponent(s.original_text || '');
+                        const evalId = escapeHtml(s.evaluator_id || '');
+                        const ctxData = encodeURIComponent(JSON.stringify({
+                            detected_words: s.detected_words || [],
+                            detection_details: s.detection_details || []
+                        }));
+                        h += '<div class="profanity-sentence-row" data-full-text="' + textEncoded + '" data-eval-id="' + evalId + '" data-profanity-context="' + ctxData + '" style="display:flex;align-items:flex-start;margin-bottom:3px;padding:2px 4px;background:#fff8f8;border-left:2px solid #dc3545;">';
+                        h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="positive" style="cursor:pointer;"></label>';
+                        h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="negative" style="cursor:pointer;"></label>';
+                        h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="neutral" style="cursor:pointer;"></label>';
+                        h += '<span style="flex:1;font-size:7px;color:#555;line-height:1.4;word-break:break-all;">' + hl + '</span>';
+                        h += '<button onclick="saveProfanityToCorpus(this)" style="flex-shrink:0;width:18px;height:18px;padding:0;border:none;background:transparent;cursor:pointer;font-size:12px;line-height:1;" title="코퍼스에 저장">📋</button>';
+                        h += '</div>';
                     });
                     h += '</div>';
                 }
@@ -2364,9 +2734,13 @@ async function loadBatchHistory() {
         const info = d.batch_info || {};
         summary.textContent = `${d.batches.length}개 배치, ${info.unique_employees||0}명, ${info.total_evaluations||0}개 평가`;
         let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-        html += '<thead><tr style="background:#f0f0f0;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">배치 ID</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">생성일</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">직원</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">평가</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;"></th></tr></thead><tbody>';
+        html += '<thead><tr style="background:#f0f0f0;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">명칭</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">배치 ID</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">생성일</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">직원</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">평가</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;"></th></tr></thead><tbody>';
         d.batches.forEach(b => {
-            html += `<tr><td style="padding:4px 6px;border-bottom:1px solid #eee;">${b.batch_id}</td>`;
+            var dn = b.display_name || '';
+            function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+            var dnDisplay = escHtml(dn ? dn : b.batch_id);
+            html += `<tr><td style="padding:4px 6px;border-bottom:1px solid #eee;"><span id="dn-${b.batch_id}">${dnDisplay}</span> <button class="btn-sm" style="padding:1px 4px;font-size:10px;margin-left:4px;" onclick="editDisplayName('${b.batch_id}')">✏️</button></td>`;
+            html += `<td style="padding:4px 6px;border-bottom:1px solid #eee;color:#888;font-size:10px;">${b.batch_id}</td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${(b.created_at||'').slice(0,10)}</td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${b.employee_count}</td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${b.total_evaluations}</td>`;
@@ -2378,6 +2752,28 @@ async function loadBatchHistory() {
     } catch(e) {
         _origError('Batch history load failed:', e);
         list.innerHTML = '<p style="color:#dc3545;padding:10px;">로드 실패</p>';
+    }
+}
+
+async function editDisplayName(batchId) {
+    var currentSpan = document.getElementById('dn-' + batchId);
+    var currentName = currentSpan.textContent.trim();
+    var newName = prompt('배치 명칭을 입력하세요:', currentName === batchId ? '' : currentName);
+    if (newName === null) return;
+    try {
+        var r = await fetch('/api/perspective/batch/' + batchId + '/display-name', {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({display_name: (newName || '').trim()})
+        });
+        var d = await r.json();
+        if (d.success) {
+            loadBatchHistory();
+        } else {
+            alert('수정 실패: ' + (d.error || ''));
+        }
+    } catch (e) {
+        alert('오류: ' + e.message);
     }
 }
 
@@ -2708,6 +3104,33 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleAllEmployees();
     checkResume();
     _doBatchTitleCheck();
+
+    // ── 페이지 상태 자동 저장: 정적 요소 ──
+    document.getElementById('employeeSelect').addEventListener('change', _autoSavePageState);
+    document.getElementById('allEmployeesCheck').addEventListener('change', _autoSavePageState);
+    document.getElementById('rowFieldSelect').addEventListener('change', _autoSavePageState);
+    document.getElementById('colModeSelect').addEventListener('change', _autoSavePageState);
+    document.getElementById('includeNameInFilename').addEventListener('change', _autoSavePageState);
+    document.getElementById('includeIdInFilename').addEventListener('change', _autoSavePageState);
+
+    // 분석 유형 체크박스 그룹 (위임)
+    document.getElementById('analysisOptions').addEventListener('change', function(e) {
+        if (e.target.matches('input[name="analysisType"]')) _autoSavePageState();
+    });
+
+    // 배치 명칭 입력 (디바운스)
+    let _batchTitleTimer;
+    document.getElementById('batchTitleInput').addEventListener('input', function() {
+        clearTimeout(_batchTitleTimer);
+        _batchTitleTimer = setTimeout(_autoSavePageState, 300);
+    });
+
+    // ── 페이지 상태 자동 저장: 동적 생성 요소 (이벤트 위임) ──
+    document.getElementById('rowValuesContainer').addEventListener('change', function(e) {
+        if (e.target.matches('.rowValueCb') || e.target.matches('input[name="rowOutputMode"]')) {
+            _autoSavePageState();
+        }
+    });
 });
 </script>
 {% endblock %}

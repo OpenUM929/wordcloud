@@ -87,57 +87,61 @@ def initialize_batch_directory(processed_data_dir):
     return batch_dir, batch_num
 
 
-def group_data_by_employee(df, target_id_column, mappings):
+def _extract_rows_from_chunk(chunk, target_id_column, mappings,
+                             _pseudo_mgr, pseudonym_fields):
+    """청크 DataFrame → [(pseudo_emp_id, json(evaluation)), ...]
+
+    기존 group_data_by_employee의 값 처리(문자열 strip, NaN 보존)를 동일하게 유지하되,
+    iterrows 전수 순회 대신 청크 단위 groupby로 그룹핑하고 가명화를 여기서 1회 적용한다.
     """
-    Group DataFrame rows by employee ID.
-    
-    Args:
-        df: pandas DataFrame
-        target_id_column: Column name for employee ID
-        mappings: Field to column mappings
-        
-    Returns:
-        dict: {employee_id: [evaluation_data, ...]}
-    """
-    grouped_data = {}
-    
-    for _, row in df.iterrows():
-        target_id = row[target_id_column]
-        if target_id not in grouped_data:
-            grouped_data[target_id] = []
-        
-        evaluation = {}
-        for field, column in mappings.items():
-            if field != 'target_employee_id' and column in row:
-                value = row[column]
-                # 문자열 앞뒤 공백 제거
-                if isinstance(value, str):
-                    value = value.strip()
-                evaluation[field] = value
-        
-        # evaluator_id가 없으면 evaluation_date에서 생성
-        if 'evaluator_id' not in evaluation and 'evaluation_date' in evaluation:
-            date_str = str(evaluation.get('evaluation_date', '')).replace('-', '')
-            evaluation['evaluator_id'] = f"eval-{target_id}-{date_str}"
-        
-        # evaluator_hierarchy_level 기본값 설정
-        if 'evaluator_hierarchy_level' not in evaluation:
-            position = evaluation.get('evaluator_position', '')
-            if any(p in position for p in ['과장', '팀장', '관리자', '总监', 'manager']):
-                evaluation['evaluator_hierarchy_level'] = 'manager'
-            else:
-                evaluation['evaluator_hierarchy_level'] = 'staff'
-        
-        grouped_data[target_id].append(evaluation)
-    
-    return grouped_data
+    out = []
+    for raw_id, group in chunk.groupby(target_id_column):
+        emp_id = str(raw_id)
+        if _pseudo_mgr and 'target_employee_id' in pseudonym_fields:
+            emp_id = _pseudo_mgr.get_pseudonym(emp_id)
+
+        for _, row in group.iterrows():  # 소규모 그룹 내부만 iterrows
+            evaluation = {}
+            for field, column in mappings.items():
+                if field != 'target_employee_id' and column in row.index:
+                    value = row[column]
+                    # pandas NaN/inf 처리 (float('nan') → None)
+                    if isinstance(value, float):
+                        if value != value or value == float('inf') or value == float('-inf'):
+                            value = None
+                    # 문자열 앞뒤 공백 제거
+                    if isinstance(value, str):
+                        value = value.strip()
+                    if value is not None:
+                        evaluation[field] = value
+
+            # evaluator_id가 없으면 evaluation_date에서 생성
+            if 'evaluator_id' not in evaluation and 'evaluation_date' in evaluation:
+                date_str = str(evaluation.get('evaluation_date', '')).replace('-', '')
+                evaluation['evaluator_id'] = f"eval-{emp_id}-{date_str}"
+
+            # evaluator_hierarchy_level 기본값 설정
+            if 'evaluator_hierarchy_level' not in evaluation:
+                position = evaluation.get('evaluator_position', '')
+                if any(p in position for p in ['과장', '팀장', '관리자', '总监', 'manager']):
+                    evaluation['evaluator_hierarchy_level'] = 'manager'
+                else:
+                    evaluation['evaluator_hierarchy_level'] = 'staff'
+
+            # 가명화 1회 적용 (이후 metadata dept/pos 후처리 가명화는 삭제됨 — 이중 적용 방지)
+            if _pseudo_mgr:
+                evaluation = _pseudo_mgr.apply_pseudonyms_to_dict(evaluation, pseudonym_fields)
+
+            out.append((emp_id, json.dumps(evaluation, ensure_ascii=False)))
+
+    return out
 
 
-def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_dir, 
-                              department, position, mappings, df):
+def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_dir,
+                              department, position, mappings):
     """
     Process metadata for a single employee.
-    
+
     Args:
         metadata_manager: MetadataManager instance
         employee_id: Employee ID
@@ -146,8 +150,7 @@ def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_
         department: Department name
         position: Position title
         mappings: Field mappings
-        df: Original DataFrame
-        
+
     Returns:
         tuple: (metadata, success, error_message)
     """
@@ -158,27 +161,48 @@ def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_
             department=department,
             position=position
         )
-        
-        # Add additional fields from mappings
-        if 'target_employee_department' in mappings and mappings['target_employee_department'] in df.columns:
-            metadata['target_employee_department'] = df.iloc[0].get(mappings['target_employee_department'], '생산부')
 
-        if 'target_employee_position' in mappings and mappings['target_employee_position'] in df.columns:
-            metadata['target_employee_position'] = df.iloc[0].get(mappings['target_employee_position'], '사원')
+        # Add additional fields from this employee's own evaluations
+        # (기존 df.iloc[0]은 전체 첫 행을 모든 직원에 적용하는 잠재 버그였음 → 직원별 값으로 교정)
+        if evaluations and 'target_employee_department' in evaluations[0]:
+            dept = evaluations[0].get('target_employee_department')
+            if dept and isinstance(dept, str):
+                metadata['target_employee_department'] = dept
+
+        if evaluations and 'target_employee_position' in evaluations[0]:
+            pos = evaluations[0].get('target_employee_position')
+            if pos and isinstance(pos, str):
+                metadata['target_employee_position'] = pos
 
         # 원래 이름(이름 컬럼이 매핑된 경우) - 가명화 대상이 아니므로 evaluations에서 직접 추출
         if 'target_employee_name' in mappings and evaluations:
-            name_val = evaluations[0].get('target_employee_name', '')
-            if name_val:
-                metadata['target_employee_name'] = str(name_val)
+            name_val = evaluations[0].get('target_employee_name')
+            if name_val and isinstance(name_val, str):
+                metadata['target_employee_name'] = name_val
         
         # Stage 2에서 Stage 3/4에서 별도로 저장하므로 여기서는 저장 안 함
         # metadata_path = metadata_manager.save_employee_metadata(metadata, batch_dir)
-        
+
         return metadata, True, None, None
-        
+
     except Exception as e:
-        return None, False, str(e), None
+        import traceback
+        tb = traceback.format_exc()
+        # evaluations 샘플 추출 (최대 3개)
+        eval_samples = []
+        for i, ev in enumerate(evaluations[:3]):
+            doc = ev.get('evaluation_document', '')[:200]
+            eval_id = ev.get('evaluation_id', f'#{i}')
+            eval_samples.append(f"  eval_id={eval_id}: document={doc!r}")
+        eval_str = '\n'.join(eval_samples)
+        error_msg = (
+            f"{type(e).__name__}: {e}\n"
+            f"Traceback:\n{tb}\n"
+            f"Employee ID: {employee_id}\n"
+            f"Evaluations count: {len(evaluations)}\n"
+            f"Evaluation samples:\n{eval_str}"
+        )
+        return None, False, error_msg, None
 
 
 def check_profanity_in_metadata(metadata, batch_state):
@@ -344,6 +368,31 @@ def create_batch_summary(batch_dir, grouped_data, employee_results,
     return batch_summary
 
 
+def _ensure_batch_summary(batch_dir, batch_processing_state, display_name=''):
+    """batch_summary.json 생성 또는 갱신 (display_name 저장용)."""
+    summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
+    os.makedirs(os.path.dirname(summary_path), exist_ok=True)
+
+    summary = {
+        'batch_info': {
+            'batch_id': os.path.basename(batch_dir),
+            'display_name': display_name if display_name else '',
+            'created_at': batch_processing_state.get('created_at', ''),
+            'processed_at': datetime.now().isoformat() + 'Z',
+            'unique_employees': batch_processing_state.get('total_employees', 0),
+            'total_evaluations': batch_processing_state.get('total_rows', 0),
+            'success_count': batch_processing_state.get('success_count', 0),
+            'error_count': batch_processing_state.get('error_count', 0)
+        },
+        'processing_config': {}
+    }
+
+    with open(summary_path, 'w', encoding='utf-8') as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+
+    return summary
+
+
 def process_batch(processed_data_dir, data, session_data):
     """
     Main batch processing function.
@@ -363,92 +412,13 @@ def process_batch(processed_data_dir, data, session_data):
     from src.models.metadata_manager import MetadataManager
     import os
     
-    # Load data from session file path (병렬 처리)
+    # Load data from session file path
     csv_file_path = session_data.get('csv_file_path')
     if not csv_file_path or not os.path.exists(csv_file_path):
         return {'error': '업로드된 파일이 없습니다.'}, 400
-    
-    # 병렬 CSV 로드 (파일 또는 폴더)
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    import multiprocessing
-    
-    # Get file count for dynamic worker allocation
-    if os.path.isdir(csv_file_path):
-        import glob
-        csv_files = glob.glob(os.path.join(csv_file_path, "*.csv"))
-        xlsx_files = glob.glob(os.path.join(csv_file_path, "*.xlsx")) + \
-                    glob.glob(os.path.join(csv_file_path, "*.xls"))
-        file_count = len(csv_files) + len(xlsx_files)
-    else:
-        file_count = 1
-    
-    cpu_count = min(multiprocessing.cpu_count(), 8)
-    if file_count < 3:
-        num_workers = 1
-    elif file_count < 5:
-        num_workers = min(2, cpu_count)
-    else:
-        num_workers = min(min(file_count, cpu_count), 8)
-    
-    def load_csv_chunk(args):
-        path, ext = args
-        try:
-            if ext == '.csv':
-                return pd.read_csv(path)
-            elif ext in ('.xlsx', '.xls'):
-                return pd.read_excel(path)
-        except Exception as e:
-            return None
-    
-    if os.path.isdir(csv_file_path):
-        # 폴더 선택: 폴더 내 모든 CSV 파일 병렬 로드
-        import glob
-        csv_files = glob.glob(os.path.join(csv_file_path, "*.csv"))
-        xlsx_files = glob.glob(os.path.join(csv_file_path, "*.xlsx")) + \
-                    glob.glob(os.path.join(csv_file_path, "*.xls"))
-        all_files = [(f, os.path.splitext(f)[1].lower()) for f in csv_files + xlsx_files]
-        
-        if not all_files:
-            return {'error': '선택한 폴더에 CSV/Excel 파일이 없습니다.'}, 400
-        
-        batch_processing_state['current_step'] = 0
-        batch_processing_state['status_message'] = f'Stage 1: 폴더에서 {len(all_files)}개 파일 병렬 로드 중...'
-        
-        with ThreadPoolExecutor(max_workers=num_workers) as executor:
-            dfs = list(executor.map(load_csv_chunk, all_files))
-        
-        df = pd.concat([d for d in dfs if d is not None], ignore_index=True)
-    
-    else:
-        # 단일 파일: chunk 단위로 병렬 로드
-        if csv_file_path.endswith('.csv'):
-            # Chunk 단위로 읽어서 병렬 처리
-            chunk_size = 50000
-            try:
-                total_rows = sum(1 for _ in open(csv_file_path, 'r', encoding='utf-8')) - 1
-            except:
-                total_rows = 0
-            
-            if total_rows > chunk_size:
-                batch_processing_state['status_message'] = f'Stage 1: 대용량 CSV ({total_rows}줄) chunk 병렬 로드 중...'
-                
-                chunks = []
-                for chunk in pd.read_csv(csv_file_path, chunksize=chunk_size):
-                    chunks.append(chunk)
-                
-                with ThreadPoolExecutor(max_workers=num_workers) as executor:
-                    processed_chunks = list(executor.map(lambda c: c, chunks))
-                
-                df = pd.concat(processed_chunks, ignore_index=True)
-            else:
-                df = pd.read_csv(csv_file_path)
-        elif csv_file_path.endswith(('.xlsx', '.xls')):
-            df = pd.read_excel(csv_file_path)
-        else:
-            return {'error': '지원되지 않는 파일 형식입니다.'}, 400
-    
-    # 파일 로드 완료: 5%
-    batch_processing_state['progress'] = 5
+
+    from src.services import batch_staging
+    CHUNK_SIZE = 10000
 
     # Initialize batch directory (resume 시 기존 디렉토리 재사용)
     _is_resume = bool(data.get('resume'))
@@ -472,14 +442,12 @@ def process_batch(processed_data_dir, data, session_data):
     # Get mappings
     mappings = data.get('mappings', {})
     target_id_column = mappings.get('target_employee_id')
-    
+
     if not target_id_column:
         return {'error': '대상자 ID 필드가 매핑되지 않았습니다.'}, 400
-    
-    # Group data by employee
-    grouped_data = group_data_by_employee(df, target_id_column, mappings)
-    
+
     # Always pseudonymize all PII fields (no user checkbox needed)
+    # 가명화 매니저는 Phase 1 ingest 중 1회 적용되므로 여기서 먼저 준비한다.
     pseudonym_fields = data.get('pseudonym_fields', [])
     forced_pseudo = [
         'target_employee_id', 'evaluator_id',
@@ -495,22 +463,94 @@ def process_batch(processed_data_dir, data, session_data):
         from src.config.settings import ADMIN_PASSWORD, PSEUDONYM_MAPPINGS_PATH
         from src.modules.pseudonym_manager import PseudonymManager
         _pseudo_mgr = PseudonymManager(PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD)
-        
-        # Re-key grouped_data if target_employee_id is pseudonymized
-        if 'target_employee_id' in pseudonym_fields:
-            new_grouped_data = {}
-            for emp_id in list(grouped_data.keys()):
-                pseudo_id = _pseudo_mgr.get_pseudonym(str(emp_id))
-                new_grouped_data[pseudo_id] = grouped_data[emp_id]
-            grouped_data = new_grouped_data
-        
-        # Apply pseudonyms to evaluation dicts
-        for emp_id in grouped_data:
-            grouped_data[emp_id] = [
-                _pseudo_mgr.apply_pseudonyms_to_dict(ev, pseudonym_fields)
-                for ev in grouped_data[emp_id]
-            ]
-    
+
+    # ============================================================
+    # Phase 1: CSV 청크 스트리밍 → staging.db ingest (라인 기반 진행, 0~40%)
+    # 전체 df를 RAM에 올리지 않고 청크 단위로 읽어 원문 평가를 디스크에 누적한다.
+    # ============================================================
+    def _count_total_lines(path):
+        """단일 CSV의 총 레코드 수(헤더 제외). 1패스, 메모리 미사용."""
+        if os.path.isfile(path) and path.endswith('.csv'):
+            try:
+                with open(path, 'r', encoding='utf-8') as _f:
+                    return sum(1 for _ in _f) - 1
+            except Exception:
+                return 0
+        return 0
+
+    def _chunk_iter(path):
+        """파일/폴더를 청크 DataFrame으로 순회한다(Excel은 1회 로드 후 슬라이스)."""
+        if os.path.isfile(path):
+            if path.endswith('.csv'):
+                yield from pd.read_csv(path, chunksize=CHUNK_SIZE)
+            elif path.endswith(('.xlsx', '.xls')):
+                xl = pd.read_excel(path)
+                for i in range(0, len(xl), CHUNK_SIZE):
+                    yield xl.iloc[i:i + CHUNK_SIZE]
+            else:
+                raise ValueError('지원되지 않는 파일 형식입니다.')
+        else:
+            import glob
+            files = (glob.glob(os.path.join(path, '*.csv'))
+                     + glob.glob(os.path.join(path, '*.xlsx'))
+                     + glob.glob(os.path.join(path, '*.xls')))
+            if not files:
+                raise ValueError('선택한 폴더에 CSV/Excel 파일이 없습니다.')
+            for fp in files:
+                if fp.endswith('.csv'):
+                    yield from pd.read_csv(fp, chunksize=CHUNK_SIZE)
+                else:
+                    xl = pd.read_excel(fp)
+                    for i in range(0, len(xl), CHUNK_SIZE):
+                        yield xl.iloc[i:i + CHUNK_SIZE]
+
+    _total_lines = _count_total_lines(csv_file_path)
+
+    staging_conn = batch_staging.open_staging(batch_dir)
+    # 처리 중 예외로 종료될 경우 _run_batch_process except 블록이 staging을 정리하도록 경로 기록
+    batch_processing_state['_active_staging_dir'] = batch_dir
+    emp_id_set = set()          # Phase 2 직원 ID 집합 (문자열만 보관 = 경량)
+    _ingested_rows = 0
+
+    batch_processing_state['current_step'] = 0
+    batch_processing_state['progress'] = 5
+    batch_processing_state['status_message'] = '데이터 수집 준비 중...'
+
+    try:
+        for chunk in _chunk_iter(csv_file_path):
+            rows = _extract_rows_from_chunk(chunk, target_id_column, mappings,
+                                            _pseudo_mgr, pseudonym_fields)
+            if rows:
+                batch_staging.insert_evaluations(staging_conn, rows)
+                for _emp_id, _ in rows:
+                    emp_id_set.add(_emp_id)
+            _ingested_rows += len(chunk)
+
+            if _total_lines:
+                batch_processing_state['total_rows'] = _total_lines
+                pct = min(_ingested_rows / max(_total_lines, 1), 1.0)
+                batch_processing_state['progress'] = int(5 + pct * 35)
+                batch_processing_state['status_message'] = (
+                    f'데이터 수집 중 ({_ingested_rows:,} / {_total_lines:,} 라인)'
+                )
+            else:
+                # Excel/폴더: 총량 미상 → 누적 카운트만 표시
+                batch_processing_state['status_message'] = f'데이터 수집 중 ({_ingested_rows:,} 라인)'
+            batch_processing_state['processed_rows'] = _ingested_rows  # 기존 필드 재사용
+    except Exception as e:
+        batch_staging.close_and_remove(staging_conn, batch_dir)
+        batch_processing_state.pop('_active_staging_dir', None)
+        return {'error': f'데이터 수집 실패: {str(e)}'}, 500
+
+    if _ingested_rows == 0:
+        batch_staging.close_and_remove(staging_conn, batch_dir)
+        batch_processing_state.pop('_active_staging_dir', None)
+        return {'error': '처리할 데이터가 없습니다.'}, 400
+
+    batch_processing_state['progress'] = 40
+    batch_processing_state['total_rows'] = _ingested_rows  # 완료 시 실제값 확정
+    batch_processing_state['status_message'] = f'데이터 수집 완료: {len(emp_id_set):,}명'
+
     # 작업서(Work Order) 생성/연결 — 새 배치만 생성, resume 시 기존 작업서 재사용
     from src.services.batch_work_order_service import (
         create_work_order, update_work_order_progress, complete_work_order,
@@ -532,7 +572,7 @@ def process_batch(processed_data_dir, data, session_data):
         }
         try:
             create_work_order(batch_id, batch_dir, _settings_snapshot,
-                              _file_info_snapshot, total_employees=len(grouped_data))
+                              _file_info_snapshot, total_employees=len(emp_id_set))
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning(f'Work order 생성 실패: {e}')
@@ -545,7 +585,7 @@ def process_batch(processed_data_dir, data, session_data):
     import multiprocessing
     
     # Get number of workers based on data amount (employee count)
-    employee_count = len(grouped_data)
+    employee_count = len(emp_id_set)
     cpu_count = min(multiprocessing.cpu_count(), 8)
     
     if employee_count < 10:
@@ -576,39 +616,37 @@ def process_batch(processed_data_dir, data, session_data):
         stopword_mgr = get_stopword_manager(os.path.join(CONFIGS_DIR_PATH, 'stopwords.json'))
         
         batch_processing_state['status_message'] = 'Stage 2 완료: 분석기 초기화 성공'
-        batch_processing_state['progress'] = 10
+        batch_processing_state['progress'] = 45
     except Exception as e:
         error_msg = f'분석기 초기화 실패: {str(e)}'
         batch_processing_state['status_message'] = f'Stage 2 실패: {error_msg}'
-        batch_processing_state['progress'] = 10
+        batch_processing_state['progress'] = 45
         employee_results = [
             {'employee_id': emp_id, 'error': error_msg, 'success': False}
-            for emp_id in grouped_data.keys()
+            for emp_id in emp_id_set
         ]
         batch_processing_state['current_step'] = 1
         pre_init_success = False
     else:
         batch_processing_state['current_step'] = 1
-        batch_processing_state['progress'] = 10
+        batch_processing_state['progress'] = 45
         pre_init_success = True
         employee_results = []
     
-    def process_single_employee(args):
-        """단일 직원 처리 함수 (병렬용)"""
-        employee_id, evaluations = args
+    def process_single_employee(employee_id):
+        """단일 직원 처리 함수 (병렬용) — staging.db에서 원문 평가를 로드한다."""
         try:
+            # 워커 스레드당 read 커넥션 1개 재사용 (open/close 반복 제거)
+            conn = batch_staging.get_reader(batch_dir)
+            evaluations = batch_staging.load_employee_evaluations(conn, employee_id)
             metadata, success, error, _ = process_employee_metadata(
                 metadata_manager, employee_id, evaluations, batch_dir,
                 data.get('target_employee_department', '생산부'),
                 data.get('target_employee_position', '사원'),
-                mappings, df
+                mappings
             )
             if success:
-                if _pseudo_mgr:
-                    meta_fields = [f for f in pseudonym_fields
-                                   if f in ('target_employee_department', 'target_employee_position')]
-                    if meta_fields:
-                        metadata = _pseudo_mgr.apply_pseudonyms_to_dict(metadata, meta_fields)
+                # dept/pos 가명화는 Phase 1 ingest에서 이미 적용됨 → 후처리 가명화 삭제(이중 적용 방지)
                 return {
                     'employee_id': employee_id,
                     'metadata': metadata,
@@ -623,23 +661,30 @@ def process_batch(processed_data_dir, data, session_data):
                     'error': error
                 }
         except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            error_msg = (
+                f"process_single_employee failed: {type(e).__name__}: {e}\n"
+                f"Traceback:\n{tb}\n"
+                f"Employee ID: {employee_id}"
+            )
             return {
                 'employee_id': employee_id,
                 'metadata': None,
                 'success': False,
-                'error': str(e)
+                'error': error_msg
             }
     
     # 직원별 즉시 DB 저장용 (crash-safe resume: 메타 생성 즉시 영구 저장)
     from src.services.user_data_manager import upsert
 
-    # Prepare data for parallel processing
-    employee_items = list(grouped_data.items())
+    # Prepare data for parallel processing (staging에 적재된 직원 ID 집합)
+    employee_items = sorted(emp_id_set)
 
     # Resume: 이미 완료된 직원 제외 (가명화 이후의 pseudo_id 기준)
     if _is_resume and prior_completed:
         employee_items = [
-            item for item in employee_items if str(item[0]) not in prior_completed
+            e for e in employee_items if str(e) not in prior_completed
         ]
 
     # 작업서 진행 추적: 저장 완료 직원 수(_persisted_count)와 아직 items 테이블에
@@ -659,7 +704,7 @@ def process_batch(processed_data_dir, data, session_data):
                 processed_employees=len(prior_completed) + _persisted_count,
                 success_count=len(prior_completed) + _persisted_count,
                 error_count=sum(1 for r in employee_results if not r.get('success')),
-                total_rows=len(df),
+                total_rows=_ingested_rows,
             )
         except Exception:
             pass
@@ -670,8 +715,8 @@ def process_batch(processed_data_dir, data, session_data):
 
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             future_to_employee = {
-                executor.submit(process_single_employee, item): item[0] 
-                for item in employee_items
+                executor.submit(process_single_employee, emp_id): emp_id
+                for emp_id in employee_items
             }
             
             completed = 0
@@ -711,10 +756,10 @@ def process_batch(processed_data_dir, data, session_data):
                     })
                 
                 completed += 1
-                # 10% ~ 50%: 메타데이터 생성 단계
-                batch_processing_state['progress'] = int(10 + (completed / total_employee_count) * 40)
+                # 45% ~ 90%: 분석 처리 단계 (Phase 2)
+                batch_processing_state['progress'] = int(45 + (completed / max(total_employee_count, 1)) * 45)
                 if completed % 10 == 0 or completed == total_employee_count:
-                    batch_processing_state['status_message'] = f'메타데이터 생성 중 ({completed}/{total_employee_count})'
+                    batch_processing_state['status_message'] = f'분석 처리 중 ({completed:,} / {total_employee_count:,}명)'
                     # 작업서 flush (10명 단위) — 신규 저장 직원만 items 테이블에 append.
                     # 이어서 시작 시 items 테이블을 skip 대상으로 사용 (O(델타), 대용량 안전).
                     _flush_work_order()
@@ -735,35 +780,57 @@ def process_batch(processed_data_dir, data, session_data):
         
         batch_processing_state['status_message'] = f'Stage 3 완료: 메타데이터 생성 ({len(employee_results)}명)'
         batch_processing_state['current_step'] = 2
-        batch_processing_state['progress'] = 50
+        batch_processing_state['progress'] = 90
     
     # 실패한 직원 추적
     failed_employees = [r for r in employee_results if not r['success']]
     batch_processing_state['failed_employees'] = [
-        {'employee_id': r['employee_id'], 'error': r.get('error', '알 수 없는 오류')}
+        {
+            'employee_id': r['employee_id'],
+            'error': r.get('error', '알 수 없는 오류'),
+            'error_summary': (r.get('error', '')[:500] + '...') if len(r.get('error', '')) > 500 else r.get('error', ''),
+        }
         for r in failed_employees
     ]
     batch_processing_state['error_count'] = len(failed_employees)
-    
+
     # 실패 데이터 저장
     if failed_employees:
         from datetime import datetime
         failed_dir_base = os.path.abspath(os.path.join(os.path.dirname(processed_data_dir), 'failed', datetime.now().strftime('%Y%m%d')))
         os.makedirs(failed_dir_base, exist_ok=True)
-        
+
         for r in failed_employees:
             emp_id = r['employee_id']
             emp_dir = os.path.join(failed_dir_base, f'emp_{emp_id}')
             os.makedirs(emp_dir, exist_ok=True)
-            
-            # 실패 원인 저장
+
+            # 실패 원인 저장 (상세 에러 메시지 + traceback)
+            error_detail = r.get('error', '알 수 없는 오류')
             with open(os.path.join(emp_dir, 'reason.txt'), 'w', encoding='utf-8') as f:
-                f.write(r.get('error', '알 수 없는 오류'))
-            
-            # 원본 데이터 저장
-            if emp_id in grouped_data:
-                emp_df = pd.DataFrame(grouped_data[emp_id])
-                emp_df.to_csv(os.path.join(emp_dir, 'data.csv'), index=False, encoding='utf-8-sig')
+                f.write(error_detail)
+
+            # 원본 데이터 저장 (staging.db에서 재조회 — grouped_data는 더 이상 없음)
+            _emp_evals = []
+            try:
+                _conn = batch_staging.get_reader(batch_dir)
+                _emp_evals = batch_staging.load_employee_evaluations(_conn, emp_id)
+            except Exception:
+                pass
+
+            if _emp_evals:
+                # CSV 형태로 저장
+                try:
+                    emp_df = pd.DataFrame(_emp_evals)
+                    emp_df.to_csv(os.path.join(emp_dir, 'data.csv'), index=False, encoding='utf-8-sig')
+                except Exception:
+                    pass
+                # JSON 형태로도 저장 (evaluations 원문 보존)
+                try:
+                    with open(os.path.join(emp_dir, 'evaluations.json'), 'w', encoding='utf-8') as f:
+                        json.dump(_emp_evals, f, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
     
     # ============================================================
     # Stage 4: DB 저장 (employees + evaluations)
@@ -773,17 +840,17 @@ def process_batch(processed_data_dir, data, session_data):
 
     batch_processing_state['status_message'] = f'Stage 4: DB 저장 완료 ({total_successful}명)'
     batch_processing_state['current_step'] = 3
-    batch_processing_state['progress'] = 60
+    batch_processing_state['progress'] = 92
 
     # 직원별 DB 저장(upsert)은 Stage 3 루프에서 완료 즉시 수행됨 (crash-safe).
     # 여기서는 상태/카운트만 정리한다.
     batch_id = os.path.basename(batch_dir)
 
-    batch_processing_state['total_employees'] = len(grouped_data)
+    batch_processing_state['total_employees'] = len(emp_id_set)
     batch_processing_state['processed_employees'] = len(employee_results)
     batch_processing_state['success_count'] = total_successful
     batch_processing_state['error_count'] = sum(1 for r in employee_results if not r['success'])
-    batch_processing_state['total_rows'] = len(df)
+    batch_processing_state['total_rows'] = _ingested_rows
     batch_processing_state['status_message'] = f'Stage 4 완료: DB 저장 ({total_successful}명)'
     batch_processing_state['current_step'] = 4
     batch_processing_state['progress'] = 100
@@ -803,6 +870,10 @@ def process_batch(processed_data_dir, data, session_data):
 
     session_data['batch_dir'] = batch_dir
 
+    # batch_summary.json 생성 (display_name 저장)
+    display_name = (data.get('batch_display_name') or '').strip()
+    _ensure_batch_summary(batch_dir, batch_processing_state, display_name)
+
     # 작업서 완료 처리 (남은 델타 flush 후 status=completed)
     try:
         _flush_work_order()
@@ -810,6 +881,11 @@ def process_batch(processed_data_dir, data, session_data):
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f'Work order 완료 처리 실패: {e}')
+
+    # staging 정리: 메인 스레드 잔여 reader 닫고 staging.db(+wal/shm) 삭제
+    batch_staging.close_reader()
+    batch_staging.close_and_remove(staging_conn, batch_dir)
+    batch_processing_state.pop('_active_staging_dir', None)
 
     return {
         'success': True,

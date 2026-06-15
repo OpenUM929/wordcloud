@@ -7,6 +7,33 @@ from flask import Response, send_file
 from io import BytesIO
 
 
+def _restore_profanity_employees(prof_emps):
+    if not prof_emps:
+        return prof_emps
+    from src.services.profanity_db_service import _get_pseudo_mgr
+    mgr = _get_pseudo_mgr()
+    restored = []
+    for emp in prof_emps:
+        emp = dict(emp)
+        eid = emp.get('employee_id', '') or ''
+        real = mgr.get_real_id(eid) if eid else ''
+        if real and real != eid:
+            emp['employee_id'] = real
+        sentences = emp.get('profanity_sentences', [])
+        if sentences:
+            restored_sents = []
+            for s in sentences:
+                s = dict(s)
+                raw_eval = s.get('evaluator_id', '') or ''
+                real_eval = mgr.get_real_id(raw_eval) if raw_eval else ''
+                if real_eval and real_eval != raw_eval:
+                    s['evaluator_id'] = real_eval
+                restored_sents.append(s)
+            emp['profanity_sentences'] = restored_sents
+        restored.append(emp)
+    return restored
+
+
 def stream_batch_events(global_state):
     """
     Generate SSE stream for batch processing events.
@@ -30,7 +57,7 @@ def stream_batch_events(global_state):
             'error_count': global_state.get('error_count', 0),
             'total_processed': global_state.get('total_rows', 0),
             'processed_rows': global_state.get('processed_rows', 0),
-            'profanity_employees': global_state.get('profanity_employees', []),
+            'profanity_employees': _restore_profanity_employees(global_state.get('profanity_employees', [])),
             'failed_employees': global_state.get('failed_employees', []),
             'completed': global_state.get('completed', False),
             'error': global_state.get('error', ''),

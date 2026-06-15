@@ -100,41 +100,46 @@ def get_batch_list():
                 if os.path.isdir(item_path) and item.startswith('batch_'):
                     summary_path = os.path.join(item_path, 'tmeta', 'batch_summary.json')
 
+                    batch_name = item
+                    display_name = batch_name
+                    year, month, day, time_str = '', '', '', ''
+                    saved_display_name = ''
+                    employee_count = 0
+                    created_at = ''
+
+                    if len(batch_name) > len('batch_'):
+                        date_part = batch_name[len('batch_'):]
+                        if len(date_part) >= 8:
+                            year = date_part[:4]
+                            month = date_part[4:6]
+                            day = date_part[6:8]
+                            if len(date_part) > 8:
+                                time_part = date_part[9:]
+                                if len(time_part) == 6:
+                                    time_str = f"{time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}"
+
+                    if year and month and day:
+                        display_name = f"{year}-{month}-{day} {batch_name}"
+                        if time_str:
+                            display_name += f" ({time_str})"
+
                     if os.path.exists(summary_path):
                         try:
                             with open(summary_path, 'r', encoding='utf-8') as f:
                                 summary = json.load(f)
-
-                            batch_name = item
-                            display_name = batch_name
-                            year, month, day, time_str = '', '', '', ''
-
-                            if len(batch_name) > len('batch_'):
-                                date_part = batch_name[len('batch_'):]
-                                if len(date_part) >= 8:
-                                    year = date_part[:4]
-                                    month = date_part[4:6]
-                                    day = date_part[6:8]
-                                    if len(date_part) > 8:
-                                        time_part = date_part[9:]
-                                        if len(time_part) == 6:
-                                            time_str = f"{time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}"
-
-                            if year and month and day:
-                                display_name = f"{year}-{month}-{day} {batch_name}"
-                                if time_str:
-                                    display_name += f" ({time_str})"
-
-                                batches.append({
-                                    'name': display_name,
-                                    'original_name': batch_name,
-                                    'path': item_path,
-                                    'employee_count': summary.get('batch_info', {}).get('unique_employees', 0),
-                                    'created_at': summary.get('batch_info', {}).get('created_at', '').replace('Z', '').split('T')[0]
-                                })
+                            saved_display_name = summary.get('batch_info', {}).get('display_name', '') or ''
+                            employee_count = summary.get('batch_info', {}).get('unique_employees', 0)
+                            created_at = summary.get('batch_info', {}).get('created_at', '').replace('Z', '').split('T')[0]
                         except Exception as e:
                             print(f"Error loading summary for batch {item}: {e}")
-                            continue
+
+                    batches.append({
+                        'name': saved_display_name if saved_display_name else display_name,
+                        'original_name': batch_name,
+                        'path': item_path,
+                        'employee_count': employee_count,
+                        'created_at': created_at,
+                    })
 
     # 배치 번호를 기준으로 정렬 (동일 날짜 내에서 큰 번호가 먼저 오도록)
     def batch_sort_key(batch):

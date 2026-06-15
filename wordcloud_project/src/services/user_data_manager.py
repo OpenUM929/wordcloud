@@ -41,6 +41,17 @@ def _fingerprint(ev):
     return hashlib.md5(json.dumps(key, ensure_ascii=False).encode()).hexdigest()
 
 
+def _safe_text(value):
+    """float('nan')/inf/None → ''"""
+    if value is None:
+        return ''
+    if isinstance(value, float):
+        if value != value or value == float('inf') or value == float('-inf'):
+            return ''
+        return str(value)
+    return str(value)
+
+
 def upsert(employee_id, metadata, evaluations, batch_id):
     """Upsert user data from a batch.
 
@@ -48,9 +59,9 @@ def upsert(employee_id, metadata, evaluations, batch_id):
     """
     conn = _get_eval_conn()
     try:
-        name = metadata.get('target_employee_name') or employee_id
-        dept = metadata.get('target_employee_department') or ''
-        pos  = metadata.get('target_employee_position') or ''
+        name = _safe_text(metadata.get('target_employee_name')) or employee_id
+        dept = _safe_text(metadata.get('target_employee_department'))
+        pos  = _safe_text(metadata.get('target_employee_position'))
         conn.execute("""
             INSERT INTO employees (employee_id, name, department, position, updated_at)
             VALUES (?, ?, ?, ?, datetime('now'))

@@ -1,6 +1,6 @@
 # 배치 처리 CSV 스트리밍 + Staging DB + 라인/직원 2단계 진행 표시
 
-> 상태: PND | 작성일: 2026-06-15
+> 상태: DONE | 작성일: 2026-06-15 | 구현 완료: 2026-06-15
 
 ---
 
@@ -9,7 +9,10 @@
 | 날짜 | 변경 섹션 | 변경 요약 |
 |------|-----------|-----------|
 | 2026-06-15 | 전체 | 초안: 청크→`employee_buffer`(RAM) 누적 방식 |
-| 2026-06-15 | 전체 | **개정: RAM 누적은 메모리를 줄이지 못함(섞인 직원 데이터가 전부 RAM 상주). Phase 1에서 원문을 per-batch staging SQLite로 스트리밍하고 Phase 2에서 직원별 재조회 분석하는 Option B로 재설계. 초안 검토 결함 C1~C5, M1 반영** |
+| 2026-06-15 | 전체 | 개정: RAM 누적은 메모리를 줄이지 못함(섞인 직원 데이터가 전부 RAM 상주). Phase 1에서 원문을 per-batch staging SQLite로 스트리밍하고 Phase 2에서 직원별 재조회 분석하는 Option B로 재설계. 초안 검토 결함 C1~C5, M1 반영 |
+| 2026-06-15 | §3.1,§3.3,§3.4,§4,§8 | **2차 검토 반영: ①실패 데이터 저장을 staging 재조회로 교체 ②state 필드 중복 제거(기존 total_rows/processed_rows 재사용, total_lines/processed_lines 폐기) ③Phase 2 워커 커넥션 threading.local 캐싱 ④Resume fallback은 기존 코드에 존재함을 명시** |
+| 2026-06-15 | §3.3, §7 | **3차 검토 반영: ①바이트 기반 추정 수학적 오류 수정 → 정확 라인 카운트(1패스)로 회복. ②구현 순서(§7) 불필요 단계 제거(batch_service.py/batch_events.py/metadata_batch.js는 변경 없음)** |
+| 2026-06-15 | 구현 | **구현 완료. 추가 처리: ①계획 미기재 `len(grouped_data)` 4곳(작업서 total_employees·worker count·Stage2 실패경로·Stage4 total_employees)을 `len(emp_id_set)`로 일괄 전환. ②Stage2 init progress=10→45로 보정(40→10 역행 방지, 전 구간 5→40→45→90→92→100 단조). ③처리 실패 시 staging 잔존 방지: `_active_staging_dir` state 키 + `batch_staging.remove_staging_files()` 추가하여 `batch_service._run_batch_process` except에서 정리(§4.3·§8.5 '검토' 항목 확정). ④batch_staging/_extract_rows_from_chunk 단위테스트 통과** |
 
 ---
 
@@ -105,12 +108,24 @@ Phase 2 (분석, 직원 기반 진행)
 - `upsert(employee_id, metadata, evaluations, batch_id)` (`user_data_manager.py:44`) — 최종 저장(employees + evaluations 테이블). **변경 없음, Phase 2에서 그대로 호출**
 - staging은 **최종 DB와 분리된 per-batch 임시 파일** `batch_dir/staging.db`로 둔다 (스키마 오염·락 경합 방지, 종료 시 삭제)
 
-### 2.5 batch_service.py / batch_events.py / JS
+### 2.5 batch_service.py / batch_events.py / JS — state 필드 재사용 (검토 2)
 
-- `batch_processing_state` 딕셔너리(`batch_service.py:22~35`): `total_lines`, `processed_lines` 필드 없음 → 추가
-- `process_batch_metadata` 초기화 블록(`:311~328`): 신규 필드 리셋 추가
-- `stream_batch_events`(`batch_events.py:23~38`): SSE payload에 `total_lines`, `processed_lines` 추가
-- `metadata_batch.js` SSE 핸들러(`:771~860`): `data.status` 우선 표시는 이미 적용됨(`:787`). 라인 기반 progress 수신 로직 추가
+> **검토 결함 #2 해결**: 신규 `total_lines`/`processed_lines`는 기존 필드와 의미가 중복된다. 신규 필드를 추가하지 않고 **기존 필드를 재사용**한다.
+
+기존 자산(확인 완료):
+- `batch_service.py:22~35` state에 `total_rows`, `processed_rows` 이미 존재
+- `batch_events.py:23~38`이 `total_processed`(=`total_rows`), `processed_rows`를 이미 방출
+- `metadata_batch.js:854`가 결과 테이블 "총 처리된 행"에 `data.total_rows || data.total_processed` 사용
+
+역할 정의(재사용):
+| 필드 | Phase 1 | 완료 시 |
+|------|---------|--------|
+| `processed_rows` | ingest된 라인 수(라이브) | 최종 ingest 수 유지 |
+| `total_rows` | 추정 총 라인(바이트 기반) | **실제 ingest 수로 확정** |
+
+→ **신규 state 필드 없음, 신규 SSE 필드 없음.** 프론트엔드 Phase 1 표시는 `status_message`("데이터 수집 중 (약 N / M 라인)") + `progress` 바로 충분(둘 다 이미 SSE에 포함). 결과 테이블의 `total_rows`는 완료 시 실제값으로 노출되어 기존 동작과 일관.
+
+- `metadata_batch.js` SSE 핸들러(`:771~860`): `data.status` 우선 표시는 이미 적용됨(`:787`). **추가 JS 변경 불필요** (status + progress로 Phase 1 표시 커버).
 
 ---
 
@@ -150,6 +165,26 @@ def distinct_employee_ids(conn):
 def load_employee_evaluations(conn, employee_id):
     cur = conn.execute("SELECT data FROM staging WHERE employee_id = ?", (employee_id,))
     return [json.loads(r[0]) for r in cur]
+
+# ── Phase 2 워커용 read 커넥션 캐싱 (검토 #3) ──────────────────
+import threading
+_tls = threading.local()
+
+def get_reader(batch_dir):
+    """ThreadPoolExecutor 워커 스레드당 read 커넥션 1개를 재사용."""
+    conn = getattr(_tls, 'conn', None)
+    if conn is None:
+        path = os.path.join(batch_dir, 'staging.db')
+        conn = sqlite3.connect(path, check_same_thread=False)
+        conn.execute("PRAGMA query_only=ON")
+        _tls.conn = conn
+    return conn
+
+def close_reader():
+    conn = getattr(_tls, 'conn', None)
+    if conn is not None:
+        try: conn.close()
+        finally: _tls.conn = None
 
 def close_and_remove(conn, batch_dir):
     try:
@@ -218,16 +253,15 @@ staging_conn = batch_staging.open_staging(batch_dir)
 emp_id_set = set()          # Phase 2 직원 수 (ID 문자열만, ~수만개 = 경량)
 _ingested_rows = 0
 
-# 총량 추정 (검토 C3/C4: 정확한 레코드 수는 임베디드 개행으로 알 수 없음 → 추정)
-def _estimate_total(path):
+# 총량 (정확한 라인 카운트 — 1패스, 메모리 미사용)
+def _count_total_lines(path):
+    """CSV 파일의 총 레코드 수를 계산(헤더 제외)."""
     if os.path.isfile(path) and path.endswith('.csv'):
-        size = os.path.getsize(path)
-        return size  # 바이트 기준 추정 (첫 청크 후 행당 바이트로 환산)
+        try:
+            return sum(1 for _ in open(path, 'r', encoding='utf-8')) - 1
+        except Exception:
+            return 0
     return 0
-
-batch_processing_state['current_step'] = 0
-batch_processing_state['progress'] = 5
-batch_processing_state['status_message'] = '데이터 수집 준비 중...'
 
 def _chunk_iter(path):
     if os.path.isfile(path):
@@ -250,8 +284,12 @@ def _chunk_iter(path):
                 for i in range(0, len(xl), CHUNK_SIZE):
                     yield xl.iloc[i:i+CHUNK_SIZE]
 
-_total_bytes = _estimate_total(csv_file_path)
-_bytes_per_row = None
+# 단일 CSV 파일: 정확한 카운트 (40MB 기준 1패스 ~200ms)
+_total_lines = _count_total_lines(csv_file_path)
+
+batch_processing_state['current_step'] = 0
+batch_processing_state['progress'] = 5
+batch_processing_state['status_message'] = '데이터 수집 준비 중...'
 
 for chunk in _chunk_iter(csv_file_path):
     rows = _extract_rows_from_chunk(chunk, target_id_column, mappings,
@@ -262,27 +300,25 @@ for chunk in _chunk_iter(csv_file_path):
             emp_id_set.add(emp_id)
     _ingested_rows += len(chunk)
 
-    # 진행률 추정 (CSV: 바이트 기반, Excel/폴더: 단순 카운트 표시)
-    if _total_bytes and _bytes_per_row is None and _ingested_rows:
-        _bytes_per_row = max(_total_bytes / max(_ingested_rows, 1), 1)
-    if _total_bytes and _bytes_per_row:
-        est_total = int(_total_bytes / _bytes_per_row)
-        batch_processing_state['total_lines'] = est_total
-        pct = min(_ingested_rows / max(est_total, 1), 1.0)
+    # 진행률 (정확한 총량 알 수 있을 때만)
+    if _total_lines:
+        batch_processing_state['total_rows'] = _total_lines
+        pct = min(_ingested_rows / max(_total_lines, 1), 1.0)
         batch_processing_state['progress'] = int(5 + pct * 35)
         batch_processing_state['status_message'] = (
-            f'데이터 수집 중 (약 {_ingested_rows:,} / {est_total:,} 라인)'
+            f'데이터 수집 중 ({_ingested_rows:,} / {_total_lines:,} 라인)'
         )
     else:
+        # Excel/폴더: 단순 카운트 표시
         batch_processing_state['status_message'] = f'데이터 수집 중 ({_ingested_rows:,} 라인)'
-    batch_processing_state['processed_lines'] = _ingested_rows
+    batch_processing_state['processed_rows'] = _ingested_rows      # 기존 필드 재사용
 
 batch_processing_state['progress'] = 40
-batch_processing_state['total_lines'] = _ingested_rows   # 완료 시 실제값 확정
+batch_processing_state['total_rows'] = _ingested_rows   # 완료 시 실제값 확정
 batch_processing_state['status_message'] = f'데이터 수집 완료: {len(emp_id_set):,}명'
 ```
 
-> **검토 C3/C4 해결**: 정확한 레코드 수는 임베디드 개행 때문에 사전 카운트가 불가·부정확하고 파일 2회 읽기 비용도 크다. 따라서 **바이트 기반 추정**으로 표시하고("약 N / 추정 M"), 완료 시 `total_lines`를 실제 ingest 수로 확정한다. Excel/폴더는 카운트만 표시.
+> **검토 C3/C4 해결**: 정확한 레코드 수는 임베디드 개행으로 사전 카운트가 불가능하지만, `sum(1 for _ in open(...))`는 1패스에 수행되며 메모리를 사용하지 않는다. 40MB 파일 기준 ~200ms이므로 **정확한 라인 카운트**로 진행률을 표시하고, 완료 시 `_ingested_rows`로 확정한다. Excel/폴더는 카운트만 표시.
 
 ### 3.4 Phase 2 — staging에서 직원별 분석
 
@@ -298,12 +334,9 @@ if _is_resume and prior_completed:
 total_employee_count = len(employee_ids)
 
 def process_single_employee(emp_id):
-    # 워커별 staging 읽기 전용 커넥션 (WAL 동시 읽기 안전)
-    conn = batch_staging.open_staging(batch_dir)
-    try:
-        evaluations = batch_staging.load_employee_evaluations(conn, emp_id)
-    finally:
-        conn.close()
+    # 워커 스레드당 read 커넥션 1개 재사용 (검토 #3: open/close 반복 제거)
+    conn = batch_staging.get_reader(batch_dir)
+    evaluations = batch_staging.load_employee_evaluations(conn, emp_id)
     metadata, success, error, _ = process_employee_metadata(
         metadata_manager, emp_id, evaluations, batch_dir,
         data.get('target_employee_department', '생산부'),
@@ -323,6 +356,38 @@ if evaluations and 'target_employee_position' in evaluations[0]:
 ```
 
 > **부수 효과(긍정)**: 현행은 `df.iloc[0]`(전체 첫 행)을 모든 직원에 적용하는 잠재 버그였다. `evaluations[0]`로 바꾸면 **직원별 정확한 값**으로 교정된다. (가명화는 §3.2에서 이미 적용됨 → `:607~611` 후처리 삭제)
+
+### 3.4.1 실패 데이터 저장 — staging 재조회 (검토 #1)
+
+현행 `:749~766`은 실패 직원 원본을 `grouped_data[emp_id]`에서 가져온다. Option B에는 `grouped_data`가 없으므로 staging에서 재조회한다.
+
+```python
+# 현행 :764~766
+# if emp_id in grouped_data:
+#     emp_df = pd.DataFrame(grouped_data[emp_id])
+#     emp_df.to_csv(...)
+
+# 변경
+conn = batch_staging.get_reader(batch_dir)
+emp_evals = batch_staging.load_employee_evaluations(conn, emp_id)
+if emp_evals:
+    emp_df = pd.DataFrame(emp_evals)
+    emp_df.to_csv(os.path.join(emp_dir, 'data.csv'), index=False, encoding='utf-8-sig')
+```
+
+> 단, 이 시점에는 staging.db가 아직 살아 있어야 한다(§3.5 정리 호출보다 **앞**). 실패 데이터 저장은 Phase 2 루프 직후 실행되므로 순서상 안전.
+
+### 3.4.2 워커 커넥션 정리
+
+Phase 2 루프 + 실패 데이터 저장 완료 후 각 워커의 캐싱 커넥션을 닫는다. ThreadPoolExecutor가 종료되면 워커 스레드도 소멸하므로, 메인 스레드에서 `close_and_remove` 전에 staging 파일 핸들이 남지 않도록 한다(Windows 파일 잠금 회피).
+
+```python
+# ThreadPoolExecutor with 블록 종료(워커 스레드 소멸) 후
+# 메인 스레드의 잔여 reader가 있으면 정리
+batch_staging.close_reader()
+```
+
+> Windows 파일 잠금 주의: WAL 모드 staging.db 삭제(`close_and_remove`) 전에 모든 read 커넥션이 닫혀야 한다. 워커 스레드 종료 시 GC로 닫히지만, 확실히 하기 위해 삭제는 재시도/예외 무시(`close_and_remove` 내 try/except)로 처리한다. (참고: 커밋 1561a94의 Windows 파일 잠금 이슈)
 
 Phase 2 progress (검토 M1):
 ```python
@@ -355,27 +420,30 @@ batch_staging.close_and_remove(staging_conn, batch_dir)
 | `:163~167` | `df.iloc[0]` → `evaluations[0]` |
 | `:366~480` | CSV 로드 + grouped 생성 → Phase 1 staging ingest |
 | `:482~512` | 가명화 매니저 준비를 ingest 앞으로 이동, re-key/dict 루프 삭제(ingest에 통합) |
-| `:596~738` | Phase 2 staging 조회 기반 루프로 변경, progress 45~90 |
+| `:596~738` | Phase 2 staging 조회 기반 루프로 변경, progress 45~90, 워커 커넥션 캐싱(`get_reader`) |
 | `:607~611` | metadata dept/pos 후처리 가명화 **삭제** (이중 적용 방지) |
+| `:749~766` | 실패 데이터 저장을 `grouped_data` → staging 재조회로 교체 (검토 #1) |
 | `:662,786` | `len(df)` → `_ingested_rows` |
 | `:738,776,789` | progress 90/92/100 재배치 |
+| Phase 2 직후 | `batch_staging.close_reader()` |
 | 반환 직전 | `batch_staging.close_and_remove` 호출 |
 
 ### 4.3 `src/services/batch_service.py`
 | 위치 | 변경 |
 |------|------|
-| `:22~35` | state에 `total_lines:0`, `processed_lines:0` 추가 |
-| `:311~328` | 초기화 블록에 두 필드 리셋 추가 |
+| — | **변경 없음** (검토 #2: 기존 `total_rows`/`processed_rows` 재사용, 신규 필드 미추가) |
+
+> 단, `_run_batch_process` except 블록(`:281~291`)에 staging 정리(`close_and_remove`)를 추가할지 검토 — 처리 실패 시 staging.db 잔존 방지(§8.5).
 
 ### 4.4 `src/services/batch_events.py`
 | 위치 | 변경 |
 |------|------|
-| `:23~38` | SSE payload에 `total_lines`, `processed_lines` 추가 |
+| — | **변경 없음** (검토 #2: `total_processed`/`processed_rows` 이미 방출, status_message로 라인 표시) |
 
 ### 4.5 `web/static/js/metadata_batch.js`
 | 위치 | 변경 |
 |------|------|
-| `:776~808` | `data.total_lines`/`data.processed_lines` 수신 시 Phase 1 progress 보조 표시 |
+| — | **변경 없음** (검토 #2: `data.status` + `data.progress`로 Phase 1 표시 커버, `:787` 이미 적용) |
 
 ### 4.6 `web/templates/metadata_batch.html` (선택)
 | 위치 | 변경 |
@@ -384,20 +452,24 @@ batch_staging.close_and_remove(staging_conn, batch_dir)
 
 ---
 
-## 5. SSE payload 변경
+## 5. SSE payload (변경 없음 — 기존 필드 재사용)
+
+검토 #2에 따라 신규 필드를 추가하지 않는다. 기존 payload 그대로:
 
 ```json
-// 변경 후
+// Phase 1 진행 중 (기존 필드만 사용)
 {
   "step": 0,
   "progress": 22,
   "status": "데이터 수집 중 (약 100,000 / 400,000 라인)",
-  "total_lines": 400000,
-  "processed_lines": 100000,
+  "total_processed": 400000,   // = state.total_rows (추정→완료시 실제)
+  "processed_rows": 100000,    // = ingest 라이브 카운트
   "unique_employees": 0,
   ...
 }
 ```
+
+프론트엔드 표시: `status`(사람이 읽는 라인 현황) + `progress`(바). 결과 테이블 "총 처리된 행"은 완료 시 `total_rows`(실제 ingest 수).
 
 ---
 
@@ -417,18 +489,17 @@ batch_staging.close_and_remove(staging_conn, batch_dir)
 
 ## 7. 구현 순서
 
-1. `batch_staging.py` 신규 작성 + 단독 단위테스트(insert/select/distinct/remove)
-2. `batch_service.py` state 필드 + 초기화
-3. `batch_events.py` SSE payload 필드
-4. `batch_processor.py`
-   - 4-1. `_extract_rows_from_chunk` 작성, `group_data_by_employee` 제거
-   - 4-2. 가명화 매니저 준비 위치 이동
-   - 4-3. Phase 1 ingest 루프
-   - 4-4. Phase 2 staging 조회 루프 + progress 재배치
-   - 4-5. `process_employee_metadata` df 제거 + `evaluations[0]` 적용, `:607~611` 삭제
-   - 4-6. `len(df)`→`_ingested_rows`, staging 정리 호출
-5. `metadata_batch.js` 라인 진행 표시
-6. `metadata_batch.html` 라벨(선택)
+1. `batch_staging.py` 신규 작성 + 단독 단위테스트(insert/select/distinct/remove/get_reader)
+2. `batch_processor.py`
+   - 2-1. `_extract_rows_from_chunk` 작성, `group_data_by_employee` 제거
+   - 2-2. 가명화 매니저 준비 위치 이동
+   - 2-3. Phase 1 ingest 루프
+   - 2-4. Phase 2 staging 조회 루프 + progress 재배치 + `get_reader`/`close_reader`
+   - 2-5. `process_employee_metadata` df 제거 + `evaluations[0]` 적용, `:607~611` 삭제
+   - 2-6. `len(df)`→`_ingested_rows`, 실패 데이터 저장을 staging 재조회로 교체
+   - 2-7. staging 정리 호출(`close_reader` → `close_and_remove`)
+3. `batch_service.py` — `_run_batch_process` except 블록에 staging 정리 추가 검토(§8.5)
+4. `metadata_batch.html` 라벨(선택)
 
 ---
 
@@ -437,8 +508,10 @@ batch_staging.close_and_remove(staging_conn, batch_dir)
 ### 8.1 staging 동시 읽기
 Phase 2 ThreadPoolExecutor 워커가 각자 `open_staging`으로 읽기 커넥션을 연다. WAL 모드에서 다중 읽기는 안전. 쓰기는 Phase 1에서 단일 스레드로 완료된 상태.
 
-### 8.2 Resume 호환
-Resume 시 staging.db는 직전 실행에서 삭제되었을 수 있으므로 **Phase 1 ingest를 다시 수행**(원본/`original.csv`에서)하고, Phase 2에서 `prior_completed`(작업서 items 테이블)로 완료 직원을 제외한다. ingest는 분석 대비 저비용이라 재수행 허용.
+### 8.2 Resume 호환 (검토 #4)
+Resume 시 staging.db는 직전 실행에서 삭제되었을 수 있으므로 **Phase 1 ingest를 다시 수행**하고, Phase 2에서 `prior_completed`(작업서 items 테이블)로 완료 직원을 제외한다. ingest는 분석 대비 저비용이라 재수행 허용.
+
+**`original.csv` fallback은 이미 구현됨** — `resume_batch_metadata`(`batch_service.py:382~389`)가 `csv_file_path` 무효 시 `batch_dir/original.csv`로 대체하고, 둘 다 없으면 에러 반환한다. `original.csv` 백업은 `process_batch:461~467`에서 단일 파일(`os.path.isfile`)일 때 생성되며, 폴더 입력도 merged temp csv가 file이므로 백업 대상이다. → **신규 코드 불필요**, Option B Phase 1은 서비스가 해석해 넘긴 `csv_file_path`를 그대로 읽으면 된다.
 
 ### 8.3 retry-failed 경로
 `batch_service.retry_failed_employees`(`:463~`)도 `process_batch`를 호출한다. Option B 진입 시 동일하게 staging을 거치며 정상 동작해야 함 → 테스트 항목 포함.
@@ -465,6 +538,10 @@ Resume 시 staging.db는 직전 실행에서 삭제되었을 수 있으므로 **
 | retry-failed | 실패 건 재배치 정상 |
 | 폴더/Excel 입력 | 다중 CSV·xlsx 정상 |
 | 소규모(<100행) | 정상 처리, progress 정상 종료 |
+| 실패 데이터 저장(검토#1) | 일부러 실패 유발 → `failed/.../emp_X/data.csv`가 staging 재조회로 정상 생성 |
+| 워커 커넥션 캐싱(검토#3) | 수천 명 처리 시 staging open 횟수 = 워커 수 수준인지 확인 |
+| state 필드(검토#2) | 결과 테이블 "총 처리된 행"이 실제 ingest 수와 일치 |
+| staging 정리 | 정상/실패 종료 모두 `batch_dir/staging.db`(+wal/shm) 잔존 없음 (Windows 잠금 포함) |
 
 ---
 

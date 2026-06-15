@@ -48,43 +48,54 @@ class MetadataManager:
         # 각 평가에 분석 결과 추가
         analyzed_evaluations = []
         for idx, evaluation in enumerate(evaluations):
-            analyzed_eval = evaluation.copy()
-            
-            # evaluation_id 추가 (없을 경우 생성)
-            if 'evaluation_id' not in analyzed_eval:
-                analyzed_eval['evaluation_id'] = f"eval-{employee_id}-{idx+1}-{datetime.now().strftime('%Y%m%d')}"
-            
-            # evaluator_id 추가 (없을 경우 None)
-            if 'evaluator_id' not in analyzed_eval:
-                analyzed_eval['evaluator_id'] = analyzed_eval.get('evaluator_id')
-            
-            # NLP 분석
-            from src.modules.nlp_analysis import analyze_text
-            nlp_result = analyze_text(analyzed_eval.get('evaluation_document', ''))
-            analyzed_eval['nlp_analysis_results'] = nlp_result
-            
-            # 감정 분석
-            from src.modules.emotion_analysis import analyze_emotion
-            emotion_result = analyze_emotion(analyzed_eval.get('evaluation_document', ''))
-            analyzed_eval['emotion_analysis_results'] = emotion_result
-            
-            # 욕설 분석 (캐싱된 singleton 사용)
-            from src.modules.profanity_filter import advanced_filter_profanity
-            profanity_result = advanced_filter_profanity(analyzed_eval.get('evaluation_document', ''))
-            analyzed_eval['profanity_analysis_results'] = profanity_result
-            
-            # 리더십 분석 (캐싱된 singleton 사용)
-            from src.modules.leadership_analysis import LeadershipAnalysis
-            leadership_analyzer = LeadershipAnalysis()
-            leadership_result = leadership_analyzer.analyze_leadership(analyzed_eval.get('evaluation_document', ''))
-            analyzed_eval['leadership_analysis_results'] = leadership_result
-            
-            # 비꼬임 분석
-            from src.modules.sarcasm_analysis import analyze_sarcasm
-            sarcasm_result = analyze_sarcasm(analyzed_eval.get('evaluation_document', ''))
-            analyzed_eval['sarcasm_analysis_results'] = sarcasm_result
-            
-            analyzed_evaluations.append(analyzed_eval)
+            try:
+                analyzed_eval = evaluation.copy()
+
+                # evaluation_id 추가 (없을 경우 생성)
+                if 'evaluation_id' not in analyzed_eval:
+                    analyzed_eval['evaluation_id'] = f"eval-{employee_id}-{idx+1}-{datetime.now().strftime('%Y%m%d')}"
+
+                # evaluator_id 추가 (없을 경우 None)
+                if 'evaluator_id' not in analyzed_eval:
+                    analyzed_eval['evaluator_id'] = analyzed_eval.get('evaluator_id')
+
+                # NLP 분석
+                from src.modules.nlp_analysis import analyze_text
+                nlp_result = analyze_text(analyzed_eval.get('evaluation_document', ''))
+                analyzed_eval['nlp_analysis_results'] = nlp_result
+
+                # 감정 분석
+                from src.modules.emotion_analysis import analyze_emotion
+                emotion_result = analyze_emotion(analyzed_eval.get('evaluation_document', ''))
+                analyzed_eval['emotion_analysis_results'] = emotion_result
+
+                # 욕설 분석 (캐싱된 singleton 사용)
+                from src.modules.profanity_filter import advanced_filter_profanity
+                profanity_result = advanced_filter_profanity(analyzed_eval.get('evaluation_document', ''))
+                analyzed_eval['profanity_analysis_results'] = profanity_result
+
+                # 리더십 분석 (캐싱된 singleton 사용)
+                from src.modules.leadership_analysis import LeadershipAnalysis
+                leadership_analyzer = LeadershipAnalysis()
+                leadership_result = leadership_analyzer.analyze_leadership(analyzed_eval.get('evaluation_document', ''))
+                analyzed_eval['leadership_analysis_results'] = leadership_result
+
+                # 비꼬임 분석
+                from src.modules.sarcasm_analysis import analyze_sarcasm
+                sarcasm_result = analyze_sarcasm(analyzed_eval.get('evaluation_document', ''))
+                analyzed_eval['sarcasm_analysis_results'] = sarcasm_result
+
+                analyzed_evaluations.append(analyzed_eval)
+            except Exception as e:
+                import traceback
+                doc = evaluation.get('evaluation_document', '')[:200]
+                eval_id = evaluation.get('evaluation_id', f'#{idx}')
+                raise RuntimeError(
+                    f"Evaluation {idx} (id={eval_id}) failed for employee={employee_id}: "
+                    f"{type(e).__name__}: {e}\n"
+                    f"Document: {doc!r}\n"
+                    f"Traceback:\n{traceback.format_exc()}"
+                ) from e
         
         metadata = {
             "session_id": session_id,

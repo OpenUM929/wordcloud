@@ -335,6 +335,17 @@
                 <strong>🔒 가명 처리</strong>
                 <span id="pseudonymFieldsDisplay" style="color: #666; margin-left: 10px;">모든 PII 필드가 항상 가명처리됩니다</span>
             </div>
+            <div style="margin: 15px 0; padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 6px;">
+                <label for="batchDisplayName" style="font-weight: bold; display: block; margin-bottom: 5px;">
+                    배치 명칭 (선택)
+                </label>
+                <input type="text" id="batchDisplayName"
+                       placeholder="예: 2025년 상반기 개발팀 평가"
+                       style="width: 100%; padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; box-sizing: border-box;">
+                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">
+                    미입력 시 배치 ID(batch_YYYYMMDD_X)가 표시됩니다
+                </p>
+            </div>
             <button class="btn btn-primary" onclick="startBatchProcessing()">배치 처리 시작</button>
             <button class="btn btn-warning" id="resumeBtn" style="display: none; margin-left: 10px;" onclick="showResumeModal()">이어서 배치 처리 시작</button>
 
@@ -362,7 +373,7 @@
                 <div class="processing-steps" id="processingStepsIndicator" style="display: flex; justify-content: center; align-items: center; margin: 20px 0; flex-wrap: wrap; gap: 10px;">
                     <div class="proc-step" data-step="0" data-group="green-light">
                         <div class="proc-step-circle">1</div>
-                        <div class="proc-step-text">파일 로드</div>
+                        <div class="proc-step-text">데이터 수집</div>
                     </div>
                     <div class="proc-arrow">→</div>
                     <div class="proc-step" data-step="1" data-group="green-light">

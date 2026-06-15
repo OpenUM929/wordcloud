@@ -281,6 +281,14 @@ def _run_batch_process(data, session_data):
     except Exception as e:
         batch_processing_state['status_message'] = f'오류: {str(e)}'
         batch_processing_state['error'] = str(e)
+        # 처리 실패 시 staging.db 잔존 방지 (수백 MB 임시 디스크 회수)
+        sdir = batch_processing_state.pop('_active_staging_dir', None)
+        if sdir:
+            try:
+                from src.services.batch_staging import remove_staging_files
+                remove_staging_files(sdir)
+            except Exception:
+                pass
         # 전체 배치 중단 → 작업서 failed 처리
         bid = batch_processing_state.get('batch_id')
         if bid:
