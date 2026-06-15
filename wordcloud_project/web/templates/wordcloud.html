@@ -872,7 +872,8 @@ function saveOptions() {
         removeProfanity: document.getElementById('removeProfanity').checked,
 
         sizePreset: document.querySelector('input[name="sizePreset"]:checked').value,
-        maxWords: parseInt(document.getElementById('maxWords').value)
+        maxWords: parseInt(document.getElementById('maxWords').value),
+        sentimentMode: (document.querySelector('input[name="sentimentMode"]:checked') || {}).value || 'combined'
     };
     localStorage.setItem('wordcloudOptions', JSON.stringify(options));
 }
@@ -917,6 +918,12 @@ function loadOptions() {
         
         // 최대 단어 수 복원
         document.getElementById('maxWords').value = options.maxWords;
+        
+        // 감정 분리 모드 복원
+        if (options.sentimentMode) {
+            const sentimentRadio = document.querySelector(`input[name="sentimentMode"][value="${options.sentimentMode}"]`);
+            if (sentimentRadio) sentimentRadio.checked = true;
+        }
         
         // 현재 설정 메시지 업데이트
         const posText = options.morphology.length === 0 ? '명사' : options.morphology.join(', ');
@@ -976,6 +983,10 @@ document.getElementById('removeProfanity').addEventListener('change', saveOption
 // 최대 단어 수 입력 이벤트
 document.getElementById('maxWords').addEventListener('change', saveOptions);
 
+// 감정 분리 모드 변경 이벤트
+document.querySelectorAll('input[name="sentimentMode"]').forEach(radio => {
+    radio.addEventListener('change', saveOptions);
+});
 
 // 페이지 로드 시 옵션 로드
 document.addEventListener('DOMContentLoaded', loadOptions);

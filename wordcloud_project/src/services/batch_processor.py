@@ -105,10 +105,12 @@ def _extract_rows_from_chunk(chunk, target_id_column, mappings,
             for field, column in mappings.items():
                 if field != 'target_employee_id' and column in row.index:
                     value = row[column]
-                    # pandas NaN/inf 처리 (float('nan') → None)
+                    # pandas NaN/inf 처리 (float('nan') → None, 유효 float → str)
                     if isinstance(value, float):
                         if value != value or value == float('inf') or value == float('-inf'):
                             value = None
+                        else:
+                            value = str(value)
                     # 문자열 앞뒤 공백 제거
                     if isinstance(value, str):
                         value = value.strip()
