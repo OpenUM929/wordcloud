@@ -570,9 +570,19 @@ def _load_batch_list(processed_data_dir):
     for row in rows:
         batch_id = row['batch_id']
         batch_path = os.path.join(processed_data_dir, 'batch', batch_id)
+        display_name = ''
+        summary_path = os.path.join(batch_path, "tmeta", "batch_summary.json")
+        if os.path.exists(summary_path):
+            try:
+                with open(summary_path, 'r', encoding='utf-8') as _sf:
+                    _summary = json.load(_sf)
+                display_name = _summary.get('batch_info', {}).get('display_name', '') or ''
+            except Exception:
+                pass
         batches.append({
             'batch_id': batch_id,
             'path': batch_path,
+            'display_name': display_name,
             'created_at': (row['created_at'] or '')[:10],
             'employee_count': row['employee_count'],
             'total_evaluations': row['total_evaluations'],
@@ -610,14 +620,20 @@ def load_all_batches(processed_data_dir=None):
     finally:
         conn.close()
 
+    pseudo_mgr = _get_pseudo_mgr()
     emp_evals = defaultdict(list)
     emp_meta = {}
     for emp_id, name, dept, pos, data, ev_db_id in rows:
         if emp_id not in emp_meta:
+            real_id = pseudo_mgr.get_real_id(emp_id) if emp_id else emp_id
+            real_name = pseudo_mgr.get_real_id(name) if name else name
+            real_dept = pseudo_mgr.get_real_id(dept) if dept else dept
+            real_pos = pseudo_mgr.get_real_id(pos) if pos else pos
             emp_meta[emp_id] = {
-                'target_employee_name': name or '',
-                'target_employee_department': dept or '',
-                'target_employee_position': pos or '',
+                'target_employee_name': real_name or real_id or '',
+                'target_employee_department': real_dept or '',
+                'target_employee_position': real_pos or '',
+                'real_employee_id': real_id or emp_id,
             }
         if data:
             ev_obj = json.loads(data)
@@ -630,9 +646,10 @@ def load_all_batches(processed_data_dir=None):
     for emp_id, meta in emp_meta.items():
         evals = emp_evals[emp_id]
         total_evals += len(evals)
+        display_name = meta['target_employee_name'] or meta['real_employee_id'] or emp_id
         employee_results.append({
             'metadata': {
-                'target_employee_id': emp_id,
+                'target_employee_id': display_name,
                 'target_employee_name': meta['target_employee_name'],
                 'target_employee_department': meta['target_employee_department'],
                 'target_employee_position': meta['target_employee_position'],
@@ -1196,6 +1213,9 @@ def _generate_profanity_cell(filtered_items):
 
 def build_profanity_summary(unified, employee_id):
     """직원의 전체 평가에서 욕설 감지 요약 반환 (스트리밍 done 이벤트용)."""
+    from src.services.profanity_db_service import _get_pseudo_mgr
+    pseudo_mgr = _get_pseudo_mgr()
+
     profanity_sentences = []
     total_count = 0
     for er in unified.get('employee_results', []):
@@ -1212,8 +1232,13 @@ def build_profanity_summary(unified, employee_id):
                 detected = []
             if count > 0 and detected:
                 total_count += count
+
+                raw_eval_id = ev.get('evaluator_id', '')
+                real_eval_id = pseudo_mgr.get_real_id(raw_eval_id) if raw_eval_id else ''
+                display_eval_id = real_eval_id if real_eval_id and real_eval_id != raw_eval_id else raw_eval_id
+
                 profanity_sentences.append({
-                    'evaluator_id': ev.get('evaluator_id', ''),
+                    'evaluator_id': display_eval_id,
                     'original_text': prof.get('original_text', ''),
                     'filtered_text': prof.get('filtered_text', ''),
                     'detected_words': detected,
@@ -1224,12 +1249,14 @@ def build_profanity_summary(unified, employee_id):
 
 
 def build_all_profanity_summary(search=None, department=None, min_count=1,
-                                sort='count', order='desc', page=1, limit=50):
+                                sort='count', order='desc', page=1, limit=50,
+                                include_sentences=False):
     """전사 욕설 리스트 조회 (DB 기반)."""
     from src.services.profanity_db_service import get_all_profanity_employees
     return get_all_profanity_employees(
         search=search, department=department, min_count=min_count,
-        sort=sort, order=order, page=page, limit=limit
+        sort=sort, order=order, page=page, limit=limit,
+        include_sentences=include_sentences,
     )
 
 

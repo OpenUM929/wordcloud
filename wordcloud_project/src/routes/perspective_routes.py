@@ -832,6 +832,42 @@ def api_batch_delete(batch_id):
     return jsonify({'success': True, 'message': f'배치 {batch_id} 삭제 완료 ({removed_count}건 평가 제거)'})
 
 
+@perspective_bp.route('/batch/<batch_id>/display-name', methods=['PATCH'])
+def api_batch_update_display_name(batch_id):
+    """배치 명칭(display_name) 수정"""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    data = request.get_json(silent=True) or {}
+    display_name = (data.get('display_name') or '').strip()
+
+    from src.config.settings import PROCESSED_DATA_DIR_PATH
+    summary_path = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tmeta', 'batch_summary.json')
+
+    if not os.path.exists(summary_path):
+        return jsonify({'success': False, 'error': f'배치({batch_id})의 summary 파일을 찾을 수 없습니다.'}), 404
+
+    try:
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary = json_lib.load(f)
+
+        if 'batch_info' not in summary:
+            summary['batch_info'] = {}
+        summary['batch_info']['display_name'] = display_name
+
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            json_lib.dump(summary, f, ensure_ascii=False, indent=2)
+
+        log_action('batch_display_name_update', {
+            'batch_id': batch_id,
+            'display_name': display_name,
+        }, request)
+
+        return jsonify({'success': True, 'display_name': display_name})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @perspective_bp.route('/test/sentence-sentiment', methods=['POST'])
 def api_test_sentence_sentiment():
     """문장별 감정 분석 테스트 엔드포인트 (개별/일괄)."""
@@ -1291,6 +1327,7 @@ def api_profanity_list_csv():
         order=order,
         page=1,
         limit=10000,  # CSV는 전체
+        include_sentences=True,
     )
 
     import csv

@@ -65,7 +65,8 @@ def delete_profanity_by_batch(batch_id):
 
 
 def get_all_profanity_employees(search=None, department=None, min_count=1,
-                                  sort='count', order='desc', page=1, limit=50):
+                                  sort='count', order='desc', page=1, limit=50,
+                                  include_sentences=False):
     """전사 욕설 리스트 조회 (employees 테이블 JOIN)."""
     conn = _get_conn()
     try:
@@ -77,13 +78,37 @@ def get_all_profanity_employees(search=None, department=None, min_count=1,
             params.append(min_count)
 
         if search:
-            conditions.append("(e.name LIKE ? OR e.employee_id LIKE ?)")
-            like = f"%{search}%"
-            params.extend([like, like])
+            matched_pseudonyms = []
+            pseudo_mgr = _get_pseudo_mgr()
+            for real_id, pseudo in pseudo_mgr.get_all_mappings():
+                if search in real_id:
+                    matched_pseudonyms.append(pseudo)
+            if matched_pseudonyms:
+                placeholders = ','.join('?' for _ in matched_pseudonyms)
+                conditions.append(
+                    f"(e.name LIKE ? OR e.employee_id LIKE ? OR e.employee_id IN ({placeholders}))"
+                )
+                like = f"%{search}%"
+                params.extend([like, like])
+                params.extend(matched_pseudonyms)
+            else:
+                conditions.append("(e.name LIKE ? OR e.employee_id LIKE ?)")
+                like = f"%{search}%"
+                params.extend([like, like])
 
         if department:
-            conditions.append("e.department = ?")
-            params.append(department)
+            pseudo_mgr = _get_pseudo_mgr()
+            matched_dept_pseudo = None
+            for real_id, pseudo in pseudo_mgr.get_all_mappings():
+                if real_id == department:
+                    matched_dept_pseudo = pseudo
+                    break
+            if matched_dept_pseudo:
+                conditions.append("(e.department = ? OR e.department = ?)")
+                params.extend([department, matched_dept_pseudo])
+            else:
+                conditions.append("e.department = ?")
+                params.append(department)
 
         where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
@@ -171,6 +196,10 @@ def get_all_profanity_employees(search=None, department=None, min_count=1,
                 'profanity_words': words,
             })
 
+        if include_sentences:
+            for item in items:
+                item['profanity_sentences'] = get_profanity_sentences(item['employee_id'])
+
         return {
             'total': total,
             'page': page,
@@ -213,11 +242,16 @@ def get_profanity_sentences(employee_id):
                 words = json.loads(row['detected_words']) if row['detected_words'] else []
             except Exception:
                 words = []
+
+            raw_eval_id = row['evaluator_id'] or ''
+            real_eval_id = pseudo_mgr.get_real_id(raw_eval_id) if raw_eval_id else ''
+            display_eval_id = real_eval_id if real_eval_id and real_eval_id != raw_eval_id else raw_eval_id
+
             sentences.append({
                 'original_text': row['original_text'] or '',
                 'filtered_text': row['filtered_text'] or '',
                 'detected_words': words,
-                'evaluator_id': row['evaluator_id'] or '',
+                'evaluator_id': display_eval_id,
                 'batch_id': row['batch_id'] or '',
             })
         return sentences
@@ -236,6 +270,13 @@ def get_distinct_departments():
             WHERE e.department IS NOT NULL AND e.department != ''
             ORDER BY e.department
         """).fetchall()
-        return [r[0] for r in rows if r[0]]
+        pseudo_mgr = _get_pseudo_mgr()
+        depts = []
+        for r in rows:
+            raw = r[0]
+            if raw:
+                real = pseudo_mgr.get_real_id(raw)
+                depts.append(real if real and real != raw else raw)
+        return depts
     finally:
         conn.close()

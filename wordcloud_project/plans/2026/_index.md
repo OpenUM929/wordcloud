@@ -29,3 +29,5 @@
 | 0612_01_batch-work-order | 배치 작업서 기반 Resume 시스템 | ✅ DN | 2026-06-12 |
 | 0612_02_deploy-preview-pagination | 제출용 저장 결과 화면 페이징 + 아코디언 + 옵션 최적화 | ✅ DN | 2026-06-12 |
 | 0615_01_batch-csv-stream | 배치 CSV 스트리밍 + Staging DB + 2단계 진행 표시 | 🟡 PND | 2026-06-15 |
+| 0615_02_batch-display-name | 배치 명칭 지정 및 수정 | 🔴 PND | 2026-06-15 |
+| 0615_03_profanity-pseudonym | 비속어 기능 가명 복원 누락 수정 | ✅ DN | 2026-06-15 |
