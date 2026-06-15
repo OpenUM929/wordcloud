@@ -59,30 +59,39 @@ class MetadataManager:
                 if 'evaluator_id' not in analyzed_eval:
                     analyzed_eval['evaluator_id'] = analyzed_eval.get('evaluator_id')
 
+                # 평가 문서를 문자열로 보장 (CSV float 잔류값 방어)
+                doc = analyzed_eval.get('evaluation_document') or ''
+                if not isinstance(doc, str):
+                    doc = str(doc)
+
                 # NLP 분석
                 from src.modules.nlp_analysis import analyze_text
-                nlp_result = analyze_text(analyzed_eval.get('evaluation_document', ''))
+                nlp_result = analyze_text(doc)
                 analyzed_eval['nlp_analysis_results'] = nlp_result
 
                 # 감정 분석
                 from src.modules.emotion_analysis import analyze_emotion
-                emotion_result = analyze_emotion(analyzed_eval.get('evaluation_document', ''))
+                emotion_result = analyze_emotion(doc)
                 analyzed_eval['emotion_analysis_results'] = emotion_result
+
+                # 문장 단위 KoTE 원시 점수 캐시 (그룹 분석/제출용 저장 재사용)
+                from src.modules.sentence_emotion import compute_sentence_raw_scores
+                analyzed_eval['sentence_emotion_cache'] = compute_sentence_raw_scores(doc)
 
                 # 욕설 분석 (캐싱된 singleton 사용)
                 from src.modules.profanity_filter import advanced_filter_profanity
-                profanity_result = advanced_filter_profanity(analyzed_eval.get('evaluation_document', ''))
+                profanity_result = advanced_filter_profanity(doc)
                 analyzed_eval['profanity_analysis_results'] = profanity_result
 
                 # 리더십 분석 (캐싱된 singleton 사용)
                 from src.modules.leadership_analysis import LeadershipAnalysis
                 leadership_analyzer = LeadershipAnalysis()
-                leadership_result = leadership_analyzer.analyze_leadership(analyzed_eval.get('evaluation_document', ''))
+                leadership_result = leadership_analyzer.analyze_leadership(doc)
                 analyzed_eval['leadership_analysis_results'] = leadership_result
 
                 # 비꼬임 분석
                 from src.modules.sarcasm_analysis import analyze_sarcasm
-                sarcasm_result = analyze_sarcasm(analyzed_eval.get('evaluation_document', ''))
+                sarcasm_result = analyze_sarcasm(doc)
                 analyzed_eval['sarcasm_analysis_results'] = sarcasm_result
 
                 analyzed_evaluations.append(analyzed_eval)

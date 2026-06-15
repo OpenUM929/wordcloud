@@ -23,6 +23,7 @@ import threading
 from collections import defaultdict
 from src.modules.wordcloud_generator import WordCloudGenerator
 from src.modules.pseudonym_manager import PseudonymManager
+from src.modules.text_preprocessing import split_sentences  # 정의는 text_preprocessing로 이전(경량)
 
 _EVAL_DB_DIR = os.path.join(os.path.dirname(__file__), '..', '..', '.sessions')
 _EVAL_DB_PATH = os.path.join(_EVAL_DB_DIR, 'deploy_sessions.db')
@@ -321,26 +322,6 @@ def has_negative_implying_words(sentence):
     if not sentence:
         return False
     return any(word in sentence for word in NEGATIVE_IMPLYING_WORDS)
-
-
-def split_sentences(text):
-    """문서를 문장 단위로 분할. 인사말 제외."""
-    if not text:
-        return []
-    # 기본 분할: . ! ? \n
-    raw = re.split(r'[.!?\n]+', text)
-    sentences = [s.strip() for s in raw if s.strip()]
-    # 인사말 필터
-    greetings = {'감사합니다', '수고하셨습니다', '좋은 하루', '고맙습니다',
-                 '감사드립니다', '수고 많으셨습니다'}
-    filtered = []
-    for s in sentences:
-        if any(g in s for g in greetings):
-            continue
-        if len(s) < 5:  # 너무 짧은 문장 제외
-            continue
-        filtered.append(s)
-    return filtered
 
 
 def sentence_sentiment_override(pos, neg, sentence, is_last, total_sentences,
@@ -781,41 +762,38 @@ def _load_corrections_map(employee_id):
         conn.close()
 
 
-def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None):
-    """문서를 문장으로 분할하고 각 문장별로 감정 분석 후 교정 점수를 계산.
-    
+def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None, sentence_cache=None):
+    """문장별 감정 점수(반전 규칙·사용자 교정 적용 후)를 계산.
+
     Returns list of (sent, score, pos, neg) 4-tuples.
     corrections: {sentence_index: "positive"|"negative"|"neutral"}
+    sentence_cache: 배치 시 저장된 문장 단위 KoTE 원시 점수 리스트
+                    [{"sentence"(optional), "pos", "neg", "neutral"}, ...].
+                    제공되면 KoTE 재실행 없이 캐시 사용. 없으면 공유 헬퍼로 fallback.
     """
-    sentences = split_sentences(doc)
-    if not sentences:
-        return [(None, 0.0, 0.0, 0.0)]
-
-    from src.modules.emotion_analysis import analyze_emotion
-    from src.modules.profanity_filter import advanced_filter_profanity
-
-    # 문장별 순차 감정 분석 (PyTorch 모델은 thread-safe하지 않아 병렬 처리 불가)
-    sent_scores_raw = []
-    for sent in sentences:
-        try:
-            # 영어 문장: 한국어 전용 KoTE 우회, 영어 욕설 필터로 부정/중립 결정
-            _total = len(sent.replace(' ', ''))
-            if _total > 0 and len(re.findall(r'[a-zA-Z]', sent)) / _total > 0.7:
-                prof = advanced_filter_profanity(sent)
-                if prof.get('profanity_count', 0) > 0:
-                    sent_scores_raw.append((0.0, 1.0, 0.0))  # 욕설 있음 → 부정
-                else:
-                    sent_scores_raw.append((0.0, 0.0, 1.0))  # 욕설 없음 → 중립
-                continue
-            res = analyze_emotion(sent)
-            s = res.get('analysis', {}).get('base_result', {}).get('mapped', {}).get('sentiment_scores', {})
-            sent_scores_raw.append((
-                s.get('positive', 0.0) or 0.0,
-                s.get('negative', 0.0) or 0.0,
-                s.get('neutral', 0.0) or 0.0,
-            ))
-        except Exception:
-            sent_scores_raw.append((0.0, 0.0, 0.0))
+    if sentence_cache and isinstance(sentence_cache, list):
+        # 캐시 경로: KoTE 재실행 없음. sentence 누락(점수-only) 시 split로 재도출
+        derived = None
+        sentences = []
+        for idx, e in enumerate(sentence_cache):
+            sent = e.get('sentence')
+            if sent is None:
+                if derived is None:
+                    derived = split_sentences(doc)
+                sent = derived[idx] if idx < len(derived) else ''
+            sentences.append(sent)
+        sent_scores_raw = [
+            (e.get('pos', 0.0) or 0.0, e.get('neg', 0.0) or 0.0, e.get('neutral', 0.0) or 0.0)
+            for e in sentence_cache
+        ]
+    else:
+        # fallback: 캐시 없는 기존 배치 — 공유 헬퍼로 즉석 계산 (기존과 동일 결과)
+        from src.modules.sentence_emotion import compute_sentence_raw_scores
+        cache = compute_sentence_raw_scores(doc)
+        if not cache:
+            return [(None, 0.0, 0.0, 0.0)]
+        sentences = [e['sentence'] for e in cache]
+        sent_scores_raw = [(e['pos'], e['neg'], e['neutral']) for e in cache]
 
     total = len(sentences)
     result = []
@@ -863,7 +841,7 @@ def calculate_word_scores(filtered_evaluations, word_frequency, threshold=0.20, 
                 continue
             doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
             eval_corrections = corrections_map.get(ev.get('_db_id')) if corrections_map else None
-            sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
+            sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'))
             # 단어가 속한 문장의 점수 찾기
             word_sent_score = None
             for sent, score, _, _ in sent_scores:
@@ -1041,7 +1019,7 @@ def _aggregate_emotion(filtered_items, threshold=0.20, weight=2.0, corrections_m
             scores = {}
         doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
         eval_corrections = corrections_map.get(ev.get('_db_id')) if corrections_map else None
-        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
+        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'))
         for sent, score, _, _ in sent_scores:
             pos_sum += max(0, score)
             neg_sum += max(0, -score)
@@ -1111,7 +1089,7 @@ def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0, correctio
         eval_id = ev.get('evaluation_id', '')
         db_id = ev.get('_db_id')
         eval_corrections = corrections_map.get(db_id) if corrections_map else None
-        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections)
+        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'))
         for i, (sent, score, pos, neg) in enumerate(sent_scores):
             if not sent:
                 continue
@@ -1769,7 +1747,7 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
             eval_corr = deploy_corrections_map.get(db_id, {}) if deploy_corrections_map else {}
             if eval_corr:
                 logger.info(f"[deploy][{label_suffix}] db_id={db_id} eval_id={eval_id} corrections={eval_corr}")
-            sent_scores_list = _get_sentence_level_scores(doc, corrections=eval_corr)
+            sent_scores_list = _get_sentence_level_scores(doc, corrections=eval_corr, sentence_cache=ev.get('sentence_emotion_cache'))
             sent_score_map = {}
             confidence_map = {}
             for idx, (_, sc, pos, neg) in enumerate(sent_scores_list):

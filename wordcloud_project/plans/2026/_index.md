@@ -34,3 +34,5 @@
 | 0615_04_perspective-title-recall | 그룹 분석 테스트 배치 명칭 기반 재호출 | 🟡 PND | 2026-06-15 |
 | 0615_05_group-save-option | 그룹 분석 페이지 설정 저장, 전체직원 기본 체크, x축 통합출력 기본 | ✅ DN | 2026-06-15 |
 | 0615_06_emp-id-match-fix | 그룹분석·제출용저장 회귀 수정 (target_employee_id 매칭 키 복원) | ✅ DN | 2026-06-15 |
+| 0615_07_sentiment-save-fix | 워드클라우드 감정 분리 모드 저장 누락 수정 | ✅ DN | 2026-06-15 |
+| 0615_08_sentence-kote-cache | 배치 시 문장 단위 KoTE 캐시 저장 + 그룹 분석 재사용 | ✅ DN | 2026-06-15 |
