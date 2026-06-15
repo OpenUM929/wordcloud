@@ -33,8 +33,7 @@
 
 | 주제 | 문서 위치 |
 |------|----------|
-| 감정 분석 규칙 / KoTE 모델 특성 / 중립·부정 키워드 / 개발 규칙 | [`.clinerules/docs/project_wordcloud/modules/emotion-analysis-rules.md`](.clinerules/docs/project_wordcloud/modules/emotion-analysis-rules.md) |
-| 반전 표지어 체계 / `CONTRASTIVE_MARKERS` 관리 | [`.clinerules/docs/project_wordcloud/services/perspective-service-contrastive.md`](.clinerules/docs/project_wordcloud/services/perspective-service-contrastive.md) |
+| 감정 분석 규칙 / KoTE 모델 특성 / 중립·부정 키워드 / 개발 규칙 | [`.clinerules/docs/project_wordcloud/modules/emotion-analysis.md`](.clinerules/docs/project_wordcloud/modules/emotion-analysis.md) |
 
 ---
 
