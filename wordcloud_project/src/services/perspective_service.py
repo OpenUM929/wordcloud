@@ -620,20 +620,17 @@ def load_all_batches(processed_data_dir=None):
     finally:
         conn.close()
 
-    pseudo_mgr = _get_pseudo_mgr()
     emp_evals = defaultdict(list)
     emp_meta = {}
     for emp_id, name, dept, pos, data, ev_db_id in rows:
         if emp_id not in emp_meta:
-            real_id = pseudo_mgr.get_real_id(emp_id) if emp_id else emp_id
-            real_name = pseudo_mgr.get_real_id(name) if name else name
-            real_dept = pseudo_mgr.get_real_id(dept) if dept else dept
-            real_pos = pseudo_mgr.get_real_id(pos) if pos else pos
+            # target_employee_id는 가명 ID(emp_id)를 매칭 키로 사용한다.
+            # 실명 복원은 상위 enrich 계층(get_matrix_meta) 및 'real' 출력 모드
+            # (generate_perspective_matrix / save_to_deploy)에서 수행한다.
             emp_meta[emp_id] = {
-                'target_employee_name': real_name or real_id or '',
-                'target_employee_department': real_dept or '',
-                'target_employee_position': real_pos or '',
-                'real_employee_id': real_id or emp_id,
+                'target_employee_name': name or '',
+                'target_employee_department': dept or '',
+                'target_employee_position': pos or '',
             }
         if data:
             ev_obj = json.loads(data)
@@ -646,10 +643,9 @@ def load_all_batches(processed_data_dir=None):
     for emp_id, meta in emp_meta.items():
         evals = emp_evals[emp_id]
         total_evals += len(evals)
-        display_name = meta['target_employee_name'] or meta['real_employee_id'] or emp_id
         employee_results.append({
             'metadata': {
-                'target_employee_id': display_name,
+                'target_employee_id': emp_id,
                 'target_employee_name': meta['target_employee_name'],
                 'target_employee_department': meta['target_employee_department'],
                 'target_employee_position': meta['target_employee_position'],
@@ -1180,6 +1176,9 @@ def _generate_leadership_cell(filtered_items):
 
 
 def _generate_profanity_cell(filtered_items):
+    from src.services.profanity_db_service import _get_pseudo_mgr
+    pseudo_mgr = _get_pseudo_mgr()
+
     total_count = 0
     profanity_words = set()
     profanity_sentences = []
@@ -1195,8 +1194,11 @@ def _generate_profanity_cell(filtered_items):
         total_count += count
         profanity_words.update(detected)
         if count > 0 and detected:
+            raw_eval_id = ev.get('evaluator_id', '')
+            real_eval_id = pseudo_mgr.get_real_id(raw_eval_id) if raw_eval_id else ''
+            display_eval_id = real_eval_id if real_eval_id and real_eval_id != raw_eval_id else raw_eval_id
             profanity_sentences.append({
-                'evaluator_id': ev.get('evaluator_id', ''),
+                'evaluator_id': display_eval_id,
                 'original_text': prof.get('original_text', ''),
                 'filtered_text': prof.get('filtered_text', ''),
                 'detected_words': detected,
