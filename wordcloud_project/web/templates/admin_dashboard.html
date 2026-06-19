@@ -85,7 +85,7 @@ function loadMappings() {
     }
     var html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f8f9fa;"><th style="padding: 10px; border: 1px solid #ddd;">#</th><th style="padding: 10px; border: 1px solid #ddd;">실제 ID</th><th style="padding: 10px; border: 1px solid #ddd;">가명</th></tr></thead><tbody>';
     d.mappings.forEach(function(m, i) {
-      html += '<tr><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">' + (i+1) + '</td><td style="padding: 8px; border: 1px solid #ddd;">' + m.real_id + '</td><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #007bff;">' + m.pseudonym + '</td></tr>';
+      html += '<tr><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">' + (i+1) + '</td><td style="padding: 8px; border: 1px solid #ddd;">' + m.real_id + '</td><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #6366f1;">' + m.pseudonym + '</td></tr>';
     });
     html += '</tbody></table>';
     html += '<p style="margin-top: 10px; color: #666;">총 ' + d.total + '개 매핑</p>';

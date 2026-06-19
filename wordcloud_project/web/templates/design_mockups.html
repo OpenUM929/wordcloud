@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>감정 분석 시스템 - 디자인 목업</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+
+        .mockup-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .mockup-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .mockup-header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .mockup-header p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .mockups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .mockup-item {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .mockup-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .mockup-preview {
+            height: 400px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mockup-info {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .mockup-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .mockup-description {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .mockup-features {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .mockup-features li {
+            margin-left: 20px;
+            margin-bottom: 4px;
+        }
+
+        /* =================== STYLE 1: Modern Minimal =================== */
+        .mockup-modern {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .modern-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+        }
+
+        .modern-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .modern-header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .modern-content {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .modern-step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 8px;
+        }
+
+        .modern-step {
+            flex: 1;
+            text-align: center;
+        }
+
+        .modern-step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            margin: 0 auto 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .modern-step.active .modern-step-circle {
+            background: #6366f1;
+            color: white;
+        }
+
+        .modern-step.completed .modern-step-circle {
+            background: #10b981;
+            color: white;
+        }
+
+        .modern-step-text {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .modern-upload-area {
+            border: 2px dashed #6366f1;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            background: #f3f4f6;
+            margin-bottom: 16px;
+        }
+
+        .modern-upload-area p {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .modern-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .modern-btn-primary {
+            background: #6366f1;
+            color: white;
+        }
+
+        .modern-btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .modern-btn-secondary {
+            background: white;
+            color: #6366f1;
+            border: 1px solid #6366f1;
+        }
+
+        /* =================== STYLE 2: Dark Professional =================== */
+        .mockup-dark {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #1a1d29;
+            color: #e5e7eb;
+        }
+
+        .dark-header {
+            padding: 24px;
+            background: linear-gradient(180deg, #2a2f3f 0%, #1a1d29 100%);
+            border-bottom: 1px solid #3f4556;
+        }
+
+        .dark-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #f3f4f6;
+        }
+
+        .dark-header p {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .dark-content {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .dark-step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 8px;
+        }
+
+        .dark-step {
+            flex: 1;
+            text-align: center;
+        }
+
+        .dark-step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #3f4556;
+            margin: 0 auto 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #9ca3af;
+            border: 1px solid #4b5563;
+        }
+
+        .dark-step.active .dark-step-circle {
+            background: #06b6d4;
+            color: white;
+            border-color: #06b6d4;
+        }
+
+        .dark-step.completed .dark-step-circle {
+            background: #14b8a6;
+            color: white;
+            border-color: #14b8a6;
+        }
+
+        .dark-step-text {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .dark-upload-area {
+            border: 2px dashed #4b5563;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            background: #2a2f3f;
+            margin-bottom: 16px;
+        }
+
+        .dark-upload-area p {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+
+        .dark-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+
+        .dark-btn-primary {
+            background: #06b6d4;
+            color: #1a1d29;
+        }
+
+        .dark-btn-primary:hover {
+            background: #06d6d4;
+            transform: translateY(-1px);
+        }
+
+        .dark-btn-secondary {
+            background: #3f4556;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+        }
+
+        /* =================== STYLE 3: Warm Gradient =================== */
+        .mockup-warm {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: linear-gradient(135deg, #fff5eb 0%, #fef3c7 100%);
+        }
+
+        .warm-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .warm-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .warm-header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .warm-content {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .warm-step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 8px;
+        }
+
+        .warm-step {
+            flex: 1;
+            text-align: center;
+        }
+
+        .warm-step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fed7aa;
+            margin: 0 auto 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #92400e;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+        }
+
+        .warm-step.active .warm-step-circle {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .warm-step.completed .warm-step-circle {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            color: white;
+        }
+
+        .warm-step-text {
+            font-size: 11px;
+            color: #92400e;
+        }
+
+        .warm-upload-area {
+            border: 2px dashed #f59e0b;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            background: rgba(245, 158, 11, 0.1);
+            margin-bottom: 16px;
+            box-shadow: inset 0 1px 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .warm-upload-area p {
+            font-size: 13px;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+
+        .warm-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .warm-btn-primary {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .warm-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .warm-btn-secondary {
+            background: white;
+            color: #d97706;
+            border: 2px solid #f59e0b;
+        }
+
+        /* =================== Preview Content =================== */
+        .preview-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .preview-section {
+            margin-bottom: 12px;
+        }
+
+        .preview-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+
+        /* Comparison Section */
+        .comparison-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+
+        .comparison-section h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .comparison-table th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .comparison-table td {
+            color: #666;
+        }
+
+        .comparison-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+
+        .feature-tag.modern {
+            background: #c7d2fe;
+            color: #3730a3;
+        }
+
+        .feature-tag.dark {
+            background: #cffafe;
+            color: #164e63;
+        }
+
+        .feature-tag.warm {
+            background: #fed7aa;
+            color: #92400e;
+        }
+
+        @media (max-width: 768px) {
+            .mockups-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mockup-preview {
+                height: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-container">
+        <div class="mockup-header">
+            <h1>감정 분석 시스템 - 디자인 스타일 목업</h1>
+            <p>3가지 전혀 다른 비주얼 스타일을 비교하세요</p>
+        </div>
+
+        <div class="mockups-grid">
+            <!-- STYLE 1: Modern Minimal -->
+            <div class="mockup-item">
+                <div class="mockup-preview">
+                    <div class="mockup-modern">
+                        <div class="modern-header">
+                            <h2>감정 분석 시스템</h2>
+                            <p>텍스트를 입력하고 감정을 분석하세요</p>
+                        </div>
+                        <div class="modern-content">
+                            <div class="preview-section">
+                                <div class="preview-label">진행 단계</div>
+                                <div class="modern-step-indicator">
+                                    <div class="modern-step completed">
+                                        <div class="modern-step-circle">✓</div>
+                                        <div class="modern-step-text">입력</div>
+                                    </div>
+                                    <div class="modern-step active">
+                                        <div class="modern-step-circle">2</div>
+                                        <div class="modern-step-text">분석</div>
+                                    </div>
+                                    <div class="modern-step">
+                                        <div class="modern-step-circle">3</div>
+                                        <div class="modern-step-text">결과</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-section">
+                                <div class="preview-label">파일 업로드</div>
+                                <div class="modern-upload-area">
+                                    <p>📁 파일을 드래그하거나 클릭하세요</p>
+                                    <button class="modern-btn modern-btn-primary">선택</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mockup-info">
+                    <div class="mockup-title">Modern Minimal</div>
+                    <div class="mockup-description">
+                        깔끔하고 현대적인 디자인. 보라색과 초록색의 그라디언트로 세련된 분위기를 연출합니다.
+                    </div>
+                    <ul class="mockup-features">
+                        <li><span class="feature-tag modern">특징</span> 밝은 배경과 그라디언트</li>
+                        <li><span class="feature-tag modern">특징</span> 미니멀한 아이콘 사용</li>
+                        <li><span class="feature-tag modern">특징</span> 부드러운 색상 전환</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- STYLE 2: Dark Professional -->
+            <div class="mockup-item">
+                <div class="mockup-preview">
+                    <div class="mockup-dark">
+                        <div class="dark-header">
+                            <h2>감정 분석 시스템</h2>
+                            <p>정확한 감정 분석을 위한 전문가 플랫폼</p>
+                        </div>
+                        <div class="dark-content">
+                            <div class="preview-section">
+                                <div class="preview-label">진행 단계</div>
+                                <div class="dark-step-indicator">
+                                    <div class="dark-step completed">
+                                        <div class="dark-step-circle">✓</div>
+                                        <div class="dark-step-text">입력</div>
+                                    </div>
+                                    <div class="dark-step active">
+                                        <div class="dark-step-circle">2</div>
+                                        <div class="dark-step-text">분석</div>
+                                    </div>
+                                    <div class="dark-step">
+                                        <div class="dark-step-circle">3</div>
+                                        <div class="dark-step-text">결과</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-section">
+                                <div class="preview-label">파일 업로드</div>
+                                <div class="dark-upload-area">
+                                    <p>📁 파일을 드래그하거나 클릭하세요</p>
+                                    <button class="dark-btn dark-btn-primary">선택</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mockup-info">
+                    <div class="mockup-title">Dark Professional</div>
+                    <div class="mockup-description">
+                        전문적이고 고급스러운 다크 모드. 시안색 악센트로 현대적인 느낌을 더합니다.
+                    </div>
+                    <ul class="mockup-features">
+                        <li><span class="feature-tag dark">특징</span> 다크 모드 인터페이스</li>
+                        <li><span class="feature-tag dark">특징</span> 시안색 액센트</li>
+                        <li><span class="feature-tag dark">특징</span> 야간 사용에 최적화</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- STYLE 3: Warm Gradient -->
+            <div class="mockup-item">
+                <div class="mockup-preview">
+                    <div class="mockup-warm">
+                        <div class="warm-header">
+                            <h2>감정 분석 시스템</h2>
+                            <p>따뜻하고 친근한 감정 분석 경험</p>
+                        </div>
+                        <div class="warm-content">
+                            <div class="preview-section">
+                                <div class="preview-label">진행 단계</div>
+                                <div class="warm-step-indicator">
+                                    <div class="warm-step completed">
+                                        <div class="warm-step-circle">✓</div>
+                                        <div class="warm-step-text">입력</div>
+                                    </div>
+                                    <div class="warm-step active">
+                                        <div class="warm-step-circle">2</div>
+                                        <div class="warm-step-text">분석</div>
+                                    </div>
+                                    <div class="warm-step">
+                                        <div class="warm-step-circle">3</div>
+                                        <div class="warm-step-text">결과</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-section">
+                                <div class="preview-label">파일 업로드</div>
+                                <div class="warm-upload-area">
+                                    <p>📁 파일을 드래그하거나 클릭하세요</p>
+                                    <button class="warm-btn warm-btn-primary">선택</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mockup-info">
+                    <div class="mockup-title">Warm Gradient</div>
+                    <div class="mockup-description">
+                        따뜻하고 생동감 있는 디자인. 주황색 그라디언트로 친근하고 활기찬 분위기를 만듭니다.
+                    </div>
+                    <ul class="mockup-features">
+                        <li><span class="feature-tag warm">특징</span> 따뜻한 색상 팔레트</li>
+                        <li><span class="feature-tag warm">특징</span> 그라디언트와 그림자 활용</li>
+                        <li><span class="feature-tag warm">특징</span> 에너지 넘치는 분위기</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="comparison-section">
+            <h2>스타일 비교표</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>요소</th>
+                        <th>Modern Minimal</th>
+                        <th>Dark Professional</th>
+                        <th>Warm Gradient</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>주 색상</strong></td>
+                        <td>보라색 (#6366f1)</td>
+                        <td>시안색 (#06b6d4)</td>
+                        <td>주황색 (#f59e0b)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>배경</strong></td>
+                        <td>밝은 그라디언트</td>
+                        <td>다크 (#1a1d29)</td>
+                        <td>따뜻한 그라디언트</td>
+                    </tr>
+                    <tr>
+                        <td><strong>분위기</strong></td>
+                        <td>현대적, 세련됨</td>
+                        <td>전문적, 고급스러움</td>
+                        <td>친근함, 생동감</td>
+                    </tr>
+                    <tr>
+                        <td><strong>사용 시나리오</strong></td>
+                        <td>기술 기업, SaaS</td>
+                        <td>정밀 분석, 야간 작업</td>
+                        <td>교육, 소통, 일반 사용자</td>
+                    </tr>
+                    <tr>
+                        <td><strong>시각적 특징</strong></td>
+                        <td>최소한의 요소, 깔끔함</td>
+                        <td>명확한 대비, 집중력</td>
+                        <td>그라디언트, 부드러운 모서리</td>
+                    </tr>
+                    <tr>
+                        <td><strong>접근성</strong></td>
+                        <td>WCAG AA 준수 가능</td>
+                        <td>다크 모드 선호자 최적</td>
+                        <td>따뜻한 톤 선호자 최적</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="comparison-section">
+            <h2>다음 단계</h2>
+            <p style="color: #666; line-height: 1.8; margin-bottom: 16px;">
+                위의 3가지 스타일 중에서:
+                <br>
+                <br>
+                <strong style="color: #333;">1. 가장 마음에 드는 스타일을 선택해주세요</strong> (또는 여러 스타일의 요소를 조합한 커스텀 디자인 제안)
+                <br>
+                <br>
+                <strong style="color: #333;">2. 선택 후 다음을 지시해주세요:</strong>
+                <ul style="margin-left: 20px; margin-top: 10px; color: #666;">
+                    <li>색상 조정 (더 밝게/어둡게, 다른 색상 선호 등)</li>
+                    <li>요소 수정 (버튼 위치, 아이콘 스타일 등)</li>
+                    <li>전체 시스템에 적용할 준비</li>
+                </ul>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

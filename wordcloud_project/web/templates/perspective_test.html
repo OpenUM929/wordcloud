@@ -114,7 +114,7 @@ body {
     border-top: 1px solid #e9ecef;
     margin-top: 4px;
 }
-.btn-primary { background: #007bff; color: white; border: none; padding: 6px 20px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.btn-primary { background: #6366f1; color: white; border: none; padding: 6px 20px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .btn-primary:hover { background: #0069d9; }
 .btn-primary:disabled, .btn-success:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(30%); }
 .btn-secondary { background: #6c757d; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 12px; }
@@ -134,7 +134,7 @@ body {
     overflow-y: auto;
     box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
-.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ccc; border-top: 2px solid #007bff; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-left: 8px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ccc; border-top: 2px solid #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-left: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .matrix-table { border-collapse: collapse; width: 100%; font-size: 13px; }
 .matrix-table th, .matrix-table td { border: 1px solid #dee2e6; padding: 8px; text-align: center; vertical-align: top; }
@@ -157,9 +157,9 @@ body {
 .section-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 10px; }
 .summary-bar { display: flex; gap: 16px; flex-wrap: wrap; padding: 8px 14px; background: #f0f7ff; border: 1px solid #b8daff; border-radius: 6px; margin-bottom: 12px; font-size: 13px; align-items: center; }
 .summary-bar span { color: #004085; }
-.summary-bar strong { color: #007bff; }
+.summary-bar strong { color: #6366f1; }
 .scroll-wrapper { overflow-x: auto; }
-.metric-number { font-size: 18px; font-weight: 700; color: #007bff; }
+.metric-number { font-size: 18px; font-weight: 700; color: #6366f1; }
 .metric-label { font-size: 11px; color: #888; }
 .metric-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
 .metric-bar-bg { background: #e9ecef; height: 6px; border-radius: 3px; margin: 4px 0; overflow: hidden; }
@@ -189,13 +189,13 @@ body {
 .emp-content .card h4 { margin: 0 0 6px 0; font-size: 13px; }
 .emp-content .card img { width: 100%; height: 100px; object-fit: contain; background: #f8f9fa; border-radius: 4px; cursor: pointer; }
 .progress-container { background: #e9ecef; border-radius: 6px; height: 18px; overflow: hidden; margin: 6px 0; position: relative; }
-.progress-container .deploy-bar { height: 100%; background: linear-gradient(90deg, #007bff, #00b894); transition: width 0.3s ease; border-radius: 6px; }
+.progress-container .deploy-bar { height: 100%; background: linear-gradient(90deg, #6366f1, #00b894); transition: width 0.3s ease; border-radius: 6px; }
 .progress-text { position: absolute; top: 0; left: 0; right: 0; height: 18px; line-height: 18px; text-align: center; font-size: 11px; font-weight: 600; color: #333; }
 .progress-text.light { color: #fff; }
 .deploy-status { font-size: 12px; line-height: 1.6; margin: 6px 0; max-height: 200px; overflow-y: auto; }
 .deploy-status .done { color: #28a745; }
 .deploy-status .fail { color: #dc3545; }
-.deploy-status .processing { color: #007bff; }
+.deploy-status .processing { color: #6366f1; }
 .deploy-status .pending { color: #999; }
 .retry-btn { background: #ffc107; color: #333; border: none; padding: 4px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
 .retry-btn:hover { background: #e0a800; }
@@ -942,7 +942,7 @@ function _doBatchTitleCheck() {
                 const hasDeploy = d.sources?.includes('deploy');
                 const hasMatrix = d.sources?.includes('matrix');
                 const both = hasDeploy && hasMatrix;
-                const color = both ? '#dc3545' : (hasDeploy ? '#28a745' : '#007bff');
+                const color = both ? '#dc3545' : (hasDeploy ? '#28a745' : '#6366f1');
                 const label = both ? '배포+매트릭스' : (hasDeploy ? '배포용' : '매트릭스');
                 status.style.color = color;
                 status.textContent = `이미 존재하는 명칭 [${label}] (${d.count}개)`;
@@ -1023,7 +1023,7 @@ async function generateMatrix() {
 
     function renderProgress(current) {
         const pct = total > 0 ? current / total * 100 : 0;
-        const barColor = pct >= 100 ? '#00b894' : '#007bff';
+        const barColor = pct >= 100 ? '#00b894' : '#6366f1';
         let h = '<div class="summary-bar"><span><strong>매트릭스 저장 중...</strong></span>';
         h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
         h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div>`;
@@ -1473,7 +1473,7 @@ async function saveDeploy(resumeSessionId = null) {
 
     function renderProgress(current, status, lineExtra) {
         const pct = current / total * 100;
-        const barColor = pct >= 100 ? '#00b894' : '#007bff';
+        const barColor = pct >= 100 ? '#00b894' : '#6366f1';
         let h = '<div class="summary-bar"><span><strong>제출용 저장 중...</strong></span>';
         h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
         h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div><div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
@@ -1956,7 +1956,7 @@ function _buildEmployeeResultHtml(res, expandWc, expandSent) {
     if (empId) {
         h += '<span class="emp-info" style="font-size:12px;color:#666;">(' + escapeHtml(empId) + ')</span>';
         h += '<span style="display:inline-block;padding:2px 8px;background:#d4edda;color:#155724;border:1px solid #c3e6cb;border-radius:10px;font-size:11px;font-weight:600;">✅ 완료</span>';
-        h += '<span style="margin-left:auto;"><button onclick="event.stopPropagation();resubmitEmployee(event,\'' + empId.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">재제출</button></span>';
+        h += '<span style="margin-left:auto;"><button onclick="event.stopPropagation();resubmitEmployee(event,\'' + empId.replace(/'/g, "\\'") + '\')" style="padding:3px 10px;background:#6366f1;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">재제출</button></span>';
     }
     h += '</div>';
 
@@ -2258,7 +2258,7 @@ function buildDeployPaginationHtml(page, totalPages) {
 
     for (let i = startPage; i <= endPage; i++) {
         const active = i === page;
-        h += '<button onclick="goToDeployPage(' + i + ')" style="padding:6px 12px;border:1px solid ' + (active ? '#007bff' : '#dee2e6') + ';background:' + (active ? '#007bff' : 'white') + ';border-radius:4px;cursor:pointer;font-size:13px;color:' + (active ? 'white' : '#495057') + ';font-weight:' + (active ? 'bold' : 'normal') + ';">' + i + '</button>';
+        h += '<button onclick="goToDeployPage(' + i + ')" style="padding:6px 12px;border:1px solid ' + (active ? '#6366f1' : '#dee2e6') + ';background:' + (active ? '#6366f1' : 'white') + ';border-radius:4px;cursor:pointer;font-size:13px;color:' + (active ? 'white' : '#495057') + ';font-weight:' + (active ? 'bold' : 'normal') + ';">' + i + '</button>';
     }
 
     if (endPage < totalPages) {
@@ -2307,7 +2307,7 @@ function _buildResubmitLog(beforeRows, afterState) {
     h += '<div style="padding:6px 10px;max-height:200px;overflow-y:auto;">';
 
     if (changed.length > 0) {
-        h += '<div style="font-weight:600;color:#007bff;margin-bottom:3px;">✅ 변경됨 (' + changed.length + '건)</div>';
+        h += '<div style="font-weight:600;color:#6366f1;margin-bottom:3px;">✅ 변경됨 (' + changed.length + '건)</div>';
         changed.forEach(function(r) {
             h += '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:2px;padding:2px 4px;background:#f0f7ff;border-radius:3px;">';
             h += '<span style="color:' + (arrowColor[r.before]||'#888') + ';font-weight:600;white-space:nowrap;">' + _sentLabel(r.before) + '</span>';
@@ -2608,7 +2608,7 @@ function renderCellSection(d, type) {
     } else if (type === 'leadership') {
         const score = d.avg_leadership_score || 0;
         h += '<div class="metric-number">' + (score*100).toFixed(0) + '</div><div class="metric-label">리더십 점수</div>';
-        h += '<div class="metric-bar-bg"><div class="metric-bar-fill" style="background:#007bff;width:' + (score*100) + '%;"></div></div>';
+        h += '<div class="metric-bar-bg"><div class="metric-bar-fill" style="background:#6366f1;width:' + (score*100) + '%;"></div></div>';
         if (d.competencies) {
             Object.entries(d.competencies).slice(0,4).forEach(([k,v]) => {
                 const short = {communication:'커뮤니케이션',leadership:'리더십',problem_solving:'문제해결',teamwork:'팀워크',innovation:'혁신',ethics:'윤리'}[k]||k;
@@ -2809,7 +2809,7 @@ function buildMatrixPaginationHtml(page, totalPages) {
 
     for (let i = startPage; i <= endPage; i++) {
         const active = i === page;
-        h += '<button onclick="goToMatrixPage(' + i + ')" style="padding:6px 12px;border:1px solid ' + (active ? '#007bff' : '#dee2e6') + ';background:' + (active ? '#007bff' : 'white') + ';border-radius:4px;cursor:pointer;font-size:13px;color:' + (active ? 'white' : '#495057') + ';font-weight:' + (active ? 'bold' : 'normal') + ';">' + i + '</button>';
+        h += '<button onclick="goToMatrixPage(' + i + ')" style="padding:6px 12px;border:1px solid ' + (active ? '#6366f1' : '#dee2e6') + ';background:' + (active ? '#6366f1' : 'white') + ';border-radius:4px;cursor:pointer;font-size:13px;color:' + (active ? 'white' : '#495057') + ';font-weight:' + (active ? 'bold' : 'normal') + ';">' + i + '</button>';
     }
 
     if (endPage < totalPages) {

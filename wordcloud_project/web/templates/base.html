@@ -5,22 +5,22 @@
     <title>{% block title %}감정 분석{% endblock %}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; display: flex; min-height: 100vh; }
-        .container { flex: 1; margin: 0; background: white; padding: 20px; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { flex: 1; margin: 0; background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%); padding: 20px; overflow-y: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .step-indicator { display: flex; justify-content: center; align-items: center; margin-bottom: 30px; }
         .step { width: 80px; height: 80px; border-radius: 50%; background: #e0e0e0; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 10px; cursor: pointer; transition: all 0.3s; }
-        .step.active { background: #007bff; color: white; }
+        .step.active { background: #6366f1; color: white; }
         .step.completed { background: #28a745; color: white; }
         .step-number { font-size: 24px; font-weight: bold; }
         .step-text { font-size: 12px; text-align: center; margin-top: 5px; }
         .step-arrow { margin: 0 15px; color: #ccc; }
         .step-status { text-align: center; margin-top: 10px; font-size: 14px; color: #666; }
         .content { margin-top: 20px; }
-        .upload-area { border: 2px dashed #007bff; padding: 40px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
-        .upload-area.dragover { background: #e7f3ff; }
+        .upload-area { border: 2px dashed #6366f1; padding: 40px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+        .upload-area.dragover { background: #f3f4f6; }
         .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px; font-weight: bold; transition: all 0.2s; }
         .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-primary:hover { background: #0056b3; }
+        .btn-primary { background: #6366f1; color: white; }
+        .btn-primary:hover { background: #4f46e5; }
         .btn-secondary { background: #6c757d; color: white; }
         .btn-secondary:hover { background: #545b62; }
         .btn-success { background: #28a745; color: white; }
@@ -37,10 +37,10 @@
         .tree-panel { border: 1px solid #ddd; border-radius: 5px; padding: 15px; }
         .data-panel { border: 1px solid #ddd; border-radius: 5px; padding: 15px; }
         .tree-node { padding: 5px; cursor: pointer; border-radius: 3px; }
-        .tree-node.selected { background: #007bff; color: white; }
+        .tree-node.selected { background: #6366f1; color: white; }
         .tree-node.mapped { background: #28a745; color: white; }
         .column-row { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
-        .column-row.selected { background-color: #e7f3ff; border-left: 4px solid #007bff; }
+        .column-row.selected { background-color: #f3f4f6; border-left: 4px solid #6366f1; }
         .column-row.used { background-color: #f8f9fa; }
         .column-checkbox { margin-right: 10px; }
         .column-info { flex: 1; }
@@ -48,7 +48,7 @@
         .preview-area { margin-top: 20px; }
         .json-preview { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
         .progress-bar { width: 100%; height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin: 10px 0; }
-        .progress-fill { height: 100%; background: #007bff; transition: width 0.3s; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); transition: width 0.3s; }
         .hidden { display: none; }
         .status-message { padding: 10px; margin: 10px 0; border-radius: 5px; }
         .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
@@ -125,7 +125,7 @@
             margin: 0 0 10px 0;
             color: #333;
             font-size: 16px;
-            border-bottom: 2px solid #007bff;
+            border-bottom: 2px solid #6366f1;
             padding-bottom: 5px;
         }
 
@@ -142,7 +142,7 @@
             margin-top: 0;
             color: #333;
             font-size: 16px;
-            border-bottom: 2px solid #007bff;
+            border-bottom: 2px solid #6366f1;
             padding-bottom: 5px;
         }
 
@@ -196,7 +196,7 @@
         .evaluation-item {
             margin-bottom: 15px;
             padding: 8px;
-            border-left: 2px solid #007bff;
+            border-left: 2px solid #6366f1;
             background-color: #f8f9fa;
         }
 
@@ -247,7 +247,7 @@
         }
 
         .color-btn.selected {
-            border-color: #007bff;
+            border-color: #6366f1;
             box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
             transform: scale(1.1);
         }
@@ -281,7 +281,7 @@
 
         .size-options input[type="radio"]:checked + span {
             font-weight: bold;
-            color: #007bff;
+            color: #6366f1;
         }
 
         .max-words-group {
@@ -347,7 +347,7 @@
             vertical-align: middle;
         }
         .pseudo-toggle:hover {
-            color: #007bff;
+            color: #6366f1;
         }
         #globalAuthOverlay {
             position: fixed; inset: 0; z-index: 9999;
@@ -397,7 +397,7 @@
             <input type="password" id="globalAuthPwInput" placeholder="비밀번호 입력"
                    style="width:100%;padding:10px;border:1px solid #ccc;border-radius:6px;font-size:14px;margin-bottom:10px;box-sizing:border-box;">
             <button onclick="globalAuthLogin()"
-                    style="width:100%;padding:10px;background:#007bff;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer;">
+                    style="width:100%;padding:10px;background:#6366f1;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer;">
                 인증
             </button>
             <div id="globalAuthError" style="margin-top:8px;font-size:12px;color:#dc3545;min-height:16px;"></div>

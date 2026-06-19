@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네비게이션 스타일 비교</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .comparison-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .card-title h2 {
+            font-size: 18px;
+            color: #333;
+            margin: 0;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .mock-layout {
+            display: flex;
+            height: 500px;
+        }
+
+        /* ============= CURRENT STYLE ============= */
+        .mock-current nav {
+            width: 170px;
+            min-height: 100vh;
+            position: relative;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+        }
+
+        .mock-current nav a {
+            display: block;
+            padding: 7px 10px;
+            text-decoration: none;
+            color: #495057;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .mock-current nav a:hover {
+            background: #007bff;
+            color: white;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .mock-current nav .sep {
+            color: #999;
+            font-weight: bold;
+            user-select: none;
+            font-size: 11px;
+            padding: 6px 4px 2px;
+            display: block;
+        }
+
+        .mock-current nav .dropbtn {
+            display: block;
+            width: 100%;
+            padding: 7px 10px;
+            text-decoration: none;
+            color: #495057;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .mock-current nav .dropbtn::after {
+            content: ' ▼';
+            font-size: 10px;
+            color: #adb5bd;
+            float: right;
+        }
+
+        .mock-current nav .dropdown:hover .dropbtn {
+            background: #007bff;
+            color: white;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .mock-current nav .dropdown-content {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 4px 0 4px 12px;
+            margin-top: 2px;
+        }
+
+        .mock-current nav .dropdown-content a {
+            display: block;
+            padding: 6px 10px;
+            font-size: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            color: #495057;
+        }
+
+        .mock-current nav .dropdown-content a:hover {
+            background: #e9ecef;
+            color: #007bff;
+        }
+
+        .mock-current .content {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            overflow-y: auto;
+        }
+
+        .mock-current .content-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .mock-current .content-text {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* ============= MODERN MINIMAL STYLE ============= */
+        .mock-modern nav {
+            width: 170px;
+            min-height: 100vh;
+            position: relative;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border-right: 2px solid #e5e7eb;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+        }
+
+        .mock-modern nav a {
+            display: block;
+            padding: 8px 10px;
+            text-decoration: none;
+            color: #4b5563;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .mock-modern nav a:hover {
+            background: #6366f1;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            border-color: #6366f1;
+        }
+
+        .mock-modern nav .sep {
+            color: #bbb;
+            font-weight: 600;
+            user-select: none;
+            font-size: 10px;
+            padding: 8px 4px 4px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mock-modern nav .dropbtn {
+            display: block;
+            width: 100%;
+            padding: 8px 10px;
+            text-decoration: none;
+            color: #4b5563;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .mock-modern nav .dropbtn::after {
+            content: ' ▼';
+            font-size: 10px;
+            color: #999;
+            float: right;
+        }
+
+        .mock-modern nav .dropdown:hover .dropbtn {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .mock-modern nav .dropdown:hover .dropbtn::after {
+            color: white;
+        }
+
+        .mock-modern nav .dropdown-content {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 4px 0 4px 12px;
+            margin-top: 2px;
+        }
+
+        .mock-modern nav .dropdown-content a {
+            display: block;
+            padding: 6px 10px;
+            font-size: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            color: #4b5563;
+            font-weight: 500;
+        }
+
+        .mock-modern nav .dropdown-content a:hover {
+            background: #f3f4f6;
+            color: #6366f1;
+        }
+
+        .mock-modern .content {
+            flex: 1;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+            overflow-y: auto;
+        }
+
+        .mock-modern .content-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .mock-modern .content-text {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* ============= Details Section ============= */
+        .details-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .details-section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .change-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .change-table th,
+        .change-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .change-table th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .change-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .before {
+            color: #dc3545;
+            font-family: monospace;
+        }
+
+        .after {
+            color: #28a745;
+            font-family: monospace;
+        }
+
+        .color-swatch {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .nav-item-example {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 6px;
+        }
+
+        .nav-item-example strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .nav-item-example .example-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            color: #4b5563;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .example-btn.modern {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+        }
+
+        @media (max-width: 1200px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mock-layout {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>네비게이션 메뉴 스타일 비교</h1>
+            <p>Modern Minimal 스타일 적용 전후</p>
+        </div>
+
+        <div class="comparison-grid">
+            <!-- CURRENT STYLE -->
+            <div class="comparison-card">
+                <div class="card-title">
+                    <h2>현재 스타일 (Current)</h2>
+                    <p class="card-subtitle">파란색 (#007bff) 기반</p>
+                </div>
+                <div class="mock-layout">
+                    <div class="mock-current">
+                        <nav>
+                            <a>📊 대시보드</a>
+                            <a>📝 감정분석</a>
+                            <div class="sep">테스트</div>
+                            <a>🔍 감정 테스트</a>
+                            <a>💬 비속어 테스트</a>
+                            <div class="dropdown">
+                                <button class="dropbtn">🎨 워드클라우드</button>
+                                <div class="dropdown-content" style="display: flex;">
+                                    <a>미리보기</a>
+                                    <a>생성</a>
+                                    <a>저장</a>
+                                </div>
+                            </div>
+                            <div class="sep">관리</div>
+                            <a>⚙️ 설정</a>
+                            <a>👤 관리자</a>
+                        </nav>
+                        <div class="content">
+                            <div class="content-title">📊 감정 분석</div>
+                            <div class="content-text">
+                                현재 페이지의 콘텐츠가 표시됩니다. 각 메뉴 항목에 호버하면 파란색으로 변하고 상자 그림자가 나타납니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODERN MINIMAL STYLE -->
+            <div class="comparison-card">
+                <div class="card-title">
+                    <h2>Modern Minimal (변경)</h2>
+                    <p class="card-subtitle">보라색 (#6366f1) 기반</p>
+                </div>
+                <div class="mock-layout">
+                    <div class="mock-modern">
+                        <nav>
+                            <a>📊 대시보드</a>
+                            <a>📝 감정분석</a>
+                            <div class="sep">테스트</div>
+                            <a>🔍 감정 테스트</a>
+                            <a>💬 비속어 테스트</a>
+                            <div class="dropdown">
+                                <button class="dropbtn">🎨 워드클라우드</button>
+                                <div class="dropdown-content" style="display: flex;">
+                                    <a>미리보기</a>
+                                    <a>생성</a>
+                                    <a>저장</a>
+                                </div>
+                            </div>
+                            <div class="sep">관리</div>
+                            <a>⚙️ 설정</a>
+                            <a>👤 관리자</a>
+                        </nav>
+                        <div class="content">
+                            <div class="content-title">📊 감정 분석</div>
+                            <div class="content-text">
+                                Modern Minimal 스타일로 변경된 네비게이션입니다. 호버 시 보라색으로 부드럽게 전환되고 미묘한 그림자 효과가 적용됩니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Section -->
+        <div class="details-section">
+            <h2>네비게이션 상세 변경 사항</h2>
+            <table class="change-table">
+                <thead>
+                    <tr>
+                        <th>요소</th>
+                        <th>현재 스타일</th>
+                        <th>Modern Minimal</th>
+                        <th>시각적 변화</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>네비게이션 배경</strong></td>
+                        <td>#f8f9fa (연회색)</td>
+                        <td>선형 그라디언트<br>#ffffff → #f8fbff</td>
+                        <td>더 밝고 세련된 배경</td>
+                    </tr>
+                    <tr>
+                        <td><strong>메뉴 링크 기본</strong></td>
+                        <td>흰색 배경<br>#dee2e6 테두리</td>
+                        <td>흰색 배경<br>#e5e7eb 테두리</td>
+                        <td>더 가벼운 테두리</td>
+                    </tr>
+                    <tr>
+                        <td><strong>메뉴 텍스트</strong></td>
+                        <td>#495057 (회색)</td>
+                        <td>#4b5563 (더 진한 회색)</td>
+                        <td>가독성 향상</td>
+                    </tr>
+                    <tr>
+                        <td><strong>호버 배경</strong></td>
+                        <td><span class="color-swatch" style="background: #007bff;"></span><br>#007bff (파란색)</td>
+                        <td><span class="color-swatch" style="background: #6366f1;"></span><br>#6366f1 (보라색)</td>
+                        <td>주 색상 변경</td>
+                    </tr>
+                    <tr>
+                        <td><strong>호버 그림자</strong></td>
+                        <td>2px 0 8px rgba(0,0,0,0.15)</td>
+                        <td>0 4px 12px rgba(99,102,241,0.25)</td>
+                        <td>더 부드럽고 세련된 그림자</td>
+                    </tr>
+                    <tr>
+                        <td><strong>테두리 (호버)</strong></td>
+                        <td>기존 테두리 유지</td>
+                        <td>#6366f1로 변경</td>
+                        <td>일관성 있는 색상</td>
+                    </tr>
+                    <tr>
+                        <td><strong>섹션 구분자(Sep)</strong></td>
+                        <td>#999 (회색)</td>
+                        <td>#bbb (더 밝은 회색)<br>대문자 + 자간 추가</td>
+                        <td>더 선명한 구분</td>
+                    </tr>
+                    <tr>
+                        <td><strong>드롭다운 텍스트</strong></td>
+                        <td>일반 무게</td>
+                        <td>font-weight: 500</td>
+                        <td>더 선명한 텍스트</td>
+                    </tr>
+                    <tr>
+                        <td><strong>드롭다운 호버</strong></td>
+                        <td>#e9ecef 배경<br>#007bff 텍스트</td>
+                        <td>#f3f4f6 배경<br>#6366f1 텍스트</td>
+                        <td>일관된 보라색</td>
+                    </tr>
+                    <tr>
+                        <td><strong>화면 배경</strong></td>
+                        <td>흰색 (#fff)</td>
+                        <td>밝은 그라디언트<br>#ffffff → #f8fbff</td>
+                        <td>네비게이션과 조화</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="details-section">
+            <h2>네비게이션 항목별 모습</h2>
+
+            <div class="nav-item-example">
+                <strong>1️⃣ 기본 메뉴 항목 (일반 상태)</strong>
+                <div class="example-buttons">
+                    <button class="example-btn">📊 대시보드</button>
+                    <button class="example-btn">📝 감정분석</button>
+                    <button class="example-btn">🔍 감정 테스트</button>
+                </div>
+            </div>
+
+            <div class="nav-item-example">
+                <strong>2️⃣ 메뉴 항목 (호버/활성 상태)</strong>
+                <div class="example-buttons">
+                    <button class="example-btn modern">📊 대시보드</button>
+                    <button class="example-btn modern">🎨 워드클라우드</button>
+                    <button class="example-btn modern">⚙️ 설정</button>
+                </div>
+            </div>
+
+            <div class="nav-item-example">
+                <strong>3️⃣ 섹션 구분자</strong>
+                <div style="padding: 10px; background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%); border-radius: 4px;">
+                    <div style="color: #bbb; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">테스트</div>
+                    <button class="example-btn">🔍 감정 테스트</button>
+                    <button class="example-btn">💬 비속어 테스트</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="details-section">
+            <h2>✅ 적용 범위</h2>
+            <p style="color: #666; line-height: 1.8;">
+                • <strong>nav.css 전체 수정</strong> - 모든 네비게이션 요소의 색상과 효과 변경<br>
+                • <strong>모든 페이지에 영향</strong> - base.html을 상속하는 모든 페이지에 동일하게 적용<br>
+                • <strong>드롭다운 포함</strong> - 메뉴 드롭다운 (테스트, 관리자 메뉴 등)<br>
+                • <strong>호버/포커스 상태 통일</strong> - 모든 인터랙션에 보라색 적용<br>
+                • <strong>주요 색상 변경</strong>: #007bff → #6366f1
+            </p>
+        </div>
+    </div>
+</body>
+</html>

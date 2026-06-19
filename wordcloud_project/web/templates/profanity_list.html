@@ -26,7 +26,7 @@
     border-radius: 4px;
     cursor: pointer;
 }
-.btn-apply { background: #007bff; color: white; }
+.btn-apply { background: #6366f1; color: white; }
 .btn-apply:hover { background: #0069d9; }
 .btn-csv { background: #28a745; color: white; }
 .btn-csv:hover { background: #218838; }
@@ -106,7 +106,7 @@
     cursor: pointer;
     border-radius: 4px;
 }
-.pagination button.active { background: #007bff; color: white; border-color: #007bff; }
+.pagination button.active { background: #6366f1; color: white; border-color: #6366f1; }
 .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .modal-overlay {
@@ -333,7 +333,7 @@ function renderTable(items) {
         h += '<td class="metric">' + item.profanity_count + '</td>';
         h += '<td class="ratio">' + ratio + '%</td>';
         h += '<td><div class="word-tags">' + words + '</div></td>';
-        h += '<td><button style="padding:3px 10px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;" onclick="openDetail(\'' + item.employee_id + '\')">상세 보기</button></td>';
+        h += '<td><button style="padding:3px 10px;background:#6366f1;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;" onclick="openDetail(\'' + item.employee_id + '\')">상세 보기</button></td>';
         h += '</tr>';
     });
     tbody.innerHTML = h;

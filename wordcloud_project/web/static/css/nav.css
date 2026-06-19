@@ -28,7 +28,7 @@ nav a {
     font-family: Arial, sans-serif;
 }
 nav a:hover {
-    background: #007bff;
+    background: #6366f1;
     color: white;
     box-shadow: 2px 0 8px rgba(0,0,0,0.15);
 }
@@ -70,7 +70,7 @@ nav .dropbtn::after {
     float: right;
 }
 nav .dropdown:hover .dropbtn {
-    background: #007bff;
+    background: #6366f1;
     color: white;
     box-shadow: 2px 0 8px rgba(0,0,0,0.15);
 }
@@ -98,6 +98,6 @@ nav .dropdown-content a {
 }
 nav .dropdown-content a:hover {
     background: #e9ecef;
-    color: #007bff;
+    color: #6366f1;
     box-shadow: none;
 }
