@@ -162,7 +162,7 @@
 
     .color-btn.selected {
         border-color: #6366f1;
-        box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+        box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
         transform: scale(1.1);
     }
 
@@ -584,7 +584,7 @@ function generateMetadataInfoHtml(metadata) {
                             <p><strong>원본:</strong> ${evaluation.profanity_analysis_results.original_text || ''}</p>
                             <p><strong>필터링 결과:</strong> ${evaluation.profanity_analysis_results.filtered_text || ''}</p>
                             <p><strong>탐지 계층:</strong> ${(evaluation.profanity_analysis_results.methods_used || []).map(m =>
-                                m === 'kiwi_morpheme' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#cce5ff;color:#004085;font-size:11px;">1계층(형태소)</span>' :
+                                m === 'kiwi_morpheme' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#e9d5ff;color:#4338ca;font-size:11px;">1계층(형태소)</span>' :
                                 m === 'gap_pattern' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#fff3cd;color:#856404;font-size:11px;">2계층(간격)</span>' : m
                             ).join(' ')}</p>
                             <p><strong>처리 시간:</strong> ${evaluation.profanity_analysis_results.processing_time_ms || 0}ms</p>

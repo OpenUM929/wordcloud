@@ -58,7 +58,7 @@ body {
 
 .category-item.active {
     background-color: rgba(13, 110, 253, 0.1);
-    border-left: 4px solid #0d6efd;
+    border-left: 4px solid #6366f1;
     font-weight: 500;
 }
 
@@ -81,7 +81,7 @@ body {
 
 .stat-value {
     font-weight: bold;
-    color: #0d6efd;
+    color: #6366f1;
 }
 
 /* Search and Add Section */
