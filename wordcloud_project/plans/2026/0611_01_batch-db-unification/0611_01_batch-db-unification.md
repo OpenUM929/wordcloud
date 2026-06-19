@@ -1,6 +1,10 @@
 # 배치 처리 DB 일원화 완성
 
-> 상태: PND | 작성일: 2026-06-11
+> 상태: DN | 작성일: 2026-06-11 | 완료확인: 2026-06-18
+
+## 완료 확인 (2026-06-18 코드 대조)
+
+`batch_manager.py`(`_get_eval_conn` 재사용, `FROM evaluations`/`employees`)·`wordcloud_data_service.py`(`FROM evaluations`)가 모두 DB 읽기로 전환됨. `batch_processor.py`의 per-employee imeta/tmeta 쓰기(Stage 4/5: `save_imeta_single`/`save_tmeta_single`)는 `0615_01` CSV 스트리밍 리팩토링으로 제거되고 staging.db 경유로 대체됨. `batch_summary.json`(tmeta)만 `0615_02` display_name 보관용으로 의도적으로 잔존(하이브리드 구조 확정). → 본 계획의 DB 일원화 목표 달성.
 
 ---
 

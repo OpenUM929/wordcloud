@@ -1733,6 +1733,11 @@ function saveToCorpus(btn) {
     const batchId = row.dataset.batchId || (row.closest('[data-batch-id]') ? row.closest('[data-batch-id]').dataset.batchId : '');
     const rawContext = row.dataset.context;
     const context = rawContext ? decodeURIComponent(rawContext) : '';
+    const _f = function(v) { return (v === undefined || v === '') ? null : parseFloat(v); };
+    const kotePos = _f(row.dataset.kotePos);
+    const koteNeg = _f(row.dataset.koteNeg);
+    const koteNeutral = _f(row.dataset.koteNeutral);
+    const ovrScore = _f(row.dataset.ovrScore);
 
     if (!text) { showDeployToast('❌ 문장을 찾을 수 없습니다', ''); return; }
     btn.disabled = true;
@@ -1744,6 +1749,10 @@ function saveToCorpus(btn) {
             confidence: confidence, source_employee_id: empId,
             source_evaluation_id: evalId, source_batch_id: batchId,
             sentence_index: sentIdx, db_id: dbId, context: context,
+            source_kind: 'group_emotion',
+            kote_pos: kotePos, kote_neg: koteNeg, kote_neutral: koteNeutral, override_score: ovrScore,
+            analysis_results: { emotion: { result: modelLabel,
+                positive: kotePos, negative: koteNeg, neutral: koteNeutral } },
         })
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.success) {
@@ -1772,14 +1781,17 @@ function saveProfanityToCorpus(btn) {
 
     if (!text) { showDeployToast('❌ 문장을 찾을 수 없습니다', ''); return; }
     if (!userLabel) { showDeployToast('❌ 감정(긍/부/중)을 먼저 선택해주세요', ''); return; }
+    let profMeta = { is_profanity: true, profanity: { detected: true } };
+    try { profMeta = Object.assign({ is_profanity: true, profanity: { detected: true } }, JSON.parse(context || '{}')); } catch (e) {}
     btn.disabled = true;
     btn.textContent = '⏳';
     fetch('/api/perspective/acquired-sentences/save', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            sentence_text: text, user_label: userLabel, model_label: 'profanity',
+            sentence_text: text, user_label: userLabel, model_label: userLabel,
             confidence: 0, source_employee_id: empId, source_evaluation_id: evalId,
-            source_batch_id: '', sentence_index: 0, db_id: 0, context: context,
+            source_batch_id: '', sentence_index: 0, db_id: 0, context: '',
+            source_kind: 'group_profanity', analysis_results: profMeta,
         })
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.success) {
@@ -1794,6 +1806,97 @@ function saveProfanityToCorpus(btn) {
         btn.textContent = '❌';
         setTimeout(function() { btn.textContent = '📋'; btn.disabled = false; }, 2000);
     });
+}
+
+// ── 배포 전량(_deployResults)에서 카테고리별 문장 수집 (DOM 아님, 페이징 무관) ──
+function _collectDeployDetailItems(sentiment) {
+    const out = [];
+    const keys = (sentiment === 'all')
+        ? ['positive_sentence_details', 'negative_sentence_details', 'neutral_sentence_details']
+        : [sentiment + '_sentence_details'];
+    function pushFrom(container, empId) {
+        if (!container) return;
+        keys.forEach(function(k) {
+            const arr = container[k];
+            if (!Array.isArray(arr)) return;
+            const bucket = k.split('_')[0];   // positive/negative/neutral
+            arr.forEach(function(s) {
+                if (!s || !s.text) return;
+                const truth = (sentiment === 'all') ? (s.sentiment || bucket) : sentiment;
+                out.push({
+                    sentence_text: s.text,
+                    user_label: truth,
+                    model_label: s.sentiment || truth,
+                    source_kind: 'group_emotion',
+                    confidence: s.confidence,
+                    source_employee_id: empId || '',
+                    source_evaluation_id: s.evaluation_id || '',
+                    source_batch_id: s.batch_id || '',
+                    sentence_index: s.sentence_index || 0,
+                    db_id: s.db_id || 0,
+                    context: s.context || '',
+                    kote_pos: s.kote_pos, kote_neg: s.kote_neg, kote_neutral: s.kote_neutral,
+                    override_score: s.override_score,
+                    analysis_results: { emotion: { result: (s.sentiment || truth),
+                        positive: s.kote_pos, negative: s.kote_neg, neutral: s.kote_neutral } }
+                });
+            });
+        });
+    }
+    (_deployResults || []).forEach(function(res) {
+        const empId = res.employee_id || '';
+        pushFrom(res, empId);
+        if (res.row_results) {
+            Object.keys(res.row_results).forEach(function(rk) { pushFrom(res.row_results[rk], empId); });
+        }
+    });
+    return out;
+}
+
+function _postBulkMove(items, labelDesc) {
+    if (!items.length) { showDeployToast('❌ 이동할 ' + labelDesc + ' 문장이 없습니다', ''); return; }
+    if (!confirm(labelDesc + ' ' + items.length + '건을 습득 데이터로 이동할까요?')) return;
+    fetch('/api/perspective/acquired-sentences/save-bulk', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ items: items })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.success) {
+            showDeployToast('✅ ' + labelDesc + ' 이동: 추가 ' + d.inserted + ' / 건너뜀 ' + d.skipped, '/acquired-data');
+        } else {
+            showDeployToast('❌ ' + (d.error || '이동 실패'), '');
+        }
+    }).catch(function() { showDeployToast('❌ 이동 중 오류', ''); });
+}
+
+function bulkMoveToCorpus(sentiment) {
+    const nameMap = { positive: '긍정', negative: '부정', neutral: '중립', all: '전체' };
+    _postBulkMove(_collectDeployDetailItems(sentiment), nameMap[sentiment] || sentiment);
+}
+
+function bulkMoveProfanity() {
+    const out = [];
+    (_deployResults || []).forEach(function(res) {
+        const empId = res.employee_id || '';
+        const ps = res.profanity_summary;
+        if (!ps || !Array.isArray(ps.profanity_sentences)) return;
+        ps.profanity_sentences.forEach(function(s) {
+            const text = s.original_text || s.text;
+            if (!text) return;
+            out.push({
+                sentence_text: text,
+                user_label: 'neutral',
+                model_label: 'neutral',
+                source_kind: 'group_profanity',
+                source_employee_id: empId,
+                source_evaluation_id: s.evaluator_id || '',
+                sentence_index: 0,
+                context: '',
+                analysis_results: { profanity: { detected: true, words: s.detected_words || [] },
+                    is_profanity: true, detected_words: s.detected_words || [], detection_details: s.detection_details || [] }
+            });
+        });
+    });
+    _postBulkMove(out, '욕설');
 }
 
 function _renderDeploymentSentences(sentences, details) {
@@ -1815,7 +1918,11 @@ function _renderDeploymentSentences(sentences, details) {
             const batchId = s.batch_id || '';
             const context = s.context || '';
             const fullTextEncoded = encodeURIComponent(s.text || '');
-            h += '<div class="sentence-row" data-db-id="' + s.db_id + '" data-eval-id="' + s.evaluation_id + '" data-sent-idx="' + s.sentence_index + '" data-orig-sentiment="' + s.sentiment + '" data-full-text="' + fullTextEncoded + '" data-confidence="' + confidence + '" data-batch-id="' + batchId + '" data-context="' + encodeURIComponent(context) + '" style="display:flex;align-items:flex-start;margin-bottom:2px;">';
+            const kp = (s.kote_pos !== undefined && s.kote_pos !== null) ? s.kote_pos : '';
+            const kn = (s.kote_neg !== undefined && s.kote_neg !== null) ? s.kote_neg : '';
+            const knu = (s.kote_neutral !== undefined && s.kote_neutral !== null) ? s.kote_neutral : '';
+            const ovr = (s.override_score !== undefined && s.override_score !== null) ? s.override_score : '';
+            h += '<div class="sentence-row" data-db-id="' + s.db_id + '" data-eval-id="' + s.evaluation_id + '" data-sent-idx="' + s.sentence_index + '" data-orig-sentiment="' + s.sentiment + '" data-full-text="' + fullTextEncoded + '" data-confidence="' + confidence + '" data-batch-id="' + batchId + '" data-context="' + encodeURIComponent(context) + '" data-kote-pos="' + kp + '" data-kote-neg="' + kn + '" data-kote-neutral="' + knu + '" data-ovr-score="' + ovr + '" style="display:flex;align-items:flex-start;margin-bottom:2px;">';
             h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="positive"' + (s.sentiment === 'positive' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
             h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="negative"' + (s.sentiment === 'negative' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
             h += '<label style="width:22px;display:flex;justify-content:center;padding-top:1px;cursor:pointer;flex-shrink:0;"><input type="radio" name="' + nm + '" value="neutral"' + (s.sentiment === 'neutral' ? ' checked' : '') + ' style="cursor:pointer;"></label>';
@@ -2009,6 +2116,20 @@ function renderDeployComplete(summary) {
     h += '<input type="checkbox" id="optExpandSent" onchange="onDeployOptionChange()"> 문장 기본 펼침</label>';
     h += '<span style="margin-left:auto;font-size:13px;color:#6c757d;" id="deployPageInfo"></span>';
     h += '</div>';
+
+    // ── 코퍼스 일괄 이동 툴바 (배포 전량 기준, _deployResults) ──
+    if (successCount > 0) {
+        const _bbtn = 'padding:5px 12px;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;';
+        h += '<div class="summary-bar" style="background:#eef6ff;border-color:#cfe2ff;margin-top:8px;gap:8px;flex-wrap:wrap;align-items:center;">';
+        h += '<span style="font-size:13px;font-weight:700;color:#0d6efd;">📋 습득 데이터로 일괄 이동:</span>';
+        h += '<button onclick="bulkMoveToCorpus(\'positive\')" style="' + _bbtn + 'background:#28a745;">긍정 전체</button>';
+        h += '<button onclick="bulkMoveToCorpus(\'negative\')" style="' + _bbtn + 'background:#dc3545;">부정 전체</button>';
+        h += '<button onclick="bulkMoveToCorpus(\'neutral\')" style="' + _bbtn + 'background:#6c757d;">중립 전체</button>';
+        h += '<button onclick="bulkMoveProfanity()" style="' + _bbtn + 'background:#b02a37;">욕설 전체</button>';
+        h += '<button onclick="bulkMoveToCorpus(\'all\')" style="' + _bbtn + 'background:#0d6efd;">전체 이동</button>';
+        h += '<a href="/acquired-data" style="margin-left:auto;color:#0d6efd;font-size:12px;font-weight:bold;text-decoration:underline;">습득 데이터 →</a>';
+        h += '</div>';
+    }
 
     // ── 상단 페이지바 ──
     h += '<div id="deployPaginationTop" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>';

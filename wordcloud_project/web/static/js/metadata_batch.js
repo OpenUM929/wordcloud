@@ -853,7 +853,17 @@ function startBatchProcessing() {
                         });
                         failedListHtml += '</div>';
                     }
-                    var html = '<div class="status-success"><h4>✅ 배치 처리<br>완료</h4><div style="margin-top: 15px;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;"><thead><tr style="background: #f8f9fa;"><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">총 처리된 행</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">고유 직원 수</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">성공한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">실패한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">비속어 발견 직원</th></tr></thead><tbody><tr style="background: #ffffff;"><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #007bff;">' + (data.total_rows || data.total_processed || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #6c757d;">' + (data.total_employees || data.unique_employees || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #28a745;">' + (data.success_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #dc3545;">' + (data.error_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: left; color: #ffc107;">' + (data.profanity_employees && data.profanity_employees.length > 0 ? data.profanity_employees.map(function(emp) { return '<div style="margin-bottom: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.profanities.join(', ')) + '</div>'; }).join('') : '없음') + '</td></tr></tbody></table>' + failedListHtml + '</div></div>';
+                    var skippedHtml = '';
+                    var skippedCount = data.skipped_count || 0;
+                    if (skippedCount > 0) {
+                        var skBatchId = data.batch_id || '';
+                        skippedHtml = '<div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px;">'
+                            + '<strong style="color: #856404;">⚠️ 중복으로 저장되지 않은 평가: ' + skippedCount + '건</strong>'
+                            + ' <span style="color: #856404;">— 이미 동일한 데이터가 등록되어 있어 새로 저장되지 않았습니다.</span>'
+                            + ' <button class="btn btn-warning" style="margin-left: 8px; padding: 2px 10px; font-size: 13px;" onclick="showSkippedModal(\'' + escapeHtml(skBatchId) + '\')">자세히 보기</button>'
+                            + '</div>';
+                    }
+                    var html = '<div class="status-success"><h4>✅ 배치 처리<br>완료</h4><div style="margin-top: 15px;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;"><thead><tr style="background: #f8f9fa;"><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">총 처리된 행</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">고유 직원 수</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">성공한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">실패한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">비속어 발견 직원</th></tr></thead><tbody><tr style="background: #ffffff;"><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #007bff;">' + (data.total_rows || data.total_processed || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #6c757d;">' + (data.total_employees || data.unique_employees || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #28a745;">' + (data.success_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #dc3545;">' + (data.error_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: left; color: #ffc107;">' + (data.profanity_employees && data.profanity_employees.length > 0 ? data.profanity_employees.map(function(emp) { return '<div style="margin-bottom: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.profanities.join(', ')) + '</div>'; }).join('') : '없음') + '</td></tr></tbody></table>' + failedListHtml + skippedHtml + '</div></div>';
                     document.getElementById('resultsSummary').innerHTML = html;
                 }, 500);
 
@@ -1296,6 +1306,60 @@ function closeResumeModal() {
     document.getElementById('resumeModal').style.display = 'none';
 }
 
+function closeSkippedModal() {
+    document.getElementById('skippedModal').style.display = 'none';
+}
+
+function showSkippedModal(batchId) {
+    var body = document.getElementById('skippedModalBody');
+    body.innerHTML = '<div style="padding: 20px; text-align: center; color: #888;">불러오는 중...</div>';
+    document.getElementById('skippedModal').style.display = 'flex';
+
+    fetch('/api/batch/skipped/' + encodeURIComponent(batchId))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (!data.success) {
+                body.innerHTML = '<div style="padding: 20px; color: #dc3545;">조회 실패: ' + escapeHtml(data.error || '알 수 없는 오류') + '</div>';
+                return;
+            }
+            var list = data.skipped || [];
+            var total = data.skipped_count || 0;
+            if (list.length === 0) {
+                body.innerHTML = '<div style="padding: 20px; color: #888;">표시할 중복 평가 상세가 없습니다.</div>';
+                return;
+            }
+            var capNote = (total > list.length)
+                ? '<div style="margin-bottom: 10px; color: #856404;">총 ' + total + '건 중 상위 ' + list.length + '건을 표시합니다.</div>'
+                : '<div style="margin-bottom: 10px; color: #856404;">총 ' + total + '건</div>';
+            var rows = '';
+            list.forEach(function(s) {
+                var keyHtml = '직원 <strong>' + escapeHtml(s.employee_id || '') + '</strong>'
+                    + ' · 평가자 ' + escapeHtml(s.evaluator_id || '')
+                    + ' · 평가일 ' + escapeHtml(s.evaluation_date || '')
+                    + '<div style="margin-top: 4px; color: #666; font-size: 12px;">' + escapeHtml(s.document || '') + '</div>';
+                var evidence = s.matched_batch_id
+                    ? '배치 <strong>' + escapeHtml(s.matched_batch_id) + '</strong>'
+                        + '<div style="margin-top: 4px; color: #666; font-size: 12px;">등록 ' + escapeHtml(s.matched_created_at || '') + '</div>'
+                        + '<div style="color: #28a745; font-size: 12px;">키 일치</div>'
+                    : '<span style="color: #888;">출처 불명</span>';
+                rows += '<tr>'
+                    + '<td style="padding: 10px; border: 1px solid #dee2e6; vertical-align: top;">' + keyHtml + '</td>'
+                    + '<td style="padding: 10px; border: 1px solid #dee2e6; vertical-align: top;">' + evidence + '</td>'
+                    + '</tr>';
+            });
+            body.innerHTML = capNote
+                + '<table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;">'
+                + '<thead><tr style="background: #f8f9fa;">'
+                + '<th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">스킵된 평가</th>'
+                + '<th style="padding: 10px; border: 1px solid #dee2e6; text-align: left;">기존 등록 데이터(증거)</th>'
+                + '</tr></thead><tbody>' + rows + '</tbody></table>';
+        })
+        .catch(function(error) {
+            body.innerHTML = '<div style="padding: 20px; color: #dc3545;">조회 중 오류가 발생했습니다.</div>';
+            console.error('skipped 조회 오류:', error);
+        });
+}
+
 function confirmResume() {
     if (!selectedResumeBatchId) return;
     closeResumeModal();
@@ -1341,8 +1405,9 @@ function openBatchSse() {
             var steps = ['파일 로드 중...', '메타데이터 생성 중...', 'imeta 저장 중...',
                          'tmeta 저장 중...', '워드클라우드 생성 중...', '처리 완료'];
             var currentStepIdx = data.step;
+            var statusText = (data.status && data.status.trim()) ? data.status : (steps[currentStepIdx] || '');
             var textEl = document.getElementById('processingText');
-            if (textEl) textEl.textContent = steps[currentStepIdx] || '';
+            if (textEl) textEl.textContent = statusText;
 
             var procSteps = document.querySelectorAll('.proc-step');
             procSteps.forEach(function(step, index) {

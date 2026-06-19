@@ -52,3 +52,13 @@ wordcloud-source/
 wordcloud-backup-*/
 wordcloud_project/failed/
 *.bak
+
+# Flask runtime output
+wordcloud_project/flask_out.txt
+wordcloud_project/flask_err.txt
+
+# Data files
+data/
+
+# Daily notes
+2606*.txt

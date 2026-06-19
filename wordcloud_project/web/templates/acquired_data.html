@@ -65,6 +65,11 @@ tr:hover { background: #f8f9fa; }
             <input type="date" id="filterDateTo" onchange="loadData()">
             <button class="btn btn-primary" onclick="analyzeSelected()">분석 실행</button>
             <button class="btn btn-secondary" onclick="exportCsv()">CSV보내기</button>
+            <button class="btn btn-success" onclick="exportRefinedCsv()">정제 CSV</button>
+            <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">데이터 가져오기</button>
+            <input type="file" id="importFile" accept=".csv" style="display:none" onchange="importCsv(this)">
+            <button class="btn btn-danger" onclick="deleteSelected()">선택 삭제</button>
+            <button class="btn btn-danger" onclick="deleteAll()">전체 삭제</button>
         </div>
 
         <div id="tableArea">
@@ -132,16 +137,33 @@ function renderTable() {
         var analysisResults = {};
         try { analysisResults = JSON.parse(item.analysis_results || '{}'); } catch(e) {}
 
+        // 감정칸: analysis_results.emotion 우선, 없으면 행 컬럼(model_label + kote_*) 폴백.
+        // 라벨은 적재 시점에 이미 분류된 권위값(model_label)이므로 재유도(argmax)하지 않는다.
         var emotionResult = analysisResults.emotion || {};
-        var emotionHtml = emotionResult.result ?
-            '<span class="result-' + emotionResult.result + '">' +
-            emotionResult.result + '<br><small>' +
-            (emotionResult.positive || 0).toFixed(2) + '/' +
-            (emotionResult.negative || 0).toFixed(2) + '/' +
-            (emotionResult.neutral || 0).toFixed(2) + '</small></span>' : '-';
+        var emoLabel = emotionResult.result || item.model_label || '';
+        var hasArResult = !!emotionResult.result;
+        var emoPos = hasArResult ? emotionResult.positive : item.kote_pos;
+        var emoNeg = hasArResult ? emotionResult.negative : item.kote_neg;
+        var emoNeu = hasArResult ? emotionResult.neutral : item.kote_neutral;
+        var emotionHtml = '-';
+        if (emoLabel) {
+            var scoreHtml = '';
+            if (emoPos !== undefined && emoPos !== null) {
+                scoreHtml = '<br><small>' + (emoPos || 0).toFixed(2) + '/' +
+                    (emoNeg || 0).toFixed(2) + '/' + (emoNeu || 0).toFixed(2) + '</small>';
+            }
+            emotionHtml = '<span class="result-' + emoLabel.substr(0,3) + '">' + emoLabel + scoreHtml + '</span>';
+        }
 
-        var profanityHtml = analysisResults.profanity ?
-            (analysisResults.profanity.detected ? '⚠️' : '✓') : '-';
+        // 욕설칸: 표준 profanity.detected 또는 구형 is_profanity 둘 다 인식
+        var profanityHtml;
+        if (analysisResults.profanity) {
+            profanityHtml = analysisResults.profanity.detected ? '⚠️' : '✓';
+        } else if (analysisResults.is_profanity !== undefined) {
+            profanityHtml = analysisResults.is_profanity ? '⚠️' : '✓';
+        } else {
+            profanityHtml = '-';
+        }
 
         var sarcasmHtml = analysisResults.sarcasm ?
             (analysisResults.sarcasm.detected ? '⚠️' : '✓') : '-';
@@ -228,9 +250,84 @@ function deleteItem(id) {
     .catch(function(e) { alert('삭제 실패'); });
 }
 
+function deleteSelected() {
+    var ids = getSelectedIds();
+    if (!ids.length) { alert('삭제할 항목을 선택하세요.'); return; }
+    if (!confirm('선택한 ' + ids.length + '건을 삭제하시겠습니까?')) return;
+    fetch('/api/perspective/acquired-sentences/delete-bulk', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids: ids}), credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { alert(d.deleted + '건 삭제됨'); _currentPage = 1; loadData(); }
+        else { alert(d.error); }
+    })
+    .catch(function(e) { alert('삭제 실패'); });
+}
+
+function deleteAll() {
+    var mismatch = document.getElementById('filterMismatch').checked;
+    var label = document.getElementById('filterLabel').value;
+    var dateFrom = document.getElementById('filterDateFrom').value;
+    var dateTo = document.getElementById('filterDateTo').value;
+    var filtered = mismatch || label || dateFrom || dateTo;
+    var msg = filtered
+        ? '현재 필터에 해당하는 모든 문장을 삭제하시겠습니까?'
+        : '저장된 전체 문장을 삭제하시겠습니까? (되돌릴 수 없습니다)';
+    if (!confirm(msg)) return;
+    fetch('/api/perspective/acquired-sentences/delete-all', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            mismatch_only: mismatch, label: label,
+            date_from: dateFrom, date_to: dateTo,
+        }),
+        credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { alert(d.deleted + '건 삭제됨'); _currentPage = 1; loadData(); }
+        else { alert(d.error); }
+    })
+    .catch(function(e) { alert('삭제 실패'); });
+}
+
 function exportCsv() {
     var mismatch = document.getElementById('filterMismatch').checked ? '1' : '0';
     window.open('/api/perspective/acquired-sentences/export?mismatch_only=' + mismatch, '_blank');
+}
+
+function exportRefinedCsv() {
+    var mismatch = document.getElementById('filterMismatch').checked ? '1' : '0';
+    window.open('/api/perspective/acquired-sentences/export-refined?mismatch_only=' + mismatch, '_blank');
+}
+
+function importCsv(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var overwrite = confirm('CSV 업로드\n\n중복 문장(같은 문장+평가ID+문장순번)을 어떻게 처리할까요?\n\n확인 = 덮어쓰기\n취소 = 건너뛰기(기존 유지)');
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('overwrite', overwrite ? '1' : '0');
+    fetch('/api/perspective/acquired-sentences/import', {
+        method: 'POST', body: fd, credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) {
+            var msg = '가져오기 완료\n추가: ' + d.inserted + '건 / 건너뜀: ' + d.skipped + '건';
+            if (d.errors && d.errors.length) {
+                msg += '\n경고 ' + d.errors.length + '건:\n' + d.errors.slice(0, 5).join('\n');
+            }
+            alert(msg);
+            _currentPage = 1;
+            loadData();
+        } else {
+            alert(d.error || '가져오기 실패');
+        }
+    })
+    .catch(function(e) { alert('가져오기 실패'); })
+    .finally(function() { input.value = ''; });
 }
 
 function escapeHtml(text) {

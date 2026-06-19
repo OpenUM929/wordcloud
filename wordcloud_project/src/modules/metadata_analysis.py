@@ -26,6 +26,14 @@ def calculate_consolidated_analysis(evaluations):
     individual_leadership_results = []
     detected_profanities = []
 
+    # 문장단위 감정보정(override) 누적 — 통합 감정/단어버킷을 perspective 화면과 동일하게.
+    # _get_sentence_level_scores는 저장된 sentence_emotion_cache를 재사용(KoTE 재실행 없음).
+    from src.services.perspective_service import _get_sentence_level_scores
+    total_pos_mass = 0.0
+    total_neg_mass = 0.0
+    total_sent_count = 0
+    neutral_sent_count = 0
+
     for evaluation in evaluations:
         # 정제된 텍스트 수집
         if 'preprocessing_results' in evaluation:
@@ -33,28 +41,28 @@ def calculate_consolidated_analysis(evaluations):
         elif 'evaluation_document' in evaluation:
             all_cleaned_texts.append(evaluation['evaluation_document'])
         
-        # 감정 분석 결과 수집
+        # 감정 분석 결과 수집 — 문장단위 감정보정(override) 적용 라벨로 집계.
+        # positive_rescue·negation_praise·no_response_neutral 등 신규 규칙을 메타데이터에 반영한다.
+        # 라벨은 문장 override 점수의 pos/neg 질량 비교로 결정(perspective _aggregate_emotion과 동일 의미).
         if 'emotion_analysis_results' in evaluation:
-            emotion_result = evaluation['emotion_analysis_results']
-            if 'analysis' in emotion_result and 'base_result' in emotion_result['analysis'] and 'mapped' in emotion_result['analysis']['base_result']:
-                sentiment = emotion_result['analysis']['base_result']['mapped']['sentiment']
-            elif 'fine_tuned_model' in emotion_result:
-                sentiment = emotion_result['fine_tuned_model']['sentiment']
-            elif 'base_model' in emotion_result:
-                sentiment = emotion_result['base_model']['sentiment']
-            else:
-                sentiment = 'neutral'
-            
-            # 한국어 감정 라벨을 영어로 변환 (UTF-8 인코딩 문제 해결)
-            if isinstance(sentiment, bytes):
-                sentiment = sentiment.decode('utf-8')
-            if sentiment == "긍정" or sentiment == "positive" or sentiment == "+":
+            doc_text = evaluation.get('evaluation_document', '') or ''
+            _sent_scores = _get_sentence_level_scores(
+                doc_text, sentence_cache=evaluation.get('sentence_emotion_cache'))
+            _pos_mass = sum(max(0.0, s) for _, s, _, _, _ in _sent_scores)
+            _neg_mass = sum(max(0.0, -s) for _, s, _, _, _ in _sent_scores)
+            if _pos_mass > _neg_mass:
                 sentiment = "positive"
-            elif sentiment == "부정" or sentiment == "negative" or sentiment == "-":
+            elif _neg_mass > _pos_mass:
                 sentiment = "negative"
-            elif sentiment == "중립" or sentiment == "neutral" or sentiment == "0":
+            else:
                 sentiment = "neutral"
-            
+
+            # 통합 감정용 누적(override 질량 기반)
+            total_pos_mass += _pos_mass
+            total_neg_mass += _neg_mass
+            total_sent_count += len(_sent_scores)
+            neutral_sent_count += sum(1 for _, s, _, _, _ in _sent_scores if s == 0)
+
             # NLP 결과에서 meaningful words 추출
             if 'nlp_analysis_results' in evaluation:
                 if 'analysis' in evaluation['nlp_analysis_results'] and 'meaningful_words' in evaluation['nlp_analysis_results']['analysis']:
@@ -87,65 +95,22 @@ def calculate_consolidated_analysis(evaluations):
             if 'detected_profanity' in evaluation['profanity_analysis_results']:
                 detected_profanities.extend(evaluation['profanity_analysis_results']['detected_profanity'])
     
-    # 통합 감정 분석 - 가중 평균 기반 신뢰도 계산
-    weighted_positive = 0.0
-    weighted_negative = 0.0
-    weighted_neutral = 0.0
-    total_weight = 0.0
-    
-    for evaluation in evaluations:
-        if 'emotion_analysis_results' in evaluation:
-            emotion_result = evaluation['emotion_analysis_results']
-            if 'analysis' in emotion_result and 'base_result' in emotion_result['analysis'] and 'mapped' in emotion_result['analysis']['base_result']:
-                if 'sentiment_scores' in emotion_result['analysis']['base_result']['mapped']:
-                    scores = emotion_result['analysis']['base_result']['mapped']['sentiment_scores']
-                    confidence = emotion_result['analysis']['base_result']['mapped'].get('confidence', 0.5)
-                    
-                    weighted_positive += scores.get('positive', 0.0) * confidence
-                    weighted_negative += scores.get('negative', 0.0) * confidence
-                    weighted_neutral += scores.get('neutral', 0.0) * confidence
-                    total_weight += confidence
-            elif 'base_model' in emotion_result and 'sentiment_scores' in emotion_result['base_model']:
-                scores = emotion_result['base_model']['sentiment_scores']
-                confidence = emotion_result['base_model'].get('confidence', 0.5)
-                
-                weighted_positive += scores.get('positive', 0.0) * confidence
-                weighted_negative += scores.get('negative', 0.0) * confidence
-                weighted_neutral += scores.get('neutral', 0.0) * confidence
-                total_weight += confidence
-            elif 'fine_tuned_model' in emotion_result and 'sentiment_scores' in emotion_result['fine_tuned_model']:
-                scores = emotion_result['fine_tuned_model']['sentiment_scores']
-                confidence = emotion_result['fine_tuned_model'].get('confidence', 0.5)
-                
-                weighted_positive += scores.get('positive', 0.0) * confidence
-                weighted_negative += scores.get('negative', 0.0) * confidence
-                weighted_neutral += scores.get('neutral', 0.0) * confidence
-                total_weight += confidence
-    
-    # 가중 평균 확률 계산
-    if total_weight > 0:
-        avg_positive = weighted_positive / total_weight
-        avg_negative = weighted_negative / total_weight
-        avg_neutral = weighted_neutral / total_weight
-    else:
-        avg_positive = 0.0
-        avg_negative = 0.0
-        avg_neutral = 0.0
-    
-    # 최종 감정 결정
+    # 통합 감정 — 문장단위 감정보정(override) 질량 기반 결정.
+    # perspective 화면의 _aggregate_emotion과 동일하게 pos/neg 질량을 비교한다(중립은 신호 부재).
+    mass_total = total_pos_mass + total_neg_mass
     consolidated_sentiment = "neutral"
-    if avg_positive > avg_negative and avg_positive > avg_neutral:
+    if total_pos_mass > total_neg_mass:
         consolidated_sentiment = "positive"
-    elif avg_negative > avg_positive and avg_negative > avg_neutral:
+    elif total_neg_mass > total_pos_mass:
         consolidated_sentiment = "negative"
-    
-    # 신뢰도 계산 - 최종 감정에 해당하는 가중 평균 확률
+
+    # 신뢰도 - 우세 감정 질량 비율. 중립은 중립 문장 비율로 표현(질량 신호 없음).
     if consolidated_sentiment == "positive":
-        confidence_score = avg_positive
+        confidence_score = (total_pos_mass / mass_total) if mass_total > 0 else 0.0
     elif consolidated_sentiment == "negative":
-        confidence_score = avg_negative
+        confidence_score = (total_neg_mass / mass_total) if mass_total > 0 else 0.0
     else:
-        confidence_score = avg_neutral
+        confidence_score = (neutral_sent_count / total_sent_count) if total_sent_count > 0 else 0.0
     
     # 단어 빈도 계산
     word_freq = dict(Counter(all_nlp_words))

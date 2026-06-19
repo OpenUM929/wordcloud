@@ -151,6 +151,18 @@ def fail_work_order(batch_id):
         conn.close()
 
 
+def delete_work_order(batch_id):
+    """작업서와 완료 직원 items를 삭제한다 (배치 삭제 시 레지스트리 정리)."""
+    conn = _conn()
+    try:
+        conn.execute("DELETE FROM batch_work_order_items WHERE batch_id = ?", (batch_id,))
+        cur = conn.execute("DELETE FROM batch_work_orders WHERE batch_id = ?", (batch_id,))
+        conn.commit()
+        return cur.rowcount
+    finally:
+        conn.close()
+
+
 def get_all_work_orders(limit=20):
     """게시판용 최신순 전체 목록."""
     conn = _conn()

@@ -47,6 +47,12 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin1234')
 PSEUDONYM_MAPPINGS_PATH = os.path.abspath(os.path.join(CONFIGS_DIR_PATH, 'pseudonym_mappings.enc'))
 POSITION_HIERARCHY_PATH = os.path.abspath(os.path.join(CONFIGS_DIR_PATH, 'position_hierarchy.json'))
 
+# Plans directory (칸반보드 대상, 다중 프로젝트 지원)
+PROJECT_ROOT_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, '..'))
+PLANS_DIR = os.getenv('PLANS_DIR', os.path.join(PROJECT_ROOT_DIR, 'plans', '2026'))
+PLANS_ROOTS = os.getenv('PLANS_ROOTS', '')
+PLANS_ROOTS_LIST = [p.strip() for p in PLANS_ROOTS.split(',') if p.strip()] if PLANS_ROOTS else []
+
 # Processing settings
 DEFAULT_WORDCLOUD_POS = ['Noun']
 DEFAULT_BACKGROUND_COLOR = 'white'

@@ -2,7 +2,7 @@
 
 **작성일시**: 2026-06-04
 **작업 유형**: bug fix
-**상태**: Pending
+**상태**: DN (코드 적용 확인 — generate_perspective_matrix가 profanity_summary 반환, 2026-06-18)
 **대상**: `perspective_service.py`, `perspective_test.html`
 
 ---

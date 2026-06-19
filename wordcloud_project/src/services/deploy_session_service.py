@@ -246,6 +246,30 @@ def _apply_schema_migrations():
             )
             conn.commit()
             print("[DB] Schema v6: profanity_employees, profanity_sentences 테이블 추가 완료")
+            current = 6
+
+        if current < 7:
+            # acquired_sentences에 분류 시점 KoTE 값 + 출처 구분 컬럼 추가 (additive, CHECK 재빌드 없음)
+            for ddl in (
+                "ALTER TABLE acquired_sentences ADD COLUMN kote_pos       REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN kote_neg       REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN kote_neutral   REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN override_score REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN source_kind    TEXT DEFAULT ''",
+            ):
+                try:
+                    conn.execute(ddl)
+                except sqlite3.OperationalError as e:
+                    # 컬럼이 이미 존재하면 무시 (재실행 안전)
+                    if 'duplicate column name' not in str(e).lower():
+                        raise
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (7, datetime('now'), ?)",
+                ('add kote_pos/neg/neutral, override_score, source_kind to acquired_sentences',)
+            )
+            conn.commit()
+            print("[DB] Schema v7: acquired_sentences KoTE 값·source_kind 컬럼 추가 완료")
+            current = 7
     finally:
         conn.close()
 

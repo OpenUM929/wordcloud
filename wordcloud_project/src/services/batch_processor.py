@@ -2,11 +2,131 @@
 
 import os
 import json
+import multiprocessing
+import psutil
+import threading
+import time
 from datetime import datetime
 
 
 # 체크포인트 관련 상수
 CHECKPOINT_INTERVAL = 1000  # 1000건마다 체크포인트 저장
+SKIP_DETAIL_CAP = 10        # 중복 스킵 상세 목록 보존 상한(총계는 전수 집계)
+
+# 워커 산정 상수 (모델 메모리 크기는 PC 무관, GPU 용량은 매 실행 시 실측)
+MODEL_VRAM_RESERVE_MB = 2300   # KoTE 공유 1개(~1.8GB) + Sarcasm(~0.5GB)
+VRAM_PER_WORKER_MB = 250       # 워커 1개당 배치 추론 텐서 예상치
+GPU_OS_RESERVE_MB = 1024       # GPU OS/디스플레이 예약
+GPU_SAFETY_RATIO = 0.20        # 전체 VRAM의 20% 추가 예비
+
+
+class VRAMMonitor:
+    """배치 처리 중 GPU VRAM 사용량 자동 모니터링 및 로깅"""
+
+    def __init__(self, batch_dir):
+        self.batch_dir = batch_dir
+        self.log_path = os.path.join(batch_dir, "vram_monitor.log")
+        self.vram_records = []
+        self.monitoring = False
+        self.monitor_thread = None
+
+    def start(self):
+        """배경 모니터링 시작"""
+        self.monitoring = True
+        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+        self.monitor_thread.start()
+
+    def stop(self):
+        """배경 모니터링 종료"""
+        self.monitoring = False
+        if self.monitor_thread:
+            self.monitor_thread.join(timeout=2)
+        self._write_summary()
+
+    def _monitor_loop(self):
+        """1초마다 VRAM 사용량 기록"""
+        try:
+            import torch
+            if not torch.cuda.is_available():
+                return
+
+            start_time = time.time()
+            while self.monitoring:
+                try:
+                    free_mb, total_mb = (x / (1024 ** 2) for x in torch.cuda.mem_get_info())
+                    used_mb = total_mb - free_mb
+                    elapsed_sec = time.time() - start_time
+                    self.vram_records.append({
+                        "elapsed_sec": elapsed_sec,
+                        "used_mb": used_mb,
+                        "total_mb": total_mb,
+                        "free_mb": free_mb
+                    })
+                except Exception:
+                    pass
+                time.sleep(1)
+        except ImportError:
+            pass
+
+    def _write_summary(self):
+        """모니터링 결과를 로그 파일에 저장"""
+        if not self.vram_records:
+            return
+
+        max_used = max(r["used_mb"] for r in self.vram_records)
+        min_used = min(r["used_mb"] for r in self.vram_records)
+        avg_used = sum(r["used_mb"] for r in self.vram_records) / len(self.vram_records)
+        total_vram = self.vram_records[0]["total_mb"]
+
+        with open(self.log_path, 'w', encoding='utf-8') as f:
+            f.write("=== GPU VRAM 모니터링 결과 ===\n\n")
+            f.write(f"총 VRAM: {total_vram:.0f}MB\n")
+            f.write(f"피크 사용량: {max_used:.0f}MB ({max_used/total_vram*100:.1f}%)\n")
+            f.write(f"평균 사용량: {avg_used:.0f}MB ({avg_used/total_vram*100:.1f}%)\n")
+            f.write(f"최소 사용량: {min_used:.0f}MB ({min_used/total_vram*100:.1f}%)\n")
+            f.write(f"모니터링 구간: {self.vram_records[-1]['elapsed_sec']:.1f}초\n\n")
+
+            f.write("--- 시계열 데이터 (1초 간격) ---\n")
+            f.write("경과시간(초) | 사용량(MB) | 여유(MB) | 사용률(%)\n")
+            f.write("-" * 50 + "\n")
+            for r in self.vram_records:
+                pct = r["used_mb"] / total_vram * 100
+                f.write(f"{r['elapsed_sec']:>8.1f}s | {r['used_mb']:>8.0f}   | {r['free_mb']:>7.0f}  | {pct:>6.1f}%\n")
+
+
+def _calc_adaptive_workers(employee_count=0):
+    """CPU/RAM/VRAM 실측값 기반 워커 수 동적 계산 (PC마다 자동으로 달라짐)"""
+    cpu_cores = multiprocessing.cpu_count()
+    ram_gb = psutil.virtual_memory().available / (1024 ** 3)
+    gpu_ok = False
+    vram_worker_cap = 0
+    try:
+        import torch
+        if torch.cuda.is_available():
+            free_vram_mb, total_vram_mb = (x / (1024 ** 2) for x in torch.cuda.mem_get_info())
+            safety_available_mb = total_vram_mb - GPU_OS_RESERVE_MB - (total_vram_mb * GPU_SAFETY_RATIO)
+            available_for_workers_mb = safety_available_mb - MODEL_VRAM_RESERVE_MB
+            if available_for_workers_mb >= VRAM_PER_WORKER_MB:
+                gpu_ok = True
+                vram_worker_cap = max(2, int(available_for_workers_mb // VRAM_PER_WORKER_MB))
+    except ImportError:
+        pass
+
+    if gpu_ok:
+        # GPU가 실제 병목 → VRAM 여유에서 도출한 상한이 결정
+        cpu_worker_cap = max(2, int(cpu_cores * 0.5))
+        max_workers = min(cpu_worker_cap, vram_worker_cap)
+    else:
+        # CPU-only: GIL 제약, 4개 초과는 실익 없음
+        max_workers = max(1, int(cpu_cores * 0.15))
+        max_workers = min(max_workers, 4)
+
+    if ram_gb < 4:
+        max_workers = 1
+
+    if employee_count < 10:
+        return min(1, max_workers)
+    return max_workers
 
 
 def save_checkpoint(batch_dir, processed_count, total_count, last_employee_id, employee_results):
@@ -370,7 +490,8 @@ def create_batch_summary(batch_dir, grouped_data, employee_results,
     return batch_summary
 
 
-def _ensure_batch_summary(batch_dir, batch_processing_state, display_name=''):
+def _ensure_batch_summary(batch_dir, batch_processing_state, display_name='',
+                          skipped_count=0, skipped_detail=None):
     """batch_summary.json 생성 또는 갱신 (display_name 저장용)."""
     summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
     os.makedirs(os.path.dirname(summary_path), exist_ok=True)
@@ -384,8 +505,10 @@ def _ensure_batch_summary(batch_dir, batch_processing_state, display_name=''):
             'unique_employees': batch_processing_state.get('total_employees', 0),
             'total_evaluations': batch_processing_state.get('total_rows', 0),
             'success_count': batch_processing_state.get('success_count', 0),
-            'error_count': batch_processing_state.get('error_count', 0)
+            'error_count': batch_processing_state.get('error_count', 0),
+            'skipped_count': skipped_count
         },
+        'skipped_evaluations': skipped_detail or [],
         'processing_config': {}
     }
 
@@ -506,6 +629,15 @@ def process_batch(processed_data_dir, data, session_data):
                     for i in range(0, len(xl), CHUNK_SIZE):
                         yield xl.iloc[i:i + CHUNK_SIZE]
 
+    # 파일 분석(라인 수 카운트)도 대용량에선 수 초 소요 → 카운트 전 진행 문구 선설정
+    batch_processing_state['current_step'] = 0
+    batch_processing_state['progress'] = 3
+    batch_processing_state['status_message'] = '데이터 수집 시작 — 파일 분석 중...'
+
+    # GPU VRAM 모니터링 시작
+    vram_monitor = VRAMMonitor(batch_dir)
+    vram_monitor.start()
+
     _total_lines = _count_total_lines(csv_file_path)
 
     staging_conn = batch_staging.open_staging(batch_dir)
@@ -514,31 +646,43 @@ def process_batch(processed_data_dir, data, session_data):
     emp_id_set = set()          # Phase 2 직원 ID 집합 (문자열만 보관 = 경량)
     _ingested_rows = 0
 
+    from contextlib import nullcontext
+
     batch_processing_state['current_step'] = 0
     batch_processing_state['progress'] = 5
-    batch_processing_state['status_message'] = '데이터 수집 준비 중...'
+    if _total_lines:
+        batch_processing_state['total_rows'] = _total_lines
+        batch_processing_state['status_message'] = f'데이터 수집 중 (0 / {_total_lines:,} 라인)'
+    else:
+        batch_processing_state['status_message'] = '데이터 수집 중...'
+
+    # 가명화 매핑을 새 ID마다 파일 전체로 재기록하면 O(n²) → 1.9만+ 직원/수백만 행에서
+    # Phase 1이 사실상 정지한다. ingest 동안 메모리에만 누적하고 블록 종료 시 1회 저장한다.
+    _pseudo_bulk = _pseudo_mgr.bulk_mode() if _pseudo_mgr else nullcontext()
 
     try:
-        for chunk in _chunk_iter(csv_file_path):
-            rows = _extract_rows_from_chunk(chunk, target_id_column, mappings,
-                                            _pseudo_mgr, pseudonym_fields)
-            if rows:
-                batch_staging.insert_evaluations(staging_conn, rows)
-                for _emp_id, _ in rows:
-                    emp_id_set.add(_emp_id)
-            _ingested_rows += len(chunk)
+        with _pseudo_bulk:
+            for chunk in _chunk_iter(csv_file_path):
+                rows = _extract_rows_from_chunk(chunk, target_id_column, mappings,
+                                                _pseudo_mgr, pseudonym_fields)
+                if rows:
+                    batch_staging.insert_evaluations(staging_conn, rows)
+                    for _emp_id, _ in rows:
+                        emp_id_set.add(_emp_id)
+                _ingested_rows += len(chunk)
 
-            if _total_lines:
-                batch_processing_state['total_rows'] = _total_lines
-                pct = min(_ingested_rows / max(_total_lines, 1), 1.0)
-                batch_processing_state['progress'] = int(5 + pct * 35)
-                batch_processing_state['status_message'] = (
-                    f'데이터 수집 중 ({_ingested_rows:,} / {_total_lines:,} 라인)'
-                )
-            else:
-                # Excel/폴더: 총량 미상 → 누적 카운트만 표시
-                batch_processing_state['status_message'] = f'데이터 수집 중 ({_ingested_rows:,} 라인)'
-            batch_processing_state['processed_rows'] = _ingested_rows  # 기존 필드 재사용
+                if _total_lines:
+                    batch_processing_state['total_rows'] = _total_lines
+                    pct = min(_ingested_rows / max(_total_lines, 1), 1.0)
+                    batch_processing_state['progress'] = int(5 + pct * 35)
+                    batch_processing_state['status_message'] = (
+                        f'데이터 수집 중 ({_ingested_rows:,} / {_total_lines:,} 라인)'
+                    )
+                else:
+                    # Excel/폴더: 총량 미상 → 누적 카운트만 표시
+                    batch_processing_state['status_message'] = f'데이터 수집 중 ({_ingested_rows:,} 라인)'
+                batch_processing_state['processed_rows'] = _ingested_rows  # 기존 필드 재사용
+        # with 블록 종료 시 가명화 매핑이 디스크에 1회 flush 된다 (Phase 2/복원이 최신 매핑 사용)
     except Exception as e:
         batch_staging.close_and_remove(staging_conn, batch_dir)
         batch_processing_state.pop('_active_staging_dir', None)
@@ -584,23 +728,11 @@ def process_batch(processed_data_dir, data, session_data):
     
     # Import concurrent.futures for parallel processing
     from concurrent.futures import ThreadPoolExecutor, as_completed
-    import multiprocessing
-    
-    # Get number of workers based on data amount (employee count)
+
+    # Get number of workers based on hardware (CPU/RAM/VRAM 실측) and data amount
     employee_count = len(emp_id_set)
-    cpu_count = min(multiprocessing.cpu_count(), 8)
-    
-    if employee_count < 10:
-        num_workers = 1
-    elif employee_count < 50:
-        num_workers = min(2, cpu_count)
-    elif employee_count < 100:
-        num_workers = min(4, cpu_count)
-    elif employee_count < 500:
-        num_workers = min(6, cpu_count)
-    else:
-        num_workers = cpu_count
-    
+    num_workers = _calc_adaptive_workers(employee_count)
+
     batch_processing_state['status_message'] = f'병렬 처리 시작 (직원: {employee_count}명, workers: {num_workers})'
     
     # ============================================================
@@ -634,6 +766,9 @@ def process_batch(processed_data_dir, data, session_data):
         batch_processing_state['progress'] = 45
         pre_init_success = True
         employee_results = []
+        # 조기 batch_summary.json 생성: display_name을 DB 기반 목록보다 먼저 사용 가능하게 함
+        _display_name_early = (data.get('batch_display_name') or '').strip()
+        _ensure_batch_summary(batch_dir, batch_processing_state, _display_name_early)
     
     def process_single_employee(employee_id):
         """단일 직원 처리 함수 (병렬용) — staging.db에서 원문 평가를 로드한다."""
@@ -694,6 +829,10 @@ def process_batch(processed_data_dir, data, session_data):
     _persisted_count = 0
     _pending_persisted = []
 
+    # 중복(미저장) 평가 집계: 총 건수(전수)와 상세 목록(상위 SKIP_DETAIL_CAP건)
+    _skip_total = 0
+    _skip_detail = []
+
     def _flush_work_order():
         """저장된 신규 직원만 items 테이블에 append + 헤더 카운트 갱신 (O(델타))."""
         nonlocal _pending_persisted
@@ -713,7 +852,9 @@ def process_batch(processed_data_dir, data, session_data):
 
     if pre_init_success:
         total_employee_count = len(employee_items)
-        batch_processing_state['status_message'] = f'메타데이터 생성 중 (0/{total_employee_count})'
+        _total_all = len(prior_completed) + len(employee_items) if _is_resume else total_employee_count
+        _prior_count = len(prior_completed) if _is_resume else 0
+        batch_processing_state['status_message'] = f'분석 처리 중 ({_prior_count:,} / {_total_all:,}명)'
 
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             future_to_employee = {
@@ -733,8 +874,13 @@ def process_batch(processed_data_dir, data, session_data):
                         _meta = result['metadata'] or {}
                         _eid = result['employee_id'] or _meta.get('target_employee_id')
                         if _eid:
-                            upsert(_eid, _meta, _meta.get('evaluations', []), batch_id)
+                            _inserted, _skip = upsert(_eid, _meta, _meta.get('evaluations', []), batch_id)
                             _persisted = True
+                            if _skip:
+                                _skip_total += len(_skip)
+                                for s in _skip:
+                                    if len(_skip_detail) < SKIP_DETAIL_CAP:
+                                        _skip_detail.append(s)
                     except Exception as _ue:
                         import logging
                         logging.getLogger(__name__).warning(
@@ -758,10 +904,11 @@ def process_batch(processed_data_dir, data, session_data):
                     })
                 
                 completed += 1
+                _display_completed = _prior_count + completed
                 # 45% ~ 90%: 분석 처리 단계 (Phase 2)
                 batch_processing_state['progress'] = int(45 + (completed / max(total_employee_count, 1)) * 45)
                 if completed % 10 == 0 or completed == total_employee_count:
-                    batch_processing_state['status_message'] = f'분석 처리 중 ({completed:,} / {total_employee_count:,}명)'
+                    batch_processing_state['status_message'] = f'분석 처리 중 ({_display_completed:,} / {_total_all:,}명)'
                     # 작업서 flush (10명 단위) — 신규 저장 직원만 items 테이블에 append.
                     # 이어서 시작 시 items 테이블을 skip 대상으로 사용 (O(델타), 대용량 안전).
                     _flush_work_order()
@@ -853,6 +1000,7 @@ def process_batch(processed_data_dir, data, session_data):
     batch_processing_state['success_count'] = total_successful
     batch_processing_state['error_count'] = sum(1 for r in employee_results if not r['success'])
     batch_processing_state['total_rows'] = _ingested_rows
+    batch_processing_state['skipped_count'] = _skip_total  # 중복 미저장 평가 총 건수(SSE 자동 전달)
     batch_processing_state['status_message'] = f'Stage 4 완료: DB 저장 ({total_successful}명)'
     batch_processing_state['current_step'] = 4
     batch_processing_state['progress'] = 100
@@ -874,7 +1022,8 @@ def process_batch(processed_data_dir, data, session_data):
 
     # batch_summary.json 생성 (display_name 저장)
     display_name = (data.get('batch_display_name') or '').strip()
-    _ensure_batch_summary(batch_dir, batch_processing_state, display_name)
+    _ensure_batch_summary(batch_dir, batch_processing_state, display_name,
+                          skipped_count=_skip_total, skipped_detail=_skip_detail)
 
     # 작업서 완료 처리 (남은 델타 flush 후 status=completed)
     try:
@@ -889,8 +1038,12 @@ def process_batch(processed_data_dir, data, session_data):
     batch_staging.close_and_remove(staging_conn, batch_dir)
     batch_processing_state.pop('_active_staging_dir', None)
 
+    # GPU VRAM 모니터링 종료 및 로그 저장
+    vram_monitor.stop()
+
     return {
         'success': True,
         'batch_dir': batch_dir,
         'batch_id': batch_id,
+        'vram_log_path': vram_monitor.log_path,
     }, 200

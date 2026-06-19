@@ -6,8 +6,11 @@ KOTE 감정 분석을 기반으로 리더십 관련 역량을 평가합니다.
 import torch
 import json
 import os
+import threading
 from dotenv import load_dotenv
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+from src.modules.hr_context_lexicon import leadership_polarity
+from src.modules.kote_shared import KoTEModel
 
 # 환경 변수 로드
 load_dotenv()
@@ -21,13 +24,16 @@ class LeadershipAnalysis:
     """
 
     _instance = None
+    _lock = threading.Lock()
 
     def __new__(cls, model_path=None, config_path=None):
-        """싱글톤 인스턴스 생성"""
+        """싱글톤 인스턴스 생성 (Thread-safe)"""
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            # 초기화 메서드에서 실제 초기화 수행
-            cls._instance._initialized = False
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    # 초기화 메서드에서 실제 초기화 수행
+                    cls._instance._initialized = False
         return cls._instance
 
     def __init__(self, model_path=None, config_path=None):
@@ -56,9 +62,10 @@ class LeadershipAnalysis:
         self.model_path = model_path
         self.config_path = config_path
 
-        # 모델 로드
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_path, local_files_only=True)
+        # 모델 로드 (emotion_analysis와 GPU 인스턴스 공유 — 중복 로드 시 VRAM 한도 초과)
+        shared = KoTEModel()
+        self.tokenizer = shared.tokenizer
+        self.model = shared.model
 
         # 감정 이름
         self.emotion_names = [
@@ -149,12 +156,16 @@ class LeadershipAnalysis:
             # 감정 분석 수행
             emotion_result = self._analyze_emotions(text)
 
+            # 문맥 극성 판정 (negation 인식) — 부정 리더십 강점 오채점 방지
+            # 표지가 없으면 'neutral' → 기존 채점 동작 그대로(회귀 안전)
+            polarity = leadership_polarity(text)
+
             # 리더십 역량 계산
             leadership_scores = {}
             total_score = 0.0
 
             for competency_key, competency_info in self.leadership_competencies.items():
-                score = self._calculate_competency_score(text, emotion_result, competency_info)
+                score = self._calculate_competency_score(text, emotion_result, competency_info, polarity)
                 leadership_scores[competency_key] = score
                 total_score += score * competency_info["weight"]
 
@@ -215,10 +226,13 @@ class LeadershipAnalysis:
         """감정 분석 수행"""
         try:
             inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
             with torch.no_grad():
                 outputs = self.model(**inputs)
                 probs = torch.softmax(outputs.logits, dim=1)[0]
+                if probs.is_cuda:
+                    probs = probs.cpu()
 
             # 감정 확률 추출 (상위 5개)
             top_emotions = []
@@ -264,8 +278,13 @@ class LeadershipAnalysis:
                 "negative_score": 0.0
             }
 
-    def _calculate_competency_score(self, text, emotion_result, competency_info):
-        """특정 리더십 역량 점수 계산"""
+    def _calculate_competency_score(self, text, emotion_result, competency_info, polarity="neutral"):
+        """특정 리더십 역량 점수 계산
+
+        polarity: hr_context_lexicon.leadership_polarity 판정 결과.
+          'negative'면 부정 리더십(예: 수직적·강요)이므로 강점 가점을 차단하고
+          개선영역(0점)으로 둔다. 'positive'/'neutral'은 기존 채점 유지(회귀 안전).
+        """
         try:
             score = 0.0
 
@@ -296,6 +315,11 @@ class LeadershipAnalysis:
                     continue
 
             score += min(emotion_score, 0.6)
+
+            # 문맥 극성 게이트: 부정 리더십은 강점 가점 차단 → 개선영역으로
+            # (negation 칭찬 '강압적이지 않음'은 polarity=positive로 들어와 영향 없음)
+            if polarity == "negative":
+                score = 0.0
 
             return round(score, 3)
 

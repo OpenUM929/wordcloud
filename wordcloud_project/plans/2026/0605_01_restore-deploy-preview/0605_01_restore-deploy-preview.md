@@ -2,7 +2,7 @@
 
 - **작성일시**: 2026-06-05
 - **작업 유형**: 버그 수정 / 기능 복구 (사전 승인 없이 제거된 기능 원상복구)
-- **상태**: PND (Pending, 승인 대기)
+- **상태**: DN (코드 적용 확인 — early-return 블록 제거됨, 2026-06-18)
 - **계획서 경로**: `wordcloud_project/plans/restore-deploy-preview_260605_01/restore-deploy-preview_260605_01.md`
 
 ---

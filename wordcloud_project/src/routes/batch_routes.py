@@ -120,6 +120,17 @@ def failed_list():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@batch_bp.route('/skipped/<batch_id>', methods=['GET'])
+def skipped(batch_id):
+    """배치 중복(미저장) 평가 목록 + 증거값 조회 (모달 오픈 시 on-demand)."""
+    try:
+        from src.services.batch_service import get_skipped_evaluations
+        result = get_skipped_evaluations(batch_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @batch_bp.route('/work-orders', methods=['GET'])
 def work_orders():
     """게시판용 배치 작업서 전체 목록."""

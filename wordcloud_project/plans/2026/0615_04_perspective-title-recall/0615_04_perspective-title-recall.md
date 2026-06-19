@@ -1,6 +1,12 @@
 # 0615_04 — perspective_test 배치 명칭 기반 재호출
 
-> 상태: PND | 작성일: 2026-06-15
+> 상태: DN | 작성일: 2026-06-15 | 완료확인: 2026-06-18
+
+## 수정 이력
+
+| 날짜 | 변경 섹션 | 변경 요약 |
+|------|-----------|-----------|
+| 2026-06-18 | 상태 | **완료 확인(코드 대조)**: `perspective_test.html`에 `toggleBatchTitlePicker`/`selectBatchTitleForRestore`/`_saveLastRunParams`/`editDisplayName` 전부 구현됨. PND→DN. |
 
 ---
 

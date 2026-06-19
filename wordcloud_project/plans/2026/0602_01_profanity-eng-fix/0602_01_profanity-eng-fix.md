@@ -2,7 +2,7 @@
 
 **작성일시**: 2026-06-02 16:24
 **작업 유형**: bug fix
-**상태**: Pending
+**상태**: DN (코드 적용 확인, 2026-06-18)
 **대상**: `perspective_test.html` renderComplete(), `profanity_filter.py`
 
 ---

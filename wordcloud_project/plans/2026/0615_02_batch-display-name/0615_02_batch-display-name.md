@@ -1,10 +1,11 @@
-> 상태: PND | 작성일: 2026-06-15
+> 상태: DN | 작성일: 2026-06-15 | 완료확인: 2026-06-18
 
 ## 수정 이력
 
 | 날짜 | 변경 섹션 | 변경 요약 |
 |------|-----------|-----------|
 | 2026-06-15 | 전체 | 초안 |
+| 2026-06-18 | 상태 | **완료 확인(코드 대조)**: `batch_processor._ensure_batch_summary`(L492)+호출(L1004-1005), `perspective_routes.api_batch_update_display_name`(L837 PATCH), `perspective_test.html editDisplayName`/`metadata_batch.js batch_display_name` 전부 구현됨. PND→DN. |
 | 2026-06-15 | §4-5, §4-6, §4-8 | **검토 반영: ①`display_name_old` → `saved_display_name` 변수명 수정(`NameError` 방지). ②§4-6 `import json` 추가 불필요로 정정(line 5에 이미 존재). ③§4-8 `display_name` innerHTML 삽입 시 HTML 이스케이프 처리 추가** |
 | 2026-06-15 | §4-7, §6.2 | **버그 수정 반영: 기존 배치에 `batch_summary.json`이 없는 경우 PATCH API가 404를 반환하던 문제. 파일이 없으면 최소 summary(`batch_id`만)를 생성 후 진행하도록 변경** |
 | 2026-06-15 | §4-5 | **버그 수정 반영: `metadata_service.get_batch_list()`가 `batch_summary.json`이 있는 배치만 반환하여, 기존 배치(파일 미존재)가 목록에서 누락되던 문제. `os.path.exists(summary_path)` 조건을 제거하고 모든 `batch_*` 폴더를 포함하도록 수정. summary가 없으면 배치명 기반 표시 + employee_count=0** |

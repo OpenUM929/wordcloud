@@ -73,6 +73,7 @@ def upsert(employee_id, metadata, evaluations, batch_id):
         """, (employee_id, name, dept, pos))
 
         inserted = 0
+        skipped = []
         for ev in evaluations:
             ev_copy = dict(ev)
             ev_copy['batch_id'] = batch_id
@@ -92,9 +93,23 @@ def upsert(employee_id, metadata, evaluations, batch_id):
                 ))
                 inserted += 1
             except sqlite3.IntegrityError:
-                pass  # fingerprint 중복
+                # fingerprint 중복 — 이미 존재하는 기존 행을 증거로 수집(가시성 안내용)
+                existing = conn.execute(
+                    "SELECT batch_id, created_at FROM evaluations "
+                    "WHERE employee_id=? AND fingerprint=?", (employee_id, fp)
+                ).fetchone()
+                skipped.append({
+                    'employee_id': employee_id,
+                    'evaluator_id': ev_copy.get('evaluator_id', ''),
+                    'evaluation_date': ev_copy.get('evaluation_date', ''),
+                    'document': _safe_text(ev_copy.get('evaluation_document',
+                                           ev_copy.get('content', '')))[:120],
+                    'fingerprint': fp,
+                    'matched_batch_id': existing['batch_id'] if existing else '',
+                    'matched_created_at': existing['created_at'] if existing else '',
+                })
         conn.commit()
-        return inserted
+        return inserted, skipped
     finally:
         conn.close()
 

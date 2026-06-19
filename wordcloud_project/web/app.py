@@ -47,6 +47,7 @@ from src.routes.test_routes import test_bp
 from src.routes.admin_routes import admin_bp
 from src.routes.wordcloud_data_routes import wordcloud_data_bp
 from src.routes.wordcloud_preview_routes import wordcloud_preview_bp
+from src.routes.plans_routes import plans_bp
 
 def create_app():
     """Create and configure Flask application instance."""
@@ -70,6 +71,7 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(wordcloud_data_bp)
     app.register_blueprint(wordcloud_preview_bp)
+    app.register_blueprint(plans_bp)
 
     @app.context_processor
     def inject_auth_state():

@@ -166,11 +166,25 @@ class NLPAnalysis:
             return []
 
         result = []
+        # 반복 도배 collapse 추적: 직전 토큰의 form/tag/끝위치
+        prev_form = prev_tag = None
+        prev_end = None
         for token in tokens:
             tag = token.tag
             # kiwipiepy 버전에 따라 tag가 str이거나 IntEnum
             tag_str = tag if isinstance(tag, str) else (tag.name if hasattr(tag, 'name') else str(tag).split('.')[-1])
             word = token.form
+            t_start = token.start
+            t_end = token.start + token.len
+            # 반복 도배 제거(0617_06): 직전 토큰과 form·tag가 같고 위치가 완전히 인접
+            # (사이에 공백·구두점·다른 형태소가 전혀 없음)하면 동일 단어의 도배로 보고 1회만 채택.
+            # 문장 간 정상 반복 언급은 토큰 사이에 다른 형태소가 있어 인접하지 않으므로 영향 없음.
+            is_adjacent_repeat = (
+                word == prev_form and tag_str == prev_tag and t_start == prev_end
+            )
+            prev_form, prev_tag, prev_end = word, tag_str, t_end
+            if is_adjacent_repeat:
+                continue
             pos_label = _KIWI_TAG_TO_POS.get(tag_str)
             if pos_label and pos_label in pos_labels and len(word) > 1 and not manager.is_stopword(word):
                 result.append((word, pos_label))

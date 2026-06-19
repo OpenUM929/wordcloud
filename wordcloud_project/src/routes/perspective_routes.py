@@ -4,6 +4,8 @@ import re
 import json as json_lib
 import zipfile
 import tempfile
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, request, jsonify, session, Response, send_file
 from src.services.perspective_service import (
     load_all_batches, get_matrix_meta,
@@ -12,10 +14,12 @@ from src.services.perspective_service import (
     build_profanity_summary, _get_pseudo_mgr,
     TEST_SENTENCES_100, split_sentences, has_contrastive,
     sentence_sentiment_override, _get_sentence_level_scores,
-    _load_corrections_map,
+    _load_corrections_map, _setup_korean_font,
     save_acquired_sentence, list_acquired_sentences,
-    delete_acquired_sentence, analyze_acquired_sentences,
-    export_acquired_sentences_csv,
+    delete_acquired_sentence, delete_acquired_sentences_bulk,
+    delete_acquired_sentences_filtered, analyze_acquired_sentences,
+    export_acquired_sentences_csv, export_acquired_sentences_refined_csv,
+    import_acquired_sentences_csv, save_acquired_sentences_bulk,
     OUTPUTS_DIR_PATH,
 )
 from src.services.deploy_session_service import (
@@ -481,6 +485,8 @@ def api_save_deploy():
     if not unified:
         return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 400
 
+    _setup_korean_font()  # 배치/단일 분기 진입 전 1회 호출(작업4 — save_to_deploy 내부 호출 대체)
+
     if all_employees and not employee_ids:
         seen = set()
         all_ids = []
@@ -710,22 +716,33 @@ def api_save_deploy_stream():
         fail_list = []
         total = len(ids)
 
-        for idx, eid in enumerate(ids):
-            try:
-                yield json_lib.dumps({'employee': eid, 'status': 'processing', 'current': idx + 1, 'total': total}) + '\n'
-                result = save_to_deploy(unified, eid, row_field, col_mode, analysis_type, options, request)
-                if result:
-                    real_name = result.get('name', eid)
-                    result['employee_id'] = eid
-                    result['profanity_summary'] = build_profanity_summary(unified, eid)
-                    success_list.append(result)
-                    yield json_lib.dumps({'employee': eid, 'name': real_name, 'status': 'done', 'result': result, 'current': idx + 1, 'total': total}) + '\n'
-                else:
-                    fail_list.append({'employee_id': eid, 'error': '평가 데이터 없음'})
-                    yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': '평가 데이터 없음', 'current': idx + 1, 'total': total}) + '\n'
-            except Exception as ex:
-                fail_list.append({'employee_id': eid, 'error': str(ex)})
-                yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': str(ex), 'current': idx + 1, 'total': total}) + '\n'
+        _setup_korean_font()  # 워커 진입 전 1회 호출(작업4 — save_to_deploy 내부 호출 대체)
+        num_workers = min(multiprocessing.cpu_count(), 8)  # 매트릭스 경로와 동일 관례, GPU 미사용 CPU/IO 워크로드
+        completed = 0
+
+        def _work(eid):
+            # request는 save_to_deploy 본문에서 미사용(죽은 파라미터) + 워커 스레드엔 Flask 요청 컨텍스트 없음 → None 전달
+            return save_to_deploy(unified, eid, row_field, col_mode, analysis_type, options, None)
+
+        with ThreadPoolExecutor(max_workers=num_workers) as ex:
+            futures = {ex.submit(_work, eid): eid for eid in ids}
+            for fut in as_completed(futures):
+                eid = futures[fut]
+                completed += 1
+                try:
+                    result = fut.result()
+                    if result:
+                        real_name = result.get('name', eid)
+                        result['employee_id'] = eid
+                        result['profanity_summary'] = build_profanity_summary(unified, eid)
+                        success_list.append(result)
+                        yield json_lib.dumps({'employee': eid, 'name': real_name, 'status': 'done', 'result': result, 'current': completed, 'total': total}) + '\n'
+                    else:
+                        fail_list.append({'employee_id': eid, 'error': '평가 데이터 없음'})
+                        yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': '평가 데이터 없음', 'current': completed, 'total': total}) + '\n'
+                except Exception as exc:
+                    fail_list.append({'employee_id': eid, 'error': str(exc)})
+                    yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': str(exc), 'current': completed, 'total': total}) + '\n'
 
         log_action('csv_batch_save_deploy_stream', {
             'total': total,
@@ -810,13 +827,22 @@ def api_batch_delete(batch_id):
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
     from src.config.settings import PROCESSED_DATA_DIR_PATH
     from src.services.user_data_manager import remove_batch_from_all
+    from src.services.batch_work_order_service import (
+        get_work_order_by_batch_id, delete_work_order,
+    )
+
+    # 0. 작업서 레지스트리 존재 여부 (평가 중복 제거로 evaluations 행이 0건일 수 있음)
+    work_order = get_work_order_by_batch_id(batch_id)
 
     # 1. Remove batch data from DB
     removed_count = remove_batch_from_all(batch_id, [])
-    if removed_count == 0:
+    if removed_count == 0 and work_order is None:
         return jsonify({'success': False, 'error': f'배치({batch_id})를 찾을 수 없습니다.'}), 404
 
-    # 2. Remove physical batch directory (if exists)
+    # 2. 작업서 레지스트리 정리 (이력은 작업서 기준으로 출력되므로 함께 삭제)
+    delete_work_order(batch_id)
+
+    # 3. Remove physical batch directory (if exists)
     import shutil
     batch_dir = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id)
     if os.path.isdir(batch_dir):
@@ -1251,6 +1277,36 @@ def api_acquired_sentences_delete(sentence_id):
     return jsonify({'success': ok})
 
 
+@perspective_bp.route('/acquired-sentences/delete-bulk', methods=['POST'])
+def api_acquired_sentences_delete_bulk():
+    """선택한 id 목록 일괄 삭제."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    ids = data.get('ids', [])
+    if not ids:
+        return jsonify({'success': False, 'error': '삭제할 항목을 선택하세요.'}), 400
+    deleted = delete_acquired_sentences_bulk(ids)
+    return jsonify({'success': True, 'deleted': deleted})
+
+
+@perspective_bp.route('/acquired-sentences/delete-all', methods=['POST'])
+def api_acquired_sentences_delete_all():
+    """현재 필터(불일치/라벨/기간)에 해당하는 전체 삭제. 필터 없으면 전체."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    mismatch_only = bool(data.get('mismatch_only', False))
+    label = (data.get('label') or '').strip() or None
+    date_from = (data.get('date_from') or '').strip() or None
+    date_to = (data.get('date_to') or '').strip() or None
+    deleted = delete_acquired_sentences_filtered(
+        mismatch_only=mismatch_only, label=label,
+        date_from=date_from, date_to=date_to,
+    )
+    return jsonify({'success': True, 'deleted': deleted})
+
+
 @perspective_bp.route('/acquired-sentences/analyze', methods=['POST'])
 def api_acquired_sentences_analyze():
     """선택 문장 분석 실행."""
@@ -1278,6 +1334,59 @@ def api_acquired_sentences_export():
         mimetype='text/csv',
         headers={'Content-Disposition': f'attachment; filename=acquired_sentences_{_dt.now().strftime("%Y%m%d")}.csv'},
     )
+
+
+@perspective_bp.route('/acquired-sentences/export-refined', methods=['GET'])
+def api_acquired_sentences_export_refined():
+    """정제(KoTE 재계산 + 규칙 재현) CSV 내보내기 — 규칙 마이닝용 데이터셋."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    mismatch_only = request.args.get('mismatch_only', '0') == '1'
+    csv_content = export_acquired_sentences_refined_csv(mismatch_only=mismatch_only)
+    from datetime import datetime as _dt
+    return Response(
+        csv_content,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=acquired_sentences_refined_{_dt.now().strftime("%Y%m%d")}.csv'},
+    )
+
+
+@perspective_bp.route('/acquired-sentences/import', methods=['POST'])
+def api_acquired_sentences_import():
+    """기본/정제 CSV 업로드 → acquired_sentences 적재 (dev 검증용 데이터 반입)."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    file = request.files.get('file')
+    if not file or not file.filename:
+        return jsonify({'success': False, 'error': '업로드할 CSV 파일을 선택하세요.'}), 400
+    overwrite = request.form.get('overwrite', '0') == '1'
+    try:
+        raw = file.read()
+        try:
+            csv_text = raw.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            csv_text = raw.decode('cp949', errors='replace')
+        result = import_acquired_sentences_csv(csv_text, overwrite=overwrite)
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@perspective_bp.route('/acquired-sentences/save-bulk', methods=['POST'])
+def api_acquired_sentences_save_bulk():
+    """집단 분석/제출용 배포 결과 문장(긍/부/중/욕)을 acquired_sentences에 일괄 적재."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    items = data.get('items')
+    if not items or not isinstance(items, list):
+        return jsonify({'success': False, 'error': '이동할 문장이 없습니다.'}), 400
+    overwrite = bool(data.get('overwrite', False))
+    try:
+        result = save_acquired_sentences_bulk(items, overwrite=overwrite)
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @perspective_bp.route('/profanity-list', methods=['GET'])

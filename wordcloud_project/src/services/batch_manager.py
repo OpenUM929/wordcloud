@@ -35,13 +35,25 @@ def get_batch_list(processed_data_dir=None):
         batch_id = row['batch_id']
         created_at = (row['created_at'] or '')[:10]
 
-        display_name = batch_id
-        if batch_id and batch_id.startswith('batch_') and len(batch_id) > 14:
-            date_part = batch_id[6:]
-            if len(date_part) >= 8:
-                year, month, day = date_part[:4], date_part[4:6], date_part[6:8]
-                if year and month and day:
-                    display_name = f"{year}-{month}-{day} {batch_id}"
+        # batch_summary.json에서 저장된 display_name 우선 로드
+        display_name = ''
+        summary_path = os.path.join(processed_data_dir, 'batch', batch_id, 'tmeta', 'batch_summary.json') if processed_data_dir else None
+        if summary_path and os.path.exists(summary_path):
+            try:
+                with open(summary_path, 'r', encoding='utf-8') as _sf:
+                    _summary = json.load(_sf)
+                display_name = _summary.get('batch_info', {}).get('display_name', '') or ''
+            except Exception:
+                pass
+
+        if not display_name:
+            display_name = batch_id
+            if batch_id and batch_id.startswith('batch_') and len(batch_id) > 14:
+                date_part = batch_id[6:]
+                if len(date_part) >= 8:
+                    year, month, day = date_part[:4], date_part[4:6], date_part[6:8]
+                    if year and month and day:
+                        display_name = f"{year}-{month}-{day} {batch_id}"
 
         batches.append({
             'name': display_name,

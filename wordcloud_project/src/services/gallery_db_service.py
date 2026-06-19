@@ -13,6 +13,7 @@ def _get_conn():
     os.makedirs(_DB_DIR, exist_ok=True)
     conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")  # 병렬 저장 시 쓰기 경합 대기(즉시 lock 에러 방지, 작업5)
     conn.row_factory = sqlite3.Row
     return conn
 

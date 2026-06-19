@@ -435,6 +435,34 @@ def get_processing_events():
     return create_sse_response(batch_processing_state)
 
 
+def get_skipped_evaluations(batch_id):
+    """배치 요약(batch_summary.json)에서 중복 미저장 평가 목록을 조회한다.
+
+    on-demand(모달 오픈 시) 호출. 파일/키가 없으면 빈 목록을 반환한다.
+    """
+    import os
+    import json
+
+    if not batch_id:
+        return {'success': False, 'error': 'batch_id가 필요합니다.', 'skipped_count': 0, 'skipped': []}
+
+    summary_path = os.path.join(
+        PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tmeta', 'batch_summary.json'
+    )
+    if not os.path.exists(summary_path):
+        return {'success': True, 'skipped_count': 0, 'skipped': []}
+
+    try:
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary = json.load(f)
+    except Exception as e:
+        return {'success': False, 'error': str(e), 'skipped_count': 0, 'skipped': []}
+
+    skipped_count = summary.get('batch_info', {}).get('skipped_count', 0)
+    skipped = summary.get('skipped_evaluations', []) or []
+    return {'success': True, 'skipped_count': skipped_count, 'skipped': skipped}
+
+
 def get_failed_list():
     """Get list of failed employees from failed directory."""
     import os

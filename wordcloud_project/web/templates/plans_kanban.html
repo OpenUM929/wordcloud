@@ -1,0 +1,525 @@
+{% extends "base.html" %}
+{% block title %}Plans Kanban{% endblock %}
+{% block extra_head %}
+<style>
+:root {
+  --todo-color: #856404;
+  --todo-bg: #fff3cd;
+  --todo-border: #ffc107;
+  --doing-color: #004085;
+  --doing-bg: #cce5ff;
+  --doing-border: #17a2b8;
+  --done-color: #155724;
+  --done-bg: #d4edda;
+  --done-border: #28a745;
+  --hold-color: #4a3b6b;
+  --hold-bg: #e7e0f5;
+  --hold-border: #7e57c2;
+  --drop-color: #6c757d;
+  --drop-bg: #e9ecef;
+  --drop-border: #adb5bd;
+}
+* { box-sizing: border-box; }
+body { background: #f0f2f5 !important; }
+.kanban-header { margin-bottom: 16px; }
+.kanban-header h1 { font-size: 22px; font-weight: 700; display: inline; margin-right: 16px; }
+.kanban-header .stats { display: inline; font-size: 14px; color: #555; }
+.kanban-header .stats span { margin-right: 12px; }
+.kanban-header .folder-select { float: right; }
+.kanban-header .last-update { font-size: 12px; color: #999; margin-top: 4px; }
+.kanban-board { display: flex; gap: 16px; height: calc(100vh - 155px); overflow: hidden; }
+.kanban-col {
+  flex: 1; min-width: 0;
+  background: #f8f9fa; border-radius: 10px;
+  display: flex; flex-direction: column;
+}
+.kanban-col .col-header {
+  padding: 12px 14px; border-radius: 10px 10px 0 0;
+  font-weight: 700; font-size: 15px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.col-header.header-todo { background: var(--todo-bg); color: var(--todo-color); border-bottom: 3px solid var(--todo-border); }
+.col-header.header-doing { background: var(--doing-bg); color: var(--doing-color); border-bottom: 3px solid var(--doing-border); }
+.col-header.header-done { background: var(--done-bg); color: var(--done-color); border-bottom: 3px solid var(--done-border); }
+.col-header.header-hold { background: var(--hold-bg); color: var(--hold-color); border-bottom: 3px solid var(--hold-border); }
+.col-header.header-drop { background: var(--drop-bg); color: var(--drop-color); border-bottom: 3px solid var(--drop-border); }
+.col-header .count { font-size: 13px; opacity: 0.7; }
+.col-body { padding: 10px; overflow-y: auto; flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.kanban-card {
+  background: white; border-radius: 8px; padding: 10px 12px;
+  cursor: pointer; border: 1px solid #e0e0e0;
+  transition: box-shadow 0.15s, transform 0.1s;
+  user-select: none;
+}
+.kanban-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+.kanban-card .card-id { font-weight: 700; font-size: 13px; color: #333; }
+.kanban-card .card-slug { font-size: 11px; color: #888; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kanban-card .card-badge { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-top: 5px; font-weight: 600; }
+.badge-todo { background: var(--todo-bg); color: var(--todo-color); }
+.badge-doing { background: var(--doing-bg); color: var(--doing-color); }
+.badge-done { background: var(--done-bg); color: var(--done-color); }
+.badge-hold { background: var(--hold-bg); color: var(--hold-color); }
+.badge-drop { background: var(--drop-bg); color: var(--drop-color); }
+.kanban-col[data-col="drop"] .kanban-card:not(.empty) .card-id { text-decoration: line-through; opacity: 0.7; }
+.kanban-card.empty { cursor: default; color: #bbb; font-size: 12px; text-align: center; border: 1px dashed #ddd; background: transparent; }
+.kanban-card.empty:hover { box-shadow: none; transform: none; }
+.kanban-card.group-card {
+  cursor: pointer; background: #fff8e1; border: 2px dashed #ffb300;
+  text-align: center; padding: 16px 12px;
+}
+.kanban-card.group-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+.kanban-card.group-card .group-icon { font-size: 22px; }
+.kanban-card.group-card .group-title { font-size: 14px; font-weight: 700; color: #e65100; margin-top: 4px; }
+.kanban-card.group-card .group-subtitle { font-size: 11px; color: #bf8f00; margin-top: 2px; }
+.kanban-card.group-card .group-count { font-size: 10px; color: #888; margin-top: 6px; }
+
+/* Modal */
+.modal-full-content { max-height: 70vh; overflow-y: auto; padding: 4px 0; }
+.modal-full-content h1 { font-size: 20px; }
+.modal-full-content h2 { font-size: 17px; margin-top: 18px; }
+.modal-full-content h3 { font-size: 15px; }
+.modal-full-content pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+.modal-full-content code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+.modal-full-content table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.modal-full-content th, .modal-full-content td { border: 1px solid #ddd; padding: 6px 10px; font-size: 13px; }
+.modal-full-content th { background: #f8f9fa; }
+.modal-full-content blockquote { border-left: 4px solid #ddd; margin: 10px 0; padding: 4px 14px; color: #666; }
+.modal-side-links { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; font-size: 13px; }
+.modal-side-links a { margin-right: 14px; text-decoration: none; }
+/* Group list modal */
+.group-list-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer; border-radius: 6px;
+  border: 1px solid #eee; margin-bottom: 6px;
+  transition: background 0.12s;
+}
+.group-list-item:hover { background: #f5f5f5; }
+.group-list-item .gli-id { font-weight: 700; font-size: 13px; color: #333; min-width: 180px; }
+.group-list-item .gli-summary { font-size: 12px; color: #666; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-list-item .gli-date { font-size: 11px; color: #999; white-space: nowrap; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="kanban-header">
+  <h1>📋 Plans Kanban</h1>
+  <div class="stats">
+    <span>✅ <strong>{{ stats.done }}</strong>완료</span>
+    <span>🔄 <strong>{{ stats.doing }}</strong>작업중</span>
+    <span>📋 <strong>{{ stats.todo }}</strong>예정</span>
+    <span>📌 <strong>{{ stats.hold }}</strong>보류</span>
+    <span>🗑️ <strong>{{ stats.drop }}</strong>폐기</span>
+    <span>· 총 <strong>{{ stats.total }}</strong></span>
+  </div>
+  <div class="folder-select">
+    <select id="folderSelect" class="form-select form-select-sm" style="width:auto;display:inline-block;">
+      {% for root in available_roots %}
+      <option value="{{ root }}" {% if root == current_dir %}selected{% endif %}>{{ root }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="last-update" id="lastUpdate">마지막 갱신: {{ mtime|round|int|default('0') }}</div>
+</div>
+
+<div class="kanban-board" id="kanbanBoard">
+  {% for col_key, col_label, col_header_class in [('todo', '📋 Todo', 'header-todo'), ('doing', '🔄 Doing', 'header-doing'), ('done', '✅ Done', 'header-done'), ('hold', '📌 Hold', 'header-hold'), ('drop', '🗑️ 폐기', 'header-drop')] %}
+  <div class="kanban-col" data-col="{{ col_key }}">
+    <div class="col-header {{ col_header_class }}">
+      <span>{{ col_label }}</span>
+      <span class="count" id="count_{{ col_key }}">{{ grouped[col_key]|length }}</span>
+    </div>
+    <div class="col-body" id="col_{{ col_key }}">
+      {% for plan in grouped[col_key] %}
+      <div class="kanban-card" data-id="{{ plan.id }}" onclick="openDetail('{{ plan.id }}')">
+        <div class="card-id">{{ plan.id }}</div>
+        <div class="card-slug">{{ plan.summary }}</div>
+        <span class="card-badge badge-{{ plan.status }}">{{ STATUS_LABEL[plan.status] }}</span>
+      </div>
+      {% else %}
+      <div class="kanban-card empty">비어 있음</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">상세</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="modalLoading" style="text-align:center;padding:40px;color:#999;">로딩 중...</div>
+        <div id="modalContent" class="modal-full-content" style="display:none;"></div>
+        <div id="modalSideLinks" class="modal-side-links" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Group List Modal -->
+<div class="modal fade" id="groupListModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="groupListTitle">📦 이전 완료 작업</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="groupListBody">
+        <div id="groupListLoading" style="text-align:center;padding:40px;color:#999;">로딩 중...</div>
+        <div id="groupListContent" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var STATUS_LABEL = {{ STATUS_LABEL|tojson }};
+var POLL_INTERVAL = 10000;
+var _lastMtime = {{ mtime }};
+var _currentDir = '{{ current_dir|e }}';
+var _pollTimer = null;
+
+function getDirParam() {
+  var sel = document.getElementById('folderSelect');
+  return sel ? sel.value : _currentDir;
+}
+
+function renderCards(data) {
+  ['todo','doing','done','hold','drop'].forEach(function(col) {
+    var container = document.getElementById('col_' + col);
+    var plans = (data.grouped && data.grouped[col]) || [];
+    var countEl = document.getElementById('count_' + col);
+    if (countEl) countEl.textContent = plans.length;
+    if (!container) return;
+    if (col === 'done') {
+      renderDoneColumn(container, plans);
+      return;
+    }
+    container.innerHTML = '';
+    if (plans.length === 0) {
+      container.innerHTML = '<div class="kanban-card empty">비어 있음</div>';
+      return;
+    }
+    plans.forEach(function(p) {
+      var badge = STATUS_LABEL[p.status] || p.status;
+      var card = document.createElement('div');
+      card.className = 'kanban-card';
+      card.dataset.id = p.id;
+      card.onclick = function() { openDetail(p.id); };
+      card.innerHTML =
+        '<div class="card-id">' + esc(p.id) + '</div>' +
+        '<div class="card-slug">' + esc(p.summary) + '</div>' +
+        '<span class="card-badge badge-' + p.status + '">' + badge + '</span>';
+      container.appendChild(card);
+    });
+  });
+  // update stats
+  var s = data.stats || {};
+  var headerStats = document.querySelector('.kanban-header .stats');
+  if (headerStats) {
+    headerStats.innerHTML =
+      '<span>✅ <strong>' + s.done + '</strong>완료</span>' +
+      '<span>🔄 <strong>' + s.doing + '</strong>작업중</span>' +
+      '<span>📋 <strong>' + s.todo + '</strong>예정</span>' +
+      '<span>📌 <strong>' + (s.hold || 0) + '</strong>보류</span>' +
+      '<span>🗑️ <strong>' + (s.drop || 0) + '</strong>폐기</span>' +
+      '<span>· 총 <strong>' + s.total + '</strong></span>';
+  }
+}
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function getMonthRangeLabel(plans) {
+  var months = [];
+  var seen = {};
+  plans.forEach(function(p) {
+    var ym = p.date ? p.date.substring(0, 7) : '';
+    if (ym && !seen[ym]) {
+      seen[ym] = true;
+      months.push(parseInt(ym.split('-')[1], 10));
+    }
+  });
+  months.sort(function(a, b) { return a - b; });
+  if (months.length === 0) return '';
+  if (months.length === 1) return months[0] + '월';
+  return months[0] + '~' + months[months.length - 1] + '월';
+}
+
+function renderDoneColumn(container, plans) {
+  container.innerHTML = '';
+  if (plans.length === 0) {
+    container.innerHTML = '<div class="kanban-card empty">비어 있음</div>';
+    return;
+  }
+  var now = new Date();
+  var curYm = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  var currentPlans = [], pastPlans = [];
+  plans.forEach(function(p) {
+    if (p.date && p.date.substring(0, 7) === curYm) {
+      currentPlans.push(p);
+    } else {
+      pastPlans.push(p);
+    }
+  });
+  // current month items as individual cards
+  currentPlans.forEach(function(p) {
+    var badge = STATUS_LABEL[p.status] || p.status;
+    var card = document.createElement('div');
+    card.className = 'kanban-card';
+    card.dataset.id = p.id;
+    card.onclick = function() { openDetail(p.id); };
+    card.innerHTML =
+      '<div class="card-id">' + esc(p.id) + '</div>' +
+      '<div class="card-slug">' + esc(p.summary) + '</div>' +
+      '<span class="card-badge badge-' + p.status + '">' + badge + '</span>';
+    container.appendChild(card);
+  });
+  // group card for past months
+  if (pastPlans.length > 0) {
+    var label = getMonthRangeLabel(pastPlans);
+    var card = document.createElement('div');
+    card.className = 'kanban-card group-card';
+    card.onclick = function() { openGroupList(pastPlans); };
+    card.innerHTML =
+      '<div class="group-icon">📦</div>' +
+      '<div class="group-title">이전 완료 (' + pastPlans.length + '개)</div>' +
+      '<div class="group-subtitle">' + esc(label) + ' 종료 작업 모음</div>' +
+      '<div class="group-count">✅ Done · ' + pastPlans.length + '개</div>';
+    container.appendChild(card);
+  }
+}
+
+function openGroupList(pastPlans) {
+  var listModal = new bootstrap.Modal(document.getElementById('groupListModal'));
+  var body = document.getElementById('groupListContent');
+  var loading = document.getElementById('groupListLoading');
+  loading.style.display = 'none';
+  body.style.display = '';
+  document.getElementById('groupListTitle').textContent = '📦 이전 완료 (' + pastPlans.length + '개)';
+  var html = '';
+  pastPlans.forEach(function(p) {
+    html +=
+      '<div class="group-list-item" data-id="' + esc(p.id) + '">' +
+      '<div class="gli-id">' + esc(p.id) + '</div>' +
+      '<div class="gli-summary">' + esc(p.summary) + '</div>' +
+      '<div class="gli-date">' + esc(p.date) + '</div>' +
+      '</div>';
+  });
+  body.innerHTML = html;
+  body.querySelectorAll('.group-list-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var id = this.dataset.id;
+      listModal.hide();
+      setTimeout(function() { openDetail(id); }, 200);
+    });
+  });
+  listModal.show();
+}
+
+function loadPlans(dir, cb) {
+  var url = '/admin/api/plans?dir=' + encodeURIComponent(dir);
+  fetch(url + '&_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success) {
+        _lastMtime = d.modified_at || 0;
+        renderCards(d);
+        updateLastUpdate();
+        if (cb) cb(null, d);
+      }
+    })
+    .catch(function(e) { if (cb) cb(e); });
+}
+
+function checkUpdate() {
+  var dir = getDirParam();
+  var url = '/admin/api/plans/check?dir=' + encodeURIComponent(dir) + '&_t=' + Date.now();
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success && d.modified_at && d.modified_at !== _lastMtime && d.dir === _currentDir) {
+        loadPlans(dir);
+      }
+    })
+    .catch(function() {});
+}
+
+function updateLastUpdate() {
+  var el = document.getElementById('lastUpdate');
+  if (el) {
+    var now = new Date();
+    var ts = now.toTimeString().slice(0,8);
+    el.textContent = '마지막 갱신: ' + ts;
+  }
+}
+
+function renderMarkdown(md) {
+  var lines = md.split('\n');
+  var html = '';
+  var inCode = false, inTable = false, inList = false, listType = null;
+  var codeBuf = [], tableBuf = [];
+
+  function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function inlineMd(s) {
+    s = escHtml(s);
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/`(.+?)`/g, '<code>$1</code>');
+    s = s.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>');
+    return s;
+  }
+
+  function flush() {
+    if (inCode) { html += '<pre><code>' + codeBuf.join('\n') + '</code></pre>\n'; codeBuf = []; inCode = false; }
+    if (inTable) { html += '<table>\n' + tableBuf.join('\n') + '</table>\n'; tableBuf = []; inTable = false; }
+    if (inList) { html += '</' + listType + '>\n'; inList = false; listType = null; }
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+
+    // code block
+    if (line.trim().startsWith('```')) {
+      if (!inCode) { flush(); inCode = true; }
+      else { flush(); }
+      continue;
+    }
+    if (inCode) { codeBuf.push(line); continue; }
+
+    // empty line
+    if (!line.trim()) { flush(); html += '\n'; continue; }
+
+    // horizontal rule
+    if (/^---+\s*$/.test(line.trim())) { flush(); html += '<hr>\n'; continue; }
+
+    // headings
+    var hMatch = line.match(/^(#{1,6})\s+(.+)/);
+    if (hMatch) { flush(); html += '<h' + hMatch[1].length + '>' + inlineMd(hMatch[2]) + '</h' + hMatch[1].length + '>\n'; continue; }
+
+    // blockquote
+    var bqMatch = line.match(/^>\s*(.*)/);
+    if (bqMatch) { flush(); html += '<blockquote>' + inlineMd(bqMatch[1]) + '</blockquote>\n'; continue; }
+
+    // table
+    if (/^\|.+\|$/.test(line.trim())) {
+      var tparts = line.split('|').filter(function(p) { return p.trim(); });
+      // skip separator row (|---|)
+      if (/^[\s\-:]+$/.test(tparts.join(''))) { continue; }
+      if (!inTable) { inTable = true; tableBuf = []; }
+      tableBuf.push('<tr><td>' + tparts.map(function(p) { return inlineMd(p.trim()); }).join('</td><td>') + '</td></tr>');
+      continue;
+    }
+
+    // unorderd list
+    var ulMatch = line.match(/^[\s]*[-*]\s+(.*)/);
+    if (ulMatch) {
+      if (!inList || listType !== 'ul') { flush(); inList = true; listType = 'ul'; html += '<ul>\n'; }
+      html += '<li>' + inlineMd(ulMatch[1]) + '</li>\n';
+      continue;
+    }
+
+    // ordered list
+    var olMatch = line.match(/^[\s]*\d+\.\s+(.*)/);
+    if (olMatch) {
+      if (!inList || listType !== 'ol') { flush(); inList = true; listType = 'ol'; html += '<ol>\n'; }
+      html += '<li>' + inlineMd(olMatch[1]) + '</li>\n';
+      continue;
+    }
+
+    // paragraph
+    flush();
+    html += '<p>' + inlineMd(line) + '</p>\n';
+  }
+  flush();
+  return html;
+}
+
+function openDetail(planId) {
+  var dir = getDirParam();
+  var modal = new bootstrap.Modal(document.getElementById('detailModal'));
+  document.getElementById('modalTitle').textContent = '📄 ' + planId;
+  document.getElementById('modalLoading').style.display = '';
+  document.getElementById('modalContent').style.display = 'none';
+  document.getElementById('modalContent').innerHTML = '';
+  document.getElementById('modalSideLinks').style.display = 'none';
+  modal.show();
+
+  var url = '/admin/api/plans/' + encodeURIComponent(planId) + '/content?dir=' + encodeURIComponent(dir);
+  fetch(url + '&_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      document.getElementById('modalLoading').style.display = 'none';
+      if (!d.success) {
+        document.getElementById('modalContent').style.display = '';
+        document.getElementById('modalContent').innerHTML = '<p style="color:red;">❌ ' + esc(d.error || '알 수 없는 오류') + '</p>';
+        return;
+      }
+      document.getElementById('modalContent').style.display = '';
+      document.getElementById('modalContent').innerHTML = renderMarkdown(d.raw || '');
+      // side links
+      var links = [];
+      links.push('<a href="file:///' + esc(d.folder) + '" target="_blank" style="font-weight:600;">📁 폴더 열기</a>');
+      if (d.result_files && d.result_files.length > 0) {
+        links.push('<span>📄 result/ (' + d.result_files.length + ')</span>');
+      }
+      if (d.test_files && d.test_files.length > 0) {
+        links.push('<span>🧪 test/ (' + d.test_files.length + ')</span>');
+      }
+      if (d.extra_files && d.extra_files.length > 0) {
+        links.push('<span>📎 ' + d.extra_files.join(', ') + '</span>');
+      }
+      var sideEl = document.getElementById('modalSideLinks');
+      sideEl.innerHTML = links.join(' · ');
+      sideEl.style.display = '';
+    })
+    .catch(function(e) {
+      document.getElementById('modalLoading').style.display = 'none';
+      document.getElementById('modalContent').style.display = '';
+      document.getElementById('modalContent').innerHTML = '<p style="color:red;">❌ 로드 실패: ' + esc(e.message) + '</p>';
+    });
+}
+
+// folder selector change
+document.getElementById('folderSelect').addEventListener('change', function() {
+  _currentDir = this.value;
+  _lastMtime = 0;
+  loadPlans(_currentDir);
+});
+
+// start polling
+function startPoll() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(checkUpdate, POLL_INTERVAL);
+}
+
+// initial load complete — replace server-rendered content with JS version
+startPoll();
+loadPlans(_currentDir);
+
+// keyboard shortcut: Escape closes modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var modalEl = document.getElementById('detailModal');
+    if (modalEl.classList.contains('show')) {
+      var inst = bootstrap.Modal.getInstance(modalEl);
+      if (inst) inst.hide();
+    }
+  }
+});
+</script>
+{% endblock %}
