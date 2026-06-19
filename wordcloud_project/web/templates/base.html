@@ -365,29 +365,47 @@
 </head>
 <body>
     <nav>
-        <a href="/metadata_batch">메타데이터 생성 (배치)</a>
-        <a href="/perspective_test">📊 그룹분석</a>
-        <a href="/profanity-list">🚨 욕설 리스트</a>
-        <a href="/deploy-gallery">📁 저장 갤러리</a>
-        <a href="/settings">설정</a>
-        <span class="sep">│ 수동 조작</span>
-        <a href="/">입력</a>
-        <a href="/sarcasm">반어법 분석</a>
-        <a href="/wordcloud">워드클라우드</a>
-        <a href="/wordcloud-preview">애니메이션 WC</a>
-        <a href="/stopwords">불용어 관리</a>
-        <div class="dropdown">
-            <span class="dropbtn">테스트</span>
-            <div class="dropdown-content">
-                <a href="/sentiment-test">감정테스트</a>
-                <a href="/profanity-test">욕설필터</a>
-                <a href="/acquired-data">습득한 데이터</a>
-            </div>
+        <!-- 주기능 섹션 -->
+        <div class="nav-section">
+            <div class="nav-section-title">📋 주기능</div>
+            <a href="/metadata_batch">📄 메타데이터 생성</a>
+            <a href="/perspective_test">📊 그룹분석</a>
+            <a href="/settings">⚙️ 설정</a>
+            <a href="/stopwords">🗑️ 불용어 관리</a>
         </div>
-        <span class="sep">│</span>
-        <a href="/admin/batch-management">배치 관리</a>
-        <a href="/admin/plans">📋 계획 현황</a>
-        <a href="/admin/login" style="color: #6c757d;">🔐 관리자</a>
+
+        <!-- 결과물 섹션 -->
+        <div class="nav-section">
+            <div class="nav-section-title">📦 결과물</div>
+            <a href="/deploy-gallery">📁 저장 갤러리</a>
+            <a href="/profanity-list">🚨 욕설 리스트</a>
+            <a href="/acquired-data">📥 습득 데이터</a>
+            <a href="/admin/batch-management">📝 배치 관리</a>
+        </div>
+
+        <!-- 수동 조작 섹션 -->
+        <div class="nav-section">
+            <div class="nav-section-title">✍️ 수동 조작</div>
+            <a href="/">💬 입력</a>
+            <a href="/sarcasm">💭 반어법 분석</a>
+            <a href="/wordcloud">🎨 워드클라우드</a>
+            <a href="/wordcloud-preview">🎬 애니메이션 (WC)</a>
+        </div>
+
+        <!-- 테스트 섹션 -->
+        <div class="nav-section">
+            <div class="nav-section-title">🧪 테스트</div>
+            <a href="/sentiment-test">😊 감정 테스트</a>
+            <a href="/profanity-test">🔍 욕설 테스트</a>
+        </div>
+
+        <!-- 관리자 섹션 -->
+        <div class="nav-section">
+            <div class="nav-section-title">👨‍💼 관리자</div>
+            <a href="/admin/dashboard">🔐 관리자 대시보드</a>
+            <a href="/admin/plans">📋 계획 현황</a>
+        </div>
+
         <span id="globalAuthBadge" style="display:none;background:#28a745;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:4px;">인증됨</span>
     </nav>
     <div id="globalAuthOverlay" {% if _is_admin_session %}class="hidden"{% endif %}>

@@ -101,3 +101,25 @@ nav .dropdown-content a:hover {
     color: #6366f1;
     box-shadow: none;
 }
+
+/* ── 섹션 구분 ─────────────────────────────── */
+nav .nav-section {
+    padding: 12px 0 4px 0;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+nav .nav-section:last-child {
+    border-bottom: none;
+}
+
+nav .nav-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6366f1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    margin-bottom: 4px;
+    display: block;
+}
