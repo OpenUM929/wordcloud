@@ -56,10 +56,11 @@ function selectFolder() {
         var fileCountText = fileCount > 1 ? fileCount + '개 파일' : '1개 파일';
         document.getElementById('folderDetails').innerHTML = '<strong>' + data.filename + '</strong> - ' + fileCountText + '<span style="color: #666; font-size: 11px; display: block; margin-top: 5px;">행: ' + data.rows + ', 공통 컬럼: ' + data.columns.length + '개</span>';
         document.getElementById('folderInfo').classList.remove('hidden');
-        
+
         renderDataColumns();
-        
-        showStep(2);
+
+        // 폴더는 자동 이동 대신 '다음 단계' 버튼을 활성화 → 사용자가 폴더 정보 확인 후 직접 진행
+        updateStepButtons();
     })
     .catch(function(error) {
         console.error('폴더 선택 오류:', error);
@@ -311,25 +312,17 @@ function updateStepButtons() {
 
     if (nextBtn) {
         if (currentStep === 1) {
+            // '다음 단계' 버튼은 항상 노출. 데이터(파일/폴더) 적재 전에는 비활성화하여
+            // 폴더 선택 등 자동 이동이 안 되는 경우에도 사용자가 수동으로 진행할 수 있게 한다.
             var hasData = uploadedData && uploadedData.columns && uploadedData.columns.length > 0;
-            if (hasData) {
-                nextBtn.style.display = 'inline-block';
-                nextBtn.disabled = false;
-                nextBtn.textContent = '다음 단계';
-                var existingNotice = document.querySelector('.auto-move-notice');
-                if (existingNotice) {
-                    existingNotice.remove();
-                }
-            } else {
-                nextBtn.style.display = 'none';
-                var stepButtons = document.querySelector('.step-buttons');
-                if (stepButtons && !stepButtons.querySelector('.auto-move-notice')) {
-                    var noticeDiv = document.createElement('div');
-                    noticeDiv.className = 'auto-move-notice';
-                    noticeDiv.style.cssText = 'color: #666; font-size: 14px; font-style: italic;';
-                    noticeDiv.textContent = '파일 업로드를 하시면 완료 후 자동으로 다음 단계로 이동됩니다';
-                    stepButtons.appendChild(noticeDiv);
-                }
+            nextBtn.style.display = 'inline-block';
+            nextBtn.textContent = '다음 단계';
+            nextBtn.disabled = !hasData;
+            nextBtn.classList.remove('btn-danger');
+            nextBtn.classList.add('btn-primary');
+            var existingNotice = document.querySelector('.auto-move-notice');
+            if (existingNotice) {
+                existingNotice.remove();
             }
         } else if (currentStep < 4) {
             nextBtn.style.display = 'inline-block';
@@ -1466,7 +1459,8 @@ function openBatchSse() {
 document.addEventListener('DOMContentLoaded', function() {
     renderMetadataTree();
     loadWorkOrders();
-    
+    updateStepButtons();  // 초기 로드 시 '다음 단계' 버튼 노출(데이터 적재 전 비활성화)
+
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (e.target.files.length > 0) {
             var file = e.target.files[0];
@@ -1489,9 +1483,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 fieldOrder = [];
                 document.getElementById('fileDetails').textContent = '파일명: ' + data.filename + ', 행: ' + data.rows + ', 열: ' + data.columns.length;
                 document.getElementById('fileInfo').classList.remove('hidden');
-                
+
                 renderDataColumns();
-                
+                updateStepButtons();
+
+                // 파일은 기존처럼 자동으로 다음 단계 이동(버튼은 활성화된 채 노출)
                 setTimeout(function() { showStep(2); }, 1000);
             })
             .catch(function(error) {
