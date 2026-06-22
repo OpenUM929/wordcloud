@@ -757,6 +757,8 @@ function startBatchProcessing() {
     }
     
     isProcessing = true;
+    // 0619_03: 배치 처리 중 전면 차단(종료 시 isProcessing=false 지점마다 해제)
+    if (window.showBusyOverlay) showBusyOverlay('메타데이터 생성 중… 완료까지 페이지를 벗어나지 마세요');
     document.getElementById('processingStatus').classList.remove('hidden');
 
     var settings = {
@@ -787,6 +789,7 @@ function startBatchProcessing() {
                 var currentStep = data.step;
                 var statusText = (data.status && data.status.trim()) ? data.status : (steps[currentStep] || '');
                 document.getElementById('processingText').textContent = statusText;
+                if (window.updateBusyOverlay) updateBusyOverlay(statusText);
 
                 var procSteps = document.querySelectorAll('.proc-step');
                 procSteps.forEach(function(step, index) {
@@ -816,7 +819,7 @@ function startBatchProcessing() {
             if (data.error) {
                 eventSource.close();
                 alert(data.error);
-                isProcessing = false;
+                isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
                 return;
             }
 
@@ -867,14 +870,14 @@ function startBatchProcessing() {
                     document.getElementById('resultsSummary').innerHTML = html;
                 }, 500);
 
-                isProcessing = false;
+                isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
             }
         };
 
         eventSource.onerror = function(error) {
             console.error('SSE 오류:', error);
             eventSource.close();
-            isProcessing = false;
+            isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
         };
     }
 
@@ -888,7 +891,7 @@ function startBatchProcessing() {
     .then(function(data) {
         if (data.error) {
             alert(data.error);
-            isProcessing = false;
+            isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
             return;
         }
         if (data.batch_dir) {
@@ -899,7 +902,7 @@ function startBatchProcessing() {
     .catch(function(error) {
         console.error('배치 처리 오류:', error);
         alert('배치 처리 중 오류가 발생했습니다.');
-        isProcessing = false;
+        isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
     });
 }
 
@@ -1369,6 +1372,8 @@ function confirmResume() {
         return;
     }
     isProcessing = true;
+    // 0619_03: 이어서 처리 중 전면 차단(종료 시 isProcessing=false 지점마다 해제)
+    if (window.showBusyOverlay) showBusyOverlay('이어서 처리 중… 완료까지 페이지를 벗어나지 마세요');
     document.getElementById('processingStatus').classList.remove('hidden');
 
     fetch('/api/batch/resume', {
@@ -1380,7 +1385,7 @@ function confirmResume() {
     .then(function(data) {
         if (data.error || data.success === false) {
             alert(data.error || '이어서 처리에 실패했습니다.');
-            isProcessing = false;
+            isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
             return;
         }
         openBatchSse();
@@ -1388,7 +1393,7 @@ function confirmResume() {
     .catch(function(error) {
         console.error('이어서 처리 오류:', error);
         alert('이어서 처리 중 오류가 발생했습니다.');
-        isProcessing = false;
+        isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
     });
 }
 
@@ -1408,6 +1413,7 @@ function openBatchSse() {
             var statusText = (data.status && data.status.trim()) ? data.status : (steps[currentStepIdx] || '');
             var textEl = document.getElementById('processingText');
             if (textEl) textEl.textContent = statusText;
+            if (window.updateBusyOverlay) updateBusyOverlay(statusText);
 
             var procSteps = document.querySelectorAll('.proc-step');
             procSteps.forEach(function(step, index) {
@@ -1432,7 +1438,7 @@ function openBatchSse() {
         if (data.error) {
             eventSource.close();
             alert(data.error);
-            isProcessing = false;
+            isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
             return;
         }
 
@@ -1442,7 +1448,7 @@ function openBatchSse() {
             var textEl2 = document.getElementById('processingText');
             if (textEl2) textEl2.textContent = '처리 완료!';
             if (data.batch_dir) { sessionStorage.setItem('batchDir', data.batch_dir); }
-            isProcessing = false;
+            isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
             // 게시판 갱신 (완료 상태 반영)
             loadWorkOrders();
             var rbtn = document.getElementById('resumeBtn');
@@ -1453,7 +1459,7 @@ function openBatchSse() {
     eventSource.onerror = function(error) {
         console.error('SSE 오류:', error);
         eventSource.close();
-        isProcessing = false;
+        isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
     };
 }
 

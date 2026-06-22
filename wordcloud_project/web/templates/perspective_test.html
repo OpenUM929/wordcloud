@@ -1032,6 +1032,7 @@ async function generateMatrix() {
         statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
         h += '</div>';
         resultArea.innerHTML = h;
+        if (window.updateBusyOverlay) updateBusyOverlay(`매트릭스 생성 중 (${current}/${total})`);
     }
 
     function addLine(msg, cls) {
@@ -1045,6 +1046,8 @@ async function generateMatrix() {
     const WORKER_COUNT = 4;
     const yieldToRenderer = () => new Promise(r => setTimeout(r, 0));
 
+    // 0619_03: 생성 중 전면 차단(완료/실패 무관 finally에서 해제)
+    if (window.showBusyOverlay) showBusyOverlay('워드클라우드 생성 중… 완료까지 페이지를 벗어나지 마세요');
     try {
         const processOne = async (eid) => {
             addLine(`⏳ ${eid} 처리 중...`, 'processing');
@@ -1087,6 +1090,8 @@ async function generateMatrix() {
         setStatus('오류', true);
         addLine('❌ 네트워크 오류', 'fail');
         renderProgress(doneCount + failCount);
+    } finally {
+        if (window.hideBusyOverlay) hideBusyOverlay();
     }
 
     // 완료 헤더
@@ -1510,6 +1515,9 @@ async function saveDeploy(resumeSessionId = null) {
     if (_btnGenS) _btnGenS.disabled = true;
     if (_btnSaveS) _btnSaveS.disabled = true;
 
+    // 0619_03: 제출용 저장 중 전면 차단(완료/실패 무관 finally에서 해제)
+    if (window.showBusyOverlay) showBusyOverlay('제출용 저장 중… 완료까지 페이지를 벗어나지 마세요');
+
     let sessionId = resumeSessionId || null;
     let existingSuccessData = [];
     let existingFailData = [];
@@ -1692,6 +1700,7 @@ async function saveDeploy(resumeSessionId = null) {
         if (sessionId) {
             localStorage.removeItem('deploy_session_id');
         }
+        if (window.hideBusyOverlay) hideBusyOverlay();
     }
 
     window._lastDeploySessionId = sessionId;
@@ -2843,7 +2852,10 @@ async function loadBatchHistory() {
     const list = document.getElementById('batchHistoryList');
     const summary = document.getElementById('batchHistorySummary');
     area.style.display = 'block';
-    list.innerHTML = '로딩...';
+    // 0619_03: 조회 진행 중 인디케이터(단일 호출이라 indeterminate 스피너)
+    list.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;color:#666;font-size:12px;">'
+        + '<span style="width:16px;height:16px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;display:inline-block;animation:globalBusySpin 0.8s linear infinite;"></span>'
+        + '조회 중…</div>';
     try {
         const r = await fetch('/api/perspective/batches', { credentials: 'include' });
         const d = await r.json();

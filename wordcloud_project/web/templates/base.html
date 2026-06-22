@@ -365,6 +365,28 @@
             background: white; border-radius: 12px; padding: 36px 40px; width: 360px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.25); text-align: center;
         }
+        /* 0619_03: 장시간 작업 중 페이지 전체 클릭 차단(투명 배경). 진행 패널은 투명층 뒤에서 보임. */
+        #globalBusyOverlay {
+            position: fixed; inset: 0; z-index: 8000;
+            display: none; background: rgba(255,255,255,0.3); pointer-events: auto;
+        }
+        #globalBusyOverlay.show { display: block; }
+        /* 우하단 코너 안내 박스 — 고정 문구 + 실시간 진행 상황 표시 */
+        #globalBusyBox {
+            position: fixed; bottom: 20px; right: 20px; z-index: 8001;
+            display: none; flex-direction: row; align-items: flex-start; gap: 12px;
+            background: white; border-radius: 10px; padding: 12px 14px; max-width: 380px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.18); border: 1px solid #e5e7eb; pointer-events: none;
+        }
+        #globalBusyOverlay.show #globalBusyBox { display: flex; }
+        #globalBusySpinner {
+            width: 20px; height: 20px; flex: 0 0 auto; border-radius: 50%;
+            border: 3px solid #e5e7eb; border-top-color: #6366f1;
+            animation: globalBusySpin 0.8s linear infinite; margin-top: 2px;
+        }
+        @keyframes globalBusySpin { to { transform: rotate(360deg); } }
+        #globalBusyMsg { font-size: 13px; color: #1f2937; font-weight: 600; line-height: 1.4; }
+        #globalBusyDetail { font-size: 12px; color: #6b7280; margin-top: 2px; line-height: 1.3; }
     </style>
     <link rel="stylesheet" href="/static/css/nav.css">
     {% block extra_head %}{% endblock %}
@@ -427,6 +449,16 @@
             <div id="globalAuthError" style="margin-top:8px;font-size:12px;color:#dc3545;min-height:16px;"></div>
         </div>
     </div>
+    <!-- 0619_03: 장시간 작업 전면 차단 오버레이 (투명 클릭 차단층 + 우하단 안내 박스) -->
+    <div id="globalBusyOverlay">
+        <div id="globalBusyBox">
+            <div id="globalBusySpinner"></div>
+            <div>
+                <div id="globalBusyMsg">처리 중…</div>
+                <div id="globalBusyDetail"></div>
+            </div>
+        </div>
+    </div>
     <div class="container">
     {% block content %}{% endblock %}
     </div>
@@ -438,6 +470,28 @@
     <script src="{{ url_for('static', filename='vendor/jquery-3.6.0.min.js') }}"></script>
     
     <script>
+    // 0619_03: 장시간 작업 중 페이지 전체 클릭 차단. 모든 종료 경로에서 hide 호출 보장할 것.
+    window.showBusyOverlay = function(message) {
+        var ov = document.getElementById('globalBusyOverlay');
+        var msg = document.getElementById('globalBusyMsg');
+        var detail = document.getElementById('globalBusyDetail');
+        if (msg) msg.textContent = message || '처리 중…';
+        if (detail) detail.textContent = '';
+        if (ov) ov.classList.add('show');
+    };
+    window.updateBusyOverlay = function(detailText) {
+        var ov = document.getElementById('globalBusyOverlay');
+        var detail = document.getElementById('globalBusyDetail');
+        if (ov && ov.classList.contains('show') && detail) {
+            detail.textContent = detailText || '';
+        }
+    };
+    window.hideBusyOverlay = function() {
+        var ov = document.getElementById('globalBusyOverlay');
+        var detail = document.getElementById('globalBusyDetail');
+        if (ov) ov.classList.remove('show');
+        if (detail) detail.textContent = '';
+    };
     (function() {
         async function checkGlobalAuth() {
             try {
