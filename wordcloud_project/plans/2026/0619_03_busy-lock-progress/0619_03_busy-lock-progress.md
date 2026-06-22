@@ -11,6 +11,7 @@
 | 2026-06-19 | 전체 | 최초 작성 |
 | 2026-06-19 | §8 | 수행 — 구현·단위검증(V1) 완료. 정상 동작 확인 대기로 PND 유지 |
 | 2026-06-22 | §3.2, §8 | 코너 배너 방식 확정(전면 차단 유지 + 클릭 차단 영역과 안내 박스 분리) + 실시간 진행 텍스트(단계/인원수) 추가, perspective_test 매트릭스 생성도 동일 적용 |
+| 2026-06-22 | §8 | 검토 반영 — 제출용 저장(saveDeploy)에도 실시간 진행 텍스트 적용(4개 차단 작업 전부 일관). renderProgress 2개(generateMatrix/saveDeploy) 구분 명시 |
 
 ---
 
@@ -133,7 +134,12 @@
 - 공통 오버레이: `base.html` 코너 배너(#globalBusyBox)에 **상세 텍스트 줄** `#globalBusyDetail` 추가. 고정 메시지(예: "메타데이터 생성 중…") + 실시간 상태(예: "분석 처리 중 (152 / 19,000명)") 두 줄로 표시.
 - 신규 헬퍼 `updateBusyOverlay(detailText)` — overlay `show` 상태일 때만 상세 텍스트 갱신.
 - `metadata_batch.js` 오버레이 wiring: `openSseAndListen()` + `openBatchSse()` 두 핸들러 모두, `statusText` 계산 직후 `updateBusyOverlay(statusText)` 호출 추가.
-- `perspective_test.html` 오버레이 wiring: `renderProgress()` 함수 내 `updateBusyOverlay(`매트릭스 생성 중 (${current}/${total})`)` 추가.
+- `perspective_test.html` 오버레이 wiring(매트릭스 생성): `generateMatrix` 내부 `renderProgress()` 함수에 `updateBusyOverlay(`매트릭스 생성 중 (${current}/${total})`)` 추가.
+
+**추가 변경 (3차: 검토 반영 — 2026-06-22)**
+- `perspective_test.html`에는 `renderProgress`가 **2개**(① `generateMatrix` 내부 `:1024`, ② `saveDeploy`(제출용 저장) 내부 `:1479`) 존재. 2차에서 ①만 적용되어 제출용 저장 진행 표시가 누락되었음.
+- 제출용 저장도 차단 4개 작업 중 하나(§1 요구사항 2-(a))이므로, `saveDeploy`의 `renderProgress`에도 `updateBusyOverlay(`제출용 저장 중 (${current}/${total})`)` 추가 → **4개 차단 작업 전부 실시간 진행 표시 일관**.
+- 초기 `renderProgress(0,'init')`는 `showBusyOverlay` 호출 이전이라 `updateBusyOverlay`가 no-op(배너 미표시) → "(0/0)" 잔상 없음. 청크 루프 진입 전 `total`이 실제값으로 설정된 뒤부터 배너가 갱신됨. 해제는 기존 `finally`의 `hideBusyOverlay()`로 보장(`:1704`).
 
 **검증**
 - V1 단위테스트 `test/test_load_batch_history.py` 통과: `employee_results` 키 없음 + `unique_employees=2`/`total_evaluations=3` 정확 + 평가 본문 `json.loads` 0회. (dev 실데이터 없음 → 임시 SQLite)
@@ -146,4 +152,4 @@
 - [ ] 내부망 1.7만 규모 이력 조회: 메모리 급증·정지 미발생 (V3)
 - [ ] 4개 작업 각각: 진행 중 Nav·버튼 차단, 종료 시 해제 (V4)
 - [ ] 기존 이력 표/요약 내용 동일(회귀 없음, V2)
-- [ ] **[추가 2026-06-22]** 코너 배너 두 번째 줄에 실시간 진행 상황(단계/인원수)이 SSE 주기(0.5초)에 맞춰 갱신되는지 확인 (메타데이터 생성·이어서 처리·매트릭스 생성 3개 경로 모두)
+- [ ] **[추가 2026-06-22]** 코너 배너 두 번째 줄에 실시간 진행 상황(단계/인원수)이 갱신되는지 확인 — 4개 경로 모두: ① 메타데이터 생성(SSE 0.5초), ② 이어서 처리(SSE 0.5초), ③ 매트릭스 생성(직원별), ④ 제출용 저장(직원별)

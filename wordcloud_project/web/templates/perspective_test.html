@@ -1487,6 +1487,7 @@ async function saveDeploy(resumeSessionId = null) {
         if (lineExtra) h += lineExtra;
         h += '</div>';
         resultArea.innerHTML = h;
+        if (window.updateBusyOverlay) updateBusyOverlay(`제출용 저장 중 (${current}/${total})`);
     }
 
     function addLine(msg, cls) {
