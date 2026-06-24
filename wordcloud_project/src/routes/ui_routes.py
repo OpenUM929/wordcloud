@@ -66,6 +66,12 @@ def metadata_batch():
     return render_template('metadata_batch.html')
 
 
+@ui_bp.route('/judgment_apply')
+def judgment_apply():
+    """판정 결과 반영 페이지 — 판정 완료 패킷 업로드(POST /judgment/apply)."""
+    return render_template('judgment_apply.html')
+
+
 @ui_bp.route('/get_batch_list')
 def get_batch_list_api():
     """API to get list of batches."""

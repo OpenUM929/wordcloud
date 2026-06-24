@@ -8,7 +8,9 @@ import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, request, jsonify, session, Response, send_file
 from src.services.perspective_service import (
-    load_all_batches, get_matrix_meta,
+    load_all_batches, load_employee_batch, list_all_employee_ids,
+    load_batch_history,
+    get_matrix_meta, get_matrix_meta_light,
     generate_perspective_matrix, save_to_deploy,
     generate_all_employee_matrix, parse_csv_employee_ids,
     build_profanity_summary, _get_pseudo_mgr,
@@ -51,19 +53,10 @@ def _resolve_output_mode(data):
 def api_get_meta():
     data = request.get_json(silent=True) or {}
     employee_id = data.get('employee_id')
-    unified = load_all_batches()
-    if not unified:
-        return jsonify({
-            'success': True,
-            'admin': _is_admin(),
-            'employees': [],
-            'row_options': [],
-            'col_modes': [],
-            'analysis_types': [],
-            'batch_count': 0,
-            'total_evaluations': 0,
-        })
-    meta = get_matrix_meta(unified, employee_id=employee_id, enrich=_is_admin())
+    # 0619_03 후속: X축(시간/회차) 메타도 load_all_batches()의 19,000건 json.loads
+    # 병목을 그대로 타고 있었다. row_options는 batch_id·evaluation_date 인덱스 컬럼
+    # GROUP BY만으로 산출 가능하므로 data blob 미적재 경량 빌더로 교체.
+    meta = get_matrix_meta_light(employee_id=employee_id, enrich=_is_admin())
     return jsonify({'success': True, 'admin': _is_admin(), **meta})
 
 
@@ -481,26 +474,17 @@ def api_save_deploy():
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
-    unified = load_all_batches()
-    if not unified:
-        return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 400
+    _setup_korean_font()  # 배치/단일 분기 진입 전 1회 호출(save_to_deploy 내부 호출 대체)
 
-    _setup_korean_font()  # 배치/단일 분기 진입 전 1회 호출(작업4 — save_to_deploy 내부 호출 대체)
-
+    # 0619_02: 전체 코퍼스 일괄 적재(load_all_batches) 제거 → 직원 1명분만 로딩하여 메모리 폭증 방지.
     if all_employees and not employee_ids:
-        seen = set()
-        all_ids = []
-        for er in unified.get('employee_results', []):
-            eid = er.get('metadata', {}).get('target_employee_id')
-            if eid and eid not in seen:
-                seen.add(eid)
-                all_ids.append(eid)
-        employee_ids = all_ids
+        employee_ids = list_all_employee_ids()
 
     if employee_ids:
         results_list = []
         for eid in employee_ids:
-            result = save_to_deploy(unified, eid, row_field, col_mode, analysis_type, options, request)
+            emp_unified = load_employee_batch(eid)
+            result = save_to_deploy(emp_unified, eid, row_field, col_mode, analysis_type, options, request)
             if result:
                 results_list.append(result)
 
@@ -522,7 +506,8 @@ def api_save_deploy():
             'batch': True,
         })
 
-    results = save_to_deploy(unified, employee_id, row_field, col_mode, analysis_type, options, request)
+    emp_unified = load_employee_batch(employee_id)
+    results = save_to_deploy(emp_unified, employee_id, row_field, col_mode, analysis_type, options, request)
     if not results:
         return jsonify({
             'success': False,
@@ -606,6 +591,75 @@ def api_save_sentence_corrections():
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         conn.close()
+
+
+@perspective_bp.route('/judgment/extract', methods=['POST'])
+def api_judgment_extract():
+    """판정 작업 패킷 추출 — 가명 평가에서 하드케이스를 뽑아 자기설명 패킷(JSON) 다운로드.
+
+    body: {batch_id?, margin?}. 패킷은 가명(실 ID 없음)이라 그대로 LLM 전달 가능.
+    """
+    import logging as _logging
+    from flask import Response
+    _logger = _logging.getLogger(__name__)
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    batch_id = data.get('batch_id') or None
+    # margin 미지정 시 None → 가장 넓은 밴드로 추출 + 마진 밴드 요약(검색형). 지정 시 그 값만.
+    margin = None
+    if data.get('margin') is not None:
+        try:
+            margin = float(data.get('margin'))
+        except (TypeError, ValueError):
+            margin = None
+    try:
+        from src.services.judgment_packet_service import build_judgment_packet
+        packet, quarantined = build_judgment_packet(batch_id=batch_id, margin=margin)
+        packet['_status']['counts']['quarantined'] = len(quarantined)
+        _logger.info(f"[judgment/extract] batch={batch_id} items={len(packet['items'])} "
+                     f"quarantined={len(quarantined)}")
+        body = json_lib.dumps(packet, ensure_ascii=False, indent=1)
+        return Response(
+            body, mimetype='application/json',
+            headers={'Content-Disposition': f'attachment; filename="{packet["packet_id"]}.json"'})
+    except Exception as e:
+        _logger.error(f"[judgment/extract] 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@perspective_bp.route('/judgment/apply', methods=['POST'])
+def api_judgment_apply():
+    """판정 완료 패킷 삽입 — 업로드한 패킷의 result 를 가명 키로 corrections 에 in-place 반영.
+
+    파일 업로드(request.files['packet']) 또는 JSON body(패킷) 허용.
+    """
+    import logging as _logging
+    _logger = _logging.getLogger(__name__)
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    packet = None
+    if 'packet' in request.files:
+        try:
+            packet = json_lib.loads(request.files['packet'].read().decode('utf-8'))
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'패킷 파싱 실패: {e}'}), 400
+    else:
+        packet = request.get_json(silent=True)
+    if not isinstance(packet, dict) or 'items' not in packet:
+        return jsonify({'success': False, 'error': '유효한 패킷이 아닙니다(items 필요).'}), 400
+    try:
+        from src.services.judgment_packet_service import apply_judgment_packet
+        summary = apply_judgment_packet(packet)
+        # needs_human 목록은 모달 큐로 — 본문 노출 최소화(가명 텍스트만)
+        nh = [{'text': it.get('text', ''), 'key': it.get('key'), 'result': it.get('result')}
+              for it in summary.pop('needs_human_items', [])]
+        _logger.info(f"[judgment/apply] inserted={summary['inserted_sentences']} "
+                     f"needs_human={summary['needs_human']} skipped={summary['skipped']}")
+        return jsonify({'success': True, 'summary': summary, 'needs_human_queue': nh})
+    except Exception as e:
+        _logger.error(f"[judgment/apply] 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @perspective_bp.route('/matrix/regenerate', methods=['POST'])
@@ -695,19 +749,9 @@ def api_save_deploy_stream():
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
-    unified = load_all_batches()
-    if not unified:
-        return jsonify({'success': False, 'error': '배치 데이터가 없습니다.'}), 404
-
+    # 0619_02: 전체 코퍼스 일괄 적재 제거 → all_employees는 ID만 경량 조회, 워커가 직원 1명분만 로딩.
     if all_employees and not employee_ids:
-        seen = set()
-        all_ids = []
-        for er in unified.get('employee_results', []):
-            eid = er.get('metadata', {}).get('target_employee_id')
-            if eid and eid not in seen:
-                seen.add(eid)
-                all_ids.append(eid)
-        employee_ids = all_ids
+        employee_ids = list_all_employee_ids()
 
     ids = employee_ids if employee_ids else [employee_id]
 
@@ -722,7 +766,12 @@ def api_save_deploy_stream():
 
         def _work(eid):
             # request는 save_to_deploy 본문에서 미사용(죽은 파라미터) + 워커 스레드엔 Flask 요청 컨텍스트 없음 → None 전달
-            return save_to_deploy(unified, eid, row_field, col_mode, analysis_type, options, None)
+            # 0619_02: 직원 1명분만 로딩(전체 적재 제거). emp_unified는 _work 종료 시 회수.
+            emp_unified = load_employee_batch(eid)
+            result = save_to_deploy(emp_unified, eid, row_field, col_mode, analysis_type, options, None)
+            if result is not None:
+                result['profanity_summary'] = build_profanity_summary(emp_unified, eid)
+            return result
 
         with ThreadPoolExecutor(max_workers=num_workers) as ex:
             futures = {ex.submit(_work, eid): eid for eid in ids}
@@ -734,7 +783,6 @@ def api_save_deploy_stream():
                     if result:
                         real_name = result.get('name', eid)
                         result['employee_id'] = eid
-                        result['profanity_summary'] = build_profanity_summary(unified, eid)
                         success_list.append(result)
                         yield json_lib.dumps({'employee': eid, 'name': real_name, 'status': 'done', 'result': result, 'current': completed, 'total': total}) + '\n'
                     else:
@@ -811,7 +859,9 @@ def api_get_users():
 def api_batch_history():
     if not _is_admin():
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
-    unified = load_all_batches()
+    # 0619_03: 이력은 목록·카운트만 필요하므로 전체 적재(load_all_batches) 대신
+    # 경량 로더 사용 — 1.7만명 평가 본문 미적재로 조회 지연/메모리 폭증 해소.
+    unified = load_batch_history()
     if not unified:
         return jsonify({'success': False, 'batches': []})
     return jsonify({
