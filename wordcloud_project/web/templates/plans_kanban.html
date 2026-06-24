@@ -12,6 +12,9 @@
   --done-color: #155724;
   --done-bg: #d4edda;
   --done-border: #28a745;
+  --predone-color: #e65100;
+  --predone-bg: #fff3e0;
+  --predone-border: #ff9800;
   --hold-color: #4a3b6b;
   --hold-bg: #e7e0f5;
   --hold-border: #7e57c2;
@@ -22,11 +25,11 @@
 * { box-sizing: border-box; }
 body { background: #f0f2f5 !important; }
 .kanban-header { margin-bottom: 16px; }
-.kanban-header h1 { font-size: 22px; font-weight: 700; display: inline; margin-right: 16px; }
+.kanban-header h1 { font-size: 22px; font-weight: 700; display: inline; margin-right: 16px; margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
 .kanban-header .stats { display: inline; font-size: 14px; color: #555; }
 .kanban-header .stats span { margin-right: 12px; }
 .kanban-header .folder-select { float: right; }
-.kanban-header .last-update { font-size: 12px; color: #999; margin-top: 4px; }
+.kanban-header .last-update { font-size: 12px; color: #999; margin-top: 4px; clear: both; }
 .kanban-board { display: flex; gap: 16px; height: calc(100vh - 155px); overflow: hidden; }
 .kanban-col {
   flex: 1; min-width: 0;
@@ -40,6 +43,7 @@ body { background: #f0f2f5 !important; }
 }
 .col-header.header-todo { background: var(--todo-bg); color: var(--todo-color); border-bottom: 3px solid var(--todo-border); }
 .col-header.header-doing { background: var(--doing-bg); color: var(--doing-color); border-bottom: 3px solid var(--doing-border); }
+.col-header.header-predone { background: var(--predone-bg); color: var(--predone-color); border-bottom: 3px solid var(--predone-border); }
 .col-header.header-done { background: var(--done-bg); color: var(--done-color); border-bottom: 3px solid var(--done-border); }
 .col-header.header-hold { background: var(--hold-bg); color: var(--hold-color); border-bottom: 3px solid var(--hold-border); }
 .col-header.header-drop { background: var(--drop-bg); color: var(--drop-color); border-bottom: 3px solid var(--drop-border); }
@@ -57,6 +61,7 @@ body { background: #f0f2f5 !important; }
 .kanban-card .card-badge { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-top: 5px; font-weight: 600; }
 .badge-todo { background: var(--todo-bg); color: var(--todo-color); }
 .badge-doing { background: var(--doing-bg); color: var(--doing-color); }
+.badge-predone { background: var(--predone-bg); color: var(--predone-color); }
 .badge-done { background: var(--done-bg); color: var(--done-color); }
 .badge-hold { background: var(--hold-bg); color: var(--hold-color); }
 .badge-drop { background: var(--drop-bg); color: var(--drop-color); }
@@ -72,6 +77,73 @@ body { background: #f0f2f5 !important; }
 .kanban-card.group-card .group-title { font-size: 14px; font-weight: 700; color: #e65100; margin-top: 4px; }
 .kanban-card.group-card .group-subtitle { font-size: 11px; color: #bf8f00; margin-top: 2px; }
 .kanban-card.group-card .group-count { font-size: 10px; color: #888; margin-top: 6px; }
+
+/* View tabs */
+.view-tabs { margin-bottom: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 0; display: flex; gap: 0; }
+.view-tab { padding: 8px 20px; cursor: pointer; font-size: 14px; font-weight: 600; color: #888; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; user-select: none; }
+.view-tab:hover { color: #555; }
+.view-tab.active { color: #333; border-bottom-color: #4a90d9; }
+.view-tab .tab-badge { display: inline-block; font-size: 10px; background: #eee; color: #666; border-radius: 10px; padding: 0 7px; margin-left: 4px; font-weight: 700; }
+
+/* Git monthly accordion */
+.git-header { margin-bottom: 16px; }
+.git-header h2 { font-size: 20px; font-weight: 700; display: inline; margin-right: 16px; }
+.git-header .git-summary { display: inline; font-size: 13px; color: #555; }
+.git-header .git-summary span { margin-right: 14px; }
+.git-header .last-update { font-size: 12px; color: #999; margin-top: 4px; }
+.month-accordion { border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+.month-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: #f8f9fa; cursor: pointer;
+  border-bottom: 1px solid #e0e0e0; transition: background 0.12s; user-select: none;
+}
+.month-header:hover { background: #eef0f3; }
+.month-header .mh-left { display: flex; align-items: center; gap: 10px; }
+.month-header .mh-arrow { font-size: 12px; color: #999; transition: transform 0.2s; }
+.month-header.open .mh-arrow { transform: rotate(90deg); }
+.month-header .mh-title { font-weight: 700; font-size: 15px; color: #333; }
+.month-header .mh-count { font-size: 12px; color: #888; }
+.month-header .mh-stats { font-size: 12px; color: #555; }
+.month-header .mh-stats .fp { color: #e67e22; font-weight: 600; }
+.month-header .mh-stats .hrs { color: #2980b9; font-weight: 600; }
+.month-header .mh-stats .cum { color: #888; }
+.month-body { display: none; padding: 0; }
+.month-body.open { display: block; }
+.git-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.git-table th {
+  padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: #888;
+  text-transform: uppercase; background: #fafafa; border-bottom: 2px solid #eee;
+  position: sticky; top: 0;
+}
+.git-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+.git-table tr { cursor: pointer; transition: background 0.1s; }
+.git-table tr:hover { background: #f5f8ff; }
+.git-table .req-id { font-weight: 700; font-size: 12px; color: #2c3e50; font-family: monospace; }
+.git-table .req-date { font-size: 11px; color: #95a5a6; font-family: monospace; margin-left: 4px; }
+.git-table .commit-msg { color: #555; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.git-table .td-fp { text-align: right; font-family: monospace; font-weight: 600; color: #e67e22; }
+.git-table .td-hours { text-align: right; font-family: monospace; font-weight: 600; color: #2980b9; }
+.git-table .td-fp.none, .git-table .td-hours.none { color: #ccc; font-weight: 400; }
+.type-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+.type-feat { background: #d4edda; color: #155724; }
+.type-fix { background: #f8d7da; color: #721c24; }
+.type-refactor { background: #cce5ff; color: #004085; }
+.type-docs { background: #fff3cd; color: #856404; }
+.type-default { background: #e9ecef; color: #495057; }
+.git-empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+.git-loading { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+.git-error { text-align: center; padding: 40px; color: #c0392b; font-size: 14px; }
+
+/* Commit detail modal */
+.commit-modal-header { margin-bottom: 12px; }
+.commit-modal-header .cm-hash { font-family: monospace; font-size: 13px; color: #555; }
+.commit-modal-header .cm-date { font-size: 12px; color: #888; }
+.commit-modal-header .cm-author { font-size: 12px; color: #888; }
+.commit-modal-header .cm-msg { font-size: 15px; font-weight: 600; color: #333; margin-top: 8px; }
+.commit-files { margin-top: 12px; }
+.commit-files h6 { font-size: 12px; color: #888; margin-bottom: 6px; text-transform: uppercase; }
+.commit-files .cf-item { font-family: monospace; font-size: 12px; padding: 4px 8px; border-bottom: 1px solid #f0f0f0; color: #555; }
+.commit-files .cf-stat { font-size: 12px; color: #888; padding: 8px; background: #fafafa; border-radius: 4px; margin-top: 8px; }
 
 /* Modal */
 .modal-full-content { max-height: 70vh; overflow-y: auto; padding: 4px 0; }
@@ -100,14 +172,21 @@ body { background: #f0f2f5 !important; }
 </style>
 {% endblock %}
 {% block content %}
+<div class="view-tabs">
+  <span class="view-tab active" data-view="kanban">📋 칸반보드</span>
+  <span class="view-tab" data-view="git">📊 월별 CR 현황</span>
+</div>
+
+<div id="view-kanban" class="view-panel">
 <div class="kanban-header">
   <h1>📋 Plans Kanban</h1>
   <div class="stats">
     <span>✅ <strong>{{ stats.done }}</strong>완료</span>
     <span>🔄 <strong>{{ stats.doing }}</strong>작업중</span>
+    <span>🔶 <strong>{{ stats.predone }}</strong>Pre-Done</span>
     <span>📋 <strong>{{ stats.todo }}</strong>예정</span>
     <span>📌 <strong>{{ stats.hold }}</strong>보류</span>
-    <span>🗑️ <strong>{{ stats.drop }}</strong>폐기</span>
+    <span>🗑️ <strong>{{ stats.drop }}</strong>Drop</span>
     <span>· 총 <strong>{{ stats.total }}</strong></span>
   </div>
   <div class="folder-select">
@@ -121,7 +200,7 @@ body { background: #f0f2f5 !important; }
 </div>
 
 <div class="kanban-board" id="kanbanBoard">
-  {% for col_key, col_label, col_header_class in [('todo', '📋 Todo', 'header-todo'), ('doing', '🔄 Doing', 'header-doing'), ('done', '✅ Done', 'header-done'), ('hold', '📌 Hold', 'header-hold'), ('drop', '🗑️ 폐기', 'header-drop')] %}
+  {% for col_key, col_label, col_header_class in [('todo', '📋 Todo', 'header-todo'), ('doing', '🔄 Doing', 'header-doing'), ('predone', '🔶 Pre-Done', 'header-predone'), ('done', '✅ Done', 'header-done'), ('hold', '📌 Hold', 'header-hold'), ('drop', '🗑️ Drop', 'header-drop')] %}
   <div class="kanban-col" data-col="{{ col_key }}">
     <div class="col-header {{ col_header_class }}">
       <span>{{ col_label }}</span>
@@ -140,6 +219,39 @@ body { background: #f0f2f5 !important; }
     </div>
   </div>
   {% endfor %}
+</div>
+</div>
+
+<div id="view-git" class="view-panel" style="display:none;">
+  <div class="git-header">
+    <h2>📊 월별 CR 현황</h2>
+    <div class="git-summary" id="crSummary"></div>
+    <div class="last-update" id="crLastUpdate"></div>
+  </div>
+  <div id="crLoading" class="git-loading">⏳ CR 데이터를 불러오는 중...</div>
+  <div id="crError" class="git-error" style="display:none;"></div>
+  <div id="crContent" style="display:none;">
+    <div id="crAccordion" class="month-accordion"></div>
+  </div>
+</div>
+
+<!-- CR Detail Modal -->
+<div class="modal fade" id="crModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📄 CR 상세</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="crModalLoading" style="text-align:center;padding:40px;color:#999;">로딩 중...</div>
+        <div id="crModalContent" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Detail Modal -->
@@ -196,7 +308,7 @@ function getDirParam() {
 }
 
 function renderCards(data) {
-  ['todo','doing','done','hold','drop'].forEach(function(col) {
+  ['todo','doing','predone','done','hold','drop'].forEach(function(col) {
     var container = document.getElementById('col_' + col);
     var plans = (data.grouped && data.grouped[col]) || [];
     var countEl = document.getElementById('count_' + col);
@@ -231,9 +343,10 @@ function renderCards(data) {
     headerStats.innerHTML =
       '<span>✅ <strong>' + s.done + '</strong>완료</span>' +
       '<span>🔄 <strong>' + s.doing + '</strong>작업중</span>' +
+      '<span>🔶 <strong>' + (s.predone || 0) + '</strong>Pre-Done</span>' +
       '<span>📋 <strong>' + s.todo + '</strong>예정</span>' +
       '<span>📌 <strong>' + (s.hold || 0) + '</strong>보류</span>' +
-      '<span>🗑️ <strong>' + (s.drop || 0) + '</strong>폐기</span>' +
+      '<span>🗑️ <strong>' + (s.drop || 0) + '</strong>Drop</span>' +
       '<span>· 총 <strong>' + s.total + '</strong></span>';
   }
 }
@@ -514,12 +627,196 @@ loadPlans(_currentDir);
 // keyboard shortcut: Escape closes modal
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    var modalEl = document.getElementById('detailModal');
-    if (modalEl.classList.contains('show')) {
-      var inst = bootstrap.Modal.getInstance(modalEl);
-      if (inst) inst.hide();
-    }
+    ['detailModal', 'groupListModal', 'crModal'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && el.classList.contains('show')) {
+        var inst = bootstrap.Modal.getInstance(el);
+        if (inst) inst.hide();
+      }
+    });
   }
 });
+
+// ===== TAB SWITCHING =====
+function switchView(view) {
+  document.querySelectorAll('.view-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.view-panel').forEach(function(p) { p.style.display = 'none'; });
+  var tab = document.querySelector('.view-tab[data-view="' + view + '"]');
+  if (tab) tab.classList.add('active');
+  var panel = document.getElementById('view-' + view);
+  if (panel) panel.style.display = '';
+  if (view === 'git') loadCrMonthly();
+}
+
+document.querySelectorAll('.view-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() { switchView(this.dataset.view); });
+});
+
+// ===== CR MONTHLY VIEW =====
+function escHtml(s) {
+  if (s == null) return '';
+  var d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function fmtHours(h) {
+  if (h == null) return '-';
+  return parseFloat(h).toFixed(1) + 'h';
+}
+
+function loadCrMonthly() {
+  var loading = document.getElementById('crLoading');
+  var error = document.getElementById('crError');
+  var content = document.getElementById('crContent');
+  var accordion = document.getElementById('crAccordion');
+  var summary = document.getElementById('crSummary');
+  var lastUpd = document.getElementById('crLastUpdate');
+
+  loading.style.display = '';
+  error.style.display = 'none';
+  content.style.display = 'none';
+
+  fetch('/admin/api/plans/cr-monthly?_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      loading.style.display = 'none';
+      if (!d.success) {
+        error.style.display = '';
+        error.textContent = '❌ ' + (d.error || '데이터를 불러올 수 없습니다.');
+        return;
+      }
+
+      content.style.display = '';
+
+      summary.innerHTML =
+        '<span>📦 총 <strong>' + d.total_crs + '</strong>개 CR</span>' +
+        '<span>📊 FP <strong>' + (d.total_fp || 0) + '</strong></span>' +
+        '<span>⏱️ 공수 <strong>' + fmtHours(d.total_hours) + '</strong></span>';
+
+      var now = new Date();
+      lastUpd.textContent = '마지막 갱신: ' + now.toTimeString().slice(0,8);
+
+      accordion.innerHTML = '';
+      if (!d.months || d.months.length === 0) {
+        accordion.innerHTML = '<div class="git-empty">📭 CR 데이터가 없습니다.</div>';
+        return;
+      }
+
+      d.months.forEach(function(m) {
+        var section = document.createElement('div');
+        section.className = 'month-section';
+        section.dataset.ym = m.ym;
+
+        var header = document.createElement('div');
+        header.className = 'month-header';
+        header.innerHTML =
+          '<div class="mh-left">' +
+          '<span class="mh-arrow">▶</span>' +
+          '<span class="mh-title">' + escHtml(m.label) + '</span>' +
+          '<span class="mh-count">(' + m.count + '개)</span>' +
+          '</div>' +
+          '<div class="mh-stats">' +
+          '<span class="fp">FP ' + (m.fp_total || 0) + '</span>' +
+          ' <span class="hrs">' + fmtHours(m.hours_total) + '</span>' +
+          ' <span class="cum">| 누적 FP ' + (m.cum_fp || 0) +
+          ' / ' + fmtHours(m.cum_hours) + '</span>' +
+          '</div>';
+
+        var body = document.createElement('div');
+        body.className = 'month-body';
+
+        var table = document.createElement('table');
+        table.className = 'git-table';
+        var thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th>REQ-ID</th><th>유형</th><th>변경요약</th><th style="text-align:right;">FP</th><th style="text-align:right;">공수</th></tr>';
+        table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+        m.crs.forEach(function(c) {
+          var tr = document.createElement('tr');
+          tr.style.cursor = 'pointer';
+          tr.addEventListener('click', function() { openCrDetail(c.req_id); });
+          var dateStr = '';
+          if (c.date) {
+            var parts = c.date.split('-');
+            if (parts.length === 3) dateStr = ' <span class="req-date">' + parts[0].slice(2) + '-' + parts[1] + '-' + parts[2] + '</span>';
+          }
+          tr.innerHTML =
+            '<td><span class="req-id">' + escHtml(c.req_id) + '</span>' + dateStr + '</td>' +
+            '<td><span class="type-badge type-default">' + escHtml(c.type) + '</span></td>' +
+            '<td class="commit-msg" title="' + escHtml(c.summary) + '">' + escHtml(c.summary) + '</td>' +
+            '<td class="td-fp ' + (c.fp == null ? 'none' : '') + '">' + (c.fp != null ? c.fp : '-') + '</td>' +
+            '<td class="td-hours ' + (c.hours == null ? 'none' : '') + '">' + (c.hours != null ? fmtHours(c.hours) : '-') + '</td>';
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        body.appendChild(table);
+
+        header.addEventListener('click', function() {
+          var isOpen = body.classList.contains('open');
+          document.querySelectorAll('.month-body.open').forEach(function(b) {
+            b.classList.remove('open');
+            b.previousElementSibling.classList.remove('open');
+            var arrow = b.previousElementSibling.querySelector('.mh-arrow');
+            if (arrow) arrow.textContent = '▶';
+          });
+          if (!isOpen) {
+            body.classList.add('open');
+            header.classList.add('open');
+            header.querySelector('.mh-arrow').textContent = '▼';
+          }
+        });
+
+        section.appendChild(header);
+        section.appendChild(body);
+        accordion.appendChild(section);
+      });
+
+      var nowYm = new Date().toISOString().slice(0,7);
+      var target = accordion.querySelector('.month-section[data-ym="' + nowYm + '"]');
+      if (!target) target = accordion.querySelector('.month-section');
+      if (target) {
+        var body = target.querySelector('.month-body');
+        var header = target.querySelector('.month-header');
+        if (body && header) {
+          body.classList.add('open');
+          header.classList.add('open');
+          header.querySelector('.mh-arrow').textContent = '▼';
+        }
+      }
+    })
+    .catch(function(e) {
+      loading.style.display = 'none';
+      error.style.display = '';
+      error.innerHTML = '❌ 로드 실패: ' + escHtml(e.message);
+    });
+}
+
+// ===== CR DETAIL =====
+function openCrDetail(reqId) {
+  var modal = new bootstrap.Modal(document.getElementById('crModal'));
+  var loading = document.getElementById('crModalLoading');
+  var content = document.getElementById('crModalContent');
+  loading.style.display = '';
+  content.style.display = 'none';
+  modal.show();
+
+  fetch('/admin/api/plans/cr/' + encodeURIComponent(reqId) + '?_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      loading.style.display = 'none';
+      content.style.display = '';
+      if (!d.success) {
+        content.innerHTML = '<p style="color:red;">❌ ' + escHtml(d.error || '알 수 없는 오류') + '</p>';
+        return;
+      }
+      content.innerHTML = renderMarkdown(d.cr.raw || '');
+    })
+    .catch(function(e) {
+      loading.style.display = 'none';
+      content.style.display = '';
+      content.innerHTML = '<p style="color:red;">❌ 로드 실패: ' + escHtml(e.message) + '</p>';
+    });
+}
 </script>
 {% endblock %}

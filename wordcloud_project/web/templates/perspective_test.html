@@ -795,6 +795,54 @@ function _renderIdPreviewResults(inputIds, notFound, detailsMap) {
         `</tr>${rows}</table>`;
 }
 
+function _renderIdPreviewLoading(count) {
+    const preview = document.getElementById('idInputPreview');
+    if (!preview) return;
+    const big = count >= 5000;
+    preview.innerHTML =
+        `<div style="text-align:center;padding:28px 0;color:#6366f1;">` +
+        `<span class="spinner" style="margin-left:0;"></span>` +
+        `<p style="margin-top:12px;font-size:13px;font-weight:600;">🔍 ${count.toLocaleString()}명 조회 중...</p>` +
+        (big ? `<p style="margin-top:4px;font-size:11px;color:#888;">대량 조회는 시간이 걸릴 수 있습니다. 잠시만 기다려 주세요.</p>` : '') +
+        `</div>`;
+}
+
+// 입력 사번을 백엔드에서 조회하여 미리보기에 결과 렌더링. 결과 객체 반환(실패 시 null).
+async function runIdLookup(ids) {
+    if (!ids || ids.length === 0) return null;
+    _renderIdPreviewLoading(ids.length);
+    const status = document.getElementById('idInputStatus');
+    status.textContent = '매칭 확인 중...';
+    status.style.color = '#888';
+    try {
+        const r = await fetch('/api/perspective/parse-ids', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ids: ids})
+        });
+        const d = await r.json();
+        if (!d.success) {
+            status.textContent = '❌ ' + (d.error || '실패');
+            status.style.color = '#dc3545';
+            _renderIdPreviewPending(ids);
+            return null;
+        }
+        const matchedIds = d.matched_ids || [];
+        const notFound = d.not_found || [];
+        const detailsMap = {};
+        (d.details || []).forEach(det => { detailsMap[det.employee_id] = det; });
+        _renderIdPreviewResults(ids, notFound, detailsMap);
+        const badge = document.getElementById('idInputCountBadge');
+        if (badge) badge.textContent = `${matchedIds.length}/${ids.length}명`;
+        return { matchedIds, notFound, detailsMap };
+    } catch (e) {
+        status.textContent = '❌ 오류';
+        status.style.color = '#dc3545';
+        _renderIdPreviewPending(ids);
+        return null;
+    }
+}
+
 function openIdInputModal(failedIds = null, sessionId = null) {
     const ta = document.getElementById('idInputTextarea');
     const modalContent = document.querySelector('#idInputModal .modal-content');
@@ -832,6 +880,21 @@ function openIdInputModal(failedIds = null, sessionId = null) {
     }
     window._pendingFileIds = [];
     document.getElementById('idInputModal').classList.add('open');
+
+    // 실패 사번이 채워진 채로 열리면 즉시 조회하여 결과 표시 (대량은 로딩 표시)
+    if (failedIds && failedIds.length > 0) {
+        runIdLookup(failedIds).then(res => {
+            if (!res) return;
+            const status = document.getElementById('idInputStatus');
+            if (res.notFound.length > 0) {
+                status.textContent = `⚠️ ${res.notFound.length}명 미존재 · 수정 후 확인을 눌러 재시도하세요.`;
+                status.style.color = '#dc3545';
+            } else {
+                status.textContent = '✅ 전체 매칭됨 · 확인을 눌러 재시도하세요.';
+                status.style.color = '#198754';
+            }
+        });
+    }
 }
 
 async function confirmIdInput() {
@@ -841,31 +904,12 @@ async function confirmIdInput() {
         return;
     }
 
-    document.getElementById('idInputStatus').textContent = '매칭 확인 중...';
-    document.getElementById('idInputStatus').style.color = '#888';
-
     try {
-        const r = await fetch('/api/perspective/parse-ids', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ids: ids})
-        });
-        const d = await r.json();
+        const res = await runIdLookup(ids);
+        if (!res) return;
 
-        if (!d.success) {
-            document.getElementById('idInputStatus').textContent = '❌ ' + (d.error||'실패');
-            document.getElementById('idInputStatus').style.color = '#dc3545';
-            return;
-        }
-
-        const matchedIds = d.matched_ids || [];
-        const notFound = d.not_found || [];
-
-        const detailsMap = {};
-        (d.details || []).forEach(det => { detailsMap[det.employee_id] = det; });
-        _renderIdPreviewResults(ids, notFound, detailsMap);
-        const badge = document.getElementById('idInputCountBadge');
-        if (badge) badge.textContent = `${matchedIds.length}/${ids.length}명`;
+        const matchedIds = res.matchedIds;
+        const notFound = res.notFound;
 
         if (notFound.length > 0) {
             const notFoundStr = notFound.join(', ');
