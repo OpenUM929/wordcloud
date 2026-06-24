@@ -59,6 +59,7 @@ def create_app():
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['JSON_AS_ASCII'] = False
     app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB upload limit
     
     # Register blueprints
     app.register_blueprint(ui_bp)

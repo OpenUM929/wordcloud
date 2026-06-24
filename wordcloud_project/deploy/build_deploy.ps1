@@ -31,10 +31,12 @@ $DefaultOutput = if ($OutputDir) { $OutputDir } else { "$ProjectRoot\.." }
 $SourceZipPath = Join-Path $DefaultOutput "wordcloud-project.zip"
 $FullOutputDir = Join-Path $DefaultOutput "wordcloud-internal"
 
-$ExcludeDirs = @("venv", "__pycache__", ".git", ".sessions", "plans", "doc",
+$ExcludeDirs = @("venv", "__pycache__", ".git", ".sessions", "doc",
                  "vendor_python_pkgs", "logs", "temp", "node_modules", "deploy",
-                 ".pytest_cache", "inputs", "scripts", ".opencode", ".clinerules", "failed")
-$ExcludeFiles = @("*.pyc", ".gitignore", "CACHEDIR.TAG", "README.md", "mermaid.min.js")
+                 ".pytest_cache", "inputs", "scripts", ".opencode", ".clinerules", "failed",
+                 "plans", "default", "outputs", "processed_data")
+$ExcludeFiles = @("*.pyc", ".gitignore", "CACHEDIR.TAG", "README.md", "mermaid.min.js",
+                  ".env", "*.jsonl", "*.zip", "flask_err.txt", "flask_out.txt")
 
 function Write-Step {
     param([string]$Message)
@@ -63,9 +65,15 @@ function Build-SourceOnly {
 
     Exec-Robocopy $ProjectRoot $StagingDir -ExcludeDirs $ExcludeDirs -ExcludeFiles $ExcludeFiles
 
-    # ZIP 생성 — StagingDir 자체를 압축하여 zip 안에 wordcloud_project/ 폴더 포함
+    # .clinerules/docs/cr/ 복사 (zip 루트에 포함, plans_routes.py 경로 유지)
+    $CRSource = Resolve-Path "$ProjectRoot/../.clinerules/docs/cr"
+    $CRDest = Join-Path $StagingRoot ".clinerules\docs\cr"
+    New-Item -ItemType Directory -Path $CRDest -Force | Out-Null
+    Copy-Item -Path "$CRSource\*" -Destination $CRDest -Recurse
+
+    # ZIP 생성 — StagingRoot\*를 압축하여 zip 안에 wordcloud_project/ + .clinerules/ 포함
     if (Test-Path $SourceZipPath) { Remove-Item -LiteralPath $SourceZipPath -Force }
-    Compress-Archive -Path $StagingDir -DestinationPath $SourceZipPath -CompressionLevel Optimal
+    Compress-Archive -Path "$StagingRoot\*" -DestinationPath $SourceZipPath -CompressionLevel Optimal
 
     $size = [math]::Round((Get-ChildItem $StagingDir -Recurse -File | Measure-Object -Property Length -Sum).Sum / 1KB, 1)
     Write-Host "  소스 크기 : $size KB" -ForegroundColor Green
@@ -125,9 +133,14 @@ function Build-FullPackage {
     # 5. Source code
     Write-Step "  - 소스코드 복사"
     Exec-Robocopy $ProjectRoot "$FullOutputDir\wordcloud_project" -ExcludeDirs @(
-        "venv", "__pycache__", ".git", ".sessions", "plans", "doc",
-        "vendor_python_pkgs", "logs", "temp", "node_modules"
+        "venv", "__pycache__", ".git", ".sessions", "doc",
+        "vendor_python_pkgs", "logs", "temp", "node_modules", "plans"
     )
+
+    # .clinerules/docs/cr/ 복사 (dev와 동일한 위치, plans_routes.py 수정 불필요)
+    $CRDest2 = "$FullOutputDir\.clinerules\docs\cr"
+    New-Item -ItemType Directory -Path $CRDest2 -Force | Out-Null
+    Copy-Item -Path "$CRSource\*" -Destination $CRDest2 -Recurse
 
     # 6. NVIDIA Driver
     Write-Step "  - NVIDIA Driver"
@@ -199,11 +212,11 @@ Wordcloud - Internal Network Deployment Package
         Write-Host "    $($_.Name)`t$size MB"
     }
 
-    # Also create source zip alongside full package (wordcloud_project/ 폴더 포함 구조)
+    # Also create source zip alongside full package (wordcloud_project/ + .clinerules/ 구조)
     Write-Step "  - wordcloud-project.zip 함께 생성"
     if (Test-Path $SourceZipPath) { Remove-Item -LiteralPath $SourceZipPath -Force }
-    Compress-Archive -Path "$FullOutputDir\wordcloud_project" -DestinationPath $SourceZipPath -CompressionLevel Optimal
-    Write-Host "    wordcloud-project.zip created (내부: wordcloud_project/)" -ForegroundColor Green
+    Compress-Archive -Path "$FullOutputDir\*" -DestinationPath $SourceZipPath -CompressionLevel Optimal
+    Write-Host "    wordcloud-project.zip created (내부: wordcloud_project/ + .clinerules/)" -ForegroundColor Green
 
     # update.bat 생성
     $updateBat = @'
@@ -223,16 +236,21 @@ if not exist "%ZIPFILE%" (
     exit /b 1
 )
 
-echo [1/3] Removing old wordcloud_project...
+echo [1/4] Removing old wordcloud_project...
 if exist "%~dp0wordcloud_project" (
     rmdir /s /q "%~dp0wordcloud_project"
 )
 
-echo [2/3] Extracting ZIP...
+echo [2/4] Removing old .clinerules...
+if exist "%~dp0.clinerules" (
+    rmdir /s /q "%~dp0.clinerules"
+)
+
+echo [3/4] Extracting ZIP...
 powershell -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%~dp0' -Force"
 
-echo [3/3] Done.
-echo        wordcloud_project\ has been updated.
+echo [4/4] Done.
+echo        wordcloud_project\ and .clinerules\ have been updated.
 echo        Run start.bat to restart the server.
 echo.
 pause

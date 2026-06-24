@@ -5,6 +5,27 @@
 > 📌 **데이터 도착 시 반복 절차 + 누적 로그는 [`RUNBOOK.md`](RUNBOOK.md)** (상시 운영, 완료 개념 없음). 본 README는 폴더 규약.
 > 설계 상세: `../../2026/0617_05_kote-finetune-data/0617_05_kote-finetune-data.md`
 
+## 📑 문서 지도 (역할 정의 — 헷갈리면 여기부터)
+
+> 이 도메인 문서가 늘어나 혼동될 때의 **단일 범례**. "무슨 문서가 어떤 역할이고, 언제 펴는가."
+
+| 문서 | 한 줄 정의 (역할) | 펴는 때 | 갱신 성격 |
+|------|------------------|---------|-----------|
+| `../../../../CLAUDE.md` | 프로젝트 나침반 → `.clinerules` 분류표로 보냄 | 모든 작업 착수 시 | 정적 |
+| **`RUNBOOK.md`** | **상시 운영 절차**(데이터 도착 시 반복 체크리스트 §2 + 누적 로그) + 🧭 **복원 앵커** | 데이터 도착·감정/리더십 작업 시 | 상시(완료 없음) |
+| **`ROADMAP.md`** | **상시 현황·로드맵**(전체 그림: 어디까지·다음 무엇·어떻게 구현 P0~P7) | 방향/진행 파악, 상사 설명 | 상시(현황 갱신) |
+| `README.md` (본 문서) | **폴더·데이터 규약** + 본 문서 지도 | 폴더 구조·파일 의미 확인 | 정적 |
+| `leadership/TRAIT_TREE.md` | 리더십 택소노미 **스펙 정본**(20-trait 트리·rollup) | trait 구조 확인·갱신 | 군집 근거 시 |
+| `leadership/trait_library_ref.md` | 외부 레포(`OpenUM929`) **활용 전략 §0** + micro 검증본 §3 | 외부 골격 대조·군집 | 정적(스냅샷) |
+| `leadership/weak_labeling_lf.md` | **약지도 LF 설계** + §8 lexicon 보강로그 + §9 positive-negation 게이트 설계 | LF 배선·표지 보강·게이트 구현 | 설계 진화 |
+| `emotion/emotion.jsonl`·`leadership/leadership.jsonl` | **정식 gold 스트림**(confirmed만, append-only, 학습 대상) | gold append | append-only |
+| `../../2026/0617_05_kote-finetune-data/` | 데이터셋 **설계 정본**(스키마·보안) — *일회성* | 스키마 근거 확인 | 보류(고정) |
+| `../../2026/0617_01_emotion-rule-mining/` | 규칙 마이닝 + 회귀 테스트 — *일회성* | 규칙·테스트 근거 | DN(고정) |
+
+**문서 구분 규약(중요)**: *일회성 설계/구현 산출물* = `plans/YYYY/`(0617_01·0617_05) · *상시 현황·절차* = **본 폴더**(RUNBOOK·ROADMAP·README·leadership). 현재 진행 중 작업·현황을 `plans/`에 새 계획서로 만들지 않는다(CLAUDE.md "📦 데이터셋 누적 지침" 규약).
+
+**진입 순서**: `CLAUDE.md` → `RUNBOOK.md`(🧭 앵커) → 필요 시 `ROADMAP.md`(전체 그림) / `leadership/*`(세부). 교차 세션 복원은 메모리 `[[project-kote-dataset-runbook]]` → 이 체인.
+
 ## 위치/배포
 
 - 경로: `wordcloud_project/plans/_datasets/kote_finetune/`

@@ -66,6 +66,9 @@ data/
 # Batch output files
 wordcloud_project/batch_*.jsonl
 
+# Large dataset export files (>100MB, exceeds GitHub limit)
+wordcloud_project/plans/_datasets/kote_finetune/emotion/weak_export_*.jsonl
+
 # Backup / test / mockup
 wordcloud_project/default/
 wordcloud_project/default.zip

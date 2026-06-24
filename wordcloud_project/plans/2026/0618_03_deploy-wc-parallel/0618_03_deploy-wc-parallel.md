@@ -1,6 +1,6 @@
-# 계획서 — 제출용 저장 워드클라우드 생성 병렬화
+﻿# 계획서 — 제출용 저장 워드클라우드 생성 병렬화
 
-> 상태: DN(코드 적용 확인 — save-deploy-stream ThreadPool 병렬화, 2026-06-18) | 작성일: 2026-06-18
+> 상태: Done(코드 적용 확인 — save-deploy-stream ThreadPool 병렬화, 2026-06-18) | 작성일: 2026-06-18
 > 작업 유형: D (리팩토링/성능 개선)
 > 선행: `plans/2026/0617_07_hardware-adaptive-worker-plan/0617_07_hardware-adaptive-worker-plan.md` (DN — 배치/매트릭스 경로 병렬화·GPU 통합), `plans/2026/0615_08_sentence-kote-cache/` (DN — 문장 KoTE 캐시)
 > 참고(타 AI 분석): `plans/2026/0618_02_wordcloud-opt-feasibility/0618_02_wordcloud-opt-feasibility.md`

@@ -1,6 +1,6 @@
-# 계획서 — 배치 이력 조회 속도 개선 + 장시간 작업 전면 차단 오버레이
+﻿# 계획서 — 배치 이력 조회 속도 개선 + 장시간 작업 전면 차단 오버레이
 
-> 상태: PND | 작성일: 2026-06-19
+> 상태: Pre-Done | 작성일: 2026-06-19
 > 작업 유형: B (기능 개선/신규 기능) + D 요소(이력 조회 성능 개선)
 > 선행: `plans/2026/0619_02_deploy-mem-stream/0619_02_deploy-mem-stream.md` (load_all_batches 직원단위 전환 — 동일 뿌리)
 
@@ -12,6 +12,8 @@
 | 2026-06-19 | §8 | 수행 — 구현·단위검증(V1) 완료. 정상 동작 확인 대기로 PND 유지 |
 | 2026-06-22 | §3.2, §8 | 코너 배너 방식 확정(전면 차단 유지 + 클릭 차단 영역과 안내 박스 분리) + 실시간 진행 텍스트(단계/인원수) 추가, perspective_test 매트릭스 생성도 동일 적용 |
 | 2026-06-22 | §8 | 검토 반영 — 제출용 저장(saveDeploy)에도 실시간 진행 텍스트 적용(4개 차단 작업 전부 일관). renderProgress 2개(generateMatrix/saveDeploy) 구분 명시 |
+| 2026-06-22 | §1, §2.1, §3.1, §9 | 요구사항 3 추가 — X축(시간/회차) 메타(/meta)도 동일 병목(load_all_batches) 발견 → 경량 빌더 `get_matrix_meta_light` 신설·교체. 구현·패리티 단위검증(V6) 완료, 정상 동작 확인 대기로 PND 유지 |
+| 2026-06-22 | 상태 | Kanban PDN 도입에 따라 PND → PDN 전환. 실서버 검증 대기 중 |
 
 ---
 
@@ -24,6 +26,7 @@
    - (b) 메타데이터 생성(배치)
    - (c) 그룹분석 워드클라우드 생성(매트릭스)
    - (d) 배치 이력/이어서 작업
+3. **[추가 2026-06-22] X축(시간/회차) 메타 로딩 속도 개선** — 그룹분석 화면 진입 시 X축(평가 연도/월/일자, 배치 회차) 옵션 채우기가 배치 이력 때와 똑같이 오래 걸린다. 같은 뿌리(`load_all_batches` 전체 적재)이므로 이력과 동일 방식으로 경량화한다.
 
 ## 2. 현재 시스템 분석
 
@@ -37,6 +40,13 @@
   - `d.batch_info.unique_employees`, `d.batch_info.total_evaluations` (요약 줄 한 줄, `perspective_test.html:2856`)
 - **`_load_batch_list()`** (`perspective_service.py:711`): 작업서(`batch_work_orders`) + 레거시 평가 배치 합집합을 만들고, **배치마다 `_batch_display_name()`이 `batch_summary.json` 파일 1건씩 read**(`perspective_service.py:698-708`). 배치 수가 많으면 파일 I/O 누적(2차 지연 요인, 단 employee_results 적재 대비 영향은 작음).
 - **로딩 표시 현황**: `loadBatchHistory()`는 `list.innerHTML='로딩...'` 텍스트만 표시(`perspective_test.html:2846`).
+
+#### [추가 2026-06-22] X축(시간/회차) 메타 병목 (요구사항 3) — 이력과 동일 뿌리
+
+- **엔드포인트**: `POST /api/perspective/meta` → `api_get_meta()` (`src/routes/perspective_routes.py:52`)가 **`load_all_batches()`** 호출 후 `get_matrix_meta(unified, ...)` 결과를 반환. → 배치 이력(`/batches`)을 0619_03에서 경량화했지만, **X축 메타(`/meta`)는 같은 무거운 로더를 그대로 사용** 중이어서 증상이 동일하다.
+- **프론트 소비**: X축 값은 화면 진입 시 `loadMeta()`(`perspective_test.html:513`)가 `/meta`를 1회 호출해 `_meta.row_options`에 담고, `onRowFieldChange()`(`perspective_test.html:577`)가 `rowValuesContainer`(②번 박스, `:280` "로딩…")를 채운다.
+- **실제 필요 필드**: `get_matrix_meta` → `_get_row_value_counts`(`perspective_service.py:1626`) → `_extract_row_values`(`:1252`)가 평가 1건에서 쓰는 값은 **`batch_id`와 `evaluation_date`(연/월 파생) 단 둘뿐**이다.
+- **핵심 사실**: 두 필드는 `evaluations` 테이블에 **인덱스된 독립 컬럼**으로 존재(`deploy_session_service.py:84-91` `evaluation_date`, `batch_id`, `idx_ev_batch`)하며, INSERT 시 JSON blob과 동일 값으로 채워진다(`user_data_manager.py:89-90`). → blob 19,000건 `json.loads` 없이 `GROUP BY evaluation_date, batch_id` 집계만으로 row_options 4종(연/월/일/회차)을 동일하게 산출 가능.
 
 ### 2.2 장시간 작업 트리거 (요구사항 2)
 
@@ -67,6 +77,15 @@
   - `json.loads` 호출 0건, 평가 본문 비적재 → 메모리·시간 모두 절감.
 - **라우트 변경** `api_batch_history()` (`perspective_routes.py:797`): `load_all_batches()` → `load_batch_history()`. 응답 형식(`success`/`batches`/`batch_info`) 불변 → 프론트 무변경 호환.
 - **주의**: `load_all_batches()`는 제출용 저장 외 다른 호출처가 있으므로 **변경하지 않는다**(이번 작업은 이력 엔드포인트만 경량 함수로 분기). display_name 파일 I/O 일괄 최적화는 §6에서 후속 보류.
+
+#### [추가 2026-06-22] X축 메타 경량 빌더 (요구사항 3)
+
+- **신규 함수** `get_matrix_meta_light(employee_id=None, enrich=False, processed_data_dir=None)` (`perspective_service.py`, `get_matrix_meta` 인접 신설):
+  - row_options: `SELECT evaluation_date, batch_id, COUNT(*) FROM evaluations [WHERE employee_id=?] GROUP BY evaluation_date, batch_id` (소량 그룹). Python에서 연(`date[:4]`)·월(`split('-')[1]`, len>=7)·일자(raw)·회차(batch_id) 버킷으로 가중 합산 — **기존 `_get_eval_field_value`/`_extract_row_values` 의미 그대로** 보존(회귀 0).
+  - employees: `SELECT e.employee_id, e.name, e.department, e.position, COUNT(ev.id) ... GROUP BY e.employee_id` (blob 미적재). enrich 시 `get_real_id` 복원 로직은 `get_matrix_meta`와 동일.
+  - 반환 구조(`row_options`/`col_modes`/`analysis_types`/`employees`/`position_hierarchy`/`batch_count`/`total_evaluations`)는 `get_matrix_meta`와 동일 → 프론트 무변경 호환.
+- **라우트 변경** `api_get_meta()` (`perspective_routes.py:52`): `load_all_batches()`+`get_matrix_meta()` → `get_matrix_meta_light()`. (기존 `if not unified` 분기는 `load_all_batches`가 항상 truthy dict를 반환해 실행되지 않던 dead branch라 제거.)
+- **주의**: `get_matrix_meta`/`load_all_batches`는 그대로 보존(다른 경로 영향 0). `/meta`만 경량 함수로 분기.
 
 ### 3.2 프론트엔드 (요구사항 1·2)
 
@@ -115,6 +134,7 @@
 - **V3 (성능, 내부망)**: 1.7만명 규모에서 이력 조회 응답 시간·메모리가 종전 `load_all_batches` 대비 크게 감소.
 - **V4 (오버레이)**: 4개 작업 각각 시작 시 오버레이로 Nav/버튼 차단, 완료·실패·중단 시 정상 해제(잔류 차단 없음).
 - **V5 (인디케이터)**: 이력 조회 중 스피너 표시 → 완료 시 표 전환, 실패 시 오류 메시지.
+- **V6 (X축 메타 패리티, 요구사항 3)**: `get_matrix_meta_light`가 기존 `load_all_batches`+`get_matrix_meta`와 `row_options`/`employees`/카운트 동일, 평가 본문 `json.loads`가 평가 건수에 비례하지 않음. (`test/test_get_matrix_meta_light.py`)
 
 ## 7. 리스크 및 제약
 
@@ -147,8 +167,23 @@
 
 **미검증(사용자 확인 필요)**: 서버 실동작(오버레이 표시/해제·이력 스피너), 내부망 1.7만 규모 이력 조회 시간·메모리 실측. [[feedback_dn_after_runtime_verify]] · [[feedback_no_server_start]]
 
+## 9. 실행 결과 — X축(시간/회차) 메타 경량화 (요구사항 3, 2026-06-22)
+
+**적용 변경**
+- 백엔드: `perspective_service.get_matrix_meta_light()` 신설 — `evaluation_date`·`batch_id` 인덱스 컬럼 `GROUP BY` 집계로 row_options/employees 산출, 평가 본문 blob 미적재. `get_matrix_meta`/`load_all_batches`는 무변경 보존.
+- 라우트: `api_get_meta()`(`perspective_routes.py`)가 `load_all_batches()`+`get_matrix_meta()` 대신 `get_matrix_meta_light()` 호출(+import 추가). dead였던 `if not unified` 빈 응답 분기 제거.
+
+**검증 (V6 — 패리티 단위테스트)**
+- `test/test_get_matrix_meta_light.py` 통과: 임시 SQLite에서 **기존 경로(load_all_batches+get_matrix_meta)와 신규 경로의 `row_options`·`employees`·`total_evaluations`·`batch_count`가 완전 일치**. 빈 날짜/연·월 경계 버킷 포함.
+- 평가 본문 `json.loads`: 기존 경로 6회(평가 5건+설정 1) → 경량 빌더 **1회(설정 로드만)**. 평가 건수에 비례하지 않음 확인.
+- 기존 `test_load_batch_history.py` 재실행 통과(회귀 없음). `py_compile`(perspective_service/perspective_routes) OK.
+
+**미검증(사용자 확인 필요)**: 서버 실동작(그룹분석 진입 시 X축 ② 박스 "로딩…" → 값 즉시 표시), 내부망 1.9만 규모 `/meta` 응답 시간·메모리 실측. [[feedback_dn_after_runtime_verify]] · [[feedback_no_server_start]] · [[project_batch_scale_19k]]
+
 ### 정상 동작 확인 체크리스트 (DN 전환 조건)
 - [ ] 서버 기동 후 그룹분석 이력 조회: 스피너 표시 + 목록/카운트 정상, 응답 즉시성 체감
+- [ ] **[추가 2026-06-22]** 그룹분석 화면 진입 시 X축 ②번 박스(평가 연도/월/일자·배치 회차)가 "로딩…"에서 즉시 채워짐 + 값/건수가 기존과 동일(회귀 없음)
+- [ ] **[추가 2026-06-22]** 내부망 1.9만 규모에서 `/meta`(화면 진입) 응답 시간·메모리가 종전 대비 크게 감소
 - [ ] 내부망 1.7만 규모 이력 조회: 메모리 급증·정지 미발생 (V3)
 - [ ] 4개 작업 각각: 진행 중 Nav·버튼 차단, 종료 시 해제 (V4)
 - [ ] 기존 이력 표/요약 내용 동일(회귀 없음, V2)

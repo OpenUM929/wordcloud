@@ -28,7 +28,7 @@
 
 ### 0-3. 4-레이어 활용 (RUNBOOK §2와 연결)
 1. **코드북**: 실데이터 검토 시 micro 정의를 기준 사전으로 → 검토 일관성·속도↑.
-2. **약지도 LF → 검토 큐**: trait/micro 패턴으로 후보 라벨만 부여(gold 아님) → §2-3 사람 검토 큐 적재.
+2. **약지도 LF → 검토 큐**: trait/micro 패턴으로 후보 라벨만 부여(gold 아님) → §2-3 사람 검토 큐 적재. **구현 설계·trait별 발화 규칙 = [`weak_labeling_lf.md`](weak_labeling_lf.md).**
 3. **군집 피처·가설**: micro 표지 + KoTE `top_3`(필요 시 44-vec)로 클러스터링, 그들 군집과 대조(§6 3단계).
 4. **부정표지 마이닝**: `Nxx`·forbidden → lexicon NEGATIVE_MARKERS/분기 **additive**(회귀 통과 필수) → 지금 당장 긍↔부 정밀도↑.
 
