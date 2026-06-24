@@ -62,3 +62,12 @@ data/
 
 # Daily notes
 2606*.txt
+
+# Batch output files
+wordcloud_project/batch_*.jsonl
+
+# Backup / test / mockup
+wordcloud_project/default/
+wordcloud_project/default.zip
+wordcloud_project/web/templates/mockup/
+wordcloud_project/web/templates/*.backup
