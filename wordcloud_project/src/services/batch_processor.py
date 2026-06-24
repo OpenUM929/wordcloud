@@ -829,6 +829,18 @@ def process_batch(processed_data_dir, data, session_data):
     _persisted_count = 0
     _pending_persisted = []
 
+    # 핸드오프 코퍼스 인라인 적립 설정 (0622_01) — 배치 시작 시 사전 지정(dest_label).
+    # 메타데이터 시점에 이미 계산된 sentence_emotion_cache를 재사용하므로 KoTE 재실행 0.
+    _acq_handoff_enabled = bool(data.get('acq_handoff_enabled'))
+    _acq_handoff_label = (data.get('acq_handoff_label') or 'default').strip() or 'default'
+    _acq_handoff_count = 0
+    if _acq_handoff_enabled:
+        batch_processing_state['acq_handoff_count'] = 0
+
+    # 판정 패킷 추출 설정 (0623_01) — 기본 활성. 배치 종료 후 1회, 어려운 문장만 자기설명 패킷으로 적립.
+    _judgment_enabled = data.get('judgment_extract_enabled', True)
+    _judgment_label = (data.get('judgment_label') or 'default').strip() or 'default'
+
     # 중복(미저장) 평가 집계: 총 건수(전수)와 상세 목록(상위 SKIP_DETAIL_CAP건)
     _skip_total = 0
     _skip_detail = []
@@ -889,6 +901,20 @@ def process_batch(processed_data_dir, data, session_data):
                     if _persisted:
                         _persisted_count += 1
                         _pending_persisted.append(_eid)
+                        # 핸드오프 코퍼스 인라인 적립 (0622_01) — 단일(메인) 스레드 구간이라
+                        # 파일 append 동시쓰기 안전. 파일은 x/y/s/e만 담아 db_id 불요.
+                        if _acq_handoff_enabled:
+                            try:
+                                from src.services.acquired_handoff import (
+                                    build_records_from_metadata, append_handoff_records)
+                                _recs = build_records_from_metadata(_meta)
+                                _acq_handoff_count += append_handoff_records(
+                                    _acq_handoff_label, batch_id, _recs)
+                                batch_processing_state['acq_handoff_count'] = _acq_handoff_count
+                            except Exception as _he:
+                                import logging
+                                logging.getLogger(__name__).warning(
+                                    f'핸드오프 적립 실패({_eid}): {_he}')
                     employee_results.append({
                         'employee_id': result['employee_id'],
                         'metadata': None,   # 저장 완료 후 메모리 해제 (이후 미사용)
@@ -1032,6 +1058,24 @@ def process_batch(processed_data_dir, data, session_data):
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f'Work order 완료 처리 실패: {e}')
+
+    # Stage 6: 판정 패킷 추출 (0623_01) — 배치 종료 후 1회. 영속된 평가를 batch_id로 재로드(db_id 확보,
+    # KoTE 재실행 0). 어려운 문장만 자기설명 패킷으로 eval/judgment/<label>/<batch_id>.json에 저장.
+    # 마진 3단(0.05/0.10/0.15) 동시 태깅. 실패해도 배치 본류 불방해(핸드오프와 동일 보호).
+    if _judgment_enabled:
+        try:
+            from src.services.judgment_packet_service import (
+                build_judgment_packet, save_packet_file)
+            _packet, _quar = build_judgment_packet(batch_id=batch_id)
+            _packet_path = save_packet_file(_packet, _judgment_label, batch_id)
+            batch_processing_state['judgment_count'] = len(_packet['items'])
+            batch_processing_state['judgment_bands'] = _packet['_margin']['bands']
+            batch_processing_state['judgment_path'] = _packet_path
+            batch_processing_state['status_message'] = (
+                f"판정 패킷 추출 완료: {len(_packet['items'])}건 → {_packet_path}")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'판정 패킷 추출 실패: {e}')
 
     # staging 정리: 메인 스레드 잔여 reader 닫고 staging.db(+wal/shm) 삭제
     batch_staging.close_reader()

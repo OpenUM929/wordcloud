@@ -347,6 +347,11 @@ POSITIVE_IMPLYING_PHRASES = [
     '비전', '방향 제시', '방향성', '예측', '대처', '개선', '노력',
     '동기', '분위기 조성', '인자', '온화', '부드러운', '유연',
     '문제해결', '체계적', '준수', '책임', '의지', '동료', '조성', '청취', '역량',
+    # 23년_장점 코퍼스(523,715행) 재판정에서 rule3_last_low로 긍→부 뒤집히던 역량 표지 보강.
+    #   한 줄짜리 장점("보고능력 우수"/"공정한 업무 수행"/"능동적 사고")이 곧 끝문장(is_last)이라
+    #   저신뢰 시 rule3가 무조건 부정화 → positive_rescue가 먼저 구제하도록 표지 append.
+    #   부정형("X하지 않")·불공정 등은 아래 게이트/NEGATIVE_CONTEXT로 차단(긍↔부 0 유지).
+    '우수', '탁월', '능동', '원만', '신속', '열성', '공정',
 ]
 
 # positive_rescue 발동을 막는 도메인 부정 문맥어 (기존 NEGATIVE 목록에 없는 보강분)
@@ -356,6 +361,11 @@ POSITIVE_IMPLYING_PHRASES = [
 NEGATIVE_CONTEXT_FOR_RESCUE = [
     '강요', '수직적', '수동적', '출세', '일방적', '독단',
     '고압', '강압', '권위의식', '잔소리', '비논리',
+    # '공정' 표지의 부정 동형어 — "불공정한 업무처리"가 '공정' 매칭으로 구제되는 것을 차단.
+    '불공정', '편파', '불공평',
+    # 반어적 비판(역량어로 포장된 부정) — "지위 우위 이용 능력 탁월"·"본인에게만 유리하도록
+    #   유도하는 능력 탁월"·"갑질이 장점"·"편향적·이기적 판단이 장점" 등 실측 발굴.
+    '갑질', '이기적', '편향', '우위 이용', '유리하도록', '본인에게만', '본인에게 유리',
 ]
 
 
@@ -436,6 +446,263 @@ def has_negative_implying_words(sentence):
     return any(word in sentence for word in NEGATIVE_IMPLYING_WORDS)
 
 
+# 긍정표지를 직접 부정하는 bare negation(NEGATIVE_IMPLYING_WORDS에 없는 '없/않/안/못'류).
+# 배경(batch_20260622_0 다면평가 실측 50건): "관심이 없다"·"책임감이 없습니다"·"업무열의가 없음"은
+#   '관심/책임감/업무열의'가 긍정표지라 positive_rescue가 긍정 상향(부→긍 핵심가치 위반).
+#   '부족/미흡/안 되'는 이미 NEGATIVE_IMPLYING_WORDS로 막히나 bare '없'은 누락되어 샌다.
+#   바로 '없'을 통째 추가하면 "부족함이 없다"(긍정)·"문제가 없다"(긍정)까지 막으므로,
+#   긍정표지 직후 창에서만 + 재부정(이중부정=칭찬)·양보는 제외하여 정밀 차단한다.
+# 창을 좁게(3자) 두어 표지 직후 '조사+없/않'(관심이 없다)만 잡고, 표지와 negation 사이에
+# 다른 단어가 낀 긍정 강조어/상쇄명사(노하우를 아낌'없이', 안전사고도 '없음', 고집'없음')는 배제.
+_POS_DIRECT_NEGATORS = ['없', '않', '안 ', '안하', '안한', '못 ', '못하']
+_RENEGATION_TOKENS = ['없', '않', '아니']
+_CONCESSIVE_TOKENS = ['해도', '하나', '하지만', '지만', '으나', '에도', '하더라도']
+# 긍정 강조어 어간(표지 뒤에 와도 부정이 아님: 아낌없이=후하게, 끊임없이=계속, 막힘없이=원활).
+_POSITIVE_INTENSIFIER_STEMS = ['아낌', '끊임', '막힘', '쉼', '쉬지', '거침', '빠짐',
+                               '변함', '다름', '어김', '틀림', '흔들림', '가림']
+# 양면 표지(부재가 곧 부정이 아님) — 가드에서 제외. "개선할 점이 없다/예측할 수 없는 부분까지"는 긍정,
+#   "개선/예측 의지가 없음"의 진짜 부정은 '의지/관심' 등 다른 표지가 그대로 잡으므로 손실 없음.
+_GUARD_EXCLUDED_MARKERS = {'개선', '예측', '효율', '대안', '해결책', '문제해결'}
+_POS_NEGATION_WINDOW = 3
+# 접미 부정형(표지 + 어간 + '지 않/못/아니') 감지용 — 표지~negation 사이 어간을 건너뛰는 넓은 창.
+_POS_SUFFIX_NEGATORS = ['지 않', '지않', '지 못', '지못', '지 아니', '지아니']
+_POS_SUFFIX_NEG_WINDOW = 8
+
+
+def positive_marker_directly_negated(sentence):
+    """긍정표지가 직후 창에서 bare negation으로 직접 부정되면 True(부→긍 차단용).
+
+    재부정(이중부정=칭찬: "배려함이 없지 않다")·양보("부족하나 노력")는 제외 → 긍→부 오분류 방지.
+    """
+    if not sentence:
+        return False
+    for marker in POSITIVE_IMPLYING_PHRASES:
+        if marker in _GUARD_EXCLUDED_MARKERS:
+            continue
+        i = 0
+        while True:
+            p = sentence.find(marker, i)
+            if p == -1:
+                break
+            after = p + len(marker)
+            window = sentence[after:after + _POS_NEGATION_WINDOW]
+            for neg in _POS_DIRECT_NEGATORS:
+                j = window.find(neg)
+                if j == -1:
+                    continue
+                neg_at = after + j
+                # negation 직전 3자가 긍정 강조어 어간이면(아낌없이/끊임없이) 부정 아님 → 제외
+                if any(stem in sentence[max(0, neg_at - 3):neg_at] for stem in _POSITIVE_INTENSIFIER_STEMS):
+                    continue
+                tail = sentence[neg_at + len(neg):neg_at + len(neg) + 5]
+                # '없이'(후하게/원활)·'없는'(관계절)·'없을'(~없을 때) = 부정 아님 → 종결형(없다/없음/없고)만 부정
+                if neg == '없' and tail[:1] in ('이', '는', '을'):
+                    continue
+                if any(r in tail for r in _RENEGATION_TOKENS):
+                    continue  # 이중부정 = 칭찬 → 차단하지 않음
+                if any(c in tail for c in _CONCESSIVE_TOKENS):
+                    continue  # 양보 = 혼합 → 차단하지 않음
+                return True
+            # 접미 부정형 '~지 않/~지 못/~지 아니'(예: "열성적이지 않습니다", "우수하지 못함").
+            #   window-3 직접 negator로는 표지와 '않' 사이 어간('적이지')이 끼어 놓친다.
+            #   넓은 창에서 '지 않/지 못/지 아니'를 잡되, 재부정·양보는 제외(긍→부 안전).
+            sfx = sentence[after:after + _POS_SUFFIX_NEG_WINDOW]
+            for snt in _POS_SUFFIX_NEGATORS:
+                k = sfx.find(snt)
+                if k == -1:
+                    continue
+                stail = sfx[k + len(snt):k + len(snt) + 5]
+                if any(r in stail for r in _RENEGATION_TOKENS):
+                    continue  # "않지 않" 류 이중부정 → 차단 안 함
+                if any(c in stail for c in _CONCESSIVE_TOKENS):
+                    continue
+                return True
+            i = after
+    return False
+
+
+def has_unnegated_strong_negative(sentence):
+    """STRONG_NEGATIVE_PHRASES가 직후 negation 없이 등장하면 True.
+
+    배경(실측): "보완이 필요하지 않으며 높은 평가"는 '보완이 필요'가 매칭되나 '하지 않으며'로
+    부정되어 칭찬이다. negation을 인식해 euphemistic_negative의 긍→부 오분류를 막는다.
+    """
+    if not sentence:
+        return False
+    for phrase in STRONG_NEGATIVE_PHRASES:
+        p = sentence.find(phrase)
+        while p != -1:
+            tail = sentence[p + len(phrase):p + len(phrase) + 6]
+            if not any(r in tail for r in _RENEGATION_TOKENS):
+                return True
+            p = sentence.find(phrase, p + len(phrase))
+    return False
+
+
+# 결함 술어 — 긍정표지와 공존해도 진짜 비판인 부정 술어(batch_20260622_0 부→긍 실측 발굴).
+#   고정밀·저trap만 수록. 단축 한글 substring 한계로 trap 항목은 제외:
+#     '무관심' = "업**무관심**도/업무관심이"(업무+관심=긍정) 부분문자열 → 제외(긍→부 실측 4건).
+#     '태만'(⊂상태만)·'약해'(⊂요약해)·'나태'(⊂거나 태도) → 제외.
+#   '소홀'은 부분문자열 trap이 없어 안전(긍정어 중 '소홀' 포함 없음). 같은 "…소홀함" 문장은
+#   '무관심' 없이도 '소홀'이 포착(예: "무관심하고 소홀함"). 추가 결함어는 토크나이저 후속.
+_DEFICIENCY_PREDICATES = ['소홀']
+_DEFICIENCY_NEG_WINDOW = 6
+
+
+def has_unnegated_deficiency(sentence):
+    """결함 술어가 직후 negation 없이 등장하면 True(긍정표지+결함 = 부→긍 차단용).
+
+    negation 인식: "소홀히 하지 않음"·"무관심하지 않다"(부정의 부정=칭찬)는 제외 → 긍→부 보호.
+    """
+    if not sentence:
+        return False
+    for word in _DEFICIENCY_PREDICATES:
+        p = sentence.find(word)
+        while p != -1:
+            tail = sentence[p + len(word):p + len(word) + _DEFICIENCY_NEG_WINDOW]
+            if not any(neg in tail for neg in ('않', '없', '아니')):
+                return True
+            p = sentence.find(word, p + len(word))
+    return False
+
+
+# 건설적 필요/요구 — 다면평가 약점 섹션 "[긍정표지]+필요/요구" = "더 ~하면 좋겠다"(부정).
+#   batch_2026062x 약점 배치 부→긍 지배 패턴(경청 필요·소통이 필요함·자세가 필요함·책임감 요구됨).
+_NEED_NEG_WINDOW = 5    # '필요' 뒤 negation 탐색창(필요하지 않/필요 없 = 불요=긍정 → 제외)
+
+
+def has_constructive_need(sentence):
+    """'필요'(건설적 비판 술어)가 등장하면 True. 관형형·부정·불필요는 제외(긍→부 보호).
+
+    포착: "경청 필요"·"소통이 필요함"·"자세가 필요하다"·"향상이 필요"·"요구됨/요구된다".
+    제외(긍→부 trap): '필요한 [명사]'(관형=necessary) · '필요하지 않'/'필요 없'(불요=긍정)
+                      · '불필요'(앞 글자 불).
+    """
+    if not sentence:
+        return False
+    p = sentence.find('필요')
+    while p != -1:
+        a1 = sentence[p + 2:p + 3]
+        window = sentence[p + 2:p + 2 + _NEED_NEG_WINDOW]
+        before = sentence[max(0, p - 1):p]
+        if before == '불':
+            pass                                          # 불필요 → 제외
+        elif a1 == '한':
+            pass                                          # 필요한 [명사] = 관형(necessary) → 제외
+        elif any(neg in window for neg in ('없', '않', '아니')):
+            pass                                          # 필요 없/필요하지 않 = 불요(긍정) → 제외
+        else:
+            return True                                   # 필요/필요함/필요하다/X 필요 = 건설적 비판
+        p = sentence.find('필요', p + 2)
+    # 요구 수동형(요구됨/요구된다/요구되…)만 — 'X 요구' bare는 "고객 요구 반영"(긍정) trap이라 제외
+    if any(m in sentence for m in ('요구됨', '요구된다', '요구되며', '요구되고', '요구되어')):
+        return True
+    return False
+
+
+# 개선요청/곤란 프레이밍 — 긍정·역량 표지가 단점 맥락(개선 바람·요함/요망·보완요청·곤란)에 놓일 때
+#   positive_rescue의 부→긍 오구제 차단. `23_단점.csv`(505,011행) 적대검증 발굴
+#   (부→긍 11,039 중 클리어 프레이밍, has_constructive_need('필요'/'요구됨')의 자매 게이트).
+#   trap 회피(긍↔부 양방향 0): 주어의존 모호어('별로'="보완점 별로 없음"↔"열의 별로 없음")·
+#   과잉어('너무/과한'="너무 우수함"=장점 칭찬)는 제외 → 필드맥락/파서 트랙.
+_WISH_FORMS = ['했으면', '하였으면', '하면 좋', '으면 좋', '길 바', '기 바', '하길', '했음 한',
+               '하였음 한', '했음 좋', '하시길', '해주길', '해줬으면', '해주었으면',
+               '면 좋겠', '였으면', '으면 합', '면 합니', '면 됩', '면 함']
+_IMPROVE_REQ_VERBS = ['하면', '해야', '하길', '했으면', '하였으면', '필요', '요함', '요망',
+                      '바람', '바랍', '하여야', '할 필요']
+_DIFFICULTY_OK = ('극복', '없', '헤', '이겨', '이김', '풀', '해소', '극', '않')
+
+
+def has_improvement_request(sentence):
+    """개선 바람/요함·요망/보완요청/곤란 프레이밍이면 True(긍정표지+단점맥락 → 부→긍 차단).
+
+    negation·극복 trap은 가드해 긍→부(양방향 핵심가치)를 만들지 않는다.
+    포착: "더 ~했으면"·"~하길 바람"·"~면 좋겠"·"신속성 요함"·"열의 요망"·"소통 보완해야"·
+          "협업에 어려움". 제외(trap): "보완점 없음"(없 negation)·"어려움 극복"(극복).
+    """
+    if not sentence:
+        return False
+    # 1) 개선 바람(희망형) — "더 ~했으면"·"~하길 바람"·"~면 좋겠"
+    if any(w in sentence for w in _WISH_FORMS):
+        return True
+    # 2) 요망(trap 없음) / 요함('중요함'·'필요함' substring 제외)
+    if '요망' in sentence:
+        return True
+    i = sentence.find('요함')
+    while i != -1:
+        if sentence[max(0, i - 1):i] not in ('중', '필'):
+            return True
+        i = sentence.find('요함', i + 2)
+    # 3) 보완/개선 '요청'(직후 창에 negation 있으면 제외 = "보완점 없음" 중립 보존)
+    for w in ('보완', '개선'):
+        j = sentence.find(w)
+        while j != -1:
+            tail = sentence[j + len(w):j + len(w) + 8]
+            if (not any(neg in tail for neg in ('없', '않', '아니'))
+                    and any(v in tail for v in _IMPROVE_REQ_VERBS)):
+                return True
+            j = sentence.find(w, j + len(w))
+    # 4) 곤란(어려움/어렵) — 극복/없/헤쳐/해소 근접 시 제외(긍정)
+    for w in ('어려움', '어렵'):
+        k = sentence.find(w)
+        while k != -1:
+            tail = sentence[k + len(w):k + len(w) + 7]
+            if not any(g in tail for g in _DIFFICULTY_OK):
+                return True
+            k = sentence.find(w, k + len(w))
+    return False
+
+
+# 약점-없음 선언 — "보완점 없음/단점 없습니다" 等. 약점 섹션에 "없음"이 흔해 KoTE가 '보완/단점'만
+#   보고 부정 오분류하던 지배 패턴(batch 실측: 부정 라벨의 23.8%). 비평가성 = 중립(긍↔부 무관).
+_NOWEAK_NOUNS = ['보완', '단점', '개선점', '개선 사항', '개선사항', '보완점', '보완 점',
+                 '보완사항', '보완 사항', '보완필요', '문제점', '특이사항', '특이 사항',
+                 '결점', '지적사항', '지적 사항', '미흡한 점', '아쉬운 점', '부족한 점']
+_NOWEAK_NEG = ('없', '않', '아니')
+_NOWEAK_WINDOW = 8
+# 혼합 판정용 결핍어 — negation 인식으로 체크(약점명사 '보완 필요'와 겹치는 NEGATIVE_IMPLYING_WORDS
+#   평면 매칭은 "보완 필요점 없음"을 오차단하므로 사용 불가 → 전용 negation-aware 게이트).
+_NOWEAK_OTHER_NEG = ('부족', '미흡', '결여', '부재', '아쉽', '여지')
+
+
+def _has_unnegated_other_negative(sentence):
+    """결핍어가 직후 창에 negation 없이 등장하면 True(혼합문 판별용)."""
+    for w in _NOWEAK_OTHER_NEG:
+        i = sentence.find(w)
+        while i != -1:
+            tail = sentence[i + len(w):i + len(w) + 5]
+            if not any(n in tail for n in ('없', '않', '아니')):
+                return True
+            i = sentence.find(w, i + len(w))
+    return False
+
+
+def is_no_weakness_declaration(sentence):
+    """약점 명사(보완/단점/개선점…) 직후 창에 negation이 와 '약점 없음'을 선언하면 True → 중립.
+
+    다른 진짜 부정 신호(결함술어·건설적필요·강조부정·미부정 결핍어)가 섞이면 혼합이므로
+    False(부정 보존). 중립만 산출하므로 긍↔부 오분류를 만들 수 없다.
+    """
+    if not sentence:
+        return False
+    # 혼합("보완점은 없으나 소통이 부족") → 진짜 부정 우선, 약점선언 미발동
+    # NOTE: has_improvement_request 는 여기 넣지 않는다. 그 게이트는 후행 '없음'을 negation-aware로
+    #   완전 처리하지 못해("개선 및 보완필요점 없음") 약점-없음 선언을 부정으로 밀 수 있다.
+    #   positive_rescue 게이트에서만 사용하고, 약점-없음 중립화는 기존 negation-aware 로직에 맡긴다.
+    if (has_unnegated_deficiency(sentence) or has_constructive_need(sentence)
+            or has_unnegated_strong_negative(sentence)
+            or _has_unnegated_other_negative(sentence)):
+        return False
+    for noun in _NOWEAK_NOUNS:
+        i = sentence.find(noun)
+        while i != -1:
+            window = sentence[i + len(noun):i + len(noun) + _NOWEAK_WINDOW]
+            if any(neg in window for neg in _NOWEAK_NEG):
+                return True
+            i = sentence.find(noun, i + len(noun))
+    return False
+
+
 def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sentences,
                                           threshold=0.20, weight=2.0, neutral=0.0):
     """sentence_sentiment_override와 동일한 분기를 수행하되 (score, rule_id)를 반환.
@@ -454,6 +721,10 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
     if (has_positive_implying_phrase(sentence)
             and not has_contrast
             and not has_negative_implying_words(sentence)
+            and not positive_marker_directly_negated(sentence)
+            and not has_unnegated_deficiency(sentence)
+            and not has_constructive_need(sentence)
+            and not has_improvement_request(sentence)
             and not any(ph in sentence for ph in STRONG_NEGATIVE_PHRASES)
             and not any(nc in sentence for nc in NEGATIVE_CONTEXT_FOR_RESCUE)
             and neg < 0.85):
@@ -483,6 +754,16 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
     if is_no_response(sentence):
         return 0.0, 'no_response_neutral'
 
+    # 약점-없음 선언 중립화(no_weakness_neutral): "보완점 없음"·"단점 없습니다" 等.
+    #   KoTE가 '보완/단점'만 보고 부정 오분류하던 비평가성 선언(batch 실측 부정의 23.8%).
+    #   KoTE 부정 우세(neg>=pos)일 때만 — 긍정문("보완 필요없이 높은 평가")은 미발동(긍정 보존).
+    #   다른 진짜 부정이 섞이면 미발동(혼합은 부정 보존) → 중립만 산출, 긍↔부 안전.
+    #   추가(23년_장점 실측): 저신뢰(|pos-neg|<threshold)면 pos>neg여도 발동 — "같이 근무해보니
+    #   보완할점 없음"(pos 0.5/neg 0.44)류가 rule3_last_low로 긍→부 뒤집히던 것을 중립으로 가로챈다.
+    #   고신뢰 긍정("보완 필요없이 높은 평가")은 confidence가 커 미발동 → 긍정 보존(긍↔부 0).
+    if (neg >= pos or confidence < threshold) and is_no_weakness_declaration(sentence):
+        return 0.0, 'no_weakness_neutral'
+
     # 중립 규칙: 중립 문장이 부정으로 극단 오분류되는 케이스 방지
     # 중립→긍정은 허용이므로 긍정 방향 오분류는 교정하지 않음
     if any(word in sentence for word in NEUTRAL_KEYWORDS):
@@ -493,7 +774,7 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
     # NEGATIVE_IMPLYING_WORDS(단어 단위) 대신 구문 단위 정밀 매칭으로 오탐 방지.
     # has_contrast인 경우 규칙1/2에서 방향을 판단하므로 제외.
     if (is_last and pos > neg and not has_contrast and strength > 0.5
-            and any(phrase in sentence for phrase in STRONG_NEGATIVE_PHRASES)):
+            and has_unnegated_strong_negative(sentence)):
         return -strength, 'euphemistic_negative'
 
     # 규칙 1: 반전 + 마지막 + 저신뢰도 + strength>0.5 → 모델 방향 기반 가중
@@ -846,6 +1127,114 @@ def load_all_batches(processed_data_dir=None):
         'employee_results': employee_results,
         'batches': _load_batch_list(processed_data_dir),
     }
+
+
+def load_batch_history(processed_data_dir=None):
+    """이력 화면 전용 경량 로더 — 배치 목록 + 카운트만 반환(평가 본문 미적재).
+
+    이력 조회(/api/perspective/batches)는 batches 목록과 batch_info 카운트만
+    사용하므로, load_all_batches()처럼 전 직원 평가를 json.loads로 적재할 필요가
+    없다. 1.7만명 규모에서 전체 적재가 수십 초·수 GB를 소모하던 병목을 제거하기
+    위해 cheap aggregate COUNT만 수행한다(employee_results 키 없음). 0619_03.
+    """
+    if processed_data_dir is None:
+        processed_data_dir = PROCESSED_DATA_DIR_PATH
+
+    conn = _get_eval_conn()
+    try:
+        row = conn.execute("""
+            SELECT COUNT(DISTINCT e.employee_id) AS uniq,
+                   COUNT(*) AS total
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+        """).fetchone()
+    finally:
+        conn.close()
+    uniq = (row[0] if row else 0) or 0
+    total = (row[1] if row else 0) or 0
+
+    return {
+        'batch_info': {
+            'total_evaluations': total,
+            'unique_employees': uniq,
+            'batch_count': _count_batches(processed_data_dir),
+        },
+        'batches': _load_batch_list(processed_data_dir),
+    }
+
+
+def load_employee_batch(employee_id):
+    """단일 직원의 평가만 담은 unified 형태 dict 반환.
+
+    load_all_batches()와 동일한 반환 구조(employee_results/batch_info/batches)를
+    유지하되 employee_results에는 해당 직원 1명만 포함한다. 제출용 저장 경로의
+    소비 함수(_get_evaluations_for_employee / _get_employee_metadata /
+    build_profanity_summary)는 employee_results를 target_employee_id로 필터링하므로
+    1명짜리 dict와 완전 호환된다. 17,000명 전체 적재로 인한 메모리 폭증을 피하기 위함(0619_02).
+
+    input_id는 원본/가명 어느 쪽이든 받아 가명으로 변환 후 DB를 조회한다.
+    (DB의 employee_id는 가명 ID이며, target_employee_id 매칭 키도 가명으로 고정 —
+    REQ-2606-032/0615_06 회귀 방지.)
+    """
+    pseudo_mgr = _get_pseudo_mgr()
+    resolved_id = _resolve_to_pseudo(employee_id, pseudo_mgr)
+
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute("""
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            WHERE e.employee_id = ?
+            ORDER BY ev.id
+        """, (resolved_id,)).fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        return {'employee_results': [], 'batch_info': {}, 'batches': []}
+
+    name = dept = pos = ''
+    evals = []
+    for _emp_id, nm, dp, ps, data, ev_db_id in rows:
+        name, dept, pos = nm or '', dp or '', ps or ''
+        if data:
+            ev_obj = json.loads(data)
+            # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
+            ev_obj['_db_id'] = ev_db_id
+            evals.append(ev_obj)
+
+    return {
+        'batch_info': {'total_evaluations': len(evals), 'unique_employees': 1},
+        'employee_results': [{
+            'metadata': {
+                'target_employee_id': resolved_id,
+                'target_employee_name': name,
+                'target_employee_department': dept,
+                'target_employee_position': pos,
+                'evaluations': evals,
+            }
+        }],
+        'batches': [],
+    }
+
+
+def list_all_employee_ids():
+    """전 직원(평가 보유) ID 목록만 반환(평가 데이터 미적재). all_employees 일괄 저장용(0619_02).
+
+    전체 unified 적재 없이 ID만 추리기 위한 경량 쿼리.
+    """
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute("""
+            SELECT DISTINCT e.employee_id
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            ORDER BY e.employee_id
+        """).fetchall()
+    finally:
+        conn.close()
+    return [r[0] for r in rows]
 
 
 def filter_evaluations(batch_summary, filters, employee_id=None, enrich=False):
@@ -1581,6 +1970,125 @@ def get_matrix_meta(unified_data, employee_id=None, enrich=False):
         'position_hierarchy': hierarchy,
         'batch_count': unified_data.get('batch_info', {}).get('batch_count', 0),
         'total_evaluations': unified_data.get('batch_info', {}).get('total_evaluations', 0),
+    }
+
+
+def get_matrix_meta_light(employee_id=None, enrich=False, processed_data_dir=None):
+    """/meta 전용 경량 메타 빌더 — evaluations의 data blob을 적재하지 않는다.
+
+    X축(row_options)이 실제로 쓰는 값은 batch_id·evaluation_date 둘뿐이며
+    (ROW_FIELDS / _extract_row_values 참조), 두 필드는 evaluations 테이블에
+    인덱스된 독립 컬럼으로 존재한다(deploy_session_service: evaluation_date,
+    batch_id, idx_ev_batch). 따라서 load_all_batches()처럼 전 직원 평가
+    1.9만건을 json.loads로 적재할 필요 없이 GROUP BY 집계만으로 동일한
+    row_options/employees를 만든다. get_matrix_meta()의 19,000건 json.loads
+    병목 제거 — 0619_03 배치 이력 경량화(load_batch_history)의 X축(/meta) 후속.
+
+    반환 구조는 get_matrix_meta()와 동일(키·의미 보존). employees 목록과
+    total_evaluations는 기존 get_matrix_meta와 동일하게 전체 기준이며,
+    row_options만 employee_id가 주어지면 해당 직원으로 한정한다.
+    """
+    if processed_data_dir is None:
+        processed_data_dir = PROCESSED_DATA_DIR_PATH
+
+    resolved_id = None
+    if employee_id:
+        resolved_id = _resolve_to_pseudo(employee_id, _get_pseudo_mgr())
+
+    conn = _get_eval_conn()
+    try:
+        # 1) X축 facet — 평가일자 × 배치 그룹 카운트 (data blob 미적재)
+        if resolved_id:
+            facet_rows = conn.execute("""
+                SELECT evaluation_date, batch_id, COUNT(*) AS c
+                FROM evaluations
+                WHERE employee_id = ?
+                GROUP BY evaluation_date, batch_id
+            """, (resolved_id,)).fetchall()
+        else:
+            facet_rows = conn.execute("""
+                SELECT evaluation_date, batch_id, COUNT(*) AS c
+                FROM evaluations
+                GROUP BY evaluation_date, batch_id
+            """).fetchall()
+
+        # 2) 직원 목록 + 평가 건수 (data blob 미적재) — get_matrix_meta와 동일하게 전체 기준
+        emp_rows = conn.execute("""
+            SELECT e.employee_id, e.name, e.department, e.position, COUNT(ev.id) AS cnt
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            GROUP BY e.employee_id
+        """).fetchall()
+
+        total_evals = conn.execute("SELECT COUNT(*) FROM evaluations").fetchone()[0]
+    finally:
+        conn.close()
+
+    # facet → ROW_FIELDS 별 카운트 (_extract_row_values / _get_eval_field_value 의미 보존)
+    field_counts = {key: {} for key in ROW_FIELDS}
+
+    def _bump(d, k, c):
+        d[k] = d.get(k, 0) + c
+
+    for ev_date, batch_id, c in facet_rows:
+        date_str = ev_date if ev_date is not None else ''
+        # batch_id: _extract_row_values는 ev.get('batch_id', '?')
+        _bump(field_counts['batch_id'], batch_id if batch_id is not None else '?', c)
+        # evaluation_date(raw): val이 None이 아니면 str(val) 버킷 — 빈 문자열도 포함
+        _bump(field_counts['evaluation_date'], str(date_str), c)
+        # year: len>=4 → date[:4] (그 외 None → 미집계)
+        if isinstance(date_str, str) and len(date_str) >= 4:
+            _bump(field_counts['evaluation_date__year'], date_str[:4], c)
+        # month: len>=7 & '-' 분할 2개 이상 → parts[1]
+        if isinstance(date_str, str) and len(date_str) >= 7:
+            parts = date_str.split('-')
+            if len(parts) >= 2:
+                _bump(field_counts['evaluation_date__month'], parts[1], c)
+
+    row_options = []
+    for key, info in ROW_FIELDS.items():
+        vals = field_counts[key]
+        if vals:
+            vals_sorted = sorted(vals.items(), key=lambda x: (-x[1], x[0]))
+            row_options.append({
+                'field': key,
+                'label': info['label'],
+                'values': [{'value': v, 'count': c} for v, c in vals_sorted],
+            })
+
+    pseudo_mgr = _get_pseudo_mgr() if enrich else None
+    employees = []
+    for emp_id, name, dept, pos, cnt in emp_rows:
+        entry = {
+            'employee_id': emp_id,
+            'department': dept,
+            'position': pos,
+            'evaluation_count': cnt,
+            'employee_name': name,
+        }
+        if enrich and pseudo_mgr:
+            def _dr(v):
+                if not v:
+                    return v
+                r = pseudo_mgr.get_real_id(str(v))
+                return r if r != v else v
+            real_id = _dr(emp_id)
+            entry['employee_id'] = real_id
+            entry['employee_id_real'] = real_id if real_id != emp_id else None
+            entry['employee_name'] = _dr(name) if name else None
+            entry['department'] = _dr(dept) if dept else dept
+            entry['position'] = _dr(pos) if pos else pos
+        employees.append(entry)
+    employees.sort(key=lambda e: e['employee_id'] or '')
+
+    return {
+        'row_options': row_options,
+        'col_modes': [{'mode': k, 'label': v['label'], 'type': v['type']} for k, v in COL_MODES.items()],
+        'analysis_types': [{'mode': k, 'label': v['label'], 'type': v['type']} for k, v in ANALYSIS_TYPES.items()],
+        'employees': employees,
+        'position_hierarchy': load_position_hierarchy(),
+        'batch_count': _count_batches(processed_data_dir),
+        'total_evaluations': total_evals,
     }
 
 

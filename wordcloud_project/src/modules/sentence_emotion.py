@@ -13,8 +13,12 @@ _SENTENCE_BATCH_SIZE = 32
 def compute_sentence_raw_scores(doc):
     """문서를 문장으로 분할 후 각 문장의 KoTE 원시 점수를 계산.
 
-    Returns list[dict]: [{"sentence", "pos", "neg", "neutral"}, ...] (문장 없으면 [])
+    Returns list[dict]: [{"sentence", "pos", "neg", "neutral", "top3"}, ...] (문장 없으면 [])
     반전 표지어 규칙·사용자 교정은 적용 전 — 원시 점수만 반환.
+
+    top3: 매핑된 44개 감정 중 상위 3개 [[label, confidence], ...]. KoTE 후처리가
+    이미 계산한 값이라 추가 추론 비용 0. 영어 우회 문장은 []. 감정 단위 분석 시
+    KoTE 재실행을 피하기 위한 핸드오프 코퍼스 원천(0622_01).
 
     한국어 문장은 모아서 배치로 추론(GPU 커널 launch 오버헤드 절감 — 개별 호출 대비
     벤치마크 기준 최대 약 7배). 영어 문장은 기존처럼 KoTE를 우회한다.
@@ -34,7 +38,7 @@ def compute_sentence_raw_scores(doc):
         if total > 0 and len(re.findall(r'[a-zA-Z]', sent)) / total > 0.7:
             prof = advanced_filter_profanity(sent)
             neg = 1.0 if prof.get('profanity_count', 0) > 0 else 0.0
-            out[idx] = {"sentence": sent, "pos": 0.0, "neg": neg, "neutral": 1.0 - neg}
+            out[idx] = {"sentence": sent, "pos": 0.0, "neg": neg, "neutral": 1.0 - neg, "top3": []}
         else:
             korean_idx.append(idx)
             korean_sents.append(sent)
@@ -49,14 +53,18 @@ def compute_sentence_raw_scores(doc):
 
         for idx, sent, res in zip(chunk_idx, chunk_sents, batch_res):
             try:
-                s = (res.get('analysis', {}).get('base_result', {})
-                        .get('mapped', {}).get('sentiment_scores', {}))
+                mapped = (res.get('analysis', {}).get('base_result', {})
+                             .get('mapped', {}))
+                s = mapped.get('sentiment_scores', {})
+                top3 = [[t.get('label'), t.get('confidence', 0.0) or 0.0]
+                        for t in (mapped.get('top_3') or [])[:3]]
                 out[idx] = {"sentence": sent,
                             "pos": s.get('positive', 0.0) or 0.0,
                             "neg": s.get('negative', 0.0) or 0.0,
-                            "neutral": s.get('neutral', 0.0) or 0.0}
+                            "neutral": s.get('neutral', 0.0) or 0.0,
+                            "top3": top3}
             except Exception:
-                out[idx] = {"sentence": sent, "pos": 0.0, "neg": 0.0, "neutral": 0.0}
+                out[idx] = {"sentence": sent, "pos": 0.0, "neg": 0.0, "neutral": 0.0, "top3": []}
 
     return out
 

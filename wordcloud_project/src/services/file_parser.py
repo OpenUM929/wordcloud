@@ -113,12 +113,12 @@ def parse_uploaded_file(file):
     if not (filename.endswith('.csv') or filename.endswith(('.xlsx', '.xls'))):
         return {'error': '지원되지 않는 파일 형식입니다. CSV 또는 Excel 파일만 업로드 가능합니다.'}, 400
     
-    # Check file size (50MB limit)
+    # Check file size (100MB limit)
     file.seek(0, os.SEEK_END)
     file_size = file.tell()
     file.seek(0)
-    if file_size > 50 * 1024 * 1024:
-        return {'error': '파일 크기가 50MB를 초과합니다.'}, 400
+    if file_size > 100 * 1024 * 1024:
+        return {'error': '파일 크기가 100MB를 초과합니다.'}, 400
     
     try:
         df = None

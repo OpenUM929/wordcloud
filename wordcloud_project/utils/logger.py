@@ -20,6 +20,13 @@ def setup_logger(name: str, log_file: str = None, level: int = logging.INFO) -> 
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
+    # getLogger(name)은 이름이 같으면 동일 싱글톤을 반환한다.
+    # 핸들러가 이미 붙어 있으면 재사용한다 — 매 호출마다 FileHandler를 중복
+    # 추가하면 열린 로그 파일이 누적되어 'Too many open files'(Errno 24)가
+    # 발생한다(그룹/매트릭스 저장처럼 WordCloudGenerator를 루프로 생성할 때).
+    if logger.handlers:
+        return logger
+
     # 포맷터 설정
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
