@@ -16,15 +16,15 @@ function escapeHtml(str) {
 
 function switchUploadTab(tab) {
     if (tab === 'file') {
-        document.getElementById('fileUploadArea').style.display = 'block';
-        document.getElementById('folderUploadArea').style.display = 'none';
+        document.getElementById('fileUploadArea').classList.remove('hidden');
+        document.getElementById('folderUploadArea').classList.add('hidden');
         document.getElementById('tabFile').classList.add('btn-primary');
         document.getElementById('tabFile').classList.remove('btn-outline-secondary');
         document.getElementById('tabFolder').classList.remove('btn-primary');
         document.getElementById('tabFolder').classList.add('btn-outline-secondary');
     } else {
-        document.getElementById('fileUploadArea').style.display = 'none';
-        document.getElementById('folderUploadArea').style.display = 'block';
+        document.getElementById('fileUploadArea').classList.add('hidden');
+        document.getElementById('folderUploadArea').classList.remove('hidden');
         document.getElementById('tabFolder').classList.add('btn-primary');
         document.getElementById('tabFolder').classList.remove('btn-outline-secondary');
         document.getElementById('tabFile').classList.remove('btn-primary');
@@ -32,16 +32,23 @@ function switchUploadTab(tab) {
     }
 }
 
+function setUploadLoading(on) {
+    var e = document.getElementById('uploadLoading');
+    if (e) e.classList.toggle('show', on);
+}
+
 function selectFolder() {
     var formData = new FormData();
     formData.append('folder', 'true');
-    
+    setUploadLoading(true);
+
     fetch('/api/batch/upload', {
         method: 'POST',
         body: formData
     })
     .then(function(response) { return response.json(); })
     .then(function(data) {
+        setUploadLoading(false);
         if (data.error) {
             document.getElementById('folderDetails').innerHTML = '<span style="color: red;">' + data.error + '</span>';
             document.getElementById('folderInfo').classList.remove('hidden');
@@ -54,7 +61,8 @@ function selectFolder() {
         
         var fileCount = data.file_structures ? data.file_structures.length : 0;
         var fileCountText = fileCount > 1 ? fileCount + '개 파일' : '1개 파일';
-        document.getElementById('folderDetails').innerHTML = '<strong>' + data.filename + '</strong> - ' + fileCountText + '<span style="color: #666; font-size: 11px; display: block; margin-top: 5px;">행: ' + data.rows + ', 공통 컬럼: ' + data.columns.length + '개</span>';
+        document.getElementById('folderDetails').innerHTML = '<div>📁 ' + data.filename + ' — ' + fileCountText + '</div>'
+            + '<div>📊 행: ' + data.rows + '건 · 공통 컬럼: ' + data.columns.length + '개</div>';
         document.getElementById('folderInfo').classList.remove('hidden');
 
         renderDataColumns();
@@ -63,6 +71,7 @@ function selectFolder() {
         updateStepButtons();
     })
     .catch(function(error) {
+        setUploadLoading(false);
         console.error('폴더 선택 오류:', error);
         document.getElementById('folderDetails').innerHTML = '<span style="color: red;">폴더 선택 중 오류가 발생했습니다.</span>';
         document.getElementById('folderInfo').classList.remove('hidden');
@@ -759,6 +768,10 @@ function startBatchProcessing() {
         enableEmotionAnalysis: document.getElementById('enableEmotionAnalysis').checked,
         mappings: columnMappings,
         batch_display_name: (document.getElementById('batchDisplayName').value || '').trim(),
+        acq_handoff_enabled: !!(document.getElementById('acqHandoffEnabled') && document.getElementById('acqHandoffEnabled').checked),
+        acq_handoff_label: ((document.getElementById('acqHandoffLabel') && document.getElementById('acqHandoffLabel').value) || '').trim(),
+        judgment_extract_enabled: !!(document.getElementById('judgmentExtractEnabled') && document.getElementById('judgmentExtractEnabled').checked),
+        judgment_label: ((document.getElementById('judgmentExtractLabel') && document.getElementById('judgmentExtractLabel').value) || '').trim(),
     };
 
     function openSseAndListen() {
@@ -820,6 +833,15 @@ function startBatchProcessing() {
                 eventSource.close();
                 document.getElementById('progressFill').style.width = '100%';
                 document.getElementById('processingText').textContent = '처리 완료!';
+
+                // 판정 패킷 추출 결과(마진 밴드별 건수) 표기 — 검색형 마진 비교용
+                if (data.judgment_count != null && data.judgment_bands) {
+                    var jb = data.judgment_bands;
+                    document.getElementById('processingText').textContent =
+                        '처리 완료! 판정 패킷 ' + data.judgment_count + '건 ' +
+                        '(0.05:' + (jb['0.05'] || 0) + ' · 0.10:' + (jb['0.10'] || 0) +
+                        ' · 0.15:' + (jb['0.15'] || 0) + ' · flip:' + (jb['flip'] || 0) + ')';
+                }
 
                 var procSteps = document.querySelectorAll('.proc-step');
                 procSteps.forEach(function(step) {
@@ -1460,19 +1482,41 @@ document.addEventListener('DOMContentLoaded', function() {
     renderMetadataTree();
     loadWorkOrders();
     updateStepButtons();  // 초기 로드 시 '다음 단계' 버튼 노출(데이터 적재 전 비활성화)
+    
+    // 0624_01: 배치 명칭 입력 시 적립대상 라벨 자동 채우기
+    (function() {
+        var batchNameInput = document.getElementById('batchDisplayName');
+        var handoffInput = document.getElementById('acqHandoffLabel');
+        var judgmentInput = document.getElementById('judgmentExtractLabel');
+        var handoffAuto = true, judgmentAuto = true;
+        if (!batchNameInput || !handoffInput || !judgmentInput) return;
+        handoffInput.addEventListener('input', function() {
+            handoffAuto = false;
+        });
+        judgmentInput.addEventListener('input', function() {
+            judgmentAuto = false;
+        });
+        batchNameInput.addEventListener('input', function() {
+            var val = this.value.trim();
+            if (handoffAuto) { handoffInput.value = val; }
+            if (judgmentAuto) { judgmentInput.value = val; }
+        });
+    })();
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         if (e.target.files.length > 0) {
             var file = e.target.files[0];
             var formData = new FormData();
             formData.append('file', file);
-            
+            setUploadLoading(true);
+
             fetch('/api/batch/upload', {
                 method: 'POST',
                 body: formData
             })
             .then(function(response) { return response.json(); })
             .then(function(data) {
+                setUploadLoading(false);
                 if (data.error) {
                     alert(data.error);
                     return;
@@ -1491,6 +1535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() { showStep(2); }, 1000);
             })
             .catch(function(error) {
+                setUploadLoading(false);
                 console.error('파일 업로드 오류:', error);
                 alert('파일 업로드 중 오류가 발생했습니다.');
             });

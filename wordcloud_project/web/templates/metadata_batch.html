@@ -4,158 +4,195 @@
 
 {% block extra_head %}
 <style>
-    .tree-item {
-        padding: 5px 10px;
-        cursor: pointer;
-        border-radius: 3px;
-        margin-bottom: 2px;
-        transition: background-color 0.2s;
-    }
-    .tree-item:hover {
-        background-color: #f0f0f0;
-    }
-    .tree-item.selected {
-        background-color: #6366f1;
-        color: white;
-    }
-    .tree-item.mapped {
-        background-color: #28a745;
-        color: white;
-    }
-    .tree-order {
-        display: inline-block;
-        width: 24px;
-        height: 24px;
-        line-height: 24px;
-        text-align: center;
-        border-radius: 50%;
-        background-color: #6c757d;
-        color: white;
-        font-size: 11px;
-        font-weight: bold;
-        margin-right: 8px;
-    }
-    .tree-key {
-        font-weight: bold;
-        margin-right: 8px;
-    }
-    .tree-type {
-        color: #666;
-        font-size: 12px;
-        margin-right: 8px;
-    }
-    .tree-required {
-        color: #dc3545;
-        font-size: 11px;
-        font-weight: bold;
-    }
-    .tree-auto {
-        color: #17a2b8;
-        font-size: 11px;
-        margin-left: 5px;
-    }
-    .column-mapping {
-        color: #28a745;
-        font-size: 12px;
-        font-weight: bold;
-        margin-left: 10px;
-        padding: 2px 6px;
-        background-color: #d4edda;
-        border-radius: 3px;
-    }
-    .column-order {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        line-height: 20px;
-        text-align: center;
-        border-radius: 50%;
-        background-color: #28a745;
-        color: white;
-        font-size: 10px;
-        font-weight: bold;
-        margin-left: 8px;
-    }
-    .column-row.mapped {
-        background-color: #d4edda;
-    }
-    .proc-step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-    }
-    .proc-step-circle {
-        background-color: #6c757d;
-        color: white;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        transition: background-color 0.3s ease;
-    }
-    .proc-step[data-group="green-light"].active .proc-step-circle,
-    .proc-step[data-group="green-light"].completed .proc-step-circle {
-        background-color: #20c997 !important;
-    }
-    .proc-step[data-group="blue"].active .proc-step-circle,
-    .proc-step[data-group="blue"].completed .proc-step-circle {
-        background-color: #6366f1 !important;
-    }
-    .proc-step[data-group="green"].active .proc-step-circle,
-    .proc-step[data-group="green"].completed .proc-step-circle {
-        background-color: #28a745 !important;
-    }
-    .proc-step .proc-step-circle {
-        background-color: #6c757d !important;
-    }
-    .proc-step.active .proc-step-circle {
-        background-color: #6366f1 !important;
-        animation: pulse 1.5s infinite;
-    }
-    .proc-step.completed .proc-step-circle {
-        background-color: #20c997 !important;
-    }
-    .proc-step[data-group="green-light"].active .proc-step-circle {
-        background-color: #20c997 !important;
-    }
-    .proc-step[data-group="blue"].active .proc-step-circle {
-        background-color: #6366f1 !important;
-    }
-    .proc-step[data-group="green"].active .proc-step-circle {
-        background-color: #28a745 !important;
-    }
-    .proc-step-text {
-        font-size: 9px;
-        color: #666;
-        text-align: center;
-        max-width: 120px;
-        line-height: 1.0;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .proc-arrow {
-        margin: 0 10px;
-        color: #6c757d;
-        font-size: 18px;
-    }
-    .processing-steps {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 20px 0;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
-    }
+:root {
+  --color-primary: #6366f1; --color-primary-hover: #4f46e5; --color-primary-light: #ede9fe; --color-primary-subtle: rgba(99,102,241,0.08);
+  --color-success: #28a745; --color-success-hover: #218838; --color-danger: #dc3545; --color-warning: #f59e0b; --color-info: #17a2b8;
+  --color-secondary-bg: #f3f4f6; --color-secondary-hover: #e5e7eb;
+  --text-body: #495057; --text-muted: #666; --text-subtle: #999; --text-inverse: #fff;
+  --border-color: #dee2e6; --border-light: #e5e7eb; --border-muted: #e0e0e0;
+  --font-h3: 17px; --font-h4: 15px; --font-body: 14px; --font-sm: 13px; --font-xs: 12px; --font-2xs: 11px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 30px;
+  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px; --radius-xl: 12px; --radius-full: 50%;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08); --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-primary: 0 2px 8px rgba(99,102,241,0.2); --shadow-primary-hover: 0 4px 12px rgba(99,102,241,0.25);
+}
+
+/* ===== Tree items (JS-interactive — DO NOT RENAME) ===== */
+.tree-item { padding: 5px 10px; cursor: pointer; border-radius: var(--radius-sm); margin-bottom: 2px; transition: background 0.15s; }
+.tree-item:hover { background: #f0f0f0; }
+.tree-item.selected { background: var(--color-primary); color: var(--text-inverse); }
+.tree-item.mapped { background: var(--color-success); color: var(--text-inverse); }
+.tree-order { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: var(--radius-full); background: var(--text-muted); color: var(--text-inverse); font-size: var(--font-2xs); font-weight: 700; margin-right: var(--space-2); flex-shrink: 0; }
+.tree-item.selected .tree-order, .tree-item.mapped .tree-order { background: rgba(255,255,255,0.3); }
+.tree-key { font-weight: 600; margin-right: var(--space-2); }
+.tree-type { color: var(--text-muted); font-size: var(--font-xs); margin-right: var(--space-2); }
+.tree-required { color: var(--color-danger); font-size: var(--font-2xs); font-weight: 700; }
+.tree-auto { color: var(--color-info); font-size: var(--font-2xs); margin-left: var(--space-1); }
+
+/* ===== Column mapping (JS-interactive) ===== */
+.column-mapping { color: var(--color-success); font-size: var(--font-xs); font-weight: 600; margin-left: 10px; padding: 2px 6px; background: #d4edda; border-radius: var(--radius-sm); }
+.column-order { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; border-radius: var(--radius-full); background: var(--color-success); color: var(--text-inverse); font-size: 10px; font-weight: 700; margin-left: var(--space-2); }
+.column-row { display: flex; align-items: center; padding: var(--space-2); border-bottom: 1px solid #f0f0f0; font-size: var(--font-sm); }
+.column-row.mapped { background: #d4edda; }
+
+/* ===== Processing steps (JS-interactive — DO NOT RENAME) ===== */
+.proc-step { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.proc-step-circle { width: 36px; height: 36px; border-radius: var(--radius-full); background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: var(--font-sm); font-weight: 700; color: var(--text-muted); transition: all 0.3s; }
+.proc-step.active .proc-step-circle { background: var(--color-primary); color: var(--text-inverse); box-shadow: 0 0 0 3px var(--color-primary-light); animation: pulse 1.5s infinite; }
+.proc-step.completed .proc-step-circle { background: var(--color-success); color: var(--text-inverse); }
+.proc-step[data-group="green-light"].active .proc-step-circle,
+.proc-step[data-group="green-light"].completed .proc-step-circle { background: #20c997; }
+.proc-step[data-group="blue"].active .proc-step-circle,
+.proc-step[data-group="blue"].completed .proc-step-circle { background: var(--color-primary); }
+.proc-step[data-group="green"].active .proc-step-circle,
+.proc-step[data-group="green"].completed .proc-step-circle { background: var(--color-success); }
+.proc-step-text { font-size: 9px; color: var(--text-muted); text-align: center; max-width: 90px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.proc-step.active .proc-step-text { color: var(--color-primary); font-weight: 600; }
+.proc-step.completed .proc-step-text { color: var(--color-success); font-weight: 600; }
+.proc-arrow { margin: 0 8px; color: #ccc; font-size: 16px; margin-bottom: 18px; }
+.processing-steps { display: flex; justify-content: center; align-items: center; margin: 20px 0; flex-wrap: wrap; gap: 10px; }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+
+/* ===== Buttons (Modern Minimal + Bootstrap alias for JS compat) ===== */
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px var(--space-5); border: none; border-radius: var(--radius-md); font-size: var(--font-body); font-weight: 600; cursor: pointer; transition: all 0.15s; text-decoration: none; line-height: 1.2; gap: var(--space-2); }
+.btn:hover { transform: translateY(-1px); }
+.btn--sm, .btn.btn-sm { padding: 6px var(--space-3); font-size: var(--font-sm); }
+
+.btn-primary, .btn--primary { background: var(--color-primary); color: var(--text-inverse); box-shadow: var(--shadow-primary); }
+.btn-primary:hover, .btn--primary:hover { background: var(--color-primary-hover); box-shadow: var(--shadow-primary-hover); }
+
+.btn-secondary, .btn--ghost { background: transparent; color: var(--text-body); border: 1px solid var(--border-light); }
+.btn-secondary:hover, .btn--ghost:hover { background: var(--color-secondary-hover); }
+
+.btn-success, .btn--success { background: var(--color-success); color: var(--text-inverse); }
+.btn-success:hover, .btn--success:hover { background: var(--color-success-hover); }
+
+.btn-danger, .btn--danger { background: var(--color-danger); color: var(--text-inverse); }
+.btn-danger:hover, .btn--danger:hover { background: var(--color-danger-hover); }
+
+.btn-warning, .btn--warning { background: var(--color-warning); color: var(--text-inverse); }
+
+.btn-outline-secondary, .btn--outline { background: transparent; color: var(--color-primary); border: 1px solid var(--color-primary); }
+.btn-outline-secondary:hover, .btn--outline:hover { background: var(--color-primary-light); }
+
+.btn-outline-info { background: transparent; color: var(--color-info); border: 1px solid var(--color-info); }
+.btn-outline-info:hover { background: #d1ecf1; }
+
+/* ===== Step Indicator ===== */
+.step-indicator { display: flex; justify-content: center; align-items: center; margin-bottom: var(--space-5); }
+.step { display: flex; flex-direction: column; align-items: center; margin: 0 10px; cursor: default; }
+.step .step-number { width: 40px; height: 40px; border-radius: var(--radius-full); background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: var(--font-body); font-weight: 600; color: var(--text-muted); transition: all 0.3s; }
+.step.active .step-number { background: var(--color-primary); color: var(--text-inverse); box-shadow: 0 0 0 4px var(--color-primary-light); }
+.step.completed .step-number { background: var(--color-success); color: var(--text-inverse); }
+.step .step-text { font-size: var(--font-2xs); color: var(--text-muted); margin-top: var(--space-1); text-align: center; white-space: nowrap; }
+.step.active .step-text { color: var(--color-primary); font-weight: 600; }
+.step.completed .step-text { color: var(--color-success); font-weight: 600; }
+.step-arrow { margin: 0 15px; color: #ccc; font-size: 18px; margin-bottom: 20px; }
+
+/* ===== Step Navigation ===== */
+.step-navigation { display: flex; justify-content: space-between; align-items: center; background: var(--color-secondary-bg); padding: var(--space-4) var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin: 20px 0; }
+.step-info { font-size: var(--font-body); font-weight: 700; color: var(--text-body); }
+.step-buttons { display: flex; gap: var(--space-2); }
+.step-status { text-align: center; margin-top: 10px; font-size: var(--font-sm); color: var(--text-muted); }
+.step-content.hidden { display: none; }
+
+/* ===== Upload ===== */
+.upload-tabs { display: flex; gap: var(--space-1); margin-bottom: var(--space-5); }
+.upload-area { border: 2px dashed var(--color-primary); padding: var(--space-10); text-align: center; border-radius: var(--radius-lg); margin-bottom: var(--space-5); background: var(--color-primary-subtle); transition: background 0.2s; cursor: pointer; }
+.upload-area p { color: var(--text-muted); margin-bottom: var(--space-4); }
+.upload-area__hint { font-size: var(--font-xs); color: var(--color-primary); margin-top: var(--space-3); text-align: center; }
+.upload-area.dragover { background: var(--color-primary-light); }
+
+/* ===== Upload Loading Spinner ===== */
+#uploadLoading { display: none; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-8); margin: var(--space-4) 0; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--color-secondary-bg); }
+#uploadLoading.show { display: flex; }
+.upload-spinner { width: 36px; height: 36px; border-radius: 50%; border: 4px solid var(--border-light); border-top-color: var(--color-primary); animation: uploadSpin 0.8s linear infinite; margin-bottom: var(--space-3); flex-shrink: 0; }
+@keyframes uploadSpin { to { transform: rotate(360deg); } }
+.upload-loading-text { font-size: var(--font-body); color: var(--text-body); font-weight: 600; margin-bottom: var(--space-1); }
+.upload-loading-hint { font-size: var(--font-xs); color: var(--text-subtle); }
+
+/* ===== Folder Select Result ===== */
+.folder-result { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-4); margin: var(--space-3) 0; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: #f0fdf4; }
+.folder-result-icon { flex: 0 0 auto; width: 28px; height: 28px; border-radius: var(--radius-full); background: var(--color-success); color: var(--text-inverse); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; margin-top: 2px; }
+.folder-result-body { flex: 1; min-width: 0; }
+.folder-result-title { font-size: var(--font-body); font-weight: 600; color: var(--text-body); margin-bottom: var(--space-1); }
+.folder-result-detail { font-size: var(--font-xs); color: var(--text-muted); line-height: 1.5; }
+
+/* ===== Work Order Board ===== */
+/* ===== Work Order Board ===== */
+.wo-board-header { cursor: pointer; padding: 12px 16px; background: #f5f7fa; display: flex; justify-content: space-between; align-items: center; }
+.wo-board-body { padding: 12px 16px; font-size: var(--font-body); }
+#workOrderBoard { margin-top: var(--space-8); border: 1px solid var(--border-muted); border-radius: var(--radius-lg); overflow: hidden; }
+
+/* ===== Mapping ===== */
+.mapping-area { display: flex; gap: var(--space-5); margin-top: var(--space-4); }
+.tree-panel { flex: 1; border: 1px solid var(--border-muted); border-radius: var(--radius-lg); padding: var(--space-4); background: var(--bg-surface); }
+.data-panel { flex: 1; border: 1px solid var(--border-muted); border-radius: var(--radius-lg); padding: var(--space-4); background: var(--bg-surface); }
+
+/* ===== Field Management ===== */
+#fieldManagement { margin-top: var(--space-5); padding: var(--space-4); border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: #f9f9f9; }
+.field-mgmt-actions { margin-bottom: var(--space-3); display: flex; gap: var(--space-2); }
+.field-form-group { margin: var(--space-3) 0; }
+.field-form-group label { display: block; font-size: var(--font-sm); color: var(--text-muted); margin-bottom: var(--space-1); }
+.field-form-group input[type="text"], .field-form-group select, .field-form-group textarea { width: 100%; padding: 5px; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: var(--font-body); box-sizing: border-box; }
+
+/* ===== Preview ===== */
+.preview-area { margin-top: var(--space-5); }
+
+/* ===== Progress ===== */
+.progress-bar { width: 100%; height: 24px; background: var(--border-light); border-radius: var(--radius-xl); overflow: hidden; margin: 10px 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--color-primary), #8b5cf6); transition: width 0.3s ease; border-radius: var(--radius-xl); }
+
+/* ===== Status Messages ===== */
+#pseudonymInfo { margin: 15px 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border-left: 4px solid var(--color-primary); background: #e8f4fd; font-size: var(--font-sm); }
+#pseudonymFieldsDisplay { color: var(--text-muted); margin-left: var(--space-2); }
+
+/* ===== Batch Name ===== */
+.batch-name-card { margin: 15px 0; padding: var(--space-4); background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.batch-name-label { font-weight: 600; display: block; margin-bottom: var(--space-2); color: var(--text-primary); }
+#batchDisplayName { width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: var(--font-body); box-sizing: border-box; }
+.batch-name-hint { font-size: var(--font-xs); color: var(--text-subtle); margin: var(--space-1) 0 0 0; }
+
+/* ===== Modals ===== */
+#resumeModal, #skippedModal, #mappingManagerModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+.modal-card { background: var(--bg-surface); border-radius: var(--radius-xl); max-width: 92%; overflow: hidden; box-shadow: var(--shadow-lg); }
+.modal-card__header { padding: var(--space-4) var(--space-5); font-weight: 700; }
+.modal-card__header--warning { background: var(--color-warning); color: var(--text-inverse); }
+.modal-card__body { padding: var(--space-5); }
+.modal-card__body--scroll { padding: var(--space-5); overflow-y: auto; }
+.modal-card__footer { padding: var(--space-3) var(--space-5); text-align: right; border-top: 1px solid #eee; display: flex; gap: var(--space-2); justify-content: flex-end; }
+.modal-card__row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-size: var(--font-body); }
+.modal-card__row:last-child { border-bottom: none; }
+#rmRemain { color: var(--color-danger); }
+.modal-close { font-size: 24px; border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 0 var(--space-2); }
+
+/* ===== Override base.html conflicts ===== */
+.step { width: auto; height: auto; border-radius: 0; background: none; flex-direction: row; cursor: default; }
+.step.active { background: none; color: inherit; }
+.step.completed { background: none; color: inherit; }
+.step-number { font-size: var(--font-body); font-weight: 600; }
+.step-text { font-size: var(--font-2xs); margin-top: var(--space-1); }
+.step-arrow { margin: 0 15px; }
+.content { margin-top: 0; }
+.step-navigation { margin: 20px 0; }
+.tree-panel { border: 1px solid var(--border-muted); border-radius: var(--radius-lg); padding: var(--space-4); }
+.data-panel { border: 1px solid var(--border-muted); border-radius: var(--radius-lg); padding: var(--space-4); }
+.column-row { padding: var(--space-2); }
+.column-row.selected { background-color: var(--color-primary-light); border-left: 4px solid var(--color-primary); padding: var(--space-2); }
+.column-row.used { background-color: var(--bg-muted); padding: var(--space-2); }
+.column-checkbox { margin-right: var(--space-2); }
+.column-info { flex: 1; }
+.column-sample { color: var(--text-muted); font-size: var(--font-xs); }
+
+/* ===== Utility ===== */
+.hidden { display: none !important; }
+.flex { display: flex; }
+.flex--between { justify-content: space-between; align-items: center; }
+.gap-2 { gap: var(--space-2); }
+.mt-2 { margin-top: var(--space-2); }
+.mt-4 { margin-top: var(--space-4); }
+.status--success { margin-top: 15px; padding: 10px; background: #d4edda; border-radius: var(--radius-md); }
+#fieldDescription { width: 100%; padding: 5px; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: var(--font-body); box-sizing: border-box; }
 </style>
 {% endblock %}
 
@@ -163,7 +200,7 @@
     <h1>메타데이터 생성 (배치 처리)</h1>
 
     <div style="margin: 15px 0;">
-        <a href="/perspective_test" class="btn btn-outline-info" style="text-decoration: none;">📊 그룹분석 (Perspective Analysis)</a>
+        <a href="/perspective_test" class="btn btn-outline-info">📊 그룹분석 (Perspective Analysis)</a>
     </div>
 
     <div class="step-indicator">
@@ -209,54 +246,60 @@
         <div id="step1" class="step-content">
             <h2>1. 데이터 업로드</h2>
             
-            <div class="upload-tabs" style="margin-bottom: 20px;">
-                <button class="btn btn-primary" id="tabFile" onclick="switchUploadTab('file')" style="margin-right: 10px;">파일 선택</button>
+            <div class="upload-tabs">
+                <button class="btn btn-primary" id="tabFile" onclick="switchUploadTab('file')" style="margin-right:10px;">파일 선택</button>
                 <button class="btn btn-outline-secondary" id="tabFolder" onclick="switchUploadTab('folder')">폴더 선택</button>
             </div>
             
             <div id="fileUploadArea" class="upload-area">
                 <p>CSV 파일을 드래그하거나 클릭하여 선택하세요</p>
-                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none;">
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none;">
                 <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">파일 선택</button>
-                <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                    지원 형식: CSV, Excel (.xlsx, .xls) | 최대 크기: 50MB
-                </p>
+                <p class="upload-area__hint">지원 형식: CSV, Excel (.xlsx, .xls) | 최대 크기: 100MB</p>
             </div>
             
-            <div id="folderUploadArea" class="upload-area" style="display: none;">
+            <div id="folderUploadArea" class="upload-area hidden">
                 <p>inputs 폴더의 모든 파일을 자동으로 처리합니다</p>
                 <button class="btn btn-primary" onclick="selectFolder()">inputs 폴더 선택</button>
-                <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                    wordcloud_project/inputs 폴더의 모든 CSV/Excel 파일이 병렬로 처리됩니다
-                </p>
-                <div id="folderInfo" class="hidden" style="margin-top: 15px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
-                    <p id="folderDetails"></p>
+                <p class="upload-area__hint">wordcloud_project/inputs 폴더의 모든 CSV/Excel 파일이 병렬로 처리됩니다</p>
+                <div id="folderInfo" class="hidden folder-result">
+                    <div class="folder-result-icon">✓</div>
+                    <div class="folder-result-body">
+                        <div class="folder-result-title">폴더 선택 완료</div>
+                        <div id="folderDetails" class="folder-result-detail"></div>
+                    </div>
                 </div>
             </div>
             
+            <div id="uploadLoading">
+                <div class="upload-spinner"></div>
+                <div class="upload-loading-text">업로드·분석 중…</div>
+                <div class="upload-loading-hint">대용량 파일(최대 100MB)은 수십 초 걸릴 수 있습니다. 잠시만 기다려 주세요.</div>
+            </div>
+
             <div id="fileInfo" class="hidden">
                 <h3>파일 정보</h3>
                 <p id="fileDetails"></p>
             </div>
 
-            <!-- 작업서 게시판: 미완료 작업이 있으면 자동 펼침 -->
-            <div id="workOrderBoard" style="margin-top: 30px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-                <div onclick="toggleWorkOrderBoard()" style="cursor: pointer; padding: 12px 16px; background: #f5f7fa; display: flex; justify-content: space-between; align-items: center;">
+            <!-- 작업서 게시판 -->
+            <div id="workOrderBoard">
+                <div onclick="toggleWorkOrderBoard()" class="wo-board-header">
                     <strong>📋 최근 작업 이력</strong>
                     <span id="woToggleIcon">▼</span>
                 </div>
-                <div id="workOrderBody" style="display: none;">
-                    <div id="workOrderList" style="padding: 12px 16px; font-size: 14px;">불러오는 중...</div>
+                <div id="workOrderBody" style="display:none;">
+                    <div id="workOrderList" class="wo-board-body">불러오는 중...</div>
                 </div>
             </div>
         </div>
 
 <div id="step2" class="step-content hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="flex flex--between">
                 <h2>2. 메타데이터 매핑</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="btn btn-outline-secondary" onclick="loadPreviousMapping()" style="font-size: 14px;">이전 매핑 불러오기</button>
-                    <button class="btn btn-outline-info" onclick="showMappingManager()" style="font-size: 14px;">📁 매핑 관리</button>
+                <div class="flex gap-2">
+                    <button class="btn btn-outline-secondary" onclick="loadPreviousMapping()">이전 매핑 불러오기</button>
+                    <button class="btn btn-outline-info" onclick="showMappingManager()">📁 매핑 관리</button>
                 </div>
             </div>
             <div class="mapping-area">
@@ -264,33 +307,33 @@
                     <h3>메타데이터 구조</h3>
                     <div id="metadataTree"></div>
 
-                    <div id="fieldManagement" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9;">
+                    <div id="fieldManagement">
                         <h4>필드 관리</h4>
-                        <div style="margin-bottom: 10px;">
+                        <div class="field-mgmt-actions">
                             <button class="btn btn-primary" onclick="showAddFieldForm()">필드 추가</button>
                             <button class="btn btn-secondary" onclick="cancelFieldEdit()">취소</button>
                         </div>
                         <div id="fieldForm" class="hidden">
-                            <div style="margin: 10px 0;">
+                            <div class="field-form-group">
                                 <label>필드명:</label><br>
-                                <input type="text" id="fieldName" style="width: 100%; padding: 5px;" placeholder="영문, 숫자, 언더스코어만 사용">
+                                <input type="text" id="fieldName" placeholder="영문, 숫자, 언더스코어만 사용">
                             </div>
-                            <div style="margin: 10px 0;">
+                            <div class="field-form-group">
                                 <label>타입:</label><br>
-                                <select id="fieldType" style="width: 100%; padding: 5px;">
+                                <select id="fieldType">
                                     <option value="string">문자열</option>
                                     <option value="number">숫자</option>
                                     <option value="boolean">불리언</option>
                                 </select>
                             </div>
-                            <div style="margin: 10px 0;">
+                            <div class="field-form-group">
                                 <label><input type="checkbox" id="fieldRequired"> 필수 필드</label>
                             </div>
-                            <div style="margin: 10px 0;">
+                            <div class="field-form-group">
                                 <label>설명:</label><br>
-                                <textarea id="fieldDescriptionInput" rows="2" style="width: 100%;" placeholder="필드 설명"></textarea>
+                                <textarea id="fieldDescriptionInput" rows="2" placeholder="필드 설명"></textarea>
                             </div>
-                            <div style="margin-top: 10px;">
+                            <div class="mt-2">
                                 <button class="btn btn-success" onclick="saveField()">저장</button>
                                 <button class="btn btn-secondary" onclick="cancelFieldEdit()">취소</button>
                             </div>
@@ -303,15 +346,15 @@
                 </div>
             </div>
 
-            <div style="margin-top: 20px;">
+            <div class="mt-4">
                 <h3>선택된 필드 정보</h3>
                 <div id="selectedFieldInfo"></div>
-                <div style="margin-top: 10px;">
+                <div class="mt-2">
                     <label>설명:</label>
-                    <textarea id="fieldDescription" rows="3" style="width: 100%;"></textarea>
+                    <textarea id="fieldDescription" rows="3"></textarea>
                 </div>
             </div>
-            <div style="margin-top: 20px;">
+            <div class="mt-4">
                 <h3>매핑 상태</h3>
                 <div id="mappingStatus"></div>
             </div>
@@ -321,7 +364,7 @@
             <h2>3. 미리보기</h2>
             <div class="preview-area">
                 <h3>target_employee_id별 그룹화된 데이터 미리보기</h3>
-                <div id="previewResults" style="margin-top: 20px;"></div>
+                <div id="previewResults"></div>
             </div>
         </div>
 
@@ -331,36 +374,44 @@
                 <h3>처리 설정</h3>
                 <label><input type="checkbox" id="enablePreprocessing" checked> 데이터 정제 적용</label><br>
                 <label><input type="checkbox" id="enableEmotionAnalysis" checked> 감정 분석 적용</label><br>
-            <div id="pseudonymInfo" style="margin: 15px 0; padding: 12px; background: #e8f4fd; border-radius: 6px; border-left: 4px solid #6366f1;">
+            <div id="pseudonymInfo">
                 <strong>🔒 가명 처리</strong>
-                <span id="pseudonymFieldsDisplay" style="color: #666; margin-left: 10px;">모든 PII 필드가 항상 가명처리됩니다</span>
+                <span id="pseudonymFieldsDisplay">모든 PII 필드가 항상 가명처리됩니다</span>
             </div>
-            <div style="margin: 15px 0; padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 6px;">
-                <label for="batchDisplayName" style="font-weight: bold; display: block; margin-bottom: 5px;">
-                    배치 명칭 (선택)
-                </label>
-                <input type="text" id="batchDisplayName"
-                       placeholder="예: 2025년 상반기 개발팀 평가"
-                       style="width: 100%; padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; box-sizing: border-box;">
-                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">
-                    미입력 시 배치 ID(batch_YYYYMMDD_X)가 표시됩니다
-                </p>
+            <div class="batch-name-card">
+                <label for="batchDisplayName" class="batch-name-label">배치 명칭 (선택)</label>
+                <input type="text" id="batchDisplayName" placeholder="예: 2025년 상반기 개발팀 평가">
+                <p class="batch-name-hint">미입력 시 배치 ID(batch_YYYYMMDD_X)가 표시됩니다</p>
+            </div>
+            <div class="batch-name-card">
+                <label><input type="checkbox" id="acqHandoffEnabled" checked> 핸드오프 코퍼스 적립 (감정 규칙 학습용)</label>
+                <p class="batch-name-hint">배치 저장 중 문장+KoTE(top-3 감정)를 압축 JSONL로 함께 적립합니다.<br>저장 위치: <code>plans/_datasets/kote_finetune/emotion/handoff/&lt;라벨&gt;/&lt;batch_id&gt;.jsonl</code></p>
+                <label for="acqHandoffLabel" class="batch-name-label">적립 대상 라벨</label>
+                <input type="text" id="acqHandoffLabel" placeholder="default">
+                <p class="batch-name-hint">데이터셋 폴더 하위 서브폴더명. 미입력 시 default. (경로 루트는 고정)</p>
+            </div>
+            <div class="batch-name-card">
+                <label><input type="checkbox" id="judgmentExtractEnabled" checked> 판정 패킷 추출 (어려운 문장 AI 판정용)</label>
+                <p class="batch-name-hint">배치 종료 후 긍↔부 경계·저마진 문장만 자기설명 패킷으로 추출합니다. 마진 3단(0.05·0.10·0.15) 동시 산출(기본 0.05).<br>저장 위치: <code>plans/_datasets/kote_finetune/eval/judgment/&lt;라벨&gt;/&lt;batch_id&gt;.json</code></p>
+                <label for="judgmentExtractLabel" class="batch-name-label">적립 대상 라벨</label>
+                <input type="text" id="judgmentExtractLabel" placeholder="default">
+                <p class="batch-name-hint">데이터셋 폴더 하위 서브폴더명. 미입력 시 default. (경로 루트는 고정)</p>
             </div>
             <button class="btn btn-primary" onclick="startBatchProcessing()">배치 처리 시작</button>
-            <button class="btn btn-warning" id="resumeBtn" style="display: none; margin-left: 10px;" onclick="showResumeModal()">이어서 배치 처리 시작</button>
+            <button class="btn btn-warning" id="resumeBtn" style="display:none;" onclick="showResumeModal()">이어서 배치 처리 시작</button>
 
             <!-- 이어서 작업 확인 모달 -->
-            <div id="resumeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-                <div style="background: #fff; border-radius: 10px; width: 400px; max-width: 90%; overflow: hidden;">
-                    <div style="padding: 16px 20px; background: #ffc107; font-weight: bold;">이어서 배치 처리 시작</div>
-                    <div style="padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;"><span>원본 파일</span><strong id="rmFile">-</strong></div>
-                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;"><span>작업 시작</span><strong id="rmStarted">-</strong></div>
-                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;"><span>이미 처리</span><strong id="rmDone">-</strong></div>
-                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;"><span>남은 작업</span><strong id="rmRemain" style="color: #dc3545;">-</strong></div>
-                        <div style="display: flex; justify-content: space-between; padding: 6px 0;"><span>총 작업</span><strong id="rmTotal">-</strong></div>
+            <div id="resumeModal">
+                <div class="modal-card" style="width:400px;">
+                    <div class="modal-card__header modal-card__header--warning">이어서 배치 처리 시작</div>
+                    <div class="modal-card__body">
+                        <div class="modal-card__row"><span>원본 파일</span><strong id="rmFile">-</strong></div>
+                        <div class="modal-card__row"><span>작업 시작</span><strong id="rmStarted">-</strong></div>
+                        <div class="modal-card__row"><span>이미 처리</span><strong id="rmDone">-</strong></div>
+                        <div class="modal-card__row"><span>남은 작업</span><strong id="rmRemain">-</strong></div>
+                        <div class="modal-card__row"><span>총 작업</span><strong id="rmTotal">-</strong></div>
                     </div>
-                    <div style="padding: 12px 20px; text-align: right; border-top: 1px solid #eee;">
+                    <div class="modal-card__footer">
                         <button class="btn btn-secondary" onclick="closeResumeModal()">취소</button>
                         <button class="btn btn-warning" onclick="confirmResume()">확인</button>
                     </div>
@@ -368,11 +419,11 @@
             </div>
 
             <!-- 중복(미저장) 평가 안내 모달 -->
-            <div id="skippedModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-                <div style="background: #fff; border-radius: 10px; width: 760px; max-width: 92%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;">
-                    <div style="padding: 16px 20px; background: #ffc107; font-weight: bold;">중복으로 저장되지 않은 평가</div>
-                    <div id="skippedModalBody" style="padding: 20px; overflow-y: auto;"></div>
-                    <div style="padding: 12px 20px; text-align: right; border-top: 1px solid #eee;">
+            <div id="skippedModal">
+                <div class="modal-card" style="width:760px; max-height:80vh;">
+                    <div class="modal-card__header modal-card__header--warning">중복으로 저장되지 않은 평가</div>
+                    <div id="skippedModalBody" class="modal-card__body--scroll"></div>
+                    <div class="modal-card__footer">
                         <button class="btn btn-secondary" onclick="closeSkippedModal()">닫기</button>
                     </div>
                 </div>
@@ -381,45 +432,45 @@
             <div id="processingStatus" class="hidden">
                 <h3>처리 진행 상황</h3>
 
-                <div class="processing-steps" id="processingStepsIndicator" style="display: flex; justify-content: center; align-items: center; margin: 20px 0; flex-wrap: wrap; gap: 10px;">
+                <div class="processing-steps" id="processingStepsIndicator">
                     <div class="proc-step" data-step="0" data-group="green-light">
                         <div class="proc-step-circle">1</div>
                         <div class="proc-step-text">데이터 수집</div>
                     </div>
-                    <div class="proc-arrow">→</div>
+                    <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="1" data-group="green-light">
                         <div class="proc-step-circle">2</div>
                         <div class="proc-step-text">초기화</div>
                     </div>
-                    <div class="proc-arrow">→</div>
+                    <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="2" data-group="green-light">
                         <div class="proc-step-circle">3</div>
                         <div class="proc-step-text">메타데이터</div>
                     </div>
-                    <div class="proc-arrow">→</div>
+                    <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="3" data-group="blue">
                         <div class="proc-step-circle">4</div>
                         <div class="proc-step-text">imeta 저장</div>
                     </div>
-                    <div class="proc-arrow">→</div>
+                    <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="4" data-group="blue">
                         <div class="proc-step-circle">5</div>
                         <div class="proc-step-text">tmeta 저장</div>
                     </div>
-                    <div class="proc-arrow">→</div>
+                    <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="5" data-group="green">
                         <div class="proc-step-circle">6</div>
                         <div class="proc-step-text">워드클라우드</div>
                     </div>
-                    <div class="proc-arrow">→</div>
+                    <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="6" data-group="green">
-                        <div class="proc-step-circle"><span style="font-size: 12px;">✓</span></div>
+                        <div class="proc-step-circle"><span style="font-size:12px;">✓</span></div>
                         <div class="proc-step-text">완료</div>
                     </div>
                 </div>
 
                 <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                    <div class="progress-fill" id="progressFill" style="width:0%;"></div>
                 </div>
                 <p id="processingText">처리 준비 중...</p>
             </div>
@@ -427,7 +478,7 @@
                 <h3>처리 결과</h3>
                 <div id="resultsSummary"></div>
                 <button class="btn btn-success" onclick="downloadResults()">결과 다운로드</button>
-                <button id="retryFailedBtn" class="btn btn-warning" style="display: none;" onclick="retryFailed()">실패 건 재배치</button>
+                <button id="retryFailedBtn" class="btn btn-warning" style="display:none;" onclick="retryFailed()">실패 건 재배치</button>
                 <button class="btn btn-danger" onclick="deleteBatch()">배치 결과 삭제</button>
             </div>
             <button class="btn btn-secondary" onclick="prevStep()">이전 단계로</button>
@@ -438,21 +489,21 @@
 {% block scripts %}
     <script src="{{ url_for('static', filename='js/metadata_batch.js') }}"></script>
 
-        <div id="mappingManagerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-            <div style="background: white; margin: 50px auto; padding: 20px; width: 600px; border-radius: 10px; max-height: 80vh; overflow-y: auto;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div id="mappingManagerModal">
+            <div class="modal-card" style="width:600px; max-height:80vh; margin:50px auto; overflow-y:auto;">
+                <div class="flex flex--between" style="margin-bottom:var(--space-5);">
                     <h3>📁 매핑 관리</h3>
-                    <button onclick="closeMappingManager()" style="font-size: 24px; border: none; background: none; cursor: pointer;">×</button>
+                    <button onclick="closeMappingManager()" class="modal-close">×</button>
                 </div>
                 
-                <div id="mappingList" style="margin-bottom: 20px;">
-                    <p style="color: #666;">매핑 목록을 불러오는 중...</p>
+                <div id="mappingList" style="margin-bottom:var(--space-5);">
+                    <p style="color:var(--text-muted);">매핑 목록을 불러오는 중...</p>
                 </div>
                 
-                <div style="border-top: 1px solid #ddd; padding-top: 15px;">
+                <div style="border-top:1px solid var(--border-color); padding-top:15px;">
                     <h4>현재 매핑을 새 이름으로 저장</h4>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <input type="text" id="newMappingName" placeholder="매핑 이름 (예: 부서별 설정)" style="flex: 1; padding: 8px;">
+                    <div class="flex gap-2" style="margin-top:10px;">
+                        <input type="text" id="newMappingName" placeholder="매핑 이름 (예: 부서별 설정)" style="flex:1; padding:8px; border:1px solid var(--border-light); border-radius:var(--radius-md);">
                         <button class="btn btn-success" onclick="saveMappingWithName()">저장</button>
                     </div>
                 </div>
