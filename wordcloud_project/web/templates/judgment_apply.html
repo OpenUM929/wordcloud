@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}판정 결과 반영{% endblock %}
+
+{% block extra_head %}
+<style>
+.ja-intro { background: var(--bg-muted); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); }
+.ja-intro h3 { margin: 0 0 var(--space-2); }
+.ja-intro p { margin: var(--space-1) 0; color: var(--text-muted); font-size: var(--font-sm); }
+.ja-intro code { background: rgba(0,0,0,0.05); padding: 1px 5px; border-radius: var(--radius-sm); }
+
+#jaLoading { display: none; text-align: center; padding: var(--space-6); }
+.ja-spinner { width: 36px; height: 36px; border: 3px solid var(--border-color); border-top-color: var(--color-primary); border-radius: 50%; margin: 0 auto var(--space-3); animation: ja-spin 0.8s linear infinite; }
+@keyframes ja-spin { to { transform: rotate(360deg); } }
+
+#jaResult { display: none; margin-top: var(--space-5); }
+.ja-summary { display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+.ja-stat { flex: 1; min-width: 140px; background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-4); text-align: center; }
+.ja-stat__num { font-size: 28px; font-weight: 700; color: var(--color-primary); }
+.ja-stat__label { font-size: var(--font-sm); color: var(--text-muted); margin-top: var(--space-1); }
+.ja-stat--warn .ja-stat__num { color: var(--color-warning); }
+.ja-stat--mute .ja-stat__num { color: var(--text-subtle); }
+
+.ja-queue { background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-4); }
+.ja-queue h3 { margin: 0 0 var(--space-3); }
+.ja-queue__item { border-bottom: 1px solid var(--border-color); padding: var(--space-3) 0; font-size: var(--font-sm); }
+.ja-queue__item:last-child { border-bottom: none; }
+.ja-queue__text { color: var(--text-body); }
+.ja-queue__meta { color: var(--text-subtle); font-size: var(--font-xs); margin-top: var(--space-1); }
+.ja-error { color: var(--color-danger); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 0 auto; padding: var(--space-6);">
+    <h1>📥 판정 결과 반영</h1>
+
+    <div class="ja-intro">
+        <h3>AI 판정이 끝난 패킷을 평가 DB에 반영합니다</h3>
+        <p>메타데이터 생성 시 추출한 <strong>판정 패킷</strong>(어려운 문장 모음)을 AI/사람이 판정해 <code>result.label</code>을 채운 뒤, 그 JSON을 여기에 업로드하면 각 문장의 감정 보정값(<code>sentiment_corrections</code>)에 반영됩니다.</p>
+        <p>· 가명 키(<code>db_id</code>, <code>sent_idx</code>) 기준으로 in-place 병합 — 기존 보정은 보존되고 신규 판정이 우선합니다.</p>
+        <p>· <code>needs_human: true</code> 항목은 DB에 넣지 않고 아래 검토 큐로만 표시됩니다.</p>
+    </div>
+
+    <div id="jaUploadArea" class="upload-area">
+        <p>판정 완료된 패킷 JSON을 드래그하거나 클릭하여 선택하세요</p>
+        <input type="file" id="jaFileInput" accept=".json,application/json" style="display:none;">
+        <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('jaFileInput').click()">패킷 파일 선택</button>
+        <p class="upload-area__hint">지원 형식: 판정 패킷 JSON (<code>items[].result.label</code> 포함)</p>
+    </div>
+
+    <div id="jaLoading">
+        <div class="ja-spinner"></div>
+        <div>패킷 반영 중…</div>
+    </div>
+
+    <div id="jaResult">
+        <div class="ja-summary" id="jaSummary"></div>
+        <div class="ja-queue" id="jaQueue" style="display:none;">
+            <h3>🙋 사람 검토 필요 큐 <span id="jaQueueCount" style="color:var(--text-muted);font-weight:400;"></span></h3>
+            <div id="jaQueueList"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/judgment_apply.js') }}"></script>
+{% endblock %}
