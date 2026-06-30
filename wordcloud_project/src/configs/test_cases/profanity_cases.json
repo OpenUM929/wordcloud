@@ -10,5 +10,9 @@
   {"id": "pf-09", "input": "씨발", "expected": {"detected": true, "methods_used": ["kiwi_morpheme"]}, "category": "1계층", "description": "1계층: 단독 욕설"},
   {"id": "pf-10", "input": "개새끼", "expected": {"detected": true, "methods_used": ["kiwi_morpheme"]}, "category": "1계층", "description": "1계층: 단독 욕설"},
   {"id": "pf-11", "input": "시스템 발전을 기대합니다", "expected": {"detected": false}, "category": "정상", "description": "정상: '시발'이 포함되나 의미 없음"},
-  {"id": "pf-12", "input": "미개한 사고방식", "expected": {"detected": false}, "category": "정상", "description": "정상: '개'가 포함되나 의미 없음"}
+  {"id": "pf-12", "input": "미개한 사고방식", "expected": {"detected": false}, "category": "정상", "description": "정상: '개'가 포함되나 의미 없음"},
+  {"id": "pf-13", "input": "입사 3년차 성실한 직원", "expected": {"detected": false}, "category": "정상", "description": "정상: 근속 '년'(年)은 욕설 아님 (0630_02)"},
+  {"id": "pf-14", "input": "2025년 목표 100% 달성", "expected": {"detected": false}, "category": "정상", "description": "정상: 연도 '년'(年)은 욕설 아님 (0630_02)"},
+  {"id": "pf-15", "input": "올해로 5년 근속한 베테랑", "expected": {"detected": false}, "category": "정상", "description": "정상: 근속연수 '년'은 욕설 아님 (0630_02)"},
+  {"id": "pf-16", "input": "미친년", "expected": {"detected": true, "methods_used": ["kiwi_morpheme"]}, "category": "1계층", "description": "1계층: '년' 복합 욕설은 자체 항목으로 검출 유지 (0630_02)"}
 ]
