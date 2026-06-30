@@ -47,6 +47,13 @@ class ProfanityFilter:
         # 영어 욕설만 캐싱 (한글 없는 단어) — advanced_filter_text에서 반복 필터링 방지
         self.english_profanity_words = [w for w in self.profanity_words if not re.search(r'[가-힣]', w)]
         self.logger.info(f"영어 욕설 단어 {len(self.english_profanity_words)}개 캐싱")
+        # 비건전 단어도 욕설과 동일하게 경계 검사 — 복합어 부분일치 오탐 방지(예: 회사정책→'사정')
+        self.korean_unhealthy_words = [w for w in self.unhealthy_words if re.search(r'[가-힣]', w)]
+        self._english_unhealthy_patterns = [
+            (w, re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE))
+            for w in self.unhealthy_words if not re.search(r'[가-힣]', w)
+        ]
+        self.logger.info(f"비건전 단어 캐싱: 한글 {len(self.korean_unhealthy_words)} / 영어 {len(self._english_unhealthy_patterns)}")
 
         # ── 2계층 탐지 초기화 ──────────────────────────────────────────────────
         # 1계층: Kiwi 형태소 분석기
@@ -91,9 +98,11 @@ class ProfanityFilter:
                     "이", "그", "저", "것", "수", "등", "에서", "에게", "으로", "에서", "이다", "하다",
                     "있다", "없다", "되다", "아니다", "이다", "것이다", "수 있다", "할 수 있다"
                 ],
+                # '사정'(상황)·'가슴'(가슴 벅참)·'젖'(젖다)은 성적 의미와 동음이의어이고
+                # 인사평가 코퍼스에선 거의 무해 → 오탐 방지를 위해 리스트에서 제외(2026-06-30 결정)
                 "unhealthy_words": [
-                    "섹스", "성관계", "포르노", "야동", "자위", "오르가즘", "사정", "음경", "보지",
-                    "가슴", "젖", "엉덩이", "sex", "porn", "masturbate", "orgasm", "penis", "vagina",
+                    "섹스", "성관계", "포르노", "야동", "자위", "오르가즘", "음경", "보지",
+                    "엉덩이", "sex", "porn", "masturbate", "orgasm", "penis", "vagina",
                     "breast", "butt", "ass"
                 ],
                 "remove_special_chars": True,
@@ -203,6 +212,41 @@ class ProfanityFilter:
         gap_words = [g[0] for g in gap_spans]
         return morpheme_words, gap_words, morpheme_spans, gap_spans
 
+    def _detect_unhealthy(self, text: str) -> List[tuple]:
+        """비건전 단어 탐지 — 욕설과 동일한 경계 검사 적용.
+
+        한글: Kiwi 형태소 토큰 정확 일치 → 복합어 내부 부분 문자열 오탐 방지
+              (예: '회사정책'의 '사정'은 단독 형태소가 아니므로 미검출).
+              Kiwi 미가용 시 한글 비건전어는 검출 생략(오탐<미탐, 욕설 오탐 0 우선).
+        영어: 단어경계(\\b) 매칭 → 'assessment'/'class'의 'ass' 미검출.
+
+        반환: [(word, start, end), ...]  (span은 원본 text 기준)
+        """
+        found = []
+        # 한글: 형태소 정확 일치
+        if self.kiwi and self.korean_unhealthy_words:
+            try:
+                for t in self.kiwi.tokenize(text):
+                    if t.form in self.korean_unhealthy_words:
+                        found.append((t.form, t.start, t.end))
+            except Exception as e:
+                self.logger.warning(f"Kiwi tokenize(비건전) 실패: {e}")
+        # 영어: 단어경계
+        for word, pattern in self._english_unhealthy_patterns:
+            for m in pattern.finditer(text):
+                found.append((word, m.start(), m.end()))
+        return found
+
+    def _apply_spans(self, text: str, spans: List[tuple]) -> str:
+        """주어진 (word, start, end) span을 *** 로 치환.
+
+        인덱스 보존을 위해 뒤(오른쪽)에서부터 치환한다.
+        str.replace를 쓰지 않으므로 복합어 내부 동일 문자열은 영향받지 않는다.
+        """
+        for _, s, e in sorted(spans, key=lambda x: x[1], reverse=True):
+            text = text[:s] + '***' + text[e:]
+        return text
+
     # ── 공개 API ───────────────────────────────────────────────────────────
 
     def filter_text(self, text: str, remove_profanity: bool = True,
@@ -241,11 +285,12 @@ class ProfanityFilter:
                 for word in set(morpheme_detected + gap_detected):
                     removed_items.append(f"욕설:{word}")
 
-        # 비건전 단어 제거 — substring 유지 (복합어 오탐 위험 낮음)
+        # 비건전 단어 제거 — 형태소/단어경계 매칭 (복합어 부분일치 오탐 방지: 회사정책→'사정')
         if remove_unhealthy:
-            for word in self.unhealthy_words:
-                if word in text:
-                    text = text.replace(word, "***")
+            unhealthy_spans = self._detect_unhealthy(text)
+            if unhealthy_spans:
+                text = self._apply_spans(text, unhealthy_spans)
+                for word, _, _ in unhealthy_spans:
                     removed_items.append(f"비건전:{word}")
 
         # 불용어 제거 (단어 단위로 처리)
@@ -386,10 +431,12 @@ class ProfanityFilter:
             except Exception as e:
                 self.logger.warning(f"{log_prefix}profanity-check 필터링 실패: {e}")
 
-        # ── 비건전 단어 (한글/영어 공통) ─────────────────────────────────────
-        for word in self.unhealthy_words:
-            if word in original_text:
-                filtered_text = filtered_text.replace(word, "***")
+        # ── 비건전 단어 (한글 형태소 / 영어 단어경계) ─────────────────────────
+        # filtered_text 기준으로 탐지(욕설 치환 후이므로 인덱스 정합) — 복합어 부분일치 오탐 방지
+        unhealthy_spans = self._detect_unhealthy(filtered_text)
+        if unhealthy_spans:
+            filtered_text = self._apply_spans(filtered_text, unhealthy_spans)
+            for word, _, _ in unhealthy_spans:
                 detected_profanity.append(word)
 
         processing_time = int((time.time() - start_time) * 1000)

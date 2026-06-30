@@ -63,3 +63,8 @@
 | 0624_01_metadata-generation-ui | 메타데이터 생성 UI 버그(로딩 미표시, 폴더선택 공백) + 배치명칭 자동입력 | Done | 2026-06-24 |
 | 0624_02_css-standardization | CSS 표준안 위반 수정 + 최대 너비 1600px 확장 | Done | 2026-06-24 |
 | 0624_03_judgment-apply-ui | 판정 결과 반영 UI(주기능) — 판정 완료 패킷 업로드→/judgment/apply→요약·검토큐. 추출↔반영 end-to-end 연결 | Pre-Done | 2026-06-24 |
+| 0624_04_emotion-clustering | KoTE 파인튜닝용 신규 HR 감정그룹 군집 발굴(감정 스트림) — 미피복 484K(56%) 멀티뷰 군집 24개→3대 화행(G1약점부재·G2개선요청·G3역량서술). D1·D3·D4·D5 완료(176K weak 전파·gold 1,318·baseline 1,500). 군집≠gold·필드 1급·긍↔부0 | Doing | 2026-06-24 |
+| 0624_05_group-review-ui | 신규 그룹 gold 검토 웹 UI(재사용 라벨링) — eval/*.jsonl 호출→긍/부/중/그룹아님 빠른 선택(키보드)·ai_reference 힌트·결정 저장. 데이터 추가 시 재사용. 경로 traversal 가드·admin·plans 배포제외 | Pre-Done | 2026-06-24 |
+| 0625_01_eval-pseudonym-double-mapping-fix | (오진 학습기록·보존) 가명화가 원인이라 단정했으나 실제 원인은 evaluation_date int → 행 필터 전건탈락. 본문=당시 오진, 최하단 "반전"=실제 원인/해결(date_normalize). 작성법 교훈 6가지 | Done | 2026-06-25 |
+| 0630_01_nav-restructure | Nav 메뉴 워크플로 중심 재구성 + batch-monitor/judgment-extract 페이지 신규 | Todo | 2026-06-30 |
+| 0630_02_unhealthy-substr-fp | 비건전 단어 substring 오탐 수정 (회사정책→"사정" 욕설 오인) — 형태소/단어경계 매칭으로 교체 | Pre-Done | 2026-06-30 |
