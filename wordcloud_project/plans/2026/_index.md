@@ -68,3 +68,4 @@
 | 0625_01_eval-pseudonym-double-mapping-fix | (오진 학습기록·보존) 가명화가 원인이라 단정했으나 실제 원인은 evaluation_date int → 행 필터 전건탈락. 본문=당시 오진, 최하단 "반전"=실제 원인/해결(date_normalize). 작성법 교훈 6가지 | Done | 2026-06-25 |
 | 0630_01_nav-restructure | Nav 메뉴 워크플로 중심 재구성 + batch-monitor/judgment-extract 페이지 신규 | Todo | 2026-06-30 |
 | 0630_02_unhealthy-substr-fp | 비건전 단어 substring 오탐 수정 (회사정책→"사정" 욕설 오인) — 형태소/단어경계 매칭으로 교체 | Pre-Done | 2026-06-30 |
+| 0630_03_deficiency-framing-neutral | 결핍·개선요청("보완 필요")이 rule4_default로 부→긍 누수되던 13만 구멍 중립화 — 전수 24,384 수정·긍↔부 0 | Pre-Done | 2026-06-30 |

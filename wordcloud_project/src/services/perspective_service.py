@@ -4,11 +4,8 @@ matplotlib.use('Agg')
 import os
 import json
 import re
-import logging
-
-logger = logging.getLogger(__name__)
-import hashlib
 import uuid
+import hashlib
 from collections import Counter
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -25,6 +22,11 @@ from src.modules.wordcloud_generator import WordCloudGenerator
 from src.modules.pseudonym_manager import PseudonymManager
 from src.modules.text_preprocessing import split_sentences  # 정의는 text_preprocessing로 이전(경량)
 from src.modules.hr_context_lexicon import is_negation_praise  # negation 칭찬(부정의 부정) 식별(순수 문자열)
+from utils.logger import get_pipeline_logger, _mask_real_id
+from utils.date_normalize import normalize_eval_date
+
+# 파이프라인 전용 로거
+logger = get_pipeline_logger()
 
 _EVAL_DB_DIR = os.path.join(os.path.dirname(__file__), '..', '..', '.sessions')
 _EVAL_DB_PATH = os.path.join(_EVAL_DB_DIR, 'deploy_sessions.db')
@@ -569,14 +571,19 @@ def has_unnegated_deficiency(sentence):
 # 건설적 필요/요구 — 다면평가 약점 섹션 "[긍정표지]+필요/요구" = "더 ~하면 좋겠다"(부정).
 #   batch_2026062x 약점 배치 부→긍 지배 패턴(경청 필요·소통이 필요함·자세가 필요함·책임감 요구됨).
 _NEED_NEG_WINDOW = 5    # '필요' 뒤 negation 탐색창(필요하지 않/필요 없 = 불요=긍정 → 제외)
+# '필요 [인물/인재/존재…]' = 불가결한 사람(긍정) → 건설적 비판 아님.
+#   배경(0630 재감사·PoC): "강원본부에 절대적 필요 인물"이 '필요'로 has_constructive_need=True가 되어
+#   positive_rescue를 막던 긍→중 트랩. 직후 토큰이 사람명사면 제외(긍정 보존).
+#   ⚠️ '필요 이상'(과도)은 비판("필요이상의 일에 시달려")이라 가드에 넣지 않는다(부→긍 교차 방지, 전수검증).
+_NEED_POSITIVE_TAILS = ('인물', '인재', '존재', '인력', '자원')
 
 
 def has_constructive_need(sentence):
-    """'필요'(건설적 비판 술어)가 등장하면 True. 관형형·부정·불필요는 제외(긍→부 보호).
+    """'필요'(건설적 비판 술어)가 등장하면 True. 관형형·부정·불필요·불가결은 제외(긍→부 보호).
 
     포착: "경청 필요"·"소통이 필요함"·"자세가 필요하다"·"향상이 필요"·"요구됨/요구된다".
     제외(긍→부 trap): '필요한 [명사]'(관형=necessary) · '필요하지 않'/'필요 없'(불요=긍정)
-                      · '불필요'(앞 글자 불).
+                      · '불필요'(앞 글자 불) · '필요 인물/인재/이상'(불가결·과 = 긍정).
     """
     if not sentence:
         return False
@@ -585,12 +592,15 @@ def has_constructive_need(sentence):
         a1 = sentence[p + 2:p + 3]
         window = sentence[p + 2:p + 2 + _NEED_NEG_WINDOW]
         before = sentence[max(0, p - 1):p]
+        tail = sentence[p + 2:p + 2 + 6].lstrip()         # '필요' 직후(선행 공백 제거) 토큰
         if before == '불':
             pass                                          # 불필요 → 제외
         elif a1 == '한':
             pass                                          # 필요한 [명사] = 관형(necessary) → 제외
         elif any(neg in window for neg in ('없', '않', '아니')):
             pass                                          # 필요 없/필요하지 않 = 불요(긍정) → 제외
+        elif any(tail.startswith(t) for t in _NEED_POSITIVE_TAILS):
+            pass                                          # 필요 인물/인재 = 불가결(긍정) → 제외
         else:
             return True                                   # 필요/필요함/필요하다/X 필요 = 건설적 비판
         p = sentence.find('필요', p + 2)
@@ -610,15 +620,18 @@ _WISH_FORMS = ['했으면', '하였으면', '하면 좋', '으면 좋', '길 바
                '면 좋겠', '였으면', '으면 합', '면 합니', '면 됩', '면 함']
 _IMPROVE_REQ_VERBS = ['하면', '해야', '하길', '했으면', '하였으면', '필요', '요함', '요망',
                       '바람', '바랍', '하여야', '할 필요']
-_DIFFICULTY_OK = ('극복', '없', '헤', '이겨', '이김', '풀', '해소', '극', '않')
+# '어려움' 직후에 이들이 오면 곤란 호소가 아니라 *남의* 어려움을 돕는 긍정 서술 → 제외.
+#   '해결/해소'(타동 해결)·'도와/도움/살피/살펴/나서/앞장'(조력)·'지나치'(지나치지 않음=세심).
+#   배경(0630 전수검증): "동료의 어려움을 해결해 주십니다"類 긍정이 중립화되던 긍→중 트랩 차단.
+_DIFFICULTY_OK = ('극복', '없', '헤', '이겨', '이김', '풀', '해소', '해결', '극', '않',
+                  '도와', '도움', '살피', '살펴', '나서', '앞장', '지나치')
 
 
-def has_improvement_request(sentence):
-    """개선 바람/요함·요망/보완요청/곤란 프레이밍이면 True(긍정표지+단점맥락 → 부→긍 차단).
+def _has_improvement_request_core(sentence):
+    """개선요청 고정밀 프레이밍(희망형·요함/요망·보완|개선 요청). 곤란(어려움) 제외.
 
-    negation·극복 trap은 가드해 긍→부(양방향 핵심가치)를 만들지 않는다.
-    포착: "더 ~했으면"·"~하길 바람"·"~면 좋겠"·"신속성 요함"·"열의 요망"·"소통 보완해야"·
-          "협업에 어려움". 제외(trap): "보완점 없음"(없 negation)·"어려움 극복"(극복).
+    중립화 분기(improvement_request_neutral) 전용 — 어려움은 "남의 어려움을 돕는다"(긍정)
+    트랩이 잦아 중립화 트리거에서 분리한다(positive_rescue용 has_improvement_request는 곤란 포함 보존).
     """
     if not sentence:
         return False
@@ -642,7 +655,13 @@ def has_improvement_request(sentence):
                     and any(v in tail for v in _IMPROVE_REQ_VERBS)):
                 return True
             j = sentence.find(w, j + len(w))
-    # 4) 곤란(어려움/어렵) — 극복/없/헤쳐/해소 근접 시 제외(긍정)
+    return False
+
+
+def _has_difficulty_complaint(sentence):
+    """곤란(어려움/어렵) 호소면 True. 극복/조력 동사 근접 시 제외(남을 돕는 긍정)."""
+    if not sentence:
+        return False
     for w in ('어려움', '어렵'):
         k = sentence.find(w)
         while k != -1:
@@ -651,6 +670,16 @@ def has_improvement_request(sentence):
                 return True
             k = sentence.find(w, k + len(w))
     return False
+
+
+def has_improvement_request(sentence):
+    """개선 바람/요함·요망/보완요청/곤란 프레이밍이면 True(긍정표지+단점맥락 → 부→긍 차단).
+
+    negation·극복 trap은 가드해 긍→부(양방향 핵심가치)를 만들지 않는다. 기존 동작 보존:
+    고정밀 개선요청(core) + 곤란(어려움) 합집합. positive_rescue 게이트 전용 진입점.
+    포착: "더 ~했으면"·"~하길 바람"·"~면 좋겠"·"신속성 요함"·"열의 요망"·"소통 보완해야"·"협업에 어려움".
+    """
+    return _has_improvement_request_core(sentence) or _has_difficulty_complaint(sentence)
 
 
 # 약점-없음 선언 — "보완점 없음/단점 없습니다" 等. 약점 섹션에 "없음"이 흔해 KoTE가 '보완/단점'만
@@ -777,6 +806,22 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
             and has_unnegated_strong_negative(sentence)):
         return -strength, 'euphemistic_negative'
 
+    # 개선요청/결핍 프레이밍 중립화(improvement_request_neutral):
+    #   결핍·개선요청 표지("보완 필요"·"소통 부족"·"개선 바람")가 있는데 KoTE가 긍정 우세로 줘
+    #   rule4_default가 그대로 긍정 통과하던 부→긍 누수를 중립으로 가로챈다.
+    #   배경(batch_20260624 단점필드 실측·0630 PoC): 단점필드 30.8% positive, 그중 78%가
+    #   rule4_default 무override = 구조적 구멍. 기존 개선요청 가드는 positive_rescue 전용이라 못 봄.
+    #   안전성: ① pos>neg(긍정으로 갈 것)일 때만 발동 — neg≥pos 진짜 부정은 rule3/rule4가 처리.
+    #          ② 부정이 아니라 *중립*으로만 강등 → 긍↔부 0 보존(부→긍 위반 제거, 긍→부 미발생).
+    #          ③ has_improvement_request/has_constructive_need/has_unnegated_deficiency의 내장 가드
+    #             (없/극복/양보/관형 '필요한'/'필요 인물·이상')가 긍정 trap을 제외 → 긍→중 최소화.
+    #          ④ has_contrast(반전)는 rule1/2가 방향 판단 → 제외.
+    if (pos > neg and not has_contrast
+            and (_has_improvement_request_core(sentence)
+                 or has_constructive_need(sentence)
+                 or has_unnegated_deficiency(sentence))):
+        return 0.0, 'improvement_request_neutral'
+
     # 규칙 1: 반전 + 마지막 + 저신뢰도 + strength>0.5 → 모델 방향 기반 가중
     if (has_contrast and is_last and confidence < threshold
             and strength > 0.5):
@@ -839,9 +884,15 @@ def _resolve_to_pseudo(input_id, pseudo_mgr):
     """원본 ID를 저장된 가명으로 변환. 매핑이 없으면 input_id 그대로 반환.
     get_pseudonym()과 달리 새 가명을 생성하지 않음."""
     if not input_id or not pseudo_mgr:
+        logger.warning("input_id=%s mgr=%s", input_id, bool(pseudo_mgr), extra={'request_id': '', 'stage': 'PSEUDO_RESOLVE'})
         return input_id
     data = pseudo_mgr._load_mappings()
-    return data['real_to_pseudo'].get(str(input_id), input_id)
+    resolved = data['real_to_pseudo'].get(str(input_id), input_id)
+    if resolved == input_id:
+        logger.warning("mapping_not_found returned_as_is=%s", _mask_real_id(str(input_id)), extra={'request_id': '', 'stage': 'PSEUDO_RESOLVE'})
+    else:
+        logger.debug("resolved_to_pseudo=%s", resolved, extra={'request_id': '', 'stage': 'PSEUDO_RESOLVE'})
+    return resolved
 
 
 def load_position_hierarchy(hierarchy_path=None):
@@ -899,9 +950,10 @@ def _get_pseudonym_fields(batch_summary):
     return fields if isinstance(fields, list) else []
 
 
-def _enrich_with_real_ids(results, pseudonym_fields, enrich=False):
+def _enrich_with_real_ids(results, pseudonym_fields, enrich=False, request_id=''):
     if not enrich:
         return results
+    logger.info("enrich=%s fields=%s", enrich, pseudonym_fields, extra={'request_id': request_id, 'stage': 'ENRICH'})
     mgr = _get_pseudo_mgr()
     RESULT_LEVEL_MAP = {
         'target_employee_id': 'employee_id',
@@ -914,10 +966,20 @@ def _enrich_with_real_ids(results, pseudonym_fields, enrich=False):
         ev = item.get('evaluation', {})
         for field in pseudonym_fields:
             if field in ev and isinstance(ev[field], str):
-                ev[f"{field}_real"] = mgr.get_real_id(ev[field])
+                real = mgr.get_real_id(ev[field])
+                if real and real != ev[field]:
+                    ev[f"{field}_real"] = real
+                    logger.debug("restored field=%s from=%s to=%s", field, ev[field], _mask_real_id(real), extra={'request_id': request_id, 'stage': 'ENRICH'})
+                else:
+                    logger.warning("restore_failed field=%s pseudo=%s", field, ev[field], extra={'request_id': request_id, 'stage': 'ENRICH'})
             result_key = RESULT_LEVEL_MAP.get(field)
             if result_key and result_key in item and isinstance(item[result_key], str):
-                item[f"{result_key}_real"] = mgr.get_real_id(item[result_key])
+                real = mgr.get_real_id(item[result_key])
+                if real and real != item[result_key]:
+                    item[f"{result_key}_real"] = real
+                    logger.debug("restored field=%s from=%s to=%s", result_key, item[result_key], _mask_real_id(real), extra={'request_id': request_id, 'stage': 'ENRICH'})
+                else:
+                    logger.warning("restore_failed field=%s pseudo=%s", result_key, item[result_key], extra={'request_id': request_id, 'stage': 'ENRICH'})
     return results
 
 
@@ -951,16 +1013,18 @@ def _get_eval_field_value(ev, raw_field):
     raw_val = ev.get(base_field)
     if raw_val is None:
         return None
-    if modifier == 'year':
-        if isinstance(raw_val, str) and len(raw_val) >= 4:
-            return raw_val[:4]
-        return None
-    elif modifier == 'month':
-        if isinstance(raw_val, str) and len(raw_val) >= 7:
-            parts = raw_val.split('-')
-            if len(parts) >= 2:
-                return parts[1]
-        return None
+    # 날짜 modifier(year/month)는 다양한 입력 형식(int 2025, '20250601', '250105' 등)을
+    # 표준형(YYYY[-MM[-DD]])으로 정규화한 뒤 추출한다. 과거엔 'YYYY-MM-DD' 문자열만 가정해
+    # 정수 연도·구분자 없는 형식에서 None을 반환, row 필터가 전건 탈락하던 버그가 있었다.
+    if modifier in ('year', 'month'):
+        norm = normalize_eval_date(raw_val)
+        if not norm:
+            return None
+        if modifier == 'year':
+            return norm[:4] if len(norm) >= 4 else None
+        # month
+        parts = norm.split('-')
+        return parts[1] if len(parts) >= 2 and parts[1] else None
     return raw_val
 
 
@@ -1070,9 +1134,11 @@ def _count_batches(processed_data_dir):
         conn.close()
 
 
-def load_all_batches(processed_data_dir=None):
+def load_all_batches(processed_data_dir=None, request_id=''):
     if processed_data_dir is None:
         processed_data_dir = PROCESSED_DATA_DIR_PATH
+
+    logger.info("", extra={'request_id': request_id, 'stage': 'DB_LOAD_ALL'})
 
     conn = _get_eval_conn()
     try:
@@ -1098,7 +1164,11 @@ def load_all_batches(processed_data_dir=None):
                 'target_employee_position': pos or '',
             }
         if data:
-            ev_obj = json.loads(data)
+            try:
+                ev_obj = json.loads(data)
+            except json.JSONDecodeError as e:
+                logger.error("json_parse_error row=%s error=%s", ev_db_id, e, extra={'request_id': request_id, 'stage': 'DB_LOAD_ALL'})
+                continue
             # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
             ev_obj['_db_id'] = ev_db_id
             emp_evals[emp_id].append(ev_obj)
@@ -1117,6 +1187,11 @@ def load_all_batches(processed_data_dir=None):
                 'evaluations': evals,
             }
         })
+
+    logger.info("total_employees=%s total_evals=%s", len(emp_meta), total_evals, extra={'request_id': request_id, 'stage': 'DB_LOAD_ALL'})
+
+    if not emp_meta:
+        logger.warning("no_data", extra={'request_id': request_id, 'stage': 'DB_LOAD_ALL'})
 
     return {
         'batch_info': {
@@ -1163,7 +1238,7 @@ def load_batch_history(processed_data_dir=None):
     }
 
 
-def load_employee_batch(employee_id):
+def load_employee_batch(employee_id, request_id=''):
     """단일 직원의 평가만 담은 unified 형태 dict 반환.
 
     load_all_batches()와 동일한 반환 구조(employee_results/batch_info/batches)를
@@ -1177,7 +1252,9 @@ def load_employee_batch(employee_id):
     REQ-2606-032/0615_06 회귀 방지.)
     """
     pseudo_mgr = _get_pseudo_mgr()
+    logger.info("input_id=%s", _mask_real_id(str(employee_id)) if employee_id else '', extra={'request_id': request_id, 'stage': 'DB_LOAD'})
     resolved_id = _resolve_to_pseudo(employee_id, pseudo_mgr)
+    logger.debug("resolved_to_pseudo=%s", resolved_id, extra={'request_id': request_id, 'stage': 'DB_LOAD'})
 
     conn = _get_eval_conn()
     try:
@@ -1192,6 +1269,7 @@ def load_employee_batch(employee_id):
         conn.close()
 
     if not rows:
+        logger.warning("no_rows_found employee_id=%s", _mask_real_id(resolved_id), extra={'request_id': request_id, 'stage': 'DB_LOAD'})
         return {'employee_results': [], 'batch_info': {}, 'batches': []}
 
     name = dept = pos = ''
@@ -1199,10 +1277,16 @@ def load_employee_batch(employee_id):
     for _emp_id, nm, dp, ps, data, ev_db_id in rows:
         name, dept, pos = nm or '', dp or '', ps or ''
         if data:
-            ev_obj = json.loads(data)
+            try:
+                ev_obj = json.loads(data)
+            except json.JSONDecodeError as e:
+                logger.error("json_parse_error row=%s error=%s", ev_db_id, e, extra={'request_id': request_id, 'stage': 'DB_LOAD'})
+                continue
             # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
             ev_obj['_db_id'] = ev_db_id
             evals.append(ev_obj)
+
+    logger.info("row_count=%s eval_count=%s", len(rows), len(evals), extra={'request_id': request_id, 'stage': 'DB_LOAD'})
 
     return {
         'batch_info': {'total_evaluations': len(evals), 'unique_employees': 1},
@@ -1388,15 +1472,32 @@ def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None
         sent_scores_raw = [(e['pos'], e['neg'], e['neutral']) for e in cache]
 
     total = len(sentences)
+    # HR 파인튜닝 감정모델(극성) — 플래그 on이면 문장 배치 추론(O(배치)). 실패 시 None→규칙 폴백.
+    model_labels = None
+    try:
+        from src.config.settings import USE_HR_SENTIMENT_MODEL
+        if USE_HR_SENTIMENT_MODEL:
+            from src.modules.hr_sentiment import predict_sentiments
+            model_labels = predict_sentiments(sentences)
+            if model_labels is not None and len(model_labels) != total:
+                model_labels = None
+    except Exception:
+        model_labels = None
     result = []
     for i, (pos, neg, neutral) in enumerate(sent_scores_raw):
         sent = sentences[i]
         is_last = (i == total - 1)
-        # KoTE 원점수 항상 계산 (보정 여부 무관)
-        original_score = sentence_sentiment_override(
-            pos, neg, sent, is_last, total,
-            threshold=threshold, weight=weight, neutral=neutral
-        )
+        if model_labels is not None:
+            # 파인튜닝 모델 극성 → score(강도는 KoTE |pos-neg| 보존, 중립=0)
+            lab = model_labels[i]
+            strength = abs(pos - neg) if abs(pos - neg) > 0.01 else 1.0
+            original_score = strength if lab == 'positive' else (-strength if lab == 'negative' else 0.0)
+        else:
+            # 기존 규칙 경로(폴백 포함): KoTE 원점수 + override
+            original_score = sentence_sentiment_override(
+                pos, neg, sent, is_last, total,
+                threshold=threshold, weight=weight, neutral=neutral
+            )
         if corrections and str(i) in corrections:
             corr_val = corrections[str(i)]
             if corr_val == 'positive':
@@ -2131,7 +2232,8 @@ def _sort_col_keys(keys, col_mode, hierarchy):
     return sorted(keys)
 
 
-def generate_perspective_matrix(unified_data, employee_id, row_field, col_mode, analysis_type, options, corrections_map=None):
+def generate_perspective_matrix(unified_data, employee_id, row_field, col_mode, analysis_type, options, corrections_map=None, request_id=''):
+    logger.info("employee_id=%s rows=%s cols=%s", _mask_real_id(str(employee_id)) if employee_id else '', len(unified_data.get('employee_results', [])), len(COL_MODES), extra={'request_id': request_id, 'stage': 'MATRIX_GEN'})
     hierarchy = load_position_hierarchy()
     # 원본 ID가 입력된 경우 저장된 가명으로 resolve (새 가명 생성 없음)
     resolved_id = _resolve_to_pseudo(employee_id, _get_pseudo_mgr())
@@ -2222,6 +2324,7 @@ def generate_perspective_matrix(unified_data, employee_id, row_field, col_mode, 
     if result.get('matrix') and result.get('rows'):
         _index_matrix_to_manifest(result, resolved_id, row_field, col_mode, analysis_type, options)
 
+    logger.info("done cell_count=%s", sum(len(v) for v in matrix.values()), extra={'request_id': request_id, 'stage': 'MATRIX_GEN'})
     return result
 
 
@@ -2367,9 +2470,13 @@ def _index_matrix_to_manifest(matrix_result, employee_id, row_field, col_mode, a
         logging.getLogger(__name__).warning(f"Gallery DB write (matrix) failed: {e}")
 
 
-def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type, options, request=None):
+def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type, options, request=None, request_id=''):
     # _setup_korean_font()는 호출부(라우트 진입)에서 1회 호출 — 병렬 워커마다 중복 설정 방지(작업4)
     output_mode = options.get('output_mode', 'pseudonym')
+    deploy_name_val = options.get('batch_title') or employee_id
+
+    logger.info("employee_id=%s deploy_name=%s", _mask_real_id(str(employee_id)) if employee_id else '', deploy_name_val,
+                extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
 
     # 원본 ID가 입력될 수 있으므로 내부 저장 가명으로 변환
     pseudo_mgr = _get_pseudo_mgr()
@@ -2401,6 +2508,7 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
 
     all_items = _get_evaluations_for_employee(unified_data, resolved_id)
     if not all_items:
+        logger.warning("no_evaluations_for_employee", extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
         return None
 
     row_values = options.get('row_values')
@@ -2434,7 +2542,8 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
         return None
 
     deploy_corrections_map = _load_corrections_map(resolved_id)
-    logger.info(f"[deploy] employee={resolved_id} corrections_map keys={list(deploy_corrections_map.keys()) if deploy_corrections_map else []}")
+    logger.debug("corrections keys=%s", list(deploy_corrections_map.keys()) if deploy_corrections_map else [],
+                 extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
 
     def _generate_wc_for_items(items, label_suffix):
         word_data = extract_words(items, wordcloud_pos=wordcloud_pos,
@@ -2464,8 +2573,6 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
             if not doc:
                 continue
             eval_corr = deploy_corrections_map.get(db_id, {}) if deploy_corrections_map else {}
-            if eval_corr:
-                logger.info(f"[deploy][{label_suffix}] db_id={db_id} eval_id={eval_id} corrections={eval_corr}")
             sent_scores_list = _get_sentence_level_scores(doc, corrections=eval_corr, sentence_cache=ev.get('sentence_emotion_cache'))
             # 문장-점수 단일 출처: _get_sentence_level_scores 결과(문장 텍스트 포함)를 직접 순회한다.
             # split_sentences(doc) 재분할 + index 맵 방식은 캐시 순서/재분할이 어긋나면
@@ -2489,17 +2596,16 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
                     neg_details.append({**base, 'sentiment': 'negative', 'score': round(sent_score, 3)})
                 else:
                     neutral_details.append({**base, 'sentiment': 'neutral', 'score': 0.0})
-        logger.info(f"[deploy][{label_suffix}] pos_details={len(pos_details)}건 neg_details={len(neg_details)}건 neutral_details={len(neutral_details)}건 top_pos={len(top_pos)}단어 top_neg={len(top_neg)}단어")
-        if pos_details:
-            logger.info(f"[deploy][{label_suffix}] pos_details 샘플: {[d['text'][:20] for d in pos_details[:3]]}")
-        if neg_details:
-            logger.info(f"[deploy][{label_suffix}] neg_details 샘플: {[d['text'][:20] for d in neg_details[:3]]}")
         return combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent, pos_details, neg_details, neutral_details
 
     filtered_items = _filter_items_by_row(all_items, row_field, row_values)
     if not filtered_items:
+        logger.warning("filtered_items_empty row_field=%s row_values=%s", row_field, row_values,
+                       extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
         return None
+
     combined_url, positive_url, negative_url, combined_sent, positive_sent, negative_sent, pos_det, neg_det, neu_det = _generate_wc_for_items(filtered_items, '통합')
+
     result = {
         'name': deploy_name,
         'timestamp': ts,
@@ -2520,7 +2626,15 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
         'neutral_sentence_details': neu_det,
         'profanity_summary': build_profanity_summary(unified_data, resolved_id),
     }
+
+    if combined_url:
+        logger.info("wc_generated type=combined path=%s", combined_url, extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
+    else:
+        logger.error("wc_failed type=combined", extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
+
     _append_to_deploy_manifest(result, employee_id, row_field, analysis_type, options)
+    logger.info("done combined=%s positive=%s negative=%s", combined_url, positive_url, negative_url,
+                extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
     return result
 
 
