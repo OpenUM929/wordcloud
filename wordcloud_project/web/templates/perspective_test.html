@@ -190,8 +190,10 @@ body {
 .emp-content .card img { width: 100%; height: 100px; object-fit: contain; background: #f8f9fa; border-radius: 4px; cursor: pointer; }
 .progress-container { background: #e9ecef; border-radius: 6px; height: 18px; overflow: hidden; margin: 6px 0; position: relative; }
 .progress-container .deploy-bar { height: 100%; background: linear-gradient(90deg, #6366f1, #00b894); transition: width 0.3s ease; border-radius: 6px; }
-.progress-text { position: absolute; top: 0; left: 0; right: 0; height: 18px; line-height: 18px; text-align: center; font-size: 11px; font-weight: 600; color: #333; }
-.progress-text.light { color: #fff; }
+/* 게이지 '안'에 겹쳐 띄우는 오버레이 텍스트. base.css의 일반 .progress-text(게이지 아래 흐름+margin-top)와
+   클래스명이 같아 margin-top이 누수되어 중앙이 아닌 아래로 밀리던 문제 차단: .progress-container 하위로 스코프(특이도↑)+margin 리셋. */
+.progress-container .progress-text { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; line-height: 1; text-align: center; font-size: 11px; font-weight: 600; color: #333; }
+.progress-container .progress-text.light { color: #fff; }
 .deploy-status { font-size: 12px; line-height: 1.6; margin: 6px 0; max-height: 200px; overflow-y: auto; }
 .deploy-status .done { color: #28a745; }
 .deploy-status .fail { color: #dc3545; }
@@ -2134,6 +2136,142 @@ let _deployPage = 1;
 let _deployPerPage = 10;
 const _deployPerPageOptions = [10, 20, 40, 100];
 
+// ═══════════════ 정렬 기능 (0630_05) ═══════════════
+// 공통 비교기: 숫자면 수치, 아니면 로케일(ko) 문자열
+function _sortCmp(av, bv) {
+    if (av === bv) return 0;
+    const na = Number(av), nb = Number(bv);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return String(av).localeCompare(String(bv), 'ko');
+}
+function sortByKey(arr, keyFn, order) {
+    const dir = (order === 'asc') ? 1 : -1;
+    return [...arr].sort((a, b) => _sortCmp(keyFn(a), keyFn(b)) * dir);
+}
+function _sortArrowBtn(id, order, handler) {
+    return '<button id="' + id + '" onclick="' + handler + '" title="정렬 방향" ' +
+           'style="padding:2px 8px;border:1px solid #ccc;background:#fff;border-radius:4px;cursor:pointer;font-size:12px;">' +
+           (order === 'asc' ? '▲' : '▼') + '</button>';
+}
+
+// ── 제출용 저장(deploy) 리스트 정렬 ──
+let _deploySortKey = 'index';
+let _deploySortOrder = 'desc';
+const _DEPLOY_SORT_KEYS = {
+    positive_cnt:  r => (r.positive_sentence_details ? r.positive_sentence_details.length : 0),
+    negative_cnt:  r => (r.negative_sentence_details ? r.negative_sentence_details.length : 0),
+    neutral_cnt:   r => (r.neutral_sentence_details ? r.neutral_sentence_details.length : 0),
+    profanity_cnt: r => (r.profanity_summary && r.profanity_summary.total_count) || 0,
+    positive_ratio: r => { const p = (r.positive_sentence_details || []).length, n = (r.negative_sentence_details || []).length; return (p + n) ? p / (p + n) : 0; },
+    negative_ratio: r => { const p = (r.positive_sentence_details || []).length, n = (r.negative_sentence_details || []).length; return (p + n) ? n / (p + n) : 0; },
+};
+function onDeploySortChange() {
+    const sel = document.getElementById('deploySortSelect');
+    _deploySortKey = sel ? sel.value : 'index';
+    renderDeployPage(1);
+}
+function toggleDeploySortOrder() {
+    _deploySortOrder = (_deploySortOrder === 'asc') ? 'desc' : 'asc';
+    const btn = document.getElementById('deploySortOrderBtn');
+    if (btn) btn.textContent = (_deploySortOrder === 'asc') ? '▲' : '▼';
+    renderDeployPage(_deployPage);
+}
+function _deploySortedItems() {
+    const keyFn = _DEPLOY_SORT_KEYS[_deploySortKey];
+    return keyFn ? sortByKey(_deployResults, keyFn, _deploySortOrder) : _deployResults;
+}
+
+// ── 전체 직원(matrix) 리스트 정렬 ──
+let _matrixSortKey = 'id';
+let _matrixSortOrder = 'desc';
+function _cellSentiment(cell, pol) {
+    // 다중 분석타입: emotion 우선, 없으면 nlp
+    const t = cell && (cell.emotion || cell.nlp);
+    return (t && t.avg_sentiment && typeof t.avg_sentiment[pol] === 'number') ? t.avg_sentiment[pol] : null;
+}
+function _matrixEmpAgg(empId, pick) {
+    const er = _matrixResults[empId];
+    if (!er) return { sum: 0, avg: 0 };
+    const rows = er.rows || [], cols = er.columns || [], matrix = er.matrix || {};
+    let sum = 0, cnt = 0;
+    rows.forEach(rk => cols.forEach(ck => {
+        const cell = matrix[rk] && matrix[rk][ck];
+        if (!cell) return;
+        const v = pick(cell);
+        if (v !== null && v !== undefined) { sum += v; cnt++; }
+    }));
+    return { sum: sum, avg: cnt ? sum / cnt : 0 };
+}
+const _MATRIX_SORT_KEYS = {
+    eval_cnt:  id => _matrixEmpAgg(id, c => c.evaluation_count || 0).sum,
+    positive:  id => _matrixEmpAgg(id, c => _cellSentiment(c, 'positive')).avg,
+    negative:  id => _matrixEmpAgg(id, c => _cellSentiment(c, 'negative')).avg,
+    profanity: id => _matrixEmpAgg(id, c => (c.profanity && c.profanity.total_profanity_count) || 0).sum,
+};
+function onMatrixSortChange() {
+    const sel = document.getElementById('matrixSortSelect');
+    _matrixSortKey = sel ? sel.value : 'id';
+    _matrixPage = 1;
+    renderMatrixPage();
+}
+function toggleMatrixSortOrder() {
+    _matrixSortOrder = (_matrixSortOrder === 'asc') ? 'desc' : 'asc';
+    const btn = document.getElementById('matrixSortOrderBtn');
+    if (btn) btn.textContent = (_matrixSortOrder === 'asc') ? '▲' : '▼';
+    renderMatrixPage();
+}
+function _matrixSortedIds() {
+    const keyFn = _MATRIX_SORT_KEYS[_matrixSortKey];
+    return keyFn ? sortByKey(_matrixEmpIds, keyFn, _matrixSortOrder) : _matrixEmpIds;
+}
+
+// ── 셀 내부: 워드클라우드 단어 / 감정 문장 정렬 (전역 모드) ──
+let _wordSortMode = 'count_desc';   // count_desc(기본)|count_asc|word_asc|word_desc
+let _sentSortMode = 'default';      // default|conf_desc|conf_asc|pol_desc|pol_asc
+function _sortTopWords(entries) {
+    switch (_wordSortMode) {
+        case 'count_asc': return [...entries].sort((a, b) => a[1] - b[1]);
+        case 'word_asc':  return [...entries].sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'ko'));
+        case 'word_desc': return [...entries].sort((a, b) => String(b[0]).localeCompare(String(a[0]), 'ko'));
+        default:          return entries;   // count_desc = 백엔드 most_common 순
+    }
+}
+function _sortSentences(arr) {
+    if (!Array.isArray(arr)) return arr;
+    const pol = s => (s.kote_pos || 0) - (s.kote_neg || 0);
+    switch (_sentSortMode) {
+        case 'conf_desc': return [...arr].sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+        case 'conf_asc':  return [...arr].sort((a, b) => (a.confidence || 0) - (b.confidence || 0));
+        case 'pol_desc':  return [...arr].sort((a, b) => pol(b) - pol(a));
+        case 'pol_asc':   return [...arr].sort((a, b) => pol(a) - pol(b));
+        default:          return arr;
+    }
+}
+function onCellSortChange() {
+    const ws = document.getElementById('matrixWordSort');
+    const ss = document.getElementById('matrixSentSort');
+    if (ws) _wordSortMode = ws.value;
+    if (ss) _sentSortMode = ss.value;
+    renderMatrixPage();
+}
+
+// ── 단일 직원 매트릭스 헤더 클릭 정렬 (평가건수 기준, 순환: ▼→▲→원본) ──
+let _singleMatrix = null;                                   // {data, container, types}
+let _singleMatrixSort = { dim: null, key: null, order: 'desc' };  // dim: 'col'(행정렬) | 'row'(열정렬)
+function sortSingleMatrix(dim, encKey) {
+    if (!_singleMatrix) return;
+    const key = decodeURIComponent(encKey);
+    if (_singleMatrixSort.dim === dim && _singleMatrixSort.key === key) {
+        _singleMatrixSort.order = (_singleMatrixSort.order === 'desc') ? 'asc'
+            : (_singleMatrixSort.order === 'asc') ? null : 'desc';
+        if (!_singleMatrixSort.order) _singleMatrixSort = { dim: null, key: null, order: 'desc' };
+    } else {
+        _singleMatrixSort = { dim: dim, key: key, order: 'desc' };
+    }
+    renderMatrix(_singleMatrix.data, _singleMatrix.container, _singleMatrix.types);
+}
+// ═══════════════ /정렬 기능 ═══════════════
+
 function renderDeployComplete(summary) {
     const successItems = summary.success || [];
     const failItems = summary.fail || [];
@@ -2145,6 +2283,8 @@ function renderDeployComplete(summary) {
     _deployFailItems = failItems;
     _deployTotalItems = totalItems;
     _deployPage = 1;
+    _deploySortKey = 'index';      // 새 배포는 원본(저장) 순서로 시작
+    _deploySortOrder = 'desc';
 
     if (successCount > 0) showDeployToast('✅ ' + successCount + '명 저장 완료', '/deploy-gallery');
 
@@ -2168,6 +2308,19 @@ function renderDeployComplete(summary) {
     h += '<input type="checkbox" id="optExpandWc" onchange="onDeployOptionChange()"> 워드클라우드 기본 펼침</label>';
     h += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin:0;font-weight:normal;">';
     h += '<input type="checkbox" id="optExpandSent" onchange="onDeployOptionChange()"> 문장 기본 펼침</label>';
+    // ── 정렬 (0630_05) ──
+    h += '<span style="display:flex;align-items:center;gap:6px;font-size:13px;">🔀 정렬';
+    h += '<select id="deploySortSelect" onchange="onDeploySortChange()" style="padding:3px 6px;font-size:12px;border:1px solid #ccc;border-radius:4px;">';
+    h += '<option value="index">저장 순서</option>';
+    h += '<option value="positive_cnt">긍정 문장 수</option>';
+    h += '<option value="negative_cnt">부정 문장 수</option>';
+    h += '<option value="neutral_cnt">중립 문장 수</option>';
+    h += '<option value="profanity_cnt">욕설 건수</option>';
+    h += '<option value="positive_ratio">긍정률</option>';
+    h += '<option value="negative_ratio">부정률</option>';
+    h += '</select>';
+    h += _sortArrowBtn('deploySortOrderBtn', _deploySortOrder, 'toggleDeploySortOrder()');
+    h += '</span>';
     h += '<span style="margin-left:auto;font-size:13px;color:#6c757d;" id="deployPageInfo"></span>';
     h += '</div>';
 
@@ -2235,7 +2388,7 @@ function onDeployOptionChange() {
 
 function renderDeployPage(page) {
     _deployPage = page;
-    const items = _deployResults;
+    const items = _deploySortedItems();
     const totalPages = Math.ceil(items.length / _deployPerPage) || 1;
     if (page < 1) _deployPage = 1;
     if (page > totalPages) _deployPage = totalPages;
@@ -2562,9 +2715,20 @@ async function showDeployResults(sessionId) {
 }
 
 function renderMatrix(data, container, analysisTypes) {
-    const rows = data.rows || [];
-    const cols = data.columns || [];
+    // 0630_05: 새 데이터면 정렬 초기화, 재렌더(헤더 클릭)면 상태 유지
+    if (!_singleMatrix || _singleMatrix.data !== data) _singleMatrixSort = { dim: null, key: null, order: 'desc' };
+    _singleMatrix = { data: data, container: container, types: analysisTypes };
+    let rows = (data.rows || []).slice();
+    let cols = (data.columns || []).slice();
     const matrix = data.matrix || {};
+    // 헤더 클릭 정렬(평가건수 기준): dim='col'→행 재정렬 / dim='row'→열 재정렬
+    const _sm = _singleMatrixSort, _smDir = (_sm.order === 'asc') ? 1 : -1;
+    const _ec = (rk, ck) => (matrix[rk] && matrix[rk][ck] && matrix[rk][ck].evaluation_count) || 0;
+    if (_sm.order && _sm.dim === 'col' && cols.indexOf(_sm.key) >= 0) {
+        rows.sort((a, b) => (_ec(a, _sm.key) - _ec(b, _sm.key)) * _smDir);
+    } else if (_sm.order && _sm.dim === 'row' && rows.indexOf(_sm.key) >= 0) {
+        cols.sort((a, b) => (_ec(_sm.key, a) - _ec(_sm.key, b)) * _smDir);
+    }
     const empId = data.employee_id_real || data.employee_id || '?';
     const empLabel = data.employee_name ? `${data.employee_name} (${empId})` : empId;
     const typesArr = Array.isArray(analysisTypes) ? analysisTypes : [analysisTypes];
@@ -2578,11 +2742,15 @@ function renderMatrix(data, container, analysisTypes) {
 
     html += '<div class="scroll-wrapper"><table class="matrix-table">';
     html += '<thead><tr><th class="row-header">' + data.row_label + ' \\ ' + data.col_label + '</th>';
-    cols.forEach(c => { html += '<th>' + c + '</th>'; });
+    cols.forEach(c => {
+        const ci = (_sm.dim === 'col' && _sm.key === c && _sm.order) ? (_sm.order === 'asc' ? ' ▲' : ' ▼') : '';
+        html += '<th style="cursor:pointer;" title="클릭: 이 열 평가건수로 행 정렬" onclick="sortSingleMatrix(\'col\',\'' + encodeURIComponent(c) + '\')">' + c + ci + '</th>';
+    });
     html += '</tr></thead><tbody>';
 
     rows.forEach(rk => {
-        html += '<tr><th class="row-header">' + rk + '</th>';
+        const ri = (_sm.dim === 'row' && _sm.key === rk && _sm.order) ? (_sm.order === 'asc' ? ' ▲' : ' ▼') : '';
+        html += '<tr><th class="row-header" style="cursor:pointer;" title="클릭: 이 행 평가건수로 열 정렬" onclick="sortSingleMatrix(\'row\',\'' + encodeURIComponent(rk) + '\')">' + rk + ri + '</th>';
         cols.forEach(ck => {
             const cell = matrix[rk]?.[ck] || {};
             html += '<td class="cell">' + renderCell(cell, typesArr) + '</td>';
@@ -2615,7 +2783,7 @@ function renderCellSection(d, type) {
             h += ' <span class="badge badge-danger">부' + (d.avg_sentiment.negative*100).toFixed(0) + '%</span>';
         }
         if (d.top_words) {
-            const top = Object.entries(d.top_words).slice(0,5);
+            const top = _sortTopWords(Object.entries(d.top_words)).slice(0,5);
             h += '<div class="top-words">' + top.map(([w,c]) => '<span>' + w + '(' + c + ')</span>').join('') + '</div>';
         }
     } else if (type === 'emotion') {
@@ -2635,7 +2803,7 @@ function renderCellSection(d, type) {
             h += '<details style="margin-top:4px;font-size:11px;" class="sentences-group" data-sentiment="positive">';
             h += '<summary style="color:#28a745;cursor:pointer;">▼ 긍정 사유 ' + d.positive_sentence_details.length + '건</summary>';
             h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
-            d.positive_sentence_details.forEach(s => {
+            _sortSentences(d.positive_sentence_details).forEach(s => {
                 h += '<div style="margin-bottom:3px;font-size:11px;padding-left:4px;">• ' + (s.text_html || escapeHtml(s.text)) + '</div>';
             });
             h += '</div></details>';
@@ -2649,7 +2817,7 @@ function renderCellSection(d, type) {
             h += '<details style="margin-top:4px;font-size:11px;" class="sentences-group" data-sentiment="negative">';
             h += '<summary style="color:#dc3545;cursor:pointer;">▼ 부정 사유 ' + d.negative_sentence_details.length + '건</summary>';
             h += '<div style="padding:3px 0;color:#555;line-height:1.3;">';
-            d.negative_sentence_details.forEach(s => {
+            _sortSentences(d.negative_sentence_details).forEach(s => {
                 h += '<div style="margin-bottom:3px;font-size:11px;padding-left:4px;">• ' + (s.text_html || escapeHtml(s.text)) + '</div>';
             });
             h += '</div></details>';
@@ -2733,6 +2901,8 @@ function renderAllEmployees(data, container) {
     _matrixTypes = data.analysis_types || [data.analysis_type || 'nlp'];
     _matrixContainer = container;
     _matrixPage = 1;
+    _matrixSortKey = 'id';         // 새 결과는 사번순으로 시작
+    _matrixSortOrder = 'desc';
 
     const allTypesArr = _matrixTypes;
     let html = '<div class="summary-bar">';
@@ -2743,6 +2913,25 @@ function renderAllEmployees(data, container) {
     html += '<div class="summary-bar" style="background:#f8f9fa;border-color:#dee2e6;margin-top:8px;gap:16px;flex-wrap:wrap;">';
     html += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin:0;font-weight:normal;">';
     html += '<input type="checkbox" id="optMatrixExpand" onchange="renderMatrixPage()"> 기본 펼침</label>';
+    // ── 정렬 (0630_05) ──
+    html += '<span style="display:flex;align-items:center;gap:6px;font-size:13px;">🔀 직원';
+    html += '<select id="matrixSortSelect" onchange="onMatrixSortChange()" style="padding:3px 6px;font-size:12px;border:1px solid #ccc;border-radius:4px;">';
+    html += '<option value="id">사번순</option>';
+    html += '<option value="eval_cnt">평가건수</option>';
+    html += '<option value="positive">긍정률</option>';
+    html += '<option value="negative">부정률</option>';
+    html += '<option value="profanity">욕설건수</option>';
+    html += '</select>';
+    html += _sortArrowBtn('matrixSortOrderBtn', _matrixSortOrder, 'toggleMatrixSortOrder()');
+    html += '</span>';
+    html += '<span style="display:flex;align-items:center;gap:6px;font-size:13px;">단어';
+    html += '<select id="matrixWordSort" onchange="onCellSortChange()" style="padding:3px 6px;font-size:12px;border:1px solid #ccc;border-radius:4px;">';
+    html += '<option value="count_desc">빈도↓</option><option value="count_asc">빈도↑</option><option value="word_asc">가나다</option><option value="word_desc">역순</option>';
+    html += '</select></span>';
+    html += '<span style="display:flex;align-items:center;gap:6px;font-size:13px;">문장';
+    html += '<select id="matrixSentSort" onchange="onCellSortChange()" style="padding:3px 6px;font-size:12px;border:1px solid #ccc;border-radius:4px;">';
+    html += '<option value="default">기본</option><option value="conf_desc">확신↓</option><option value="conf_asc">확신↑</option><option value="pol_desc">극성↓</option><option value="pol_asc">극성↑</option>';
+    html += '</select></span>';
     html += '<span style="margin-left:auto;font-size:13px;color:#6c757d;" id="matrixPageInfo"></span>';
     html += '</div>';
 
@@ -2760,7 +2949,7 @@ function renderAllEmployees(data, container) {
 }
 
 function renderMatrixPage() {
-    const empIds = _matrixEmpIds;
+    const empIds = _matrixSortedIds();
     const results = _matrixResults;
     const allTypesArr = _matrixTypes;
     const totalPages = Math.ceil(empIds.length / _matrixPerPage) || 1;
