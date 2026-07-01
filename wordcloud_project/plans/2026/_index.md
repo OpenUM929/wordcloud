@@ -69,3 +69,5 @@
 | 0630_01_nav-restructure | Nav 메뉴 워크플로 중심 재구성 + batch-monitor/judgment-extract 페이지 신규 | Todo | 2026-06-30 |
 | 0630_02_unhealthy-substr-fp | 비건전 단어 substring 오탐 수정 (회사정책→"사정" 욕설 오인) — 형태소/단어경계 매칭으로 교체 | Pre-Done | 2026-06-30 |
 | 0630_03_deficiency-framing-neutral | 결핍·개선요청("보완 필요")이 rule4_default로 부→긍 누수되던 13만 구멍 중립화 — 전수 24,384 수정·긍↔부 0 | Pre-Done | 2026-06-30 |
+| 0630_04_deficiency-noun-neg | 결핍명사(부족·미흡·결여·부재) substring 부정화 시도 — 전수 재생서 긍→부 263(장점 138) 잔존(술어결정 토픽명사), 코드 원복·극성표/파인튜닝 트랙 이관 | Drop | 2026-06-30 |
+| 0630_05_perspective-sort-feature | perspective_test 워드클라우드/매트릭스 정렬 기능(오름/내림/긍/부/중/욕설) | Todo | 2026-06-30 |
