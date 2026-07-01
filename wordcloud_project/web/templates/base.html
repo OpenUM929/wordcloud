@@ -156,6 +156,28 @@
         @keyframes globalBusySpin { to { transform: rotate(360deg); } }
         #globalBusyMsg { font-size: 13px; color: #1f2937; font-weight: 600; line-height: 1.4; }
         #globalBusyDetail { font-size: 12px; color: #6b7280; margin-top: 2px; line-height: 1.3; }
+
+        /* hub-indicator in nav */
+        .hub-indicator {
+            font-size: 8px;
+            color: #999;
+            margin-left: 3px;
+            vertical-align: middle;
+        }
+
+        /* version modal overlay */
+        #versionModal.modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #versionModal.modal-overlay.open {
+            display: flex;
+        }
     </style>
     <link rel="stylesheet" href="/static/css/nav.css">
     {% block extra_head %}{% endblock %}
@@ -163,27 +185,26 @@
 <body>
     <nav>
         <!-- 주기능 섹션 -->
-        <div class="nav-section">
-            <div class="nav-section-title">📋 주기능</div>
+        <div class="nav-section" data-nav-section="main">
+            <div class="nav-section-title">📋 주기능 <span class="collapse-caret">▾</span></div>
             <a href="/metadata_batch">📄 메타데이터 생성</a>
             <a href="/judgment_apply">📥 판정 결과 반영</a>
+            <a href="/group-review">🏷️ 그룹 검토</a>
             <a href="/perspective_test">📊 그룹분석</a>
-            <a href="/settings">⚙️ 설정</a>
-            <a href="/stopwords">🗑️ 불용어 관리</a>
+            <a href="/settings">⚙️ 설정<span class="hub-indicator">▸탭</span></a>
         </div>
 
         <!-- 결과물 섹션 -->
-        <div class="nav-section">
-            <div class="nav-section-title">📦 결과물</div>
+        <div class="nav-section" data-nav-section="results">
+            <div class="nav-section-title">📦 결과물 <span class="collapse-caret">▾</span></div>
             <a href="/deploy-gallery">📁 저장 갤러리</a>
-            <a href="/profanity-list">🚨 욕설 리스트</a>
-            <a href="/acquired-data">📥 습득 데이터</a>
+            <a href="/profanity-list">🚨 리스트·데이터<span class="hub-indicator">▸탭</span></a>
             <a href="/admin/batch-management">📝 배치 관리</a>
         </div>
 
         <!-- 수동 조작 섹션 -->
-        <div class="nav-section">
-            <div class="nav-section-title">✍️ 수동 조작</div>
+        <div class="nav-section" data-nav-section="manual">
+            <div class="nav-section-title">✍️ 수동 조작 <span class="collapse-caret">▾</span></div>
             <a href="/">💬 입력</a>
             <a href="/sarcasm">💭 반어법 분석</a>
             <a href="/wordcloud">🎨 워드클라우드</a>
@@ -191,21 +212,51 @@
         </div>
 
         <!-- 테스트 섹션 -->
-        <div class="nav-section">
-            <div class="nav-section-title">🧪 테스트</div>
+        <div class="nav-section" data-nav-section="test">
+            <div class="nav-section-title">🧪 테스트 <span class="collapse-caret">▾</span></div>
             <a href="/sentiment-test">😊 감정 테스트</a>
             <a href="/profanity-test">🔍 욕설 테스트</a>
         </div>
 
         <!-- 관리자 섹션 -->
-        <div class="nav-section">
-            <div class="nav-section-title">👨‍💼 관리자</div>
+        <div class="nav-section" data-nav-section="admin">
+            <div class="nav-section-title">👨‍💼 관리자 <span class="collapse-caret">▾</span></div>
             <a href="/admin/dashboard">🔐 관리자 대시보드</a>
             <a href="/admin/plans">📋 계획 현황</a>
         </div>
 
         <span id="globalAuthBadge" style="display:none;background:#28a745;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:4px;">인증됨</span>
+
+        <!-- 버전 배지 -->
+        <div class="version-badge" id="versionBadge" onclick="openVersionModal()" title="버전 상세 정보">
+            <span>⚙ v{{ version_info.system_version }}</span>
+            <span>·</span>
+            <span>모델 {% if version_info.model_status == 'loaded' %}<span class="status-ok">✓ 로드</span>{% else %}<span class="status-fallback">⚠️ 폴백</span>{% endif %}</span>
+        </div>
     </nav>
+
+    <!-- 버전 상세 모달 -->
+    <div class="modal-overlay" id="versionModal" onclick="if(event.target===this)closeVersionModal()">
+        <div class="profanity-modal-box" style="background:#ffffff;border-radius:8px;padding:24px;width:480px;max-width:90vw;box-shadow:0 4px 20px rgba(0,0,0,0.3);position:relative;">
+            <button class="modal-close" onclick="closeVersionModal()" style="float:right;cursor:pointer;font-size:22px;color:#999;background:none;border:none;">&times;</button>
+            <h3 style="margin:0 0 16px 0;">⚙ 버전 정보</h3>
+            <table style="width:100%;font-size:13px;border-collapse:collapse;">
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">시스템 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_system_version">{{ version_info.system_version }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_version">{{ version_info.model_version }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 학습일</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_trained">{{ version_info.model_trained }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 SHA256</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;" id="vm_model_sha">{{ version_info.model_sha256 }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">커밋</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;" id="vm_source_commit">{{ version_info.source_commit }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">빌드 날짜</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_build_date">{{ version_info.build_date }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 상태</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_status">{% if version_info.model_status == 'loaded' %}<span style="color:#28a745;font-weight:600;">✓ 로드됨</span>{% else %}<span style="color:#dc3545;font-weight:600;">⚠️ 규칙 폴백</span>{% endif %}</td></tr>
+            </table>
+            {% if _is_admin_session %}
+            <div style="margin-top:16px;text-align:center;">
+                <button onclick="verifyIntegrity()" class="btn btn-primary" id="verifyBtn" style="padding:8px 20px;border:none;border-radius:4px;cursor:pointer;font-size:13px;background:#6366f1;color:white;">무결성 검사</button>
+                <div id="verifyResult" style="margin-top:8px;font-size:12px;min-height:18px;"></div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
     <div id="globalAuthOverlay" {% if _is_admin_session %}class="hidden"{% endif %}>
         <div id="globalAuthBox">
             <h3 style="margin-bottom:16px;">관리자 인증 필요</h3>
@@ -325,6 +376,85 @@
             }
         });
     })();
+    </script>
+
+    <script>
+    // ── Nav 섹션 접기 ──────────────────────────
+    (function() {
+        function getSectionKey(titleEl) {
+            var text = titleEl.textContent || '';
+            text = text.replace(/[^\w가-힣]/g, '').toLowerCase();
+            return 'navCollapse:' + text;
+        }
+        function restoreCollapse() {
+            document.querySelectorAll('.nav-section').forEach(function(sec) {
+                var title = sec.querySelector('.nav-section-title');
+                if (!title) return;
+                var key = getSectionKey(title);
+                var val = localStorage.getItem(key);
+                if (val === '1') sec.classList.add('collapsed');
+            });
+        }
+        function setupCollapse() {
+            document.querySelectorAll('.nav-section-title').forEach(function(title) {
+                title.addEventListener('click', function(e) {
+                    var sec = this.closest('.nav-section');
+                    if (!sec) return;
+                    sec.classList.toggle('collapsed');
+                    var key = getSectionKey(this);
+                    localStorage.setItem(key, sec.classList.contains('collapsed') ? '1' : '0');
+                });
+            });
+        }
+        restoreCollapse();
+        setupCollapse();
+    })();
+
+    // ── Active 하이라이트 ──────────────────────
+    (function() {
+        var currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-section a').forEach(function(a) {
+            var href = a.getAttribute('href');
+            if (href === currentPath) {
+                a.classList.add('active');
+                var sec = a.closest('.nav-section');
+                if (sec) sec.classList.remove('collapsed');
+            }
+        });
+    })();
+
+    // ── 버전 모달 ──────────────────────────────
+    window.openVersionModal = function() {
+        var modal = document.getElementById('versionModal');
+        if (modal) modal.classList.add('open');
+    };
+    window.closeVersionModal = function() {
+        var modal = document.getElementById('versionModal');
+        if (modal) modal.classList.remove('open');
+        var vr = document.getElementById('verifyResult');
+        if (vr) vr.textContent = '';
+    };
+    window.verifyIntegrity = function() {
+        var btn = document.getElementById('verifyBtn');
+        var vr = document.getElementById('verifyResult');
+        if (btn) btn.disabled = true;
+        if (vr) vr.textContent = '검증 중...';
+        fetch('/api/version/verify', {credentials: 'include'})
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.match) {
+                if (vr) vr.innerHTML = '<span style="color:#28a745;font-weight:600;">✓ 무결성 일치</span>';
+            } else {
+                if (vr) vr.innerHTML = '<span style="color:#dc3545;font-weight:600;">✗ 불일치: ' + (d.error || '') + '</span>';
+            }
+        })
+        .catch(function(e) {
+            if (vr) vr.innerHTML = '<span style="color:#dc3545;font-weight:600;">검증 실패</span>';
+        })
+        .finally(function() {
+            if (btn) btn.disabled = false;
+        });
+    };
     </script>
     {% block scripts %}{% endblock %}
 </body>

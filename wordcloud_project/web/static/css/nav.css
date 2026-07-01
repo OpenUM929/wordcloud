@@ -133,5 +133,68 @@ nav .nav-section-title {
     letter-spacing: 0.5px;
     padding: 4px 10px;
     margin-bottom: 4px;
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+nav .nav-section-title:hover {
+    color: #4b5563;
+}
+nav .nav-section-title .collapse-caret {
+    font-size: 10px;
+    color: #999;
+    transition: transform 0.2s;
+}
+nav .nav-section.collapsed .collapse-caret {
+    transform: rotate(-90deg);
+}
+nav .nav-section.collapsed > a {
+    display: none;
+}
+
+/* ── active 하이라이트 ─────────────────────────────── */
+nav .nav-section a.active {
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-primary-hover);
+    border-color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+}
+
+/* ── 버전 배지 ─────────────────────────────── */
+nav .version-badge {
+    margin-top: auto;
+    padding: 8px 10px;
+    font-size: 10px;
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+nav .version-badge:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    color: #374151;
+}
+nav .version-badge .status-ok {
+    color: #28a745;
+    font-weight: bold;
+}
+nav .version-badge .status-fallback {
+    color: #dc3545;
+    font-weight: bold;
 }

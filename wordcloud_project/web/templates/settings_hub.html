@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}설정{% endblock %}
+
+{% block extra_head %}
+<style>
+    .columns { display: flex; justify-content: space-around; gap: 15px; }
+    .column { width: 30%; border: 1px solid #e0e0e0; padding: 15px; min-height: 400px; border-radius: 8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .column h3 { text-align: center; margin-top: 0; color: #333; border-bottom: 2px solid #6366f1; padding-bottom: 10px; }
+    .emotion { background: #f8f9fa; margin: 5px; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 6px; border: 1px solid #dee2e6; }
+    .emotion input { width: 60px; padding: 5px; border: 1px solid #dee2e6; border-radius: 4px; }
+    .emotion button { margin: 0 2px; padding: 2px 5px; }
+
+    .search-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .search-bar input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .search-bar input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+    }
+    
+    .add-section {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .add-section input, .add-section select {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+        min-width: 150px;
+    }
+    
+    .add-section input:focus, .add-section select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+    }
+    
+    .loading-indicator {
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+    }
+    
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 15px;
+    }
+    
+    .pagination-container button {
+        padding: 5px 10px;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .pagination-container button:hover {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+    }
+    
+    .pagination-container button.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+    }
+    
+    .pagination-container button:disabled {
+        background: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .demo-section {
+        margin-top: 20px;
+    }
+    
+    .demo-section textarea {
+        width: 100%;
+        min-height: 100px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+    }
+    
+    .demo-section textarea:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+    }
+    
+    .demo-results {
+        margin-top: 15px;
+    }
+    
+    .demo-original, .demo-filtered {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .demo-stats {
+        font-size: 14px;
+        color: #6c757d;
+    }
+
+    .hub-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #6366f1;
+    }
+    .hub-tab {
+        padding: 10px 24px;
+        cursor: pointer;
+        border: 1px solid #dee2e6;
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #666;
+        transition: all 0.2s;
+        margin-right: 4px;
+    }
+    .hub-tab:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+    .hub-tab.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+    }
+    .hub-panel {
+        display: none;
+    }
+    .hub-panel.active {
+        display: block;
+    }
+</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/stopwords.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="hub-tabs">
+    <div class="hub-tab active" data-tab="settings" onclick="switchTab('settings')">⚙️ 감정어 설정</div>
+    <div class="hub-tab" data-tab="stopwords" onclick="switchTab('stopwords')">🗑️ 불용어 관리</div>
+</div>
+
+<div class="hub-panel active" id="panel-settings">
+    {% include "partials/_settings_body.html" %}
+</div>
+<div class="hub-panel" id="panel-stopwords">
+    {% include "partials/_stopwords_body.html" %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/stopwords.js') }}"></script>
+<script>
+    const emotions = {{ emotions_json|safe }};
+    const config = {{ config_json|safe }};
+
+    function loadEmotions() {
+        const posCol = document.getElementById('positive');
+        const negCol = document.getElementById('negative');
+        const neuCol = document.getElementById('neutral');
+
+        emotions.forEach((emotion, i) => {
+            const div = document.createElement('div');
+            div.className = 'emotion';
+            div.draggable = true;
+            div.dataset.index = i;
+
+            const weights = config.weights || {};
+            const emotionToSentiment = config.emotion_to_sentiment || {};
+            const weightValue = (weights[i.toString()] && weights[i.toString()].positive) ? weights[i.toString()].positive : 1.0;
+            const sentimentValue = emotionToSentiment[i.toString()] !== undefined ? emotionToSentiment[i.toString()] : 2;
+
+            div.innerHTML = `<span>${emotion}</span><input type="number" step="0.1" value="${weightValue}">`;
+
+            if (sentimentValue == 0) posCol.appendChild(div);
+            else if (sentimentValue == 1) negCol.appendChild(div);
+            else neuCol.appendChild(div);
+        });
+    }
+
+    loadEmotions();
+
+    document.addEventListener('contextmenu', e => {
+        if (e.target.closest('.emotion')) {
+            e.preventDefault();
+            const div = e.target.closest('.emotion');
+            const menu = document.createElement('div');
+            menu.style.position = 'absolute';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            menu.style.background = 'white';
+            menu.style.border = '1px solid #ccc';
+            menu.style.padding = '5px';
+            menu.innerHTML = `
+                <div onclick="moveTo('positive', ${div.dataset.index})">긍정으로 이동</div>
+                <div onclick="moveTo('negative', ${div.dataset.index})">부정으로 이동</div>
+                <div onclick="moveTo('neutral', ${div.dataset.index})">중립으로 이동</div>
+            `;
+            document.body.appendChild(menu);
+            document.addEventListener('click', () => menu.remove(), { once: true });
+        }
+    });
+
+    function moveTo(columnId, index) {
+        const div = document.querySelector(`.emotion[data-index="${index}"]`);
+        document.getElementById(columnId).appendChild(div);
+    }
+
+    let dragged = null;
+
+    document.addEventListener('dragstart', e => {
+        if (e.target.classList.contains('emotion')) {
+            dragged = e.target;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+    });
+
+    document.addEventListener('dragover', e => {
+        e.preventDefault();
+    });
+
+    document.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragged && e.target.classList.contains('column')) {
+            e.target.appendChild(dragged);
+        }
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        const sentiment = {};
+        const weights = {};
+
+        document.querySelectorAll('.emotion').forEach(div => {
+            const i = div.dataset.index;
+            const column = div.parentElement.id;
+            let sent;
+            if (column === 'positive') sent = 0;
+            else if (column === 'negative') sent = 1;
+            else sent = 2;
+
+            sentiment[i] = sent;
+            const weight = parseFloat(div.querySelector('input').value);
+            weights[i] = { positive: weight, negative: weight };
+        });
+
+        fetch('/update_config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sentiment: sentiment, weights: weights })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('message').innerText = '설정이 저장되었습니다.';
+        });
+    });
+
+    function switchTab(tab) {
+        document.querySelectorAll('.hub-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.hub-panel').forEach(p => p.classList.remove('active'));
+        document.querySelector(`.hub-tab[data-tab="${tab}"]`).classList.add('active');
+        document.getElementById(`panel-${tab}`).classList.add('active');
+        if (tab === 'stopwords') {
+            window.dispatchEvent(new Event('resize'));
+        }
+    }
+
+    (function initTab() {
+        var hash = location.hash.replace('#', '');
+        if (hash === 'stopwords') {
+            switchTab('stopwords');
+        }
+    })();
+</script>
+{% endblock %}

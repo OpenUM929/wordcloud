@@ -1,0 +1,113 @@
+<h1>불용어 관리</h1>
+
+<div class="mapping-area">
+    <div class="tree-panel" style="width: 30%;">
+        <h3>카테고리 필터</h3>
+        <div id="category-list"></div>
+        
+        <h3 style="margin-top: 20px;">통계 정보</h3>
+        <div id="statistics"></div>
+    </div>
+    
+    <div class="data-panel" style="width: 70%;">
+        <div class="wordcloud-options">
+            <h3>불용어 관리</h3>
+            
+            <div class="search-bar">
+                <span style="font-weight: bold; white-space: nowrap; padding: 8px 0;">검색</span>
+                <input type="text" id="search-input" placeholder="불용어 검색...">
+                <button id="search-btn" class="btn btn-primary">검색</button>
+            </div>
+            
+            <div class="add-section">
+                <span style="font-weight: bold; white-space: nowrap; padding: 8px 0;">추가</span>
+                <input type="text" id="new-word-input" placeholder="새로운 불용어 입력...">
+                <button id="auto-classify-btn" class="btn btn-info">수동으로 선택</button>
+                <select id="new-category-select"></select>
+                <button id="add-btn" class="btn btn-primary">추가</button>
+            </div>
+            
+            <div id="classification-status" style="display: none; margin-top: 10px; padding: 8px; background: #f3e8ff; border: 1px solid #ddd6fe; border-radius: 4px; font-size: 14px; color: #6b21a8;">
+                <i class="fas fa-spinner fa-spin"></i> 자동 분류 중입니다...
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>불용어 목록</h3>
+                
+                <div style="display: flex; align-items: center;">
+                    <label for="page-size-select" style="margin-right: 5px;">한 페이지에 표시할 개수:</label>
+                    <select id="page-size-select" style="padding: 3px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="10">10개</option>
+                        <option value="20">20개</option>
+                        <option value="50">50개</option>
+                        <option value="100">100개</option>
+                        <option value="1000">전체 보기</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="loading-indicator" class="loading-indicator">
+                <div class="loading-spinner"></div>
+                <p>불용어 목록을 로딩 중입니다...</p>
+            </div>
+            
+            <div id="stopwords-table-container" style="display: none;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>불용어</th>
+                            <th>카테고리</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stopwords-table-body"></tbody>
+                </table>
+            </div>
+            
+            <div id="no-results" class="no-results" style="display: none;">
+                <p>검색 결과가 없습니다.</p>
+            </div>
+            
+            <div id="pagination-container" class="pagination-container"></div>
+        </div>
+        
+        <div class="wordcloud-options demo-section">
+            <h3>불용어 필터링 데모</h3>
+            
+            <div class="option-card">
+                <h4>테스트 텍스트</h4>
+                <textarea id="demo-text-input" placeholder="테스트할 텍스트를 입력하세요..."></textarea>
+                <button id="demo-filter-btn" class="btn btn-info" style="margin-top: 10px;">필터링 적용</button>
+            </div>
+            
+            <div id="demo-results" style="display: none;">
+                <div class="option-card">
+                    <h4>원본 텍스트</h4>
+                    <div id="demo-original" class="demo-original"></div>
+                </div>
+                
+                <div class="option-card">
+                    <h4>필터링된 텍스트</h4>
+                    <div id="demo-filtered" class="demo-filtered"></div>
+                </div>
+                
+                <div id="demo-stats" class="demo-stats"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-notification" style="position: fixed; bottom: 20px; right: 20px; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 15px; max-width: 300px; display: none;">
+    <div style="display: flex; align-items: center;">
+        <i id="toast-icon" class="fas fa-info-circle" style="margin-right: 10px; color: #6366f1;"></i>
+        <div style="flex: 1;">
+            <strong id="toast-title" style="display: block;">알림</strong>
+            <span id="toast-message"></span>
+        </div>
+        <button type="button" style="background: none; border: none; cursor: pointer; color: #6c757d;" onclick="document.getElementById('toast-notification').style.display = 'none';">
+            ×
+        </button>
+    </div>
+</div>

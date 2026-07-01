@@ -1,0 +1,8 @@
+{
+  "system_version": "1.1.0",
+  "model_version": "hr-sentiment-v1.0",
+  "model_sha256": "951a31502fd5b1a611f3d1b176afb63bd796609cddd219fc028909a5d195e466",
+  "model_trained": "2026-06-25",
+  "source_commit": "a409695",
+  "build_date": "2026-07-01T06:37:49Z"
+}

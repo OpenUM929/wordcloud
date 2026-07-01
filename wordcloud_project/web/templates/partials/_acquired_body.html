@@ -1,0 +1,291 @@
+<div class="page-container">
+    <h1>습득한 데이터</h1>
+
+    <div class="panel">
+        <div class="summary" id="acquired_summaryArea">
+            <div class="summary-item"><div class="number" id="acquired_totalCount">0</div><div class="label">전체</div></div>
+            <div class="summary-item"><div class="number" id="acquired_mismatchCount" style="color:#dc3545;">0</div><div class="label">불일치</div></div>
+        </div>
+
+        <div class="filters">
+            <label><input type="checkbox" id="acquired_filterMismatch" onchange="acquired_loadData()"> 불일치만 보기</label>
+            <select id="acquired_filterLabel" onchange="acquired_loadData()">
+                <option value="">전체 라벨</option>
+                <option value="positive">긍정</option>
+                <option value="negative">부정</option>
+                <option value="neutral">중립</option>
+            </select>
+            <input type="date" id="acquired_filterDateFrom" onchange="acquired_loadData()">
+            <span>~</span>
+            <input type="date" id="acquired_filterDateTo" onchange="acquired_loadData()">
+            <button class="btn btn-primary" onclick="acquired_analyzeSelected()">분석 실행</button>
+            <button class="btn btn-secondary" onclick="acquired_exportCsv()">CSV보내기</button>
+            <button class="btn btn-success" onclick="acquired_exportRefinedCsv()">정제 CSV</button>
+            <button class="btn btn-primary" onclick="document.getElementById('acquired_importFile').click()">데이터 가져오기</button>
+            <input type="file" id="acquired_importFile" accept=".csv" style="display:none" onchange="acquired_importCsv(this)">
+            <button class="btn btn-danger" onclick="acquired_deleteSelected()">선택 삭제</button>
+            <button class="btn btn-danger" onclick="acquired_deleteAll()">전체 삭제</button>
+        </div>
+
+        <div id="acquired_tableArea">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:30px;"><input type="checkbox" id="acquired_selectAll" onchange="acquired_toggleAll()"></th>
+                        <th>문장</th>
+                        <th style="width:70px;">사용자</th>
+                        <th style="width:70px;">모델</th>
+                        <th style="width:50px;">일치</th>
+                        <th style="width:80px;">감정분석</th>
+                        <th style="width:50px;">욕설</th>
+                        <th style="width:50px;">비꼼</th>
+                        <th style="width:50px;">삭제</th>
+                    </tr>
+                </thead>
+                <tbody id="acquired_tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="acquired_paginationArea"></div>
+    </div>
+</div>
+
+<script>
+var acquired_currentPage = 1;
+var acquired_totalPages = 1;
+var acquired_allItems = [];
+
+function acquired_loadData() {
+    const mismatch = document.getElementById('acquired_filterMismatch').checked ? '1' : '0';
+    const label = document.getElementById('acquired_filterLabel').value;
+    const dateFrom = document.getElementById('acquired_filterDateFrom').value;
+    const dateTo = document.getElementById('acquired_filterDateTo').value;
+    var params = 'page=' + acquired_currentPage + '&per_page=50&mismatch_only=' + mismatch;
+    if (label) params += '&label=' + encodeURIComponent(label);
+    if (dateFrom) params += '&date_from=' + encodeURIComponent(dateFrom);
+    if (dateTo) params += '&date_to=' + encodeURIComponent(dateTo);
+
+    document.getElementById('acquired_tableBody').innerHTML = '<tr><td colspan="9" class="loading">로딩 중...</td></tr>';
+
+    fetch('/api/perspective/acquired-sentences/list?' + params, {credentials: 'include'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.success) { alert(d.error); return; }
+        acquired_allItems = d.items || [];
+        document.getElementById('acquired_totalCount').textContent = d.total;
+        var mismatchCount = acquired_allItems.filter(function(i) { return i.user_label !== i.model_label; }).length;
+        document.getElementById('acquired_mismatchCount').textContent = mismatchCount;
+
+        acquired_totalPages = Math.ceil(d.total / d.per_page) || 1;
+        acquired_renderTable();
+        acquired_renderPagination();
+    })
+    .catch(function(e) { console.error(e); });
+}
+
+function acquired_renderTable() {
+    var h = '';
+    acquired_allItems.forEach(function(item) {
+        var match = item.user_label === item.model_label;
+        var analysisResults = {};
+        try { analysisResults = JSON.parse(item.analysis_results || '{}'); } catch(e) {}
+
+        var emotionResult = analysisResults.emotion || {};
+        var emoLabel = emotionResult.result || item.model_label || '';
+        var hasArResult = !!emotionResult.result;
+        var emoPos = hasArResult ? emotionResult.positive : item.kote_pos;
+        var emoNeg = hasArResult ? emotionResult.negative : item.kote_neg;
+        var emoNeu = hasArResult ? emotionResult.neutral : item.kote_neutral;
+        var emotionHtml = '-';
+        if (emoLabel) {
+            var scoreHtml = '';
+            if (emoPos !== undefined && emoPos !== null) {
+                scoreHtml = '<br><small>' + (emoPos || 0).toFixed(2) + '/' +
+                    (emoNeg || 0).toFixed(2) + '/' + (emoNeu || 0).toFixed(2) + '</small>';
+            }
+            emotionHtml = '<span class="result-' + emoLabel.substr(0,3) + '">' + emoLabel + scoreHtml + '</span>';
+        }
+
+        var profanityHtml;
+        if (analysisResults.profanity) {
+            profanityHtml = analysisResults.profanity.detected ? '&#9888;&#65039;' : '&#10003;';
+        } else if (analysisResults.is_profanity !== undefined) {
+            profanityHtml = analysisResults.is_profanity ? '&#9888;&#65039;' : '&#10003;';
+        } else {
+            profanityHtml = '-';
+        }
+
+        var sarcasmHtml = analysisResults.sarcasm ?
+            (analysisResults.sarcasm.detected ? '&#9888;&#65039;' : '&#10003;') : '-';
+
+        h += '<tr>';
+        h += '<td><input type="checkbox" class="acquired_item-checkbox" value="' + item.id + '"></td>';
+        h += '<td class="text-cell">' + acquired_escapeHtml(item.sentence_text) + '</td>';
+        h += '<td><span class="badge badge-' + item.user_label.substr(0,3) + '">' + item.user_label + '</span></td>';
+        h += '<td><span class="badge badge-' + item.model_label.substr(0,3) + '">' + item.model_label + '</span></td>';
+        h += '<td><span class="badge ' + (match ? 'badge-match' : 'badge-mismatch') + '">' + (match ? '&#9989;' : '&#10060;') + '</span></td>';
+        h += '<td class="analysis-cell">' + emotionHtml + '</td>';
+        h += '<td class="analysis-cell">' + profanityHtml + '</td>';
+        h += '<td class="analysis-cell">' + sarcasmHtml + '</td>';
+        h += '<td><button onclick="acquired_deleteItem(' + item.id + ')" style="border:none;background:transparent;cursor:pointer;color:#dc3545;font-size:14px;">&#10060;</button></td>';
+        h += '</tr>';
+    });
+    if (!acquired_allItems.length) {
+        h = '<tr><td colspan="9" style="text-align:center;color:#888;padding:30px;">저장된 데이터가 없습니다.</td></tr>';
+    }
+    document.getElementById('acquired_tableBody').innerHTML = h;
+}
+
+function acquired_renderPagination() {
+    var h = '';
+    h += '<button onclick="acquired_goPage(1)"' + (acquired_currentPage <= 1 ? ' disabled' : '') + '>&#171;</button>';
+    h += '<button onclick="acquired_goPage(' + (acquired_currentPage - 1) + ')"' + (acquired_currentPage <= 1 ? ' disabled' : '') + '>이전</button>';
+    var start = Math.max(1, acquired_currentPage - 2);
+    var end = Math.min(acquired_totalPages, acquired_currentPage + 2);
+    for (var i = start; i <= end; i++) {
+        h += '<button class="' + (i === acquired_currentPage ? 'active' : '') + '" onclick="acquired_goPage(' + i + ')">' + i + '</button>';
+    }
+    h += '<button onclick="acquired_goPage(' + (acquired_currentPage + 1) + ')"' + (acquired_currentPage >= acquired_totalPages ? ' disabled' : '') + '>다음</button>';
+    h += '<button onclick="acquired_goPage(' + acquired_totalPages + ')"' + (acquired_currentPage >= acquired_totalPages ? ' disabled' : '') + '>&#187;</button>';
+    document.getElementById('acquired_paginationArea').innerHTML = h;
+}
+
+function acquired_goPage(page) {
+    if (page < 1 || page > acquired_totalPages) return;
+    acquired_currentPage = page;
+    acquired_loadData();
+}
+
+function acquired_toggleAll() {
+    var checked = document.getElementById('acquired_selectAll').checked;
+    document.querySelectorAll('.acquired_item-checkbox').forEach(function(cb) { cb.checked = checked; });
+}
+
+function acquired_getSelectedIds() {
+    var ids = [];
+    document.querySelectorAll('.acquired_item-checkbox:checked').forEach(function(cb) { ids.push(parseInt(cb.value)); });
+    return ids;
+}
+
+function acquired_analyzeSelected() {
+    var ids = acquired_getSelectedIds();
+    if (!ids.length) { alert('분석할 항목을 선택하세요.'); return; }
+    var btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '분석 중...';
+    fetch('/api/perspective/acquired-sentences/analyze', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids: ids}),
+        credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { acquired_loadData(); }
+        else { alert(d.error); }
+    })
+    .catch(function(e) { alert('분석 실패'); })
+    .finally(function() { btn.disabled = false; btn.textContent = '분석 실행'; });
+}
+
+function acquired_deleteItem(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    fetch('/api/perspective/acquired-sentences/' + id, {
+        method: 'DELETE', credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) acquired_loadData();
+        else alert(d.error);
+    })
+    .catch(function(e) { alert('삭제 실패'); });
+}
+
+function acquired_deleteSelected() {
+    var ids = acquired_getSelectedIds();
+    if (!ids.length) { alert('삭제할 항목을 선택하세요.'); return; }
+    if (!confirm('선택한 ' + ids.length + '건을 삭제하시겠습니까?')) return;
+    fetch('/api/perspective/acquired-sentences/delete-bulk', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids: ids}), credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { alert(d.deleted + '건 삭제됨'); acquired_currentPage = 1; acquired_loadData(); }
+        else { alert(d.error); }
+    })
+    .catch(function(e) { alert('삭제 실패'); });
+}
+
+function acquired_deleteAll() {
+    var mismatch = document.getElementById('acquired_filterMismatch').checked;
+    var label = document.getElementById('acquired_filterLabel').value;
+    var dateFrom = document.getElementById('acquired_filterDateFrom').value;
+    var dateTo = document.getElementById('acquired_filterDateTo').value;
+    var filtered = mismatch || label || dateFrom || dateTo;
+    var msg = filtered
+        ? '현재 필터에 해당하는 모든 문장을 삭제하시겠습니까?'
+        : '저장된 전체 문장을 삭제하시겠습니까? (되돌릴 수 없습니다)';
+    if (!confirm(msg)) return;
+    fetch('/api/perspective/acquired-sentences/delete-all', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            mismatch_only: mismatch, label: label,
+            date_from: dateFrom, date_to: dateTo,
+        }),
+        credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) { alert(d.deleted + '건 삭제됨'); acquired_currentPage = 1; acquired_loadData(); }
+        else { alert(d.error); }
+    })
+    .catch(function(e) { alert('삭제 실패'); });
+}
+
+function acquired_exportCsv() {
+    var mismatch = document.getElementById('acquired_filterMismatch').checked ? '1' : '0';
+    window.open('/api/perspective/acquired-sentences/export?mismatch_only=' + mismatch, '_blank');
+}
+
+function acquired_exportRefinedCsv() {
+    var mismatch = document.getElementById('acquired_filterMismatch').checked ? '1' : '0';
+    window.open('/api/perspective/acquired-sentences/export-refined?mismatch_only=' + mismatch, '_blank');
+}
+
+function acquired_importCsv(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var overwrite = confirm('CSV 업로드\n\n중복 문장(같은 문장+평가ID+문장순번)을 어떻게 처리할까요?\n\n확인 = 덮어쓰기\n취소 = 건너뛰기(기존 유지)');
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('overwrite', overwrite ? '1' : '0');
+    fetch('/api/perspective/acquired-sentences/import', {
+        method: 'POST', body: fd, credentials: 'include',
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) {
+            var msg = '가져오기 완료\n추가: ' + d.inserted + '건 / 건너뜀: ' + d.skipped + '건';
+            if (d.errors && d.errors.length) {
+                msg += '\n경고 ' + d.errors.length + '건:\n' + d.errors.slice(0, 5).join('\n');
+            }
+            alert(msg);
+            acquired_currentPage = 1;
+            acquired_loadData();
+        } else {
+            alert(d.error || '가져오기 실패');
+        }
+    })
+    .catch(function(e) { alert('가져오기 실패'); })
+    .finally(function() { input.value = ''; });
+}
+
+function acquired_escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', function() { acquired_loadData(); });
+</script>

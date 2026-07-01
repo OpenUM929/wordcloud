@@ -1,6 +1,6 @@
 """UI routes for the WordCloud application."""
 
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, redirect
 from src.config.settings import NLP_CONFIG_PATH
 import json
 
@@ -15,13 +15,13 @@ def index():
 
 @ui_bp.route('/settings')
 def settings():
-    """Settings page."""
+    """Settings hub page (settings + stopwords tabs)."""
     from src.services.metadata_service import load_config
     
     current_config = load_config()
     from src.config.settings import EMOTION_NAMES
     return render_template(
-        'settings.html',
+        'settings_hub.html',
         emotions=EMOTION_NAMES,
         config=current_config,
         emotions_json=json.dumps(EMOTION_NAMES, separators=(',', ':')),
@@ -72,6 +72,12 @@ def judgment_apply():
     return render_template('judgment_apply.html')
 
 
+@ui_bp.route('/group-review')
+def group_review():
+    """신규 그룹 gold 검토 페이지 — eval/*.jsonl 사람 판정(재사용 라벨링 도구)."""
+    return render_template('group_review.html')
+
+
 @ui_bp.route('/get_batch_list')
 def get_batch_list_api():
     """API to get list of batches."""
@@ -113,9 +119,9 @@ def wordcloud():
 
 
 @ui_bp.route('/stopwords')
-def stopwords():
-    """Stopwords management page."""
-    return render_template('stopwords.html')
+def stopwords_redirect():
+    """Redirect to settings hub with stopwords tab."""
+    return redirect('/settings#stopwords', 302)
 
 
 @ui_bp.route('/wordcloud_debug')
@@ -132,8 +138,8 @@ def perspective_test():
 
 @ui_bp.route('/profanity-list')
 def profanity_list():
-    """Admin page for company-wide profanity list."""
-    return render_template('profanity_list.html')
+    """Results hub page (profanity list + acquired data tabs)."""
+    return render_template('results_hub.html')
 
 
 @ui_bp.route('/sentiment-test')
@@ -155,6 +161,6 @@ def deploy_gallery():
 
 
 @ui_bp.route('/acquired-data')
-def acquired_data():
-    """Acquired corpus data page."""
-    return render_template('acquired_data.html')
+def acquired_data_redirect():
+    """Redirect to results hub with acquired data tab."""
+    return redirect('/profanity-list#acquired', 302)
