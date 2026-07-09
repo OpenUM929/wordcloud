@@ -1,0 +1,74 @@
+{
+ "_doc": "감정 판정 작업 패킷. 단계: extract→judge→insert. 받은 쪽은 _status.current_stage 와 _stages[해당단계].instruction 을 읽고 그대로 수행하라. 판정(judge) 단계면 각 items[].result 를 채우고 _status 를 갱신해 돌려주면 된다.",
+ "schema_version": "1.0",
+ "packet_id": "judge_batch_20260629_2_260629_1349",
+ "created_at": "2026-06-29T04:49:10.616726+00:00",
+ "_privacy": "가명 텍스트 + PII 게이트 통과분만 포함. 실명·원본 ID 없음. 키(db_id+sent_idx)는 내부 정수라 식별정보 아님. 삽입은 같은 레코드 in-place 수정.",
+ "source": {
+  "batch_id": "batch_20260629_2",
+  "margin": 0.15
+ },
+ "_key_fields": [
+  "db_id",
+  "sent_idx"
+ ],
+ "_status": {
+  "current_stage": "judge",
+  "counts": {
+   "extracted": 0,
+   "judged": 0,
+   "inserted": 0,
+   "quarantined": 0
+  },
+  "history": [
+   {
+    "stage": "extract",
+    "by": "system",
+    "at": "2026-06-29T04:49:10.618726+00:00",
+    "n": 0,
+    "quarantined": 0
+   }
+  ]
+ },
+ "_stages": {
+  "extract": {
+   "by": "system",
+   "done": true,
+   "instruction": "가명 평가에서 하드케이스(긍↔부 불일치·저마진)와 키를 뽑아 items 에 적재."
+  },
+  "judge": {
+   "by": "AI(Claude)",
+   "done": false,
+   "instruction": "각 items[] 의 text 를 읽고 result 에 {label, confidence, needs_human, reason} 를 채워라. 끝나면 _status.current_stage='insert', _stages.judge.done=true, counts.judged 갱신.",
+   "rules": [
+    "긍↔부(긍정↔부정) 오분류 0 이 최우선 — 확신 없으면 needs_human=true.",
+    "중립↔긍정은 허용(과하게 부정으로 내리지 말 것).",
+    "\"보완점 없음/단점 없습니다\" 등 약점없음 선언은 neutral.",
+    "\"~필요/요구/했으면 좋겠\" 등 건설적 비판은 negative.",
+    "cur_label 은 현재 시스템 추정치(참고용) — 맹신 말고 문장으로 판정."
+   ],
+   "output_schema": {
+    "label": "positive|negative|neutral",
+    "confidence": "high|medium|low",
+    "needs_human": "true 면 사람 모달 확정으로 보냄",
+    "reason": "짧은 근거(선택)"
+   }
+  },
+  "insert": {
+   "by": "system",
+   "done": false,
+   "instruction": "result 가 채워진 items 를 key(db_id+sent_idx)로 evaluations.sentiment_corrections 에 in-place 반영. needs_human=true 는 사용자 모달 큐로."
+  }
+ },
+ "items": [],
+ "_margin": {
+  "default": 0.05,
+  "extracted_at": 0.15,
+  "bands": {
+   "0.05": 0,
+   "0.10": 0,
+   "0.15": 0,
+   "flip": 0
+  }
+ }
+}

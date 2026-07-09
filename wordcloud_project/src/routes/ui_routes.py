@@ -164,3 +164,18 @@ def deploy_gallery():
 def acquired_data_redirect():
     """Redirect to results hub with acquired data tab."""
     return redirect('/profanity-list#acquired', 302)
+
+
+@ui_bp.route('/batch-monitor')
+def batch_monitor():
+    """배치 진행 상황 및 재개 페이지."""
+    return render_template('batch_monitor.html')
+
+
+@ui_bp.route('/judgment-extract')
+def judgment_extract():
+    """판정 패킷 추출 페이지.
+    POST API(perspective_routes.py:617)는 admin 필수이므로,
+    UI에서도 _is_admin_session 확인. 비관리자는 메시지 표시.
+    """
+    return render_template('judgment_extract.html')

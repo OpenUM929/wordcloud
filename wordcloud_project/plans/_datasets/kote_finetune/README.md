@@ -18,6 +18,13 @@
 | `leadership/TRAIT_TREE.md` | 리더십 택소노미 **스펙 정본**(20-trait 트리·rollup) | trait 구조 확인·갱신 | 군집 근거 시 |
 | `leadership/trait_library_ref.md` | 외부 레포(`OpenUM929`) **활용 전략 §0** + micro 검증본 §3 | 외부 골격 대조·군집 | 정적(스냅샷) |
 | `leadership/weak_labeling_lf.md` | **약지도 LF 설계** + §8 lexicon 보강로그 + §9 positive-negation 게이트 설계 | LF 배선·표지 보강·게이트 구현 | 설계 진화 |
+| **`result/IMPROVEMENT_HISTORY.md`** | **개선 이력(기간대별·append-only 척추)**: 지표 타임라인(8c_hard·baseline·긍↔부) + 기간별 상세 링크. 개선 역사 전량 보존(RUNBOOK §불변원칙) | 개선 흐름·역사 추적 | append-only |
+| `result/status_YYMMDD.md` | **기간 상세 스냅샷**(예 `status_260707.md`): 그 기간 수치·변경·다음. 덮어쓰지 말고 날짜별 신규 | 특정 기간 상세 | 스냅샷(날짜별) |
+| **`MODELING_LEVERS_PLAN.md`** | **모델링 레버 계획서**(데이터 천장 이후): 앙상블·비대칭손실·캘리브레이션·캐스케이드·대조학습·베이스A/B. 각 레버 목표/가설/방법/성공기준/롤백 | 다음 실험 뭘·어떻게 | 계획(PND, 채택분만 DN) |
+| `result/worklog_260703.md` | **세션 작업 정리**(엔진 교정 9건·그룹재편·검증) — 보고서 재료 | 보고서 작성·진척 요약 | 스냅샷 |
+| `result/review_todo_260703.md` | **사람 검토 To-Do**(그룹별 우선순위·미판정 수) | 다음 뭘 검토할지 | 현황(재생성) |
+| `result/group_audit_260703.md`·`scripts/group_audit_260703.py` | **그룹단위 분류 감사**(그룹별 일치율·누수원인) | 규칙 수정 후 검증 | 재실행 |
+| `result/group_files_index_260703.md` | **게시판 파일 지도**(29 그룹파일 위치·검토법) | 게시판 파일 의미 | 재생성 |
 | `emotion/emotion.jsonl`·`leadership/leadership.jsonl` | **정식 gold 스트림**(confirmed만, append-only, 학습 대상) | gold append | append-only |
 | `../../2026/0617_05_kote-finetune-data/` | 데이터셋 **설계 정본**(스키마·보안) — *일회성* | 스키마 근거 확인 | 보류(고정) |
 | `../../2026/0617_01_emotion-rule-mining/` | 규칙 마이닝 + 회귀 테스트 — *일회성* | 규칙·테스트 근거 | DN(고정) |

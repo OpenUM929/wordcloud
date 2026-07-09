@@ -1,0 +1,158 @@
+{
+ "field_token": "on",
+ "n_train": 3979,
+ "runs": [
+  {
+   "beta": 0.2,
+   "seed": 42,
+   "slice": "baseline399",
+   "acc": 0.907,
+   "pos_neg_err": 0,
+   "neg_recall": 0.99,
+   "neu_recall": 0.544
+  },
+  {
+   "beta": 0.2,
+   "seed": 42,
+   "slice": "8c_hard",
+   "acc": 0.85,
+   "pos_neg_err": 0,
+   "neg_recall": 0.902,
+   "neu_recall": 0.746
+  },
+  {
+   "beta": 0.2,
+   "seed": 42,
+   "slice": "c3_neu149",
+   "acc": 0.7047,
+   "pos_neg_err": 3,
+   "neg_recall": 0.604,
+   "neu_recall": 0.638
+  },
+  {
+   "beta": 0.2,
+   "seed": 42,
+   "slice": "sa_speech74",
+   "acc": 0.8108,
+   "pos_neg_err": 0,
+   "neg_recall": 0.818,
+   "neu_recall": 0.6
+  },
+  {
+   "beta": 0.2,
+   "seed": 43,
+   "slice": "baseline399",
+   "acc": 0.9146,
+   "pos_neg_err": 0,
+   "neg_recall": 0.979,
+   "neu_recall": 0.574
+  },
+  {
+   "beta": 0.2,
+   "seed": 43,
+   "slice": "8c_hard",
+   "acc": 0.8429,
+   "pos_neg_err": 0,
+   "neg_recall": 0.902,
+   "neu_recall": 0.73
+  },
+  {
+   "beta": 0.2,
+   "seed": 43,
+   "slice": "c3_neu149",
+   "acc": 0.6309,
+   "pos_neg_err": 5,
+   "neg_recall": 0.604,
+   "neu_recall": 0.489
+  },
+  {
+   "beta": 0.2,
+   "seed": 43,
+   "slice": "sa_speech74",
+   "acc": 0.7703,
+   "pos_neg_err": 0,
+   "neg_recall": 0.773,
+   "neu_recall": 0.533
+  },
+  {
+   "beta": 0.2,
+   "seed": 44,
+   "slice": "baseline399",
+   "acc": 0.9121,
+   "pos_neg_err": 0,
+   "neg_recall": 0.99,
+   "neu_recall": 0.559
+  },
+  {
+   "beta": 0.2,
+   "seed": 44,
+   "slice": "8c_hard",
+   "acc": 0.8429,
+   "pos_neg_err": 0,
+   "neg_recall": 0.902,
+   "neu_recall": 0.73
+  },
+  {
+   "beta": 0.2,
+   "seed": 44,
+   "slice": "c3_neu149",
+   "acc": 0.6913,
+   "pos_neg_err": 2,
+   "neg_recall": 0.667,
+   "neu_recall": 0.447
+  },
+  {
+   "beta": 0.2,
+   "seed": 44,
+   "slice": "sa_speech74",
+   "acc": 0.8108,
+   "pos_neg_err": 0,
+   "neg_recall": 0.818,
+   "neu_recall": 0.6
+  }
+ ],
+ "agg": {
+  "0.2": {
+   "baseline399": {
+    "acc_mean": 0.9112,
+    "acc_std": 0.0032,
+    "pos_neg_errs": [
+     0,
+     0,
+     0
+    ],
+    "neg_recall_mean": 0.986
+   },
+   "8c_hard": {
+    "acc_mean": 0.8453,
+    "acc_std": 0.0033,
+    "pos_neg_errs": [
+     0,
+     0,
+     0
+    ],
+    "neg_recall_mean": 0.902
+   },
+   "c3_neu149": {
+    "acc_mean": 0.6756,
+    "acc_std": 0.0321,
+    "pos_neg_errs": [
+     3,
+     5,
+     2
+    ],
+    "neg_recall_mean": 0.625
+   },
+   "sa_speech74": {
+    "acc_mean": 0.7973,
+    "acc_std": 0.0191,
+    "pos_neg_errs": [
+     0,
+     0,
+     0
+    ],
+    "neg_recall_mean": 0.803
+   }
+  }
+ }
+}

@@ -1,0 +1,111 @@
+{
+ "field_token": "on",
+ "seeds": [
+  42,
+  43,
+  44
+ ],
+ "per_seed": [
+  {
+   "seed": 42,
+   "T": 1.5,
+   "tneg": 0.4,
+   "tpos": 0.6,
+   "dev_acc": 0.8342,
+   "dev_pne": 1,
+   "ece_raw": 0.0898,
+   "ece_T": 0.0633
+  },
+  {
+   "seed": 43,
+   "T": 1.7,
+   "tneg": 0.25,
+   "tpos": 0.25,
+   "dev_acc": 0.8375,
+   "dev_pne": 5,
+   "ece_raw": 0.1124,
+   "ece_T": 0.0471
+  },
+  {
+   "seed": 44,
+   "T": 1.6,
+   "tneg": 0.05,
+   "tpos": 0.45,
+   "dev_acc": 0.8208,
+   "dev_pne": 6,
+   "ece_raw": 0.1132,
+   "ece_T": 0.0878
+  }
+ ],
+ "dev_frac": 0.15,
+ "agg": {
+  "baseline399": {
+   "argmax_acc_mean": 0.907,
+   "calib_acc_mean": 0.902,
+   "argmax_pne": [
+    1,
+    0,
+    0
+   ],
+   "calib_pne": [
+    0,
+    0,
+    0
+   ],
+   "delta_acc": -0.005,
+   "argmax_neg_mean": 0.976,
+   "calib_neg_mean": 0.966
+  },
+  "8c_hard": {
+   "argmax_acc_mean": 0.8214,
+   "calib_acc_mean": 0.8191,
+   "argmax_pne": [
+    1,
+    0,
+    1
+   ],
+   "calib_pne": [
+    1,
+    0,
+    1
+   ],
+   "delta_acc": -0.0024,
+   "argmax_neg_mean": 0.902,
+   "calib_neg_mean": 0.87
+  },
+  "c3_neu149": {
+   "argmax_acc_mean": 0.7114,
+   "calib_acc_mean": 0.6398,
+   "argmax_pne": [
+    4,
+    0,
+    3
+   ],
+   "calib_pne": [
+    1,
+    0,
+    1
+   ],
+   "delta_acc": -0.0716,
+   "argmax_neg_mean": 0.632,
+   "calib_neg_mean": 0.556
+  },
+  "sa_speech74": {
+   "argmax_acc_mean": 0.8063,
+   "calib_acc_mean": 0.7748,
+   "argmax_pne": [
+    0,
+    0,
+    0
+   ],
+   "calib_pne": [
+    0,
+    0,
+    0
+   ],
+   "delta_acc": -0.0315,
+   "argmax_neg_mean": 0.773,
+   "calib_neg_mean": 0.72
+  }
+ }
+}

@@ -66,9 +66,18 @@
 | 0624_04_emotion-clustering | KoTE 파인튜닝용 신규 HR 감정그룹 군집 발굴(감정 스트림) — 미피복 484K(56%) 멀티뷰 군집 24개→3대 화행(G1약점부재·G2개선요청·G3역량서술). D1·D3·D4·D5 완료(176K weak 전파·gold 1,318·baseline 1,500). 군집≠gold·필드 1급·긍↔부0 | Doing | 2026-06-24 |
 | 0624_05_group-review-ui | 신규 그룹 gold 검토 웹 UI(재사용 라벨링) — eval/*.jsonl 호출→긍/부/중/그룹아님 빠른 선택(키보드)·ai_reference 힌트·결정 저장. 데이터 추가 시 재사용. 경로 traversal 가드·admin·plans 배포제외 | Pre-Done | 2026-06-24 |
 | 0625_01_eval-pseudonym-double-mapping-fix | (오진 학습기록·보존) 가명화가 원인이라 단정했으나 실제 원인은 evaluation_date int → 행 필터 전건탈락. 본문=당시 오진, 최하단 "반전"=실제 원인/해결(date_normalize). 작성법 교훈 6가지 | Done | 2026-06-25 |
-| 0630_01_nav-restructure | Nav 메뉴 워크플로 중심 재구성 + batch-monitor/judgment-extract 페이지 신규 | Todo | 2026-06-30 |
+| 0630_01_nav-restructure | (0701_01 리베이스) 잔여 범위=batch-monitor/judgment-extract 신규 페이지 + 파이프라인 순번화. 허브·접기·배지는 0701_01서 완료 | Todo | 2026-06-30 |
 | 0630_02_unhealthy-substr-fp | 비건전 단어 substring 오탐 수정 (회사정책→"사정" 욕설 오인) — 형태소/단어경계 매칭으로 교체 | Pre-Done | 2026-06-30 |
 | 0630_03_deficiency-framing-neutral | 결핍·개선요청("보완 필요")이 rule4_default로 부→긍 누수되던 13만 구멍 중립화 — 전수 24,384 수정·긍↔부 0 | Pre-Done | 2026-06-30 |
 | 0630_04_deficiency-noun-neg | 결핍명사(부족·미흡·결여·부재) substring 부정화 시도 — 전수 재생서 긍→부 263(장점 138) 잔존(술어결정 토픽명사), 코드 원복·극성표/파인튜닝 트랙 이관 | Drop | 2026-06-30 |
 | 0630_05_perspective-sort-feature | perspective_test 워드클라우드/매트릭스 정렬 기능(오름/내림/긍/부/중/욕설) | Todo | 2026-06-30 |
 | 0701_01_nav-hub-version | Nav 2쌍 탭 병합(설정+불용어·욕설+습득) + 섹션 접기 기억 + 버전 배지(모델 로드/무결성) | Todo | 2026-07-01 |
+| 0701_02_metadata-batch-fix | 메타데이터 배치 저장(step4) 개선 — 산출물 폴더 이동 + 카드 3열/체크박스 한 행 + 불필요 단계멘트 제거 + [버그]완료 후 신규배치 429("이미 실행 중")/멈춤: completed 판정이 Stage6 판정추출 前(L1026)이라 busy 잠금 미해제 | Todo | 2026-07-01 |
+| 0701_03_needs-human-bridge | 판정 패킷 ↔ 그룹검토 게시판 통합(v2 재설계). item을 게시판 행 스키마로 통일 + status(1AI대기/2사람대기/3확정)로 구동. 게시판이 패킷 직접 로드/저장, apply는 status==3만 반영·서버저장·재적용. v1 별도파일 브리지 폐기. 단위 통과. +apply URL prefix 버그 교정 | Pre-Done | 2026-07-01 |
+| 0702_01_status-code-redesign | 판정 패킷 상태 코드 체계 확장 재설계(1/2/3→확장형) + DB 반영 버튼 분리 + AI 작업 완료시 Human 작업 리다이렉트 | Todo | 2026-07-02 |
+| 0707_01_field-token-signal | 장점/단점 필드 신호를 감정모델에 주입(필드 토큰) — 모델 field-blind 교정, 무서술어 단편 극성 회수. 하드룰 금지·조건부학습. 필드는 내부망 매핑UI에서 지정(원데이터 비반입). Phase1 학습A/B게이트 후 수집·런타임 배선. Phase1 A/B 게이트 통과(8c_hard 긍↔부 1→0·정확도 82.9→84.3%, baseline 악화 0). Phase2 완료(메타구조에 장점/단점 문서필드 2개=매핑이 곧 극성지정, 수집 극성분리 레코드+문장 field 전파, 단위테스트 5/5·JS OK). 남은 것=런타임 프리픽스 배선(파인튜닝 모델 서빙 시) | Doing | 2026-07-07 |
+| 0708_01_clause-inference | 추론경로 절(clause) 분리 통합 + 최신 감정모델 배포. **Phase1 완료**: seed45 배포(06-25 백업·md5검증)+field-aware 배선(7 호출부)+USE_FIELD_TOKEN_INFERENCE 플래그(=0707_01 순서5 DN). 게이트: seed45가 06-25 대비 하드셋 긍↔부 16→1·부→긍누수 제거. **Phase2b HOLD**: clause_eval 실측 중립회수 1건(노이즈)<부→긍위험 3건(-는데 범위절단 누수)→게이트 FAIL. 단위 4/4 PASS | Phase1 Pre-Done·Phase2 HOLD | 2026-07-08 |
+| 0708_02_post-ceiling-levers | 천장 이후 미시도 레버 5종 설계 — L1 라벨 일관성 감사(교차검증 confident-learning, 중립경계), L2 모델 수프(seed 가중치 평균=앙상블 이득 1배 서빙 회수), L3 T scaling 서빙 배선(predict_proba+escalation 라우팅), L4 프로덕션 분포 홀드아웃(혼재배치 검수분→prod 슬라이스), L5 조건부 베이스 A/B 언블록. 기각레버(silver·경계gold·멀티태스크·B/C/E) 재시도 금지 명시. **실행(07-08): L2 기각(seed45 유지)·L3 완료(단위 11/11)·L1 감사 완료(표면충돌 22그룹·oof 의심 498·prefill 304행 — 사용자 확정 대기)·L4/L5 대기** | Doing | 2026-07-08 |
+| 0709_01_metadata-rename | 메타데이터→통합데이터 용어 통일 리팩토링 (계획서 단계) | Todo | 2026-07-09 |
+| 0709_01_progress-time-display | 진행 시간 및 예상 종료 시간 표시 기능 추가 (배치 처리·매트릭스 저장·제출용 저장) + 감정 재판정 검증 체크리스트 | Doing | 2026-07-09 |
+| 0709_02_playwright-mcp-test | Playwright MCP 설치 + 용어변경 전 기능 검증 시나리오 14개 주제 (CSS 클릭 가능성 포함) | Todo | 2026-07-09 |

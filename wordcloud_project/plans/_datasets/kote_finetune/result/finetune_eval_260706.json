@@ -1,0 +1,109 @@
+{
+ "n_train": 3979,
+ "results": {
+  "baseline399": [
+   {
+    "name": "before(알고리즘)",
+    "acc": 0.6508,
+    "pos_neg_err": 10,
+    "gp_to_neg": 0,
+    "neg_to_pos": 10,
+    "recall": {
+     "pos": 0.764,
+     "neg": 0.443,
+     "neu": 0.559
+    }
+   },
+   {
+    "name": "after(파인튜닝)",
+    "acc": 0.9045,
+    "pos_neg_err": 1,
+    "gp_to_neg": 1,
+    "neg_to_pos": 0,
+    "recall": {
+     "pos": 0.979,
+     "neg": 0.959,
+     "neu": 0.574
+    }
+   }
+  ],
+  "8c_hard": [
+   {
+    "name": "before(알고리즘)",
+    "acc": 0.45,
+    "pos_neg_err": 0,
+    "gp_to_neg": 0,
+    "neg_to_pos": 0,
+    "recall": {
+     "pos": 0.0,
+     "neg": 0.0,
+     "neu": 1.0
+    }
+   },
+   {
+    "name": "after(파인튜닝)",
+    "acc": 0.8643,
+    "pos_neg_err": 1,
+    "gp_to_neg": 1,
+    "neg_to_pos": 0,
+    "recall": {
+     "pos": 0.944,
+     "neg": 0.927,
+     "neu": 0.778
+    }
+   }
+  ],
+  "c3_neu149": [
+   {
+    "name": "before(알고리즘)",
+    "acc": 0.5369,
+    "pos_neg_err": 2,
+    "gp_to_neg": 1,
+    "neg_to_pos": 1,
+    "recall": {
+     "pos": 0.648,
+     "neg": 0.208,
+     "neu": 0.745
+    }
+   },
+   {
+    "name": "after(파인튜닝)",
+    "acc": 0.7181,
+    "pos_neg_err": 1,
+    "gp_to_neg": 1,
+    "neg_to_pos": 0,
+    "recall": {
+     "pos": 0.833,
+     "neg": 0.688,
+     "neu": 0.617
+    }
+   }
+  ],
+  "sa_speech74": [
+   {
+    "name": "before(알고리즘)",
+    "acc": 0.2027,
+    "pos_neg_err": 0,
+    "gp_to_neg": 0,
+    "neg_to_pos": 0,
+    "recall": {
+     "pos": 0.0,
+     "neg": 0.0,
+     "neu": 1.0
+    }
+   },
+   {
+    "name": "after(파인튜닝)",
+    "acc": 0.7568,
+    "pos_neg_err": 0,
+    "gp_to_neg": 0,
+    "neg_to_pos": 0,
+    "recall": {
+     "pos": 1.0,
+     "neg": 0.727,
+     "neu": 0.6
+    }
+   }
+  ]
+ }
+}

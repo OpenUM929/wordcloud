@@ -52,7 +52,8 @@ def upload_batch_file(request_obj, session_obj):
             all_files = csv_files + xlsx_files
             
             if not all_files:
-                return {'error': 'inputs 폴더에 CSV/Excel 파일이 없습니다.'}, 400
+                return {'error': '선택한 데이터 폴더에 CSV/Excel 파일이 없습니다.',
+                        'inputs_dir': inputs_dir, 'reason': 'empty'}, 400
             
             common_columns = None
             file_structures = []
@@ -179,7 +180,8 @@ def upload_batch_file(request_obj, session_obj):
                 'preview_rows': aggregated_preview[:10]
             }, 200
         else:
-            return {'error': '유효한 경로를 선택해주세요.'}, 400
+            return {'error': '데이터(inputs) 폴더가 존재하지 않습니다.',
+                    'inputs_dir': inputs_dir, 'reason': 'missing'}, 400
     
     if 'file' not in request_obj.files:
         return {'error': '파일을 선택해주세요.'}, 400
@@ -461,6 +463,43 @@ def get_skipped_evaluations(batch_id):
     skipped_count = summary.get('batch_info', {}).get('skipped_count', 0)
     skipped = summary.get('skipped_evaluations', []) or []
     return {'success': True, 'skipped_count': skipped_count, 'skipped': skipped}
+
+
+def open_folder(path):
+    """탐색기로 폴더 열기 (화이트리스트 검증 후 os.startfile).
+
+    요청 경로가 아직 없으면(예: 신규 라벨 폴더가 Stage6 전 미생성) 화이트리스트 루트
+    안에서 가장 가까운 상위 존재 폴더로 폴백해 연다.
+    """
+    import os
+    from src.config.settings import PROJECT_ROOT_DIR
+
+    allowed_root = os.path.realpath(
+        os.path.join(PROJECT_ROOT_DIR, 'plans', '_datasets', 'kote_finetune'))
+    req_path = os.path.realpath(path)
+
+    # 화이트리스트 경계 검증 (형제 디렉터리 우회 차단 — 정확히 루트이거나 루트 하위여야 함)
+    if not (req_path == allowed_root
+            or req_path.startswith(allowed_root + os.sep)):
+        return {'success': False, 'error': '허용되지 않은 경로입니다.'}
+
+    # 파일이면 담긴 폴더로
+    if os.path.isfile(req_path):
+        req_path = os.path.dirname(req_path)
+
+    # 아직 없으면 루트까지 상위 존재 폴더로 폴백
+    while not os.path.isdir(req_path) and req_path.startswith(allowed_root + os.sep):
+        req_path = os.path.dirname(req_path)
+    if not os.path.isdir(req_path):
+        req_path = allowed_root
+    if not os.path.isdir(req_path):
+        return {'success': False, 'error': '데이터셋 폴더가 아직 없습니다.'}
+
+    try:
+        os.startfile(req_path)
+        return {'success': True}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
 
 
 def get_failed_list():

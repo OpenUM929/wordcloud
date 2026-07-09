@@ -1,0 +1,22 @@
+{
+ "n": 12000,
+ "labels": 47,
+ "new_groups": {
+  "hr_no_weakness_declaration": {
+   "f1": 0.906,
+   "p": 0.918,
+   "r": 0.895
+  },
+  "hr_improvement_request": {
+   "f1": 0.411,
+   "p": 0.262,
+   "r": 0.95
+  },
+  "hr_growth_orientation": {
+   "f1": 0.362,
+   "p": 0.236,
+   "r": 0.781
+  }
+ },
+ "emotion_macro_f1": 0.553
+}

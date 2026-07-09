@@ -496,6 +496,7 @@ body {
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/progress-time.js"></script>
 <script src="/static/js/wordcloud/WordCloudPreset.js"></script>
 <script>
 let _meta = null;
@@ -1074,6 +1075,21 @@ async function generateMatrix() {
         h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
         h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div>`;
         h += `<div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
+        if (window._matrixStartTime) {
+            const _elapsed = formatElapsed(window._matrixStartTime);
+            let _eta = '\uACC4\uC0B0 \uC911...';
+            if (total > 0 && current > 0) {
+                const _st = new Date(window._matrixStartTime).getTime();
+                const _rate = current / ((Date.now() - _st) / 1000);
+                if (_rate > 0) {
+                    const _rem = (total - current) / _rate;
+                    _eta = new Date(Date.now() + _rem * 1000).toLocaleTimeString('ko-KR', { hour12: false });
+                }
+            }
+            h += '<div style="margin:6px 0;font-size:13px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;">'
+              + '<span>\uACBD\uACFC: <strong>' + _elapsed + '</strong></span>'
+              + '<span>\uC608\uC0C1 \uC885\uB8CC: <strong>' + _eta + '</strong></span></div>';
+        }
         h += '<div class="deploy-status">';
         statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
         h += '</div>';
@@ -1087,6 +1103,7 @@ async function generateMatrix() {
     }
 
     setStatus('');
+    window._matrixStartTime = new Date().toISOString();
     renderProgress(0);
 
     const WORKER_COUNT = 4;
@@ -1528,6 +1545,21 @@ async function saveDeploy(resumeSessionId = null) {
         let h = '<div class="summary-bar"><span><strong>제출용 저장 중...</strong></span>';
         h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
         h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div><div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
+        if (window._deployStartTime) {
+            const _elapsed = formatElapsed(window._deployStartTime);
+            let _eta = '\uACC4\uC0B0 \uC911...';
+            if (total > 0 && current > 0) {
+                const _st = new Date(window._deployStartTime).getTime();
+                const _rate = current / ((Date.now() - _st) / 1000);
+                if (_rate > 0) {
+                    const _rem = (total - current) / _rate;
+                    _eta = new Date(Date.now() + _rem * 1000).toLocaleTimeString('ko-KR', { hour12: false });
+                }
+            }
+            h += '<div style="margin:6px 0;font-size:13px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;">'
+              + '<span>\uACBD\uACFC: <strong>' + _elapsed + '</strong></span>'
+              + '<span>\uC608\uC0C1 \uC885\uB8CC: <strong>' + _eta + '</strong></span></div>';
+        }
         h += '<div class="deploy-status">';
         statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
         if (lineExtra) h += lineExtra;
@@ -1555,6 +1587,7 @@ async function saveDeploy(resumeSessionId = null) {
     }
 
     setStatus('');
+    window._deployStartTime = new Date().toISOString();
     renderProgress(0, 'init');
 
     const _btnGenS = document.getElementById('btnGenerateMatrix');

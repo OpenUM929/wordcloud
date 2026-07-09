@@ -34,6 +34,8 @@ SOURCE_FILES = [
     'baseline_eval_260624.jsonl',
     'hard_failure_review_260630.jsonl',   # 능동학습 1라운드 — 사용자 라벨(정본)
     'neutral_gold_review_260701.jsonl',   # 중립 화행 확충 — 사용자 라벨(정본)
+    'gold_8c_train_260706.jsonl',         # 8c 하드클래스 사람 gold(decision_source=human 선별분)
+    'gold_8c_test_260706.jsonl',          # 8c held-out(source_file로 학습 제외 식별 가능)
 ]
 VALID = {'positive', 'negative', 'neutral'}
 

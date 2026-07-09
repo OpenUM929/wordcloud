@@ -47,7 +47,8 @@ def calculate_consolidated_analysis(evaluations):
         if 'emotion_analysis_results' in evaluation:
             doc_text = evaluation.get('evaluation_document', '') or ''
             _sent_scores = _get_sentence_level_scores(
-                doc_text, sentence_cache=evaluation.get('sentence_emotion_cache'))
+                doc_text, sentence_cache=evaluation.get('sentence_emotion_cache'),
+                field=evaluation.get('evaluation_document_field'))
             _pos_mass = sum(max(0.0, s) for _, s, _, _, _ in _sent_scores)
             _neg_mass = sum(max(0.0, -s) for _, s, _, _, _ in _sent_scores)
             if _pos_mass > _neg_mass:

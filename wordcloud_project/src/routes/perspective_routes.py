@@ -1,6 +1,7 @@
 """Perspective analysis routes - X/Y matrix group analysis API."""
 import os
 import re
+import uuid as uuid_lib
 import json as json_lib
 import zipfile
 import tempfile
@@ -32,8 +33,15 @@ from src.services.deploy_session_service import (
     retry_failed_tasks,
 )
 from src.services.audit_service import log_action
+from utils.logger import get_pipeline_logger, _mask_real_id
+
+pipeline_logger = get_pipeline_logger()
 
 perspective_bp = Blueprint('perspective', __name__, url_prefix='/api/perspective')
+
+
+def _gen_request_id():
+    return uuid_lib.uuid4().hex[:12]
 
 
 def _is_admin():
@@ -374,6 +382,7 @@ def api_deploy_session_download():
 
 @perspective_bp.route('/matrix', methods=['POST'])
 def api_generate_matrix():
+    request_id = _gen_request_id()
     data = request.get_json(silent=True) or {}
     employee_id = data.get('employee_id')
     row_field = data.get('row_field', 'evaluation_date__year')
@@ -384,6 +393,8 @@ def api_generate_matrix():
 
     if not employee_id and not all_employees and not employee_ids:
         return jsonify({'success': False, 'error': 'employee_id 또는 employee_ids가 필요합니다.'}), 400
+
+    pipeline_logger.info("employee_id=%s", _mask_real_id(str(employee_id)) if employee_id else '', extra={'request_id': request_id, 'stage': 'MATRIX_API'})
 
     options = {
         'wordcloud_pos': data.get('wordcloud_pos', ['Noun']),
@@ -415,6 +426,7 @@ def api_generate_matrix():
         results = generate_all_employee_matrix(unified, row_field, col_mode, analysis_type, options, employee_ids=employee_ids)
         if results is None:
             return jsonify({'success': False, 'error': '매트릭스 생성 실패'}), 400
+        pipeline_logger.info("done duration_ms=%.0f", 0.0, extra={'request_id': request_id, 'stage': 'MATRIX_API'})
         return jsonify({
             'success': True,
             'row_field': row_field,
@@ -425,13 +437,15 @@ def api_generate_matrix():
             'output_mode': 'real' if enrich else 'pseudonym',
         })
 
-    result = generate_perspective_matrix(unified, employee_id, row_field, col_mode, analysis_type, options)
+    result = generate_perspective_matrix(unified, employee_id, row_field, col_mode, analysis_type, options, request_id=request_id)
     if result is None:
+        pipeline_logger.info("done duration_ms=%.0f", 0.0, extra={'request_id': request_id, 'stage': 'MATRIX_API'})
         return jsonify({
             'success': False,
             'error': f"'{employee_id}' 직원의 조건에 맞는 평가가 없습니다."
         }), 400
 
+    pipeline_logger.info("done duration_ms=%.0f", 0.0, extra={'request_id': request_id, 'stage': 'MATRIX_API'})
     return jsonify({
         'success': True,
         'output_mode': 'real' if enrich else 'pseudonym',
@@ -441,6 +455,7 @@ def api_generate_matrix():
 
 @perspective_bp.route('/matrix/save-deploy', methods=['POST'])
 def api_save_deploy():
+    request_id = _gen_request_id()
     data = request.get_json(silent=True) or {}
     employee_id = data.get('employee_id')
     employee_ids = data.get('employee_ids')
@@ -455,6 +470,8 @@ def api_save_deploy():
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
 
     output_mode = data.get('output_mode', 'pseudonym')
+    pipeline_logger.info("employee_id=%s output_mode=%s", _mask_real_id(str(employee_id)) if employee_id else '', output_mode, extra={'request_id': request_id, 'stage': 'API_ENTRY'})
+
     options = {
         'wordcloud_pos': data.get('wordcloud_pos', ['Noun']),
         'background_color': data.get('background_color', 'white'),
@@ -484,7 +501,7 @@ def api_save_deploy():
         results_list = []
         for eid in employee_ids:
             emp_unified = load_employee_batch(eid)
-            result = save_to_deploy(emp_unified, eid, row_field, col_mode, analysis_type, options, request)
+            result = save_to_deploy(emp_unified, eid, row_field, col_mode, analysis_type, options, request, request_id=request_id)
             if result:
                 results_list.append(result)
 
@@ -507,12 +524,15 @@ def api_save_deploy():
         })
 
     emp_unified = load_employee_batch(employee_id)
-    results = save_to_deploy(emp_unified, employee_id, row_field, col_mode, analysis_type, options, request)
+    results = save_to_deploy(emp_unified, employee_id, row_field, col_mode, analysis_type, options, request, request_id=request_id)
     if not results:
+        pipeline_logger.warning("deploy_failed employee_id=%s duration_ms=%.0f", _mask_real_id(str(employee_id)) if employee_id else '', 0.0, extra={'request_id': request_id, 'stage': 'API_ENTRY'})
         return jsonify({
             'success': False,
             'error': f"'{employee_id}' 직원의 조건에 맞는 평가가 없습니다."
         }), 400
+
+    pipeline_logger.info("deploy_done success=True duration_ms=%.0f", 0.0, extra={'request_id': request_id, 'stage': 'API_ENTRY'})
 
     log_action('matrix_save_deploy', {
         'employee_id': employee_id,
@@ -523,6 +543,7 @@ def api_save_deploy():
         'name': results.get('name'),
     }, request)
 
+    pipeline_logger.info("response success=True status=200", extra={'request_id': request_id, 'stage': 'API_ENTRY'})
     return jsonify({'success': True, **results})
 
 
@@ -630,35 +651,138 @@ def api_judgment_extract():
 
 @perspective_bp.route('/judgment/apply', methods=['POST'])
 def api_judgment_apply():
-    """판정 완료 패킷 삽입 — 업로드한 패킷의 result 를 가명 키로 corrections 에 in-place 반영.
+    """판정 패킷 반영 — status==3(확정) item 만 corrections 에 in-place 반영(status 기반).
 
-    파일 업로드(request.files['packet']) 또는 JSON body(패킷) 허용.
+    입력: 파일 업로드(request.files['packet']) | JSON body 패킷 | body {file:<서버 패킷 상대경로>}.
+    업로드/본문 패킷은 서버(eval/judgment/**)에 저장해, status==2 남은 항목을 그룹검토 게시판이
+    이어서 판정할 수 있게 한다(재적용은 {file} 로 서버 패킷 지정).
     """
     import logging as _logging
     _logger = _logging.getLogger(__name__)
     if not _is_admin():
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
-    packet = None
-    if 'packet' in request.files:
+    from src.services.judgment_packet_service import (
+        apply_judgment_packet, save_packet_file, load_packet)
+    body = request.get_json(silent=True) if not request.files else None
+    packet, packet_file = None, None
+    # 1) 서버 저장 패킷 재적용
+    if body and body.get('file'):
+        path = _safe_packet_path(body.get('file'))
+        if not path:
+            return jsonify({'success': False, 'error': '허용되지 않은 파일'}), 400
         try:
-            packet = json_lib.loads(request.files['packet'].read().decode('utf-8'))
+            packet = load_packet(path)
         except Exception as e:
-            return jsonify({'success': False, 'error': f'패킷 파싱 실패: {e}'}), 400
+            return jsonify({'success': False, 'error': f'패킷 로드 실패: {e}'}), 400
+        packet_file = os.path.relpath(path, _EVAL_DIR).replace('\\', '/')
     else:
-        packet = request.get_json(silent=True)
-    if not isinstance(packet, dict) or 'items' not in packet:
-        return jsonify({'success': False, 'error': '유효한 패킷이 아닙니다(items 필요).'}), 400
+        # 2) 업로드 파일 또는 JSON 본문 패킷
+        if 'packet' in request.files:
+            try:
+                packet = json_lib.loads(request.files['packet'].read().decode('utf-8'))
+            except Exception as e:
+                return jsonify({'success': False, 'error': f'패킷 파싱 실패: {e}'}), 400
+        else:
+            packet = body
+        if not isinstance(packet, dict) or 'items' not in packet:
+            return jsonify({'success': False, 'error': '유효한 패킷이 아닙니다(items 필요).'}), 400
+        # 서버 저장(게시판 접근용) — 실패해도 반영은 진행
+        try:
+            src = packet.get('source') or {}
+            label = src.get('judgment_label') or 'uploaded'
+            batch_id = src.get('batch_id') or packet.get('packet_id') or 'packet'
+            path = save_packet_file(packet, label, batch_id)
+            packet_file = os.path.relpath(path, _EVAL_DIR).replace('\\', '/')
+        except Exception as e:
+            _logger.warning(f"[judgment/apply] 패킷 서버 저장 실패: {e}")
     try:
-        from src.services.judgment_packet_service import apply_judgment_packet
         summary = apply_judgment_packet(packet)
-        # needs_human 목록은 모달 큐로 — 본문 노출 최소화(가명 텍스트만)
-        nh = [{'text': it.get('text', ''), 'key': it.get('key'), 'result': it.get('result')}
-              for it in summary.pop('needs_human_items', [])]
         _logger.info(f"[judgment/apply] inserted={summary['inserted_sentences']} "
-                     f"needs_human={summary['needs_human']} skipped={summary['skipped']}")
-        return jsonify({'success': True, 'summary': summary, 'needs_human_queue': nh})
+                     f"pending_human={summary['pending_human']} pending_ai={summary['pending_ai']} "
+                     f"skipped={summary['skipped']} file={packet_file}")
+        return jsonify({'success': True, 'summary': summary, 'packet_file': packet_file})
     except Exception as e:
         _logger.error(f"[judgment/apply] 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@perspective_bp.route('/judgment/packets', methods=['GET'])
+def api_judgment_packets():
+    """서버 저장 판정 패킷 목록(+status 분포) — 판정반영 페이지 재적용 드롭다운용."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    from src.services.judgment_packet_service import load_packet, resolve_item
+    out = []
+    if os.path.isdir(_JUDGMENT_DIR):
+        for dirpath, _dirs, files in os.walk(_JUDGMENT_DIR):
+            for nm in sorted(files):
+                if not nm.endswith('.json'):
+                    continue
+                p = os.path.join(dirpath, nm)
+                counts = {}
+                try:
+                    for it in load_packet(p).get('items', []):
+                        st, _lbl = resolve_item(it)
+                        counts[st] = counts.get(st, 0) + 1
+                except (OSError, ValueError):
+                    continue
+                out.append({
+                    'name': os.path.relpath(p, _EVAL_DIR).replace('\\', '/'),
+                    'pending_ai': counts.get(1, 0),        # AI 판정 대기
+                    'pending_human': counts.get(2, 0),     # 사람 판정 대기
+                    'ai_ready': counts.get(3, 0),          # AI 작업완료(DB 반영 대기)
+                    'human_ready': counts.get(4, 0),       # Human 작업완료(DB 반영 대기)
+                    'ai_applied': counts.get(10, 0),       # AI DB 반영 완료
+                    'human_applied': counts.get(11, 0),    # Human DB 반영 완료
+                    'confirmed': counts.get(3, 0) + counts.get(4, 0),  # 하위호환(작업완료 합)
+                })
+    return jsonify({'success': True, 'packets': out})
+
+
+@perspective_bp.route('/judgment/apply-db', methods=['POST'])
+def api_judgment_apply_db():
+    """"DB에 반영" 버튼 — 작업 완료분을 DB 반영하고 status 전이(3→10, 4→11).
+
+    body: {file:<서버 패킷 상대경로>, target?: 'ai'|'human'|'all'}.
+      judgment_apply 버튼 → target='ai'(3만), group_review 버튼 → target='human'(4만).
+    반영 후 패킷을 같은 경로에 in-place 저장. AI 반영(10) 직후 사람 이관분(2)이 남아
+    Human 반영(11)이 아직 없으면 그룹검토로 유도하도록 redirect_to_group_review=True.
+    """
+    import logging as _logging
+    _logger = _logging.getLogger(__name__)
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    from src.services.judgment_packet_service import (
+        load_packet, apply_db_to_packet, resolve_item)
+    data = request.get_json(silent=True) or {}
+    path = _safe_packet_path(data.get('file'))
+    if not path:
+        return jsonify({'success': False, 'error': '허용되지 않은 파일'}), 400
+    target = data.get('target') or 'all'
+    if target not in ('ai', 'human', 'all'):
+        target = 'all'
+    try:
+        packet = load_packet(path)
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'패킷 로드 실패: {e}'}), 400
+    try:
+        result = apply_db_to_packet(packet, target=target)
+        with open(path, 'w', encoding='utf-8') as f:
+            json_lib.dump(result['packet'], f, ensure_ascii=False, indent=1)
+        items = result['packet'].get('items', [])
+        has_ai_applied = any(resolve_item(it)[0] == 10 for it in items)     # AI DB 반영 완료
+        has_human_applied = any(resolve_item(it)[0] == 11 for it in items)  # Human DB 반영 완료
+        has_human_pending = any(resolve_item(it)[0] == 2 for it in items)   # 사람 이관분 잔존
+        need_human = has_ai_applied and (not has_human_applied) and has_human_pending
+        summary = {'applied_ai': result['applied_ai'], 'applied_human': result['applied_human'],
+                   'skipped': result['skipped']}
+        _logger.info(f"[judgment/apply-db] target={target} applied_ai={summary['applied_ai']} "
+                     f"applied_human={summary['applied_human']} skipped={summary['skipped']} "
+                     f"need_human={need_human} file={data.get('file')}")
+        return jsonify({'success': True, 'summary': summary,
+                        'redirect_to_group_review': need_human})
+    except Exception as e:
+        _logger.error(f"[judgment/apply-db] 오류: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -1540,3 +1664,213 @@ def api_profanity_list_departments():
     from src.services.profanity_db_service import get_distinct_departments
     departments = get_distinct_departments()
     return jsonify({'success': True, 'departments': departments})
+
+
+# ── 신규 그룹 gold 검토 도구(0624_05) — eval/*.jsonl 사람 판정. 데이터 추가 시 재사용. ──
+_EVAL_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', 'plans', '_datasets', 'kote_finetune', 'eval'))
+# 현재 검토 대상 파일만 모으는 전용 폴더 — 게시판은 이것만 나열한다(벤치마크·gold·학습·소스 등
+#   파이프라인 데이터 파일은 eval/ 최상위에 그대로 두어 스크립트 경로 불변). 0703 그룹재편성.
+_REVIEW_DIR = os.path.join(_EVAL_DIR, 'review')
+
+
+def _safe_eval_path(name):
+    """basename 화이트리스트 + .jsonl만 + review/ 우선·eval/ 최상위 고정(traversal 차단)."""
+    base = os.path.basename(name or '')
+    if not base.endswith('.jsonl'):
+        return None
+    for root in (_REVIEW_DIR, _EVAL_DIR):                 # review/ 우선, 없으면 eval/ 최상위
+        path = os.path.abspath(os.path.join(root, base))
+        if os.path.dirname(path) == os.path.abspath(root) and os.path.isfile(path):
+            return path
+    return None
+
+
+# 판정 패킷 루트(eval/judgment/**/*.json) — 게시판이 패킷을 직접 로드/저장(0701_03 v2).
+_JUDGMENT_DIR = os.path.join(_EVAL_DIR, 'judgment')
+
+
+def _safe_packet_path(name):
+    """eval/judgment/** 하위 .json 화이트리스트(traversal 차단). name 은 eval 기준 상대경로."""
+    rel = (name or '').replace('\\', '/')
+    if not rel.endswith('.json'):
+        return None
+    path = os.path.abspath(os.path.join(_EVAL_DIR, *[s for s in rel.split('/') if s]))
+    jroot = os.path.abspath(_JUDGMENT_DIR)
+    if path != jroot and not path.startswith(jroot + os.sep):
+        return None
+    if not os.path.isfile(path):
+        return None
+    return path
+
+
+def _packet_item_to_row(it):
+    """패킷 item → 게시판 행(그룹검토 로드 계약과 동일 필드)."""
+    return {
+        'rec_id': it.get('rec_id'),
+        'text': it.get('text'),
+        'field': it.get('field'),
+        'group': None,
+        'cur_rule_label': it.get('cur_rule_label'),
+        'ai_reference': it.get('ai_reference'),
+        'claude_judgment': it.get('claude_judgment'),
+        'decision': it.get('human_decision'),
+    }
+
+
+@perspective_bp.route('/group-review/files', methods=['GET'])
+def api_group_review_files():
+    """검토 가능한 eval/*.jsonl 목록(+행수)."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    files = []
+    # 검토 전용 폴더(review/)만 나열 — 없으면 하위호환으로 eval/ 최상위 사용.
+    list_dir = _REVIEW_DIR if os.path.isdir(_REVIEW_DIR) else _EVAL_DIR
+    if os.path.isdir(list_dir):
+        for nm in sorted(os.listdir(list_dir)):
+            if nm.endswith('.jsonl'):
+                p = os.path.join(list_dir, nm)
+                n, decided = 0, 0        # n=전체 행, decided=사람 판정(human_decision/gold) 완료 행
+                try:
+                    with open(p, encoding='utf-8') as f:
+                        for line in f:
+                            if not line.strip():
+                                continue
+                            n += 1
+                            try:
+                                r = json_lib.loads(line)
+                            except ValueError:
+                                continue
+                            if r.get('human_decision') is not None or r.get('gold') is not None:
+                                decided += 1
+                except OSError:
+                    n, decided = 0, 0
+                try:
+                    mtime = os.path.getmtime(p)
+                except OSError:
+                    mtime = 0
+                files.append({'name': nm, 'rows': n, 'total': n, 'decided': decided,
+                              'mtime': mtime})
+    # 판정 패킷(eval/judgment/**/*.json)도 게시판 대상으로 노출 — rows=사람 판정 대기(status==2) 건수
+    if os.path.isdir(_JUDGMENT_DIR):
+        from src.services.judgment_packet_service import load_packet, resolve_item
+        for dirpath, _dirs, names in os.walk(_JUDGMENT_DIR):
+            for nm in sorted(names):
+                if not nm.endswith('.json'):
+                    continue
+                p = os.path.join(dirpath, nm)
+                try:
+                    statuses = [resolve_item(it)[0] for it in load_packet(p).get('items', [])]
+                except (OSError, ValueError):
+                    continue
+                n = sum(1 for s in statuses if s == 2)          # 사람 판정 대기
+                human_ready = sum(1 for s in statuses if s == 4)  # Human 작업완료(DB 반영 대기)
+                try:
+                    mtime = os.path.getmtime(p)
+                except OSError:
+                    mtime = 0
+                files.append({'name': os.path.relpath(p, _EVAL_DIR).replace('\\', '/'),
+                              'rows': n, 'human_ready': human_ready,
+                              'total': n + human_ready, 'decided': human_ready,
+                              'mtime': mtime})
+    return jsonify({'success': True, 'files': files})
+
+
+@perspective_bp.route('/group-review/load', methods=['GET'])
+def api_group_review_load():
+    """파일 행 로드(text·field·ai_reference·현재 결정). offset/limit 페이징.
+
+    파일이 판정 패킷(.json)이면 items 중 status==2(사람 판정 대기)만 게시판 행으로 매핑.
+    """
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    fname = request.args.get('file')
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 200))
+    ppath = _safe_packet_path(fname)
+    if ppath:                                       # 판정 패킷: status==2 만 노출
+        from src.services.judgment_packet_service import load_packet, resolve_item
+        pending = [it for it in load_packet(ppath).get('items', [])
+                   if resolve_item(it)[0] == 2]
+        total = len(pending)
+        items = [_packet_item_to_row(it) for it in pending[offset:offset + limit]]
+        return jsonify({'success': True, 'total': total, 'offset': offset, 'items': items})
+    path = _safe_eval_path(fname)
+    if not path:
+        return jsonify({'success': False, 'error': '허용되지 않은 파일'}), 400
+    items, total = [], 0
+    with open(path, encoding='utf-8') as f:
+        for i, line in enumerate(f):
+            total += 1
+            if i < offset or len(items) >= limit:
+                continue
+            try:
+                r = json_lib.loads(line)
+            except ValueError:
+                continue
+            items.append({
+                'rec_id': r.get('rec_id'), 'text': r.get('text'),
+                'field': r.get('field'), 'group': r.get('group') or r.get('group_weak'),
+                'cur_rule_label': r.get('cur_rule_label') or r.get('rule_label_before'),
+                'ai_reference': r.get('ai_reference'),
+                'claude_judgment': r.get('claude_judgment'),
+                'decision': r.get('human_decision') if r.get('human_decision') is not None else r.get('gold'),
+                'decision_source': r.get('decision_source'),      # 'human'=사람확정 gold
+                'suggested_source': r.get('suggested_source'),    # 'claude_auto'=제 silver 프리필
+            })
+    return jsonify({'success': True, 'total': total, 'offset': offset, 'items': items})
+
+
+@perspective_bp.route('/group-review/save', methods=['POST'])
+def api_group_review_save():
+    """행 결정 저장 — 배치 원자적 기록(검토파일 한정). 단일 또는 다건.
+
+    바디: {file, decisions:[{rec_id, decision}, ...]}  또는 레거시 {file, rec_id, decision}.
+    여러 행을 **한 번의 read-modify-write**로 적용(병렬 POST의 lost-update 방지).
+    """
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    fname = data.get('file')
+    decisions = data.get('decisions')
+    if decisions is None:                       # 레거시 단건 호환
+        decisions = [{'rec_id': data.get('rec_id'), 'decision': data.get('decision')}]
+    valid = ('positive', 'negative', 'neutral', 'not_group', 'skip')
+    dmap = {}
+    for d in decisions:
+        if d.get('decision') not in valid:
+            return jsonify({'success': False, 'error': '잘못된 decision'}), 400
+        dmap[str(d.get('rec_id'))] = d.get('decision')
+    # 판정 패킷(.json): item 의 human_decision 기록·status 전이(위임)
+    ppath = _safe_packet_path(fname)
+    if ppath:
+        from src.services.judgment_packet_service import update_packet_decisions
+        saved = update_packet_decisions(
+            ppath, [{'rec_id': k, 'decision': v} for k, v in dmap.items()])
+        return jsonify({'success': True, 'saved': saved})
+    path = _safe_eval_path(fname)
+    if not path:
+        return jsonify({'success': False, 'error': '허용되지 않은 파일'}), 400
+    is_baseline = 'baseline' in os.path.basename(path)
+    rows, found = [], 0
+    with open(path, encoding='utf-8') as f:
+        for line in f:
+            line = line.rstrip('\n')
+            if not line:
+                continue
+            try:
+                r = json_lib.loads(line)
+            except ValueError:
+                rows.append(line)
+                continue
+            dec = dmap.get(str(r.get('rec_id')))
+            if dec is not None:
+                r['human_decision'] = dec
+                r['decision_source'] = 'human'   # 사람 실제 판정 표식(claude_auto 프리필과 구분 → gold 순수성)
+                if is_baseline:
+                    r['gold'] = None if dec in ('not_group', 'skip') else dec
+                found += 1
+            rows.append(json_lib.dumps(r, ensure_ascii=False))
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(rows) + '\n')
+    return jsonify({'success': True, 'saved': found})

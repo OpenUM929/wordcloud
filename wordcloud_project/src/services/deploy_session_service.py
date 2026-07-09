@@ -270,6 +270,16 @@ def _apply_schema_migrations():
             conn.commit()
             print("[DB] Schema v7: acquired_sentences KoTE 값·source_kind 컬럼 추가 완료")
             current = 7
+
+        if current < 8:
+            conn.execute("ALTER TABLE deploy_sessions ADD COLUMN started_at TEXT")
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (8, datetime('now'), ?)",
+                ('add started_at column to deploy_sessions for elapsed time display',)
+            )
+            conn.commit()
+            print("[DB] Schema v8: deploy_sessions.started_at 컬럼 추가 완료")
+            current = 8
     finally:
         conn.close()
 
@@ -357,10 +367,10 @@ def create_session(options, employee_ids):
     try:
         conn.execute(
             """
-            INSERT INTO deploy_sessions (session_id, created_at, status, options, total_count)
-            VALUES (?, ?, 'running', ?, ?)
+            INSERT INTO deploy_sessions (session_id, created_at, status, options, total_count, started_at)
+            VALUES (?, ?, 'running', ?, ?, ?)
             """,
-            (session_id, now, json.dumps(options, ensure_ascii=False), len(employee_ids)),
+            (session_id, now, json.dumps(options, ensure_ascii=False), len(employee_ids), now),
         )
         rows = [(session_id, eid) for eid in employee_ids]
         conn.executemany(

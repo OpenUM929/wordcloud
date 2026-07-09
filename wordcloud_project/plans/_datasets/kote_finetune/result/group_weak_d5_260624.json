@@ -1,0 +1,19 @@
+{
+ "date": "260624",
+ "sentences": 870367,
+ "group_members": 176483,
+ "by_group_status": {
+  "hr_improvement_request|gold_candidate": 47255,
+  "hr_no_weakness_declaration|gold_candidate": 119079,
+  "hr_no_weakness_declaration|needs_human": 9160,
+  "hr_improvement_request|needs_human": 793,
+  "hr_no_weakness_declaration|excluded": 26,
+  "hr_improvement_request|excluded": 170
+ },
+ "weak_polarity": {
+  "neutral": 166334,
+  "positive": 9627,
+  "negative": 326,
+  "excluded_trap": 196
+ }
+}

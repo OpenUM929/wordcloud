@@ -1,0 +1,18 @@
+{
+ "n_train": 1579,
+ "n_test": 398,
+ "results": [
+  {
+   "name": "after(파인튜닝)",
+   "acc": 0.902,
+   "pos_neg_err": 0,
+   "gp_to_neg": 0,
+   "neg_to_pos": 0,
+   "recall": {
+    "pos": 0.957,
+    "neg": 0.948,
+    "neu": 0.647
+   }
+  }
+ ]
+}

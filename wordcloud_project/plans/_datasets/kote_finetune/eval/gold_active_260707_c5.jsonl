@@ -1,0 +1,3 @@
+{"rec_id": "val-batch_20260624_1-203357", "text": "체격, 권한의 이용", "field": "장점", "cur_rule_label": "neutral", "human_decision": "negative", "group": "c5_자체부정표지_장점부정", "source_file": "active_learning_260707_c5"}
+{"rec_id": "val-batch_20260624_1-11154", "text": "직장에서의 지위 또는 관계 우위 이용", "field": "장점", "cur_rule_label": "neutral", "human_decision": "negative", "group": "c5_자체부정표지_장점부정", "source_file": "active_learning_260707_c5"}
+{"rec_id": "val-batch_20260624_1-78217", "text": "직장 관계우위 이용, 승진 열망", "field": "장점", "cur_rule_label": "neutral", "human_decision": "negative", "group": "c5_자체부정표지_장점부정", "source_file": "active_learning_260707_c5"}

@@ -6,6 +6,11 @@ import os, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')))
 
 from src.services.perspective_service import _get_sentence_level_scores, sentence_sentiment_override
+import src.config.settings as _settings
+
+# 0709: HR 파인튜닝 모델이 켜져 있으면 점수 경로가 모델 우선(0707_01 설계)이라 규칙 직접호출과
+#   달라진다 — 이 테스트의 목적은 '캐시 경로 5-튜플 회귀'이므로 규칙 경로로 고정해 검증한다.
+_settings.USE_HR_SENTIMENT_MODEL = False
 
 DOC = "목표의식이 강합니다. 그러나 보고는 미흡합니다. 무난한 수준입니다."
 CACHE = [

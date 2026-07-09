@@ -19,6 +19,15 @@ PROCESSED_DATA_DIR = os.getenv('PROCESSED_DATA_DIR', 'processed_data')
 # Model paths (PROJECT_ROOT 기준으로 고정 — os.getcwd() 의존 제거)
 MODEL_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', '..', 'model', 'kote_for_easygoing_people'))
 
+# HR 도메인 파인튜닝 감정모델(3분류 극성) — 0624 파인튜닝 산출.
+# 베이스 KoTE(44감정)는 그대로 두고, 문장 극성 결정만 이 모델로 대체(플래그).
+# 안전: 로드/추론 실패 시 자동으로 기존 규칙(override)으로 폴백 → production 무중단.
+# 끄려면 USE_HR_SENTIMENT_MODEL=0 (또는 아래 기본값 False로). 켜기 전 dev 실서버 검증 권장.
+HR_SENTIMENT_MODEL_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', '..', 'model', 'hr_sentiment_finetuned'))
+USE_HR_SENTIMENT_MODEL = os.getenv('USE_HR_SENTIMENT_MODEL', '1') not in ('0', 'false', 'False', '')
+# 감정모델 추론 시 장/단점 field 프리픽스는 field 존재 여부로 자동 적용(0707_01·0708_01). field는 신
+# 파이프라인 데이터에만 붙어 seed45 배포 세계의 표식이므로 별도 on/off 플래그 불요(perspective_service).
+
 # Configuration file paths
 CONFIGS_DIR_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, CONFIGS_DIR))
 SENTIMENT_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "sentiment_config.json")
