@@ -6,7 +6,7 @@
 <div style="display: flex; gap: 20px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 350px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
     <h3>가명 복구</h3>
-    <p style="color: #666;">가명을 입력하여 원래 평가자 ID를 조회합니다.</p>
+    <p style="color: #666; font-size: 14px;">가명을 입력하여 원래 평가자 ID를 조회합니다.</p>
     <div style="display: flex; gap: 10px; margin-top: 15px;">
       <input type="text" id="pseudonymInput" placeholder="예: 평가자_A1B2C3" style="flex: 1; padding: 8px;">
       <button class="btn btn-primary" onclick="lookupPseudonym()">조회</button>
@@ -16,7 +16,7 @@
 
   <div style="flex: 1; min-width: 350px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
     <h3>직책 계층 관리</h3>
-    <p style="color: #666;">직책별 계층 순서를 정의합니다. 순서(↑↓)는 정렬용이며, 등급(grade)이 같은 직책은 동급(동료)으로 처리됩니다.</p>
+    <p style="color: #666; font-size: 14px;">직책별 계층 순서를 정의합니다. 순서(↑↓)는 정렬용이며, 등급(grade)이 같은 직책은 동급(동료)으로 처리됩니다.</p>
     <div id="positionList" style="margin-bottom: 12px;">
       <p>로드 중...</p>
     </div>
@@ -33,7 +33,7 @@
       <h3>전체 가명 매핑 테이블</h3>
       <button class="btn btn-secondary" onclick="loadMappings()">새로고침</button>
     </div>
-    <p style="color: #666;">현재 시스템에 등록된 모든 가명-실명 매핑 정보입니다.</p>
+    <p style="color: #666; font-size: 14px;">현재 시스템에 등록된 모든 가명-실명 매핑 정보입니다.</p>
     <div id="mappingTableContainer" style="margin-top: 15px; max-height: 500px; overflow-y: auto;">
       <p>로드하려면 새로고침을 클릭하세요.</p>
     </div>
@@ -85,7 +85,7 @@ function loadMappings() {
     }
     var html = '<table style="width: 100%; border-collapse: collapse;"><thead><tr style="background: #f8f9fa;"><th style="padding: 10px; border: 1px solid #ddd;">#</th><th style="padding: 10px; border: 1px solid #ddd;">실제 ID</th><th style="padding: 10px; border: 1px solid #ddd;">가명</th></tr></thead><tbody>';
     d.mappings.forEach(function(m, i) {
-      html += '<tr><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">' + (i+1) + '</td><td style="padding: 8px; border: 1px solid #ddd;">' + m.real_id + '</td><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #007bff;">' + m.pseudonym + '</td></tr>';
+      html += '<tr><td style="padding: 8px; border: 1px solid #ddd; text-align: center;">' + (i+1) + '</td><td style="padding: 8px; border: 1px solid #ddd;">' + m.real_id + '</td><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #6366f1;">' + m.pseudonym + '</td></tr>';
     });
     html += '</tbody></table>';
     html += '<p style="margin-top: 10px; color: #666;">총 ' + d.total + '개 매핑</p>';

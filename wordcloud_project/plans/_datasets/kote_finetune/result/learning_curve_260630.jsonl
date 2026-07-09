@@ -1,0 +1,6 @@
+{"tag": "curve_gold50", "frac": 0.5, "silver": 0, "n_train": 790, "acc": 0.8869, "pos_neg_err": 1, "gp_to_neg": 0, "neg_to_pos": 1}
+{"tag": "curve_gold75", "frac": 0.75, "silver": 0, "n_train": 1184, "acc": 0.8945, "pos_neg_err": 2, "gp_to_neg": 0, "neg_to_pos": 2}
+{"tag": "curve_gold100", "frac": 1.0, "silver": 0, "n_train": 1579, "acc": 0.9045, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "curve_gold100_silver30k", "frac": 1.0, "silver": 30000, "n_train": 31579, "acc": 0.7714, "pos_neg_err": 2, "gp_to_neg": 1, "neg_to_pos": 1}
+{"tag": "round1_hard", "frac": 1.0, "silver": 0, "n_train": 2123, "acc": 0.8995, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "round0_goldonly_recall", "frac": 1.0, "silver": 0, "n_train": 1579, "acc": 0.902, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}

@@ -3,12 +3,11 @@
 {% block extra_head %}
 <style>
     .page-container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
-    h1 { margin: 20px 0; font-size: 24px; color: #333; }
     .panel { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     .input-area { display: flex; gap: 10px; margin-bottom: 15px; }
     textarea { flex: 1; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: vertical; }
     .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
-    .btn-primary { background: #007bff; color: white; }
+    .btn-primary { background: #6366f1; color: white; }
     .btn-success { background: #28a745; color: white; }
     .btn-secondary { background: #6c757d; color: white; }
     .btn:disabled { background: #ccc; cursor: not-allowed; }
@@ -17,15 +16,15 @@
     .control-group label { font-size: 12px; color: #666; font-weight: 600; }
     .slider-group { display: flex; align-items: center; gap: 10px; }
     .slider-group input[type=range] { width: 150px; }
-    .slider-group span { font-weight: 600; color: #007bff; min-width: 40px; }
+    .slider-group span { font-weight: 600; color: #6366f1; min-width: 40px; }
     .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; }
     .checkbox-group label { font-size: 13px; color: #555; cursor: pointer; }
     .preset-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
-    .preset-btn { padding: 6px 12px; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; cursor: pointer; font-size: 12px; }
-    .preset-btn:hover { background: #007bff; color: white; }
+    .preset-btn { padding: 6px 12px; border: 1px solid #6366f1; background: white; color: #6366f1; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .preset-btn:hover { background: #6366f1; color: white; }
     .summary { display: flex; gap: 30px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
     .summary-item { text-align: center; }
-    .summary-item .number { font-size: 28px; font-weight: bold; color: #007bff; }
+    .summary-item .number { font-size: 28px; font-weight: bold; color: #6366f1; }
     .summary-item .label { font-size: 12px; color: #666; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th { background: #f0f0f0; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; position: sticky; top: 0; }
@@ -41,15 +40,15 @@
     .score-neg { color: #dc3545; font-weight: 600; }
     .score-neu { color: #6c757d; }
     .contrast-yes { color: #dc3545; font-weight: 600; }
-    .last-yes { color: #007bff; font-weight: 600; }
+    .last-yes { color: #6366f1; font-weight: 600; }
     .log-area { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Consolas', monospace; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
     .log-area .log-info { color: #4fc1ff; }
     .log-area .log-success { color: #4ec9b0; }
     .log-area .log-error { color: #f48771; }
     .loading { text-align: center; padding: 40px; color: #666; }
-    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ccc; border-top-color: #007bff; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #ccc; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .category-header { background: #e9ecef; padding: 8px 15px; font-weight: 600; color: #495057; font-size: 14px; border-left: 4px solid #007bff; }
+    .category-header { background: #e9ecef; padding: 8px 15px; font-weight: 600; color: #495057; font-size: 14px; border-left: 4px solid #6366f1; }
     .text-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .text-preview:hover { white-space: normal; overflow: visible; }
 </style>
@@ -243,7 +242,7 @@ function renderBatchResult(data) {
             <div class="summary-item"><div class="number">${data.total}</div><div class="label">전체 문장</div></div>
             <div class="summary-item"><div class="number" style="color:#28a745">${data.correct}</div><div class="label">정확한 예측</div></div>
             <div class="summary-item"><div class="number" style="color:#dc3545">${data.total - data.correct}</div><div class="label">오차</div></div>
-            <div class="summary-item"><div class="number" style="color:#007bff">${data.accuracy}%</div><div class="label">정확도</div></div>
+            <div class="summary-item"><div class="number" style="color:#6366f1">${data.accuracy}%</div><div class="label">정확도</div></div>
             <div class="summary-item"><div class="number">${data.threshold}</div><div class="label">Threshold</div></div>
             <div class="summary-item"><div class="number">${data.weight}</div><div class="label">가중치</div></div>
         </div>`;

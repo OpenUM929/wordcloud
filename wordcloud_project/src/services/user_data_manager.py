@@ -16,8 +16,16 @@ _DB_PATH = os.path.join(_DB_DIR, 'deploy_sessions.db')
 USERS_DIR = os.path.join(PROCESSED_DATA_DIR_PATH, 'users')
 
 
+_db_initialized = False
+
+
 def _get_eval_conn():
+    global _db_initialized
     os.makedirs(_DB_DIR, exist_ok=True)
+    if not _db_initialized:
+        from src.services.deploy_session_service import _init_db
+        _init_db()
+        _db_initialized = True
     conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.row_factory = sqlite3.Row
@@ -33,6 +41,17 @@ def _fingerprint(ev):
     return hashlib.md5(json.dumps(key, ensure_ascii=False).encode()).hexdigest()
 
 
+def _safe_text(value):
+    """float('nan')/inf/None → ''"""
+    if value is None:
+        return ''
+    if isinstance(value, float):
+        if value != value or value == float('inf') or value == float('-inf'):
+            return ''
+        return str(value)
+    return str(value)
+
+
 def upsert(employee_id, metadata, evaluations, batch_id):
     """Upsert user data from a batch.
 
@@ -40,9 +59,9 @@ def upsert(employee_id, metadata, evaluations, batch_id):
     """
     conn = _get_eval_conn()
     try:
-        name = metadata.get('target_employee_name') or employee_id
-        dept = metadata.get('target_employee_department') or ''
-        pos  = metadata.get('target_employee_position') or ''
+        name = _safe_text(metadata.get('target_employee_name')) or employee_id
+        dept = _safe_text(metadata.get('target_employee_department'))
+        pos  = _safe_text(metadata.get('target_employee_position'))
         conn.execute("""
             INSERT INTO employees (employee_id, name, department, position, updated_at)
             VALUES (?, ?, ?, ?, datetime('now'))
@@ -54,6 +73,7 @@ def upsert(employee_id, metadata, evaluations, batch_id):
         """, (employee_id, name, dept, pos))
 
         inserted = 0
+        skipped = []
         for ev in evaluations:
             ev_copy = dict(ev)
             ev_copy['batch_id'] = batch_id
@@ -73,9 +93,23 @@ def upsert(employee_id, metadata, evaluations, batch_id):
                 ))
                 inserted += 1
             except sqlite3.IntegrityError:
-                pass  # fingerprint 중복
+                # fingerprint 중복 — 이미 존재하는 기존 행을 증거로 수집(가시성 안내용)
+                existing = conn.execute(
+                    "SELECT batch_id, created_at FROM evaluations "
+                    "WHERE employee_id=? AND fingerprint=?", (employee_id, fp)
+                ).fetchone()
+                skipped.append({
+                    'employee_id': employee_id,
+                    'evaluator_id': ev_copy.get('evaluator_id', ''),
+                    'evaluation_date': ev_copy.get('evaluation_date', ''),
+                    'document': _safe_text(ev_copy.get('evaluation_document',
+                                           ev_copy.get('content', '')))[:120],
+                    'fingerprint': fp,
+                    'matched_batch_id': existing['batch_id'] if existing else '',
+                    'matched_created_at': existing['created_at'] if existing else '',
+                })
         conn.commit()
-        return inserted
+        return inserted, skipped
     finally:
         conn.close()
 
@@ -105,6 +139,12 @@ def remove_batch_from_all(batch_id, employee_ids):
         cursor = conn.execute(
             "DELETE FROM evaluations WHERE batch_id = ?", (batch_id,)
         )
+        # 욕설 데이터 함께 삭제 (일원화)
+        try:
+            from src.services.profanity_db_service import delete_profanity_by_batch
+            delete_profanity_by_batch(batch_id)
+        except Exception:
+            pass
         conn.commit()
         return cursor.rowcount
     finally:

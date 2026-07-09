@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}진행 상황 & 재개{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+  --color-primary: #6366f1; --color-primary-hover: #4f46e5;
+  --color-success: #28a745; --color-danger: #dc3545; --color-warning: #f59e0b;
+  --text-muted: #666; --text-body: #495057;
+  --border-color: #dee2e6;
+  --radius-md: 6px; --radius-lg: 8px;
+  --font-sm: 13px; --font-xs: 12px;
+  --space-3: 12px; --space-4: 16px; --space-5: 20px;
+}
+
+.bm-page { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+.bm-panel { background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); }
+.bm-panel h3 { margin: 0 0 var(--space-4); font-size: 16px; }
+
+#bmProcessing { display: none; }
+.bm-steps { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: var(--space-4); }
+.bm-step { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-muted); }
+.bm-step .step-num { width: 24px; height: 24px; border-radius: 50%; background: #e9ecef; color: #666; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+.bm-step.active .step-num { background: var(--color-primary); color: #fff; }
+.bm-step.done .step-num { background: var(--color-success); color: #fff; }
+.bm-step.done .step-num::after { content: '✓'; }
+.bm-arrow { color: #ccc; font-size: 12px; }
+
+.bm-progress { height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; margin-bottom: var(--space-3); }
+.bm-progress-fill { height: 100%; background: var(--color-primary); transition: width 0.5s; border-radius: 4px; }
+.bm-progress-text { font-size: var(--font-sm); color: var(--text-muted); }
+
+.bm-table { width: 100%; border-collapse: collapse; font-size: var(--font-sm); }
+.bm-table th { text-align: left; padding: 10px 12px; background: #f8f9fa; border-bottom: 2px solid var(--border-color); font-weight: 600; }
+.bm-table td { padding: 10px 12px; border-bottom: 1px solid #e9ecef; }
+.bm-table tr:hover { background: #f8f9fa; }
+.bm-status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.bm-status--running { background: #cce5ff; color: #004085; }
+.bm-status--completed { background: #d4edda; color: #155724; }
+.bm-status--failed { background: #f8d7da; color: #721c24; }
+.bm-status--interrupted { background: #fff3cd; color: #856404; }
+.bm-btn { padding: 6px 14px; border: none; border-radius: var(--radius-md); cursor: pointer; font-size: var(--font-sm); font-weight: 600; }
+.bm-btn--primary { background: var(--color-primary); color: #fff; }
+.bm-btn--primary:hover { background: var(--color-primary-hover); }
+.bm-btn--success { background: var(--color-success); color: #fff; }
+.bm-btn--danger { background: var(--color-danger); color: #fff; }
+.bm-btn--sm { padding: 4px 10px; font-size: 11px; }
+.bm-empty { text-align: center; padding: 40px; color: #999; }
+.bm-error { color: var(--color-danger); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-page">
+  <h2 style="margin-bottom:var(--space-5);">📊 배치 진행 상황 & 재개</h2>
+
+  <div id="bmProcessing" class="bm-panel">
+    <h3>⏳ 현재 처리 중</h3>
+    <div class="bm-steps" id="bmSteps">
+      <div class="bm-step" data-step="0"><span class="step-num">1</span> 데이터 수집</div>
+      <span class="bm-arrow">→</span>
+      <div class="bm-step" data-step="1"><span class="step-num">2</span> 초기화</div>
+      <span class="bm-arrow">→</span>
+      <div class="bm-step" data-step="2"><span class="step-num">3</span> 통합데이터</div>
+      <span class="bm-arrow">→</span>
+      <div class="bm-step" data-step="3"><span class="step-num">4</span> idata 저장</div>
+      <span class="bm-arrow">→</span>
+      <div class="bm-step" data-step="4"><span class="step-num">5</span> tdata 저장</div>
+      <span class="bm-arrow">→</span>
+      <div class="bm-step" data-step="5"><span class="step-num">6</span> 워드클라우드</div>
+      <span class="bm-arrow">→</span>
+      <div class="bm-step" data-step="6"><span class="step-num">✓</span> 완료</div>
+    </div>
+    <div class="bm-progress"><div class="bm-progress-fill" id="bmProgressFill" style="width:0%;"></div></div>
+    <p class="bm-progress-text" id="bmProgressText">처리 준비 중...</p>
+    <div style="display:flex;gap:8px;margin-top:var(--space-4);">
+      <button class="bm-btn bm-btn--primary" id="bmResumeBtn" onclick="bmResume()">이어서 처리</button>
+      <button class="bm-btn bm-btn--danger" id="bmRetryBtn" onclick="bmRetry()" style="display:none;">실패 재시도</button>
+    </div>
+  </div>
+
+  <div class="bm-panel">
+    <h3>📋 작업서 게시판</h3>
+    <table class="bm-table" id="bmWorkOrdersTable">
+      <thead>
+        <tr>
+          <th>배치 ID</th>
+          <th>상태</th>
+          <th>진행률</th>
+          <th>성공/실패</th>
+          <th>생성일</th>
+          <th>액션</th>
+        </tr>
+      </thead>
+      <tbody id="bmWorkOrdersBody">
+        <tr><td colspan="6" class="bm-empty">로딩 중...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var bmEventSource = null;
+var bmCurrentBatchId = null;
+
+function bmLoadWorkOrders() {
+  fetch('/api/batch/work-orders')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (!d.success) { return; }
+      var tbody = document.getElementById('bmWorkOrdersBody');
+      if (!d.data || !d.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="bm-empty">작업서가 없습니다.</td></tr>';
+        return;
+      }
+      var h = '';
+      d.data.forEach(function(wo) {
+        var total = wo.total_employees || 0;
+        var processed = wo.processed_employees || 0;
+        var pct = total > 0 ? Math.round(processed / total * 100) : 0;
+        var statusClass = 'bm-status--' + (wo.status || 'unknown');
+        var statusLabel = wo.status || 'unknown';
+        var actionHtml = '';
+        if (wo.status === 'completed') {
+          actionHtml = '<button class="bm-btn bm-btn--primary bm-btn--sm" onclick="location.href=\'/judgment-extract\'">판정 추출</button>';
+        } else if (wo.status === 'interrupted' || wo.status === 'failed') {
+          actionHtml = '<button class="bm-btn bm-btn--success bm-btn--sm" onclick="bmResumeSpecific(\'' + wo.batch_id + '\')">재개</button>';
+        }
+        h += '<tr>';
+        h += '<td>' + (wo.batch_id || '-') + '</td>';
+        h += '<td><span class="bm-status ' + statusClass + '">' + statusLabel + '</span></td>';
+        h += '<td>' + pct + '% (' + processed + '/' + total + ')</td>';
+        h += '<td>' + (wo.success_count || 0) + '/' + (wo.error_count || 0) + '</td>';
+        h += '<td>' + (wo.created_at || '-') + '</td>';
+        h += '<td>' + actionHtml + '</td>';
+        h += '</tr>';
+      });
+      tbody.innerHTML = h;
+    })
+    .catch(function() {
+      document.getElementById('bmWorkOrdersBody').innerHTML = '<tr><td colspan="6" class="bm-error">작업서 로드 실패</td></tr>';
+    });
+}
+
+function bmConnectSSE() {
+  if (bmEventSource) { bmEventSource.close(); }
+  bmEventSource = new EventSource('/api/batch/events');
+
+  bmEventSource.onmessage = function(e) {
+    try {
+      var data = JSON.parse(e.data);
+      var div = document.getElementById('bmProcessing');
+      div.style.display = 'block';
+
+      if (data.batch_id) { bmCurrentBatchId = data.batch_id; }
+      if (data.detail) {
+        document.getElementById('bmProgressText').textContent = data.detail;
+      }
+      if (data.progress !== undefined) {
+        document.getElementById('bmProgressFill').style.width = data.progress + '%';
+      }
+      if (data.step !== undefined) {
+        document.querySelectorAll('#bmSteps .bm-step').forEach(function(el) {
+          var step = parseInt(el.dataset.step);
+          el.classList.remove('active', 'done');
+          if (step < data.step) { el.classList.add('done'); }
+          else if (step === data.step) { el.classList.add('active'); }
+        });
+      }
+      document.getElementById('bmResumeBtn').style.display = (data.status === 'idle' || !data.active) ? 'none' : 'inline-block';
+      document.getElementById('bmRetryBtn').style.display = (data.has_failed) ? 'inline-block' : 'none';
+    } catch(err) {}
+  };
+
+  bmEventSource.onerror = function() {
+    document.getElementById('bmProcessing').style.display = 'none';
+    if (bmEventSource) { bmEventSource.close(); bmEventSource = null; }
+  };
+}
+
+function bmResume() {
+  if (!bmCurrentBatchId) { alert('재개할 배치가 없습니다.'); return; }
+  bmResumeSpecific(bmCurrentBatchId);
+}
+
+function bmResumeSpecific(batchId) {
+  fetch('/api/batch/resume', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ batch_id: batchId }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) { bmConnectSSE(); }
+    else { alert(d.error || '재개 실패'); }
+  })
+  .catch(function() { alert('재개 요청 실패'); });
+}
+
+function bmRetry() {
+  fetch('/api/batch/retry-failed', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) { bmConnectSSE(); }
+    else { alert(d.error || '재시도 실패'); }
+  })
+  .catch(function() { alert('재시도 요청 실패'); });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  bmLoadWorkOrders();
+  bmConnectSSE();
+  setInterval(bmLoadWorkOrders, 15000);
+});
+</script>
+{% endblock %}

@@ -13,6 +13,7 @@ def _get_conn():
     os.makedirs(_DB_DIR, exist_ok=True)
     conn = sqlite3.connect(_DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")  # 병렬 저장 시 쓰기 경합 대기(즉시 lock 에러 방지, 작업5)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -201,16 +202,30 @@ def list_entries(
         ).fetchone()[0]
 
         if fetch_all:
+            # 슬림 페이로드: 삭제/다운로드 선택용 — 이미지 JSON 미파싱, 컬럼 값만 반환.
+            # (전 행 images/row_results JSON 파싱·MB 단위 전송 제거 → 서버 CPU·전송량↓)
             rows = conn.execute(
-                f"SELECT * FROM gallery_entries {where} {order}",
+                f"SELECT id, employee_id, deploy_name, batch_title, timestamp, "
+                f"output_mode, source FROM gallery_entries {where} {order}",
                 params
             ).fetchall()
-        else:
-            offset = (page - 1) * per_page
-            rows = conn.execute(
-                f"SELECT * FROM gallery_entries {where} {order} LIMIT ? OFFSET ?",
-                params + [per_page, offset]
-            ).fetchall()
+            entries = [{
+                'id': r['id'],
+                'employee_id': r['employee_id'],
+                'deploy_name': r['deploy_name'],
+                'batch_title': r['batch_title'],
+                'display_title': r['batch_title'] or r['deploy_name'] or r['employee_id'],
+                'timestamp': r['timestamp'],
+                'output_mode': r['output_mode'],
+                'source': r['source'] or 'deploy',
+            } for r in rows]
+            return {'total': total, 'entries': entries}
+
+        offset = (page - 1) * per_page
+        rows = conn.execute(
+            f"SELECT * FROM gallery_entries {where} {order} LIMIT ? OFFSET ?",
+            params + [per_page, offset]
+        ).fetchall()
 
         entries = []
         for row in rows:

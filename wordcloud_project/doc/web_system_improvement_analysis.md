@@ -5,7 +5,7 @@
 
 ## 요구사항
 1. `processed_data/batch/batch_YYYYMMDD_N` 폴더 구조로 변경 (N은 0부터 증가)
-2. 배치 결과 메타데이터는 `processed_data/batch/batch_YYYYMMDD_N/tmeta`에 저장
+2. 배치 결과 메타데이터는 `processed_data/batch/batch_YYYYMMDD_N/tdata`에 저장
 3. 워드클라우드 이미지는 `processed_data/batch/batch_YYYYMMDD_N/word`에 저장
 
 ## 수정 계획
@@ -16,7 +16,7 @@
 
 ### 2. 메타데이터 저장 경로 변경
 - 기존: 배치 폴더 직접
-- 새로운: `processed_data/batch/batch_YYYYMMDD_N/tmeta`
+- 새로운: `processed_data/batch/batch_YYYYMMDD_N/tdata`
 
 ### 3. 워드클라우드 저장 경로 변경
 - 기존: `processed_data/batch/batch_YYYYMMDD_N/wordclouds`
@@ -46,9 +46,9 @@ while True:
 os.makedirs(batch_dir, exist_ok=True)
 
 # 메타데이터와 워드클라우드 폴더 생성
-tmeta_dir = os.path.join(batch_dir, "tmeta")
+tdata_dir = os.path.join(batch_dir, "tdata")
 word_dir = os.path.join(batch_dir, "word")
-os.makedirs(tmeta_dir, exist_ok=True)
+os.makedirs(tdata_dir, exist_ok=True)
 os.makedirs(word_dir, exist_ok=True)
 ```
 
@@ -58,7 +58,7 @@ os.makedirs(word_dir, exist_ok=True)
 metadata_path = os.path.join(batch_dir, f"employee_{employee_id}.json")
 
 # 변경 후
-metadata_path = os.path.join(tmeta_dir, f"employee_{employee_id}.json")
+metadata_path = os.path.join(tdata_dir, f"employee_{employee_id}.json")
 ```
 
 #### 3. 워드클라우드 저장 경로 변경
@@ -108,11 +108,11 @@ def download_batch_results():
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             zf.writestr('batch_summary.json', json.dumps(summary, ensure_ascii=False, indent=2))
 
-            # tmeta 폴더의 모든 파일 추가
-            tmeta_dir = os.path.join(batch_dir, 'tmeta')
-            if os.path.exists(tmeta_dir):
-                for file_name in os.listdir(tmeta_dir):
-                    file_path = os.path.join(tmeta_dir, file_name)
+            # tdata 폴더의 모든 파일 추가
+            tdata_dir = os.path.join(batch_dir, 'tdata')
+            if os.path.exists(tdata_dir):
+                for file_name in os.listdir(tdata_dir):
+                    file_path = os.path.join(tdata_dir, file_name)
                     if os.path.isfile(file_path):
                         relative_path = os.path.relpath(file_path, batch_dir)
                         zf.write(file_path, relative_path)
@@ -194,7 +194,7 @@ def get_batch_list():
             for item in os.listdir(batch_dir):
                 item_path = os.path.join(batch_dir, item)
                 if os.path.isdir(item_path) and item.startswith('batch_'):
-                    summary_path = os.path.join(item_path, 'tmeta', 'batch_summary.json')
+                    summary_path = os.path.join(item_path, 'tdata', 'batch_summary.json')
                     
                     if os.path.exists(summary_path):
                         try:
@@ -276,9 +276,9 @@ while True:
         break
     batch_num += 1
 os.makedirs(batch_dir, exist_ok=True)
-tmeta_dir = os.path.join(batch_dir, 'tmeta')
+tdata_dir = os.path.join(batch_dir, 'tdata')
 word_dir = os.path.join(batch_dir, 'word')
-os.makedirs(tmeta_dir, exist_ok=True)
+os.makedirs(tdata_dir, exist_ok=True)
 os.makedirs(word_dir, exist_ok=True)
 print(f'생성된 폴더 구조: {batch_dir}')
 "

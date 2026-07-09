@@ -38,7 +38,7 @@ from src.config.settings import (
 
 # Import blueprints
 from src.routes.ui_routes import ui_bp
-from src.routes.metadata_routes import metadata_bp
+from src.routes.integrated_data_routes import integrated_bp
 from src.routes.batch_routes import batch_bp
 from src.routes.wordcloud_routes import wordcloud_bp
 from src.routes.api_routes import api_bp
@@ -47,6 +47,8 @@ from src.routes.test_routes import test_bp
 from src.routes.admin_routes import admin_bp
 from src.routes.wordcloud_data_routes import wordcloud_data_bp
 from src.routes.wordcloud_preview_routes import wordcloud_preview_bp
+from src.routes.plans_routes import plans_bp
+from src.routes.version_routes import version_bp
 
 def create_app():
     """Create and configure Flask application instance."""
@@ -58,10 +60,11 @@ def create_app():
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['JSON_AS_ASCII'] = False
     app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
+    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB upload limit
     
     # Register blueprints
     app.register_blueprint(ui_bp)
-    app.register_blueprint(metadata_bp)
+    app.register_blueprint(integrated_bp)
     app.register_blueprint(batch_bp)
     app.register_blueprint(wordcloud_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
@@ -70,10 +73,17 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(wordcloud_data_bp)
     app.register_blueprint(wordcloud_preview_bp)
+    app.register_blueprint(plans_bp)
+    app.register_blueprint(version_bp)
 
     @app.context_processor
     def inject_auth_state():
         return {'_is_admin_session': session.get('admin_logged_in', False)}
+
+    @app.context_processor
+    def inject_version_info():
+        from src.services.version_service import get_version_info
+        return {'version_info': get_version_info()}
 
     # Error handlers
     @app.errorhandler(404)
@@ -108,8 +118,8 @@ def create_app():
     return app
 
 
-if __name__ == '__main__':
-    """Run the Flask application."""
+def main():
+    """Entry point for the WordCloud application."""
     app = create_app()
 
     from src.services.deploy_session_service import _auto_migrate_evaluations
@@ -129,3 +139,7 @@ if __name__ == '__main__':
         threaded=True,
         use_reloader=False
     )
+
+
+if __name__ == '__main__':
+    main()

@@ -4,6 +4,7 @@ import uuid
 import base64
 import hashlib
 import threading
+from contextlib import contextmanager
 from datetime import datetime
 
 PSEUDONYM_PREFIX = "평가자_"
@@ -21,6 +22,9 @@ class PseudonymManager:
         self._fernet = None
         self._mapping_cache = None
         self._lock = threading.RLock()
+        # 일괄 저장 모드 상태: bulk_mode() 블록 동안 per-ID 저장을 보류
+        self._defer_save = False
+        self._dirty = False
 
     @property
     def _cipher(self):
@@ -59,6 +63,43 @@ class PseudonymManager:
                 f.write(encrypted)
             os.replace(tmp_path, self.mappings_path)
 
+    def _maybe_save(self, data):
+        """일괄 모드면 저장을 보류(dirty 표시)하고, 아니면 즉시 저장한다.
+
+        대용량 배치에서 새 가명마다 파일 전체를 재암호화·재기록하던 O(n²)
+        병목을 제거하기 위함. 기본값(_defer_save=False)은 종전 즉시 저장 동작.
+        """
+        with self._lock:
+            if self._defer_save:
+                self._dirty = True
+            else:
+                self._save_mappings(data)
+
+    @contextmanager
+    def bulk_mode(self):
+        """블록 동안 새 가명을 메모리(_mapping_cache)에만 누적하고, 종료 시 1회 저장.
+
+        정상/예외 종료 모두 finally에서 flush 되므로 블록을 빠져나오면
+        그때까지 생성된 모든 매핑이 디스크에 반영된다.
+        """
+        with self._lock:
+            self._defer_save = True
+        try:
+            yield self
+        finally:
+            with self._lock:
+                self._defer_save = False
+                if self._dirty:
+                    self._save_mappings(self._mapping_cache)
+                    self._dirty = False
+
+    def flush(self):
+        """보류된 변경(_dirty)을 즉시 디스크에 반영한다."""
+        with self._lock:
+            if self._dirty:
+                self._save_mappings(self._mapping_cache)
+                self._dirty = False
+
     def get_pseudonym(self, real_id):
         if not real_id or not str(real_id).strip():
             return real_id
@@ -70,7 +111,7 @@ class PseudonymManager:
             pseudo = f"{PSEUDONYM_PREFIX}{uuid.uuid4().hex[:6].upper()}"
             data["real_to_pseudo"][real_id] = pseudo
             data["pseudo_to_real"][pseudo] = real_id
-            self._save_mappings(data)
+            self._maybe_save(data)
             return pseudo
 
     def get_real_id(self, pseudonym):
@@ -86,7 +127,7 @@ class PseudonymManager:
             data = self._load_mappings()
             data["real_to_pseudo"][real_id] = pseudonym
             data["pseudo_to_real"][pseudonym] = real_id
-            self._save_mappings(data)
+            self._maybe_save(data)
 
     def get_all_mappings(self):
         with self._lock:

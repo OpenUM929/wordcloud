@@ -1,6 +1,6 @@
 """UI routes for the WordCloud application."""
 
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, redirect
 from src.config.settings import NLP_CONFIG_PATH
 import json
 
@@ -15,13 +15,13 @@ def index():
 
 @ui_bp.route('/settings')
 def settings():
-    """Settings page."""
-    from src.services.metadata_service import load_config
+    """Settings hub page (settings + stopwords tabs)."""
+    from src.services.integrated_data_service import load_config
     
     current_config = load_config()
     from src.config.settings import EMOTION_NAMES
     return render_template(
-        'settings.html',
+        'settings_hub.html',
         emotions=EMOTION_NAMES,
         config=current_config,
         emotions_json=json.dumps(EMOTION_NAMES, separators=(',', ':')),
@@ -60,17 +60,29 @@ def metadata():
     return render_template('metadata.html')
 
 
-@ui_bp.route('/metadata_batch')
-def metadata_batch():
-    """Batch metadata page."""
-    return render_template('metadata_batch.html')
+@ui_bp.route('/integrated_batch')
+def integrated_batch():
+    """Batch integrated data page."""
+    return render_template('integrated_batch.html')
+
+
+@ui_bp.route('/judgment_apply')
+def judgment_apply():
+    """판정 결과 반영 페이지 — 판정 완료 패킷 업로드(POST /judgment/apply)."""
+    return render_template('judgment_apply.html')
+
+
+@ui_bp.route('/group-review')
+def group_review():
+    """신규 그룹 gold 검토 페이지 — eval/*.jsonl 사람 판정(재사용 라벨링 도구)."""
+    return render_template('group_review.html')
 
 
 @ui_bp.route('/get_batch_list')
 def get_batch_list_api():
     """API to get list of batches."""
     try:
-        from src.services.metadata_service import get_batch_list
+        from src.services.integrated_data_service import get_batch_list
         
         batches = get_batch_list()
         return jsonify({'batches': batches})
@@ -78,17 +90,17 @@ def get_batch_list_api():
         return jsonify({'error': str(e)}), 500
 
 
-@ui_bp.route('/get_batch_metadata')
-def get_batch_metadata_api():
+@ui_bp.route('/get_batch_integrated_data')
+def get_batch_integrated_data_api():
     """API to get metadata for a specific batch."""
     try:
-        from src.services.metadata_service import get_batch_metadata
+        from src.services.integrated_data_service import get_batch_integrated_data
         
         batch_path = request.args.get('path')
         if not batch_path:
             return jsonify({'error': 'Batch path is required'}), 400
             
-        metadata = get_batch_metadata(batch_path)
+        metadata = get_batch_integrated_data(batch_path)
         return jsonify({'metadata': metadata})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -98,7 +110,7 @@ def get_batch_metadata_api():
 def wordcloud():
     """Wordcloud page with metadata information."""
     try:
-        from src.services.metadata_service import get_batch_list
+        from src.services.integrated_data_service import get_batch_list
         
         batches = get_batch_list()
         return render_template('wordcloud.html', batches=batches)
@@ -107,9 +119,9 @@ def wordcloud():
 
 
 @ui_bp.route('/stopwords')
-def stopwords():
-    """Stopwords management page."""
-    return render_template('stopwords.html')
+def stopwords_redirect():
+    """Redirect to settings hub with stopwords tab."""
+    return redirect('/settings#stopwords', 302)
 
 
 @ui_bp.route('/wordcloud_debug')
@@ -122,6 +134,12 @@ def wordcloud_debug():
 def perspective_test():
     """Test page for perspective/group analysis."""
     return render_template('perspective_test.html')
+
+
+@ui_bp.route('/profanity-list')
+def profanity_list():
+    """Results hub page (profanity list + acquired data tabs)."""
+    return render_template('results_hub.html')
 
 
 @ui_bp.route('/sentiment-test')
@@ -143,6 +161,6 @@ def deploy_gallery():
 
 
 @ui_bp.route('/acquired-data')
-def acquired_data():
-    """Acquired corpus data page."""
-    return render_template('acquired_data.html')
+def acquired_data_redirect():
+    """Redirect to results hub with acquired data tab."""
+    return redirect('/profanity-list#acquired', 302)

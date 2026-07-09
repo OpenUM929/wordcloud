@@ -6,7 +6,6 @@ import os
 import threading
 from typing import Dict, Any, Optional
 from kiwipiepy import Kiwi
-from konlpy.tag import Okt
 from utils.logger import setup_logger, get_log_file_path, get_timestamp
 
 # wordcloud_pos 레이블 → Kiwi 품사 태그 매핑 (NNB 의존명사 제외)
@@ -27,7 +26,6 @@ _KIWI_TAG_TO_POS = {
 
 # meaningful_words_with_pos 저장 시 항상 추출할 전체 품사 목록
 _ALL_KIWI_POS_LABELS = ['Noun', 'Verb', 'Adjective']
-_ALL_OKT_POS_LABELS  = ['Noun', 'Verb', 'Adjective']
 
 class NLPAnalysis:
     """자연어 형태소 분석 모듈"""
@@ -52,7 +50,6 @@ class NLPAnalysis:
 
         # 분석기 초기화
         self.kiwi = Kiwi() if self.config["kiwi"]["enabled"] else None
-        self.okt = Okt() if self.config["okt"]["enabled"] else None
 
         self.logger.info("NLP 분석기 초기화 완료")
 
@@ -116,18 +113,7 @@ class NLPAnalysis:
                 self.logger.error(f"{log_prefix}Kiwi 분석 실패: {e}")
                 results["analysis"]["kiwi_tokens"] = {"error": str(e)}
 
-        # Okt 분석 (형태소 태깅 결과 보존)
-        okt_pos = None
-        if self.okt:
-            try:
-                okt_pos = self.okt.pos(text)
-                results["analysis"]["okt_morphemes"] = okt_pos
-                self.logger.info(f"{log_prefix}Okt 분석 완료")
-            except Exception as e:
-                self.logger.error(f"{log_prefix}Okt 분석 실패: {e}")
-                results["analysis"]["okt_morphemes"] = {"error": str(e)}
-
-        # 의미 단어 추출 (Kiwi 우선 → NNB 의존명사 제외, fallback Okt)
+        # 의미 단어 추출 (Kiwi → NNB 의존명사 제외)
         # meaningful_words_with_pos: 모든 품사 저장 (재생성 시 품사 옵션 변경 가능하도록)
         # meaningful_words: wordcloud_pos 필터 적용 (word_frequency 계산용)
         wordcloud_pos = self.config.get('wordcloud_pos', ['Noun', 'Verb', 'Adjective'])
@@ -136,9 +122,6 @@ class NLPAnalysis:
         try:
             if self.kiwi:
                 all_with_pos = self._extract_meaningful_words_kiwi(text, _ALL_KIWI_POS_LABELS, manager)
-                filtered_words = [w for w, pos in all_with_pos if pos in wordcloud_pos]
-            elif okt_pos is not None:
-                all_with_pos = self._extract_meaningful_words_okt(okt_pos, _ALL_OKT_POS_LABELS, manager)
                 filtered_words = [w for w, pos in all_with_pos if pos in wordcloud_pos]
             else:
                 all_with_pos = []
@@ -183,27 +166,33 @@ class NLPAnalysis:
             return []
 
         result = []
+        # 반복 도배 collapse 추적: 직전 토큰의 form/tag/끝위치
+        prev_form = prev_tag = None
+        prev_end = None
         for token in tokens:
             tag = token.tag
             # kiwipiepy 버전에 따라 tag가 str이거나 IntEnum
             tag_str = tag if isinstance(tag, str) else (tag.name if hasattr(tag, 'name') else str(tag).split('.')[-1])
             word = token.form
+            t_start = token.start
+            t_end = token.start + token.len
+            # 반복 도배 제거(0617_06): 직전 토큰과 form·tag가 같고 위치가 완전히 인접
+            # (사이에 공백·구두점·다른 형태소가 전혀 없음)하면 동일 단어의 도배로 보고 1회만 채택.
+            # 문장 간 정상 반복 언급은 토큰 사이에 다른 형태소가 있어 인접하지 않으므로 영향 없음.
+            is_adjacent_repeat = (
+                word == prev_form and tag_str == prev_tag and t_start == prev_end
+            )
+            prev_form, prev_tag, prev_end = word, tag_str, t_end
+            if is_adjacent_repeat:
+                continue
             pos_label = _KIWI_TAG_TO_POS.get(tag_str)
             if pos_label and pos_label in pos_labels and len(word) > 1 and not manager.is_stopword(word):
                 result.append((word, pos_label))
         return result
 
-    def _extract_meaningful_words_okt(self, okt_pos: list, pos_labels: list, manager) -> list:
-        """Okt 기반 의미 단어 추출 (Kiwi 미사용 시 fallback)."""
-        result = []
-        for word, pos in okt_pos:
-            if pos in pos_labels and len(word) > 1 and not manager.is_stopword(word):
-                result.append((word, pos))
-        return result
-
     def analyze_word_pos(self, word: str) -> str:
         """
-        단어의 품사 분석 (Okt 사용)
+        단어의 품사 분석 (Kiwi 사용)
 
         Args:
             word: 분석할 단어
@@ -212,13 +201,13 @@ class NLPAnalysis:
             품사 태그
         """
         try:
-            if self.okt:
-                pos_result = self.okt.pos(word)
-                if pos_result:
-                    print(f"품사 분석 결과 (Okt): {pos_result}")  # 디버그 로그
-                    return pos_result[0][1]  # (word, pos) 튜플에서 pos 반환
-            else:
-                print("Okt 분석기가 활성화되지 않았습니다.")
+            if self.kiwi:
+                tokens = self.kiwi.tokenize(word)
+                if tokens:
+                    tag = tokens[0].tag
+                    tag_str = tag if isinstance(tag, str) else (tag.name if hasattr(tag, 'name') else str(tag).split('.')[-1])
+                    pos_label = _KIWI_TAG_TO_POS.get(tag_str, 'Unknown')
+                    return pos_label
         except Exception as e:
             print(f"단어 품사 분석 실패: {word} - {e}")
             import traceback

@@ -20,6 +20,13 @@ def setup_logger(name: str, log_file: str = None, level: int = logging.INFO) -> 
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
+    # getLogger(name)은 이름이 같으면 동일 싱글톤을 반환한다.
+    # 핸들러가 이미 붙어 있으면 재사용한다 — 매 호출마다 FileHandler를 중복
+    # 추가하면 열린 로그 파일이 누적되어 'Too many open files'(Errno 24)가
+    # 발생한다(그룹/매트릭스 저장처럼 WordCloudGenerator를 루프로 생성할 때).
+    if logger.handlers:
+        return logger
+
     # 포맷터 설정
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -49,6 +56,19 @@ def setup_logger(name: str, log_file: str = None, level: int = logging.INFO) -> 
 def get_timestamp() -> str:
     """현재 타임스탬프 반환"""
     return datetime.now().strftime('%Y%m%d_%H%M%S')
+
+_pipeline_logger = None
+
+def get_pipeline_logger() -> logging.Logger:
+    global _pipeline_logger
+    if _pipeline_logger is None:
+        _pipeline_logger = setup_logger('pipeline')
+    return _pipeline_logger
+
+def _mask_real_id(id_str: str) -> str:
+    if not id_str or len(id_str) < 4:
+        return "***"
+    return id_str[:2] + "***" + id_str[-2:]
 
 def get_log_file_path(module_name: str, timestamp: str = None) -> str:
     """모듈별 로그 파일 경로 생성"""

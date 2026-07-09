@@ -1,6 +1,6 @@
-# 0608_01_gallery-search-delete
+﻿# 0608_01_gallery-search-delete
 
-> 상태: PND | 작성일: 2026-06-08
+> 상태: Done(코드 적용 확인, 2026-06-18) | 작성일: 2026-06-08
 
 ## Context
 

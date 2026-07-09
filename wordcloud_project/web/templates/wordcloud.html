@@ -39,7 +39,7 @@
         margin: 0 0 10px 0;
         color: #333;
         font-size: 16px;
-        border-bottom: 2px solid #007bff;
+        border-bottom: 2px solid #6366f1;
         padding-bottom: 5px;
     }
 
@@ -56,7 +56,7 @@
         margin-top: 0;
         color: #333;
         font-size: 16px;
-        border-bottom: 2px solid #007bff;
+        border-bottom: 2px solid #6366f1;
         padding-bottom: 5px;
     }
 
@@ -110,7 +110,7 @@
     .evaluation-item {
         margin-bottom: 15px;
         padding: 8px;
-        border-left: 2px solid #007bff;
+        border-left: 2px solid #6366f1;
         background-color: #f8f9fa;
     }
 
@@ -161,8 +161,8 @@
     }
 
     .color-btn.selected {
-        border-color: #007bff;
-        box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+        border-color: #6366f1;
+        box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
         transform: scale(1.1);
     }
 
@@ -195,7 +195,7 @@
 
     .size-options input[type="radio"]:checked + span {
         font-weight: bold;
-        color: #007bff;
+        color: #6366f1;
     }
 
     .max-words-group {
@@ -275,7 +275,7 @@
         background: #555;
     }
 
-    /* 직원 메타데이터 목록도 동일하게 적용 */
+    /* 직원 통합데이터 목록도 동일하게 적용 */
     #metadataTree {
         max-height: 400px;
         overflow-y: auto;
@@ -305,7 +305,7 @@
 {% endblock %}
 
 {% block content %}
-<h1>메타데이터 워드클라우드</h1>
+<h1>통합데이터 워드클라우드</h1>
 
 <div class="mapping-area">
     <div class="tree-panel">
@@ -314,7 +314,7 @@
     </div>
 
     <div class="data-panel">
-        <h3>직원 메타데이터 선택</h3>
+        <h3>직원 통합데이터 선택</h3>
         <div id="metadataTree"></div>
     </div>
 </div>
@@ -422,7 +422,7 @@
 
 <script src="/static/js/wordcloud/WordCloudPreset.js"></script>
 <script>
-// 공통 모듈: 메타데이터 정보 HTML 생성
+// 공통 모듈: 통합데이터 정보 HTML 생성
 function generateMetadataInfoHtml(metadata) {
     // metadata 객체가 metadata 필드 내에 포함된 경우, 내부 metadata를 사용
     const actualMetadata = metadata.metadata || metadata;
@@ -550,7 +550,7 @@ function generateMetadataInfoHtml(metadata) {
                 sentiment = evaluation.emotion_analysis_results?.analysis?.base_result?.mapped?.sentiment || 'unknown';
                 confidence = evaluation.emotion_analysis_results?.analysis?.base_result?.mapped?.confidence || 0;
                 nlpWords = evaluation.nlp_analysis_results?.analysis?.meaningful_words || [];
-                posTags = evaluation.nlp_analysis_results?.analysis?.okt_morphemes || [];
+                posTags = [];
                 topEmotions = evaluation.emotion_analysis_results?.analysis?.base_result?.mapped?.top_3 || [];
             }
             
@@ -584,7 +584,7 @@ function generateMetadataInfoHtml(metadata) {
                             <p><strong>원본:</strong> ${evaluation.profanity_analysis_results.original_text || ''}</p>
                             <p><strong>필터링 결과:</strong> ${evaluation.profanity_analysis_results.filtered_text || ''}</p>
                             <p><strong>탐지 계층:</strong> ${(evaluation.profanity_analysis_results.methods_used || []).map(m =>
-                                m === 'kiwi_morpheme' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#cce5ff;color:#004085;font-size:11px;">1계층(형태소)</span>' :
+                                m === 'kiwi_morpheme' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#e9d5ff;color:#4338ca;font-size:11px;">1계층(형태소)</span>' :
                                 m === 'gap_pattern' ? '<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:#fff3cd;color:#856404;font-size:11px;">2계층(간격)</span>' : m
                             ).join(' ')}</p>
                             <p><strong>처리 시간:</strong> ${evaluation.profanity_analysis_results.processing_time_ms || 0}ms</p>
@@ -637,15 +637,14 @@ function generateMetadataInfoHtml(metadata) {
         };
 
     actualMetadata.evaluations.forEach(evaluation => {
-            if (evaluation.nlp_analysis_results && evaluation.nlp_analysis_results.analysis && evaluation.nlp_analysis_results.analysis.okt_morphemes) {
-                evaluation.nlp_analysis_results.analysis.okt_morphemes.forEach(([word, pos]) => {
-                    if (posMap[pos]) {
-                        if (!wordsByPos[pos].includes(word)) {
-                            wordsByPos[pos].push(word);
-                        }
+            const nlpWords = evaluation.nlp_analysis_results?.analysis?.meaningful_words_with_pos || [];
+            nlpWords.forEach(([word, pos]) => {
+                if (posMap[pos]) {
+                    if (!wordsByPos[pos].includes(word)) {
+                        wordsByPos[pos].push(word);
                     }
-                });
-            }
+                }
+            });
         });
 
         infoHtml += `
@@ -715,11 +714,11 @@ function selectBatch(batch, element) {
     // 선택된 배치 하이라이트
     element.classList.add('selected');
 
-    // 메타데이터 로드
+    // 통합데이터 로드
     loadBatchMetadata(batch.path);
 }
 
-// 메타데이터 트리 렌더링
+// 통합데이터 트리 렌더링
 async function loadBatchMetadata(batchPath) {
     const treeContainer = document.getElementById('metadataTree');
     treeContainer.innerHTML = '<h4>직원 목록</h4>';
@@ -755,24 +754,24 @@ async function loadBatchMetadata(batchPath) {
                 treeContainer.appendChild(metaNode);
             });
         } else {
-            treeContainer.innerHTML += '<p>메타데이터가 없습니다.</p>';
+            treeContainer.innerHTML += '<p>통합데이터가 없습니다.</p>';
         }
     } catch (error) {
-        console.error('메타데이터 로드 실패:', error);
-        treeContainer.innerHTML += '<p>메타데이터 로드 실패</p>';
+        console.error('통합데이터 로드 실패:', error);
+        treeContainer.innerHTML += '<p>통합데이터 로드 실패</p>';
     }
 }
 
-// 메타데이터 선택
+// 통합데이터 선택
 function selectMetadata(metadata, element) {
     selectedMetadata = metadata;
 
-    // 다른 메타데이터 선택 해제
+    // 다른 통합데이터 선택 해제
     document.querySelectorAll('#metadataTree .tree-node').forEach(node => {
         node.classList.remove('selected');
     });
 
-    // 선택된 메타데이터 하이라이트
+    // 선택된 통합데이터 하이라이트
     element.classList.add('selected');
 
     // 워드클 라우드 표시
@@ -873,7 +872,8 @@ function saveOptions() {
         removeProfanity: document.getElementById('removeProfanity').checked,
 
         sizePreset: document.querySelector('input[name="sizePreset"]:checked').value,
-        maxWords: parseInt(document.getElementById('maxWords').value)
+        maxWords: parseInt(document.getElementById('maxWords').value),
+        sentimentMode: (document.querySelector('input[name="sentimentMode"]:checked') || {}).value || 'combined'
     };
     localStorage.setItem('wordcloudOptions', JSON.stringify(options));
 }
@@ -918,6 +918,12 @@ function loadOptions() {
         
         // 최대 단어 수 복원
         document.getElementById('maxWords').value = options.maxWords;
+        
+        // 감정 분리 모드 복원
+        if (options.sentimentMode) {
+            const sentimentRadio = document.querySelector(`input[name="sentimentMode"][value="${options.sentimentMode}"]`);
+            if (sentimentRadio) sentimentRadio.checked = true;
+        }
         
         // 현재 설정 메시지 업데이트
         const posText = options.morphology.length === 0 ? '명사' : options.morphology.join(', ');
@@ -977,6 +983,10 @@ document.getElementById('removeProfanity').addEventListener('change', saveOption
 // 최대 단어 수 입력 이벤트
 document.getElementById('maxWords').addEventListener('change', saveOptions);
 
+// 감정 분리 모드 변경 이벤트
+document.querySelectorAll('input[name="sentimentMode"]').forEach(radio => {
+    radio.addEventListener('change', saveOptions);
+});
 
 // 페이지 로드 시 옵션 로드
 document.addEventListener('DOMContentLoaded', loadOptions);
@@ -991,7 +1001,7 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
     }
 
     if (!selectedMetadata) {
-        alert('메타데이터를 먼저 선택해주세요.');
+        alert('통합데이터를 먼저 선택해주세요.');
         return;
     }
 

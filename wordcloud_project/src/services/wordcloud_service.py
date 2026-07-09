@@ -48,8 +48,8 @@ def regenerate_wordcloud(data):
             return {'success': False, 'error': '직원 ID와 배치 경로가 필요합니다.'}, 400
 
         # Load metadata
-        from src.services.metadata_service import get_batch_metadata
-        batch_metadata = get_batch_metadata(batch_path)
+        from src.services.integrated_data_service import get_batch_integrated_data
+        batch_metadata = get_batch_integrated_data(batch_path)
         employee_metadata = next((meta for meta in batch_metadata if meta['employee_id'] == employee_id), None)
 
         if not employee_metadata:

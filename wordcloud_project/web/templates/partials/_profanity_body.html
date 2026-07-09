@@ -1,0 +1,245 @@
+<div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h1 style="margin:0;">🚨 전사 욕설 리스트</h1>
+        <span style="font-size:12px;color:#666;">Admin 전용</span>
+    </div>
+
+    <div class="summary-bar">
+        <span>총 <strong id="profanity_totalCount">0</strong>명</span>
+        <span>페이지 <strong id="profanity_pageInfo">1/1</strong></span>
+    </div>
+
+    <div class="filter-bar">
+        <input type="text" id="profanity_searchInput" placeholder="직원명/사번 검색" style="width:160px;">
+        <select id="profanity_deptSelect">
+            <option value="">모든 부서</option>
+        </select>
+        <input type="number" id="profanity_minCountInput" placeholder="최소 욕설 수" value="1" min="1" style="width:110px;">
+        <select id="profanity_sortSelect">
+            <option value="count">욕설 건수</option>
+            <option value="ratio">욕설 비율</option>
+            <option value="name">직원명</option>
+        </select>
+        <select id="profanity_orderSelect">
+            <option value="desc">내림차순</option>
+            <option value="asc">오름차순</option>
+        </select>
+        <button class="btn-apply" onclick="profanity_loadData()">조회</button>
+        <button class="btn-csv" onclick="profanity_downloadCsv()">CSV 다운로드</button>
+    </div>
+
+    <table class="profanity-table">
+        <thead>
+            <tr>
+                <th>사번</th>
+                <th>이름</th>
+                <th>부서</th>
+                <th>총 평가</th>
+                <th>욕설 건수</th>
+                <th>비율</th>
+                <th>감지 단어</th>
+                <th>액션</th>
+            </tr>
+        </thead>
+        <tbody id="profanity_tableBody">
+            <tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">데이터를 조회하세요.</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pagination" id="profanity_pagination"></div>
+</div>
+
+<div class="modal-overlay" id="profanity_sentenceModal" onclick="if(event.target===this)profanity_closeModal()">
+    <div class="profanity-modal-box">
+        <button class="modal-close" onclick="profanity_closeModal()">&times;</button>
+        <h3 style="margin:0 0 10px 0;font-size:16px;">📋 욕설 문장 상세</h3>
+        <div id="profanity_modalBody"></div>
+    </div>
+</div>
+
+<script>
+let profanity_currentPage = 1;
+let profanity_currentLimit = 50;
+let profanity_currentData = null;
+
+async function profanity_loadDepartments() {
+    try {
+        const res = await fetch('/api/perspective/profanity-list/departments');
+        const d = await res.json();
+        if (d.success) {
+            const sel = document.getElementById('profanity_deptSelect');
+            d.departments.forEach(function(dept) {
+                const opt = document.createElement('option');
+                opt.value = dept;
+                opt.textContent = dept;
+                sel.appendChild(opt);
+            });
+        }
+    } catch(e) {
+        console.error('부서 로드 실패:', e);
+    }
+}
+
+async function profanity_loadData(page) {
+    page = page || 1;
+    profanity_currentPage = page;
+    const search = document.getElementById('profanity_searchInput').value;
+    const department = document.getElementById('profanity_deptSelect').value;
+    const minCount = document.getElementById('profanity_minCountInput').value;
+    const sort = document.getElementById('profanity_sortSelect').value;
+    const order = document.getElementById('profanity_orderSelect').value;
+
+    const params = new URLSearchParams({
+        search: search,
+        department: department,
+        min_count: minCount,
+        sort: sort,
+        order: order,
+        page: page,
+        limit: profanity_currentLimit,
+    });
+
+    const tbody = document.getElementById('profanity_tableBody');
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;">&#9203; 로딩 중...</td></tr>';
+
+    try {
+        const res = await fetch('/api/perspective/profanity-list?' + params.toString());
+        const d = await res.json();
+        if (!d.success) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#dc3545;padding:40px;">조회 실패: ' + (d.error || '') + '</td></tr>';
+            return;
+        }
+        profanity_currentData = d;
+        profanity_renderTable(d.items);
+        document.getElementById('profanity_totalCount').textContent = d.total;
+        const totalPages = Math.ceil(d.total / profanity_currentLimit);
+        document.getElementById('profanity_pageInfo').textContent = page + '/' + totalPages;
+        profanity_renderPagination(page, totalPages);
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#dc3545;padding:40px;">네트워크 오류</td></tr>';
+    }
+}
+
+function profanity_renderTable(items) {
+    const tbody = document.getElementById('profanity_tableBody');
+    if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:40px;">데이터가 없습니다.</td></tr>';
+        return;
+    }
+    let h = '';
+    items.forEach(function(item) {
+        const ratio = (item.profanity_ratio * 100).toFixed(1);
+        const words = (item.profanity_words || []).slice(0, 5).map(function(w) {
+            return '<span>' + profanity_escapeHtml(w) + '</span>';
+        }).join('');
+        h += '<tr>';
+        h += '<td>' + profanity_escapeHtml(item.employee_id) + '</td>';
+        h += '<td>' + profanity_escapeHtml(item.name) + '</td>';
+        h += '<td>' + profanity_escapeHtml(item.department) + '</td>';
+        h += '<td>' + item.total_evaluations + '</td>';
+        h += '<td class="metric">' + item.profanity_count + '</td>';
+        h += '<td class="ratio">' + ratio + '%</td>';
+        h += '<td><div class="word-tags">' + words + '</div></td>';
+        h += '<td><button style="padding:3px 10px;background:#6366f1;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;" onclick="profanity_openDetail(\'' + item.employee_id + '\')">상세 보기</button></td>';
+        h += '</tr>';
+    });
+    tbody.innerHTML = h;
+}
+
+function profanity_renderPagination(page, totalPages) {
+    const div = document.getElementById('profanity_pagination');
+    if (totalPages <= 1) {
+        div.innerHTML = '';
+        return;
+    }
+    let h = '';
+    h += '<button ' + (page <= 1 ? 'disabled' : '') + ' onclick="profanity_loadData(' + (page - 1) + ')">&lt;</button>';
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+            h += '<button class="' + (i === page ? 'active' : '') + '" onclick="profanity_loadData(' + i + ')">' + i + '</button>';
+        } else if (i === page - 3 || i === page + 3) {
+            h += '<span>...</span>';
+        }
+    }
+    h += '<button ' + (page >= totalPages ? 'disabled' : '') + ' onclick="profanity_loadData(' + (page + 1) + ')">&gt;</button>';
+    div.innerHTML = h;
+}
+
+async function profanity_openDetail(employeeId) {
+    const body = document.getElementById('profanity_modalBody');
+    const modal = document.getElementById('profanity_sentenceModal');
+    body.innerHTML = '<p style="text-align:center;">&#9203; 로딩 중...</p>';
+    modal.classList.add('open');
+
+    try {
+        const res = await fetch('/api/perspective/profanity-list/sentences/' + encodeURIComponent(employeeId));
+        const d = await res.json();
+        if (!d.success || !d.sentences || d.sentences.length === 0) {
+            body.innerHTML = '<p style="text-align:center;color:#999;">문장이 없습니다.</p>';
+            return;
+        }
+
+        let h = '<table class="sentence-table">';
+        h += '<thead><tr><th style="width:30px;">No</th><th>원본 문장</th><th>필터링</th><th>감지 단어</th><th>평가자</th></tr></thead>';
+        h += '<tbody>';
+        d.sentences.forEach(function(s, idx) {
+            const words = (s.detected_words || []);
+            const wordBadges = words.map(function(w) {
+                return '<span class="word-badge">' + profanity_escapeHtml(w) + '</span>';
+            }).join(' ');
+            h += '<tr>';
+            h += '<td>' + (idx + 1) + '</td>';
+            h += '<td>' + profanity_highlightProfanity(s.original_text, words) + '</td>';
+            h += '<td>' + profanity_escapeHtml(s.filtered_text) + '</td>';
+            h += '<td>' + wordBadges + '</td>';
+            h += '<td>' + profanity_escapeHtml(s.evaluator_id) + '</td>';
+            h += '</tr>';
+        });
+        h += '</tbody></table>';
+        body.innerHTML = h;
+    } catch(e) {
+        body.innerHTML = '<p style="text-align:center;color:#dc3545;">오류 발생</p>';
+    }
+}
+
+function profanity_highlightProfanity(text, words) {
+    if (!text || !words || !words.length) return profanity_escapeHtml(text);
+    let html = profanity_escapeHtml(text);
+    words.forEach(function(w) {
+        const escaped = profanity_escapeHtml(w);
+        html = html.split(escaped).join('<mark style="background:#ffcccc;color:#c00;padding:0 2px;border-radius:2px;font-weight:bold;">' + escaped + '</mark>');
+    });
+    return html;
+}
+
+function profanity_closeModal() {
+    document.getElementById('profanity_sentenceModal').classList.remove('open');
+}
+
+function profanity_downloadCsv() {
+    const search = document.getElementById('profanity_searchInput').value;
+    const department = document.getElementById('profanity_deptSelect').value;
+    const minCount = document.getElementById('profanity_minCountInput').value;
+    const sort = document.getElementById('profanity_sortSelect').value;
+    const order = document.getElementById('profanity_orderSelect').value;
+
+    const params = new URLSearchParams({
+        search: search,
+        department: department,
+        min_count: minCount,
+        sort: sort,
+        order: order,
+    });
+    window.location.href = '/api/perspective/profanity-list/csv?' + params.toString();
+}
+
+function profanity_escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    profanity_loadDepartments();
+    profanity_loadData(1);
+});
+</script>

@@ -1,193 +1,209 @@
-"""Batch manager module - handles batch listing and management."""
+"""Batch manager module - handles batch listing and management (DB-backed)."""
 
 import os
 import json
-from datetime import datetime
 
 
-def get_batch_list(processed_data_dir):
-    """
-    Get list of available batches from processed data directory.
-    
-    Args:
-        processed_data_dir: Base directory for processed data
-        
-    Returns:
-        list: Batch info list
-    """
+def _get_conn():
+    from src.services.user_data_manager import _get_eval_conn
+    return _get_eval_conn()
+
+
+def _get_pseudo_mgr():
+    from src.modules.pseudonym_manager import PseudonymManager
+    from src.config.settings import PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD
+    return PseudonymManager(PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD)
+
+
+def get_batch_list(processed_data_dir=None):
+    """Get list of available batches from DB."""
+    conn = _get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT batch_id,
+                   COUNT(DISTINCT employee_id) AS employee_count,
+                   MIN(created_at)             AS created_at
+            FROM evaluations
+            GROUP BY batch_id
+            ORDER BY MIN(created_at) DESC
+        """).fetchall()
+    finally:
+        conn.close()
+
     batches = []
-    batch_dir = os.path.join(processed_data_dir, 'batch')
-    
-    if not os.path.exists(batch_dir):
-        return batches
-    
-    for item in os.listdir(batch_dir):
-        item_path = os.path.join(batch_dir, item)
-        if os.path.isdir(item_path) and item.startswith('batch_'):
-            summary_path = os.path.join(item_path, 'tmeta', 'batch_summary.json')
-            
-            if os.path.exists(summary_path):
-                try:
-                    with open(summary_path, 'r', encoding='utf-8') as f:
-                        summary = json.load(f)
-                    
-                    batch_name = item
-                    display_name = batch_name
-                    year, month, day, time_str = '', '', '', ''
-                    
-                    # Parse batch name: batch_YYYYMMDD_X
-                    if len(batch_name) > len('batch_'):
-                        date_part = batch_name[len('batch_'):]
-                        if len(date_part) >= 8:
-                            year = date_part[:4]
-                            month = date_part[4:6]
-                            day = date_part[6:8]
-                            if len(date_part) > 8:
-                                time_part = date_part[9:]
-                                if len(time_part) == 6:
-                                    time_str = f"{time_part[:2]}:{time_part[2:4]}:{time_part[4:6]}"
-                    
+    for row in rows:
+        batch_id = row['batch_id']
+        created_at = (row['created_at'] or '')[:10]
+
+        # batch_summary.json에서 저장된 display_name 우선 로드
+        display_name = ''
+        summary_path = os.path.join(processed_data_dir, 'batch', batch_id, 'tdata', 'batch_summary.json') if processed_data_dir else None
+        if summary_path and os.path.exists(summary_path):
+            try:
+                with open(summary_path, 'r', encoding='utf-8') as _sf:
+                    _summary = json.load(_sf)
+                display_name = _summary.get('batch_info', {}).get('display_name', '') or ''
+            except Exception:
+                pass
+
+        if not display_name:
+            display_name = batch_id
+            if batch_id and batch_id.startswith('batch_') and len(batch_id) > 14:
+                date_part = batch_id[6:]
+                if len(date_part) >= 8:
+                    year, month, day = date_part[:4], date_part[4:6], date_part[6:8]
                     if year and month and day:
-                        display_name = f"{year}-{month}-{day} {batch_name}"
-                        if time_str:
-                            display_name += f" ({time_str})"
-                        
-                        batches.append({
-                            'name': display_name,
-                            'original_name': batch_name,
-                            'path': item_path,
-                            'employee_count': summary.get('batch_info', {}).get('unique_employees', 0),
-                            'created_at': summary.get('batch_info', {}).get('created_at', '').replace('Z', '').split('T')[0]
-                        })
-                except Exception as e:
-                    print(f"Error loading summary for batch {item}: {e}")
-                    continue
-    
-    batches.sort(key=lambda x: x['created_at'], reverse=True)
+                        display_name = f"{year}-{month}-{day} {batch_id}"
+
+        batches.append({
+            'name': display_name,
+            'original_name': batch_id,
+            'path': batch_id,
+            'employee_count': row['employee_count'],
+            'created_at': created_at,
+        })
     return batches
 
 
 def delete_batch_directory(batch_path):
-    """
-    Delete a batch directory.
+    """Delete batch data from DB (and physical dir if it exists)."""
+    import shutil
+    batch_id = os.path.basename(batch_path) if batch_path else batch_path
 
-    WARNING: This function only removes the batch directory on disk.
-    It does NOT remove the batch's evaluation data from users/*.json files.
-    For complete cleanup including user data, use remove_batch_from_all()
-    from user_data_manager before calling this function.
+    from src.services.user_data_manager import remove_batch_from_all
+    remove_batch_from_all(batch_id, [])
 
-    Args:
-        batch_path: Path to batch directory
+    if batch_path and os.path.isdir(batch_path):
+        try:
+            shutil.rmtree(batch_path)
+        except Exception:
+            pass
 
-    Returns:
-        tuple: (dict result, status_code)
-    """
-    try:
-        if not batch_path or not os.path.exists(batch_path):
-            return {'error': '배치 경로를 찾을 수 없습니다.'}, 404
-        
-        import shutil
-        shutil.rmtree(batch_path)
-        
-        return {'success': True, 'message': '배치 처리 결과가 성공적으로 삭제되었습니다.'}, 200
-    except Exception as e:
-        return {'error': f'배치 삭제 실패: {str(e)}'}, 500
+    return {'success': True, 'message': '배치가 삭제되었습니다.'}, 200
 
 
 def load_batch_metadata(processed_data_dir, batch_dir):
-    """
-    Load metadata for all employees in a batch.
-    
-    Args:
-        processed_data_dir: Base directory for processed data
-        batch_dir: Specific batch directory path
-        
-    Returns:
-        list: Metadata list for each employee
-    """
-    from src.models.metadata_manager import MetadataManager
-    
-    metadata_manager = MetadataManager(processed_data_dir)
-    metadata_list = []
-    
-    tmeta_path = os.path.join(batch_dir, 'tmeta')
-    if not os.path.exists(tmeta_path) or not os.path.isdir(tmeta_path):
-        return metadata_list
-    
-    for file in os.listdir(tmeta_path):
-        if file.startswith('employee_') and file.endswith('.json'):
-            try:
-                employee_id = file.split('_')[1].split('.')[0]
-                metadata = metadata_manager.load_employee_metadata(employee_id, batch_dir)
-                
-                if metadata:
-                    metadata_list.append({
-                        'employee_id': employee_id,
-                        'metadata': metadata
-                    })
-            except Exception as e:
-                print(f"Error loading metadata for file {file}: {e}")
-                continue
-    
-    metadata_list.sort(key=lambda x: x['employee_id'])
-    return metadata_list
+    """Load metadata for all employees in a batch from DB (가명 복원 포함)."""
+    batch_id = os.path.basename(batch_dir) if batch_dir else None
+    if not batch_id:
+        return []
+
+    conn = _get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            WHERE ev.batch_id = ?
+            ORDER BY e.employee_id, ev.id
+        """, (batch_id,)).fetchall()
+    finally:
+        conn.close()
+
+    pseudo_mgr = _get_pseudo_mgr()
+    emp_evals = {}
+    emp_info = {}
+    for row in rows:
+        eid = row['employee_id']
+        if eid not in emp_info:
+            real_id = pseudo_mgr.get_real_id(eid) if eid else eid
+            real_name = pseudo_mgr.get_real_id(row['name']) if row['name'] else row['name']
+            real_dept = pseudo_mgr.get_real_id(row['department']) if row['department'] else row['department']
+            real_pos = pseudo_mgr.get_real_id(row['position']) if row['position'] else row['position']
+            emp_info[eid] = {
+                'name': real_name or real_id or '',
+                'department': real_dept or '',
+                'position': real_pos or '',
+            }
+            emp_evals[eid] = []
+        if row['data']:
+            emp_evals[eid].append(json.loads(row['data']))
+
+    result = []
+    for eid, info in emp_info.items():
+        display_name = info['name'] or eid
+        result.append({
+            'employee_id': display_name,
+            'metadata': {
+                'target_employee_id': display_name,
+                'target_employee_name': info['name'],
+                'target_employee_department': info['department'],
+                'target_employee_position': info['position'],
+                'evaluations': emp_evals[eid],
+            }
+        })
+    result.sort(key=lambda x: x['employee_id'])
+    return result
 
 
 def get_batch_summary(processed_data_dir, batch_path):
-    """
-    Get batch summary information.
-    
-    Args:
-        processed_data_dir: Base directory for processed data
-        batch_path: Path to batch directory
-        
-    Returns:
-        dict or None: Batch summary
-    """
-    from src.models.metadata_manager import MetadataManager
-    
-    metadata_manager = MetadataManager(processed_data_dir)
-    return metadata_manager.get_batch_summary(batch_path)
+    """Get batch summary from DB."""
+    batch_id = os.path.basename(batch_path) if batch_path else None
+    if not batch_id:
+        return None
 
-
-def get_sample_metadata_from_results(session_results, batch_dir, processed_data_dir):
-    """
-    Get sample metadata from batch processing results.
-    
-    Args:
-        session_results: JSON string of batch results from session (unused, kept for compat)
-        batch_dir: Batch directory path
-        processed_data_dir: Base directory for processed data
-        
-    Returns:
-        tuple: (dict result, status_code)
-    """
+    conn = _get_conn()
     try:
-        summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
-        if not os.path.exists(summary_path):
-            return {'error': 'batch_summary.json을 찾을 수 없습니다.'}, 400
-        
-        with open(summary_path, 'r', encoding='utf-8') as f:
-            summary = json.load(f)
-        employee_results = summary.get('employee_results', [])
-        
-        if not employee_results:
-            return {'error': '처리된 직원이 없습니다.'}, 400
-        
-        from src.models.metadata_manager import MetadataManager
-        metadata_manager = MetadataManager(processed_data_dir)
-        
-        for result in employee_results:
-            if result.get('success'):
-                metadata = metadata_manager.load_employee_metadata(result['employee_id'], batch_dir)
-                
-                if metadata:
-                    return {
-                        'employee_id': result['employee_id'],
-                        'metadata': metadata
-                    }, 200
-        
-        return {'error': '성공적으로 처리된 직원이 없습니다.'}, 400
-        
-    except Exception as e:
-        return {'error': str(e)}, 500
+        row = conn.execute("""
+            SELECT COUNT(DISTINCT employee_id) AS employee_count,
+                   COUNT(*) AS total_evaluations,
+                   MIN(created_at) AS created_at
+            FROM evaluations
+            WHERE batch_id = ?
+        """, (batch_id,)).fetchone()
+    finally:
+        conn.close()
+
+    if not row or row['employee_count'] == 0:
+        return None
+
+    return {
+        'batch_info': {
+            'batch_id': batch_id,
+            'created_at': row['created_at'] or '',
+            'unique_employees': row['employee_count'],
+            'total_evaluations': row['total_evaluations'],
+        }
+    }
+
+
+def get_sample_integrated_data_from_results(session_results, batch_dir, processed_data_dir):
+    """Get sample metadata from DB for a given batch (가명 복원 포함)."""
+    batch_id = os.path.basename(batch_dir) if batch_dir else None
+    if not batch_id:
+        return {'error': 'batch_id가 없습니다.'}, 400
+
+    conn = _get_conn()
+    try:
+        row = conn.execute("""
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            WHERE ev.batch_id = ?
+            LIMIT 1
+        """, (batch_id,)).fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return {'error': '처리된 직원이 없습니다.'}, 400
+
+    pseudo_mgr = _get_pseudo_mgr()
+    eid = row['employee_id']
+    real_id = pseudo_mgr.get_real_id(eid) if eid else eid
+    real_name = pseudo_mgr.get_real_id(row['name']) if row['name'] else row['name']
+    real_dept = pseudo_mgr.get_real_id(row['department']) if row['department'] else row['department']
+    real_pos = pseudo_mgr.get_real_id(row['position']) if row['position'] else row['position']
+
+    ev_data = json.loads(row['data']) if row['data'] else {}
+    display_name = real_name or real_id or eid
+    return {
+        'employee_id': display_name,
+        'metadata': {
+            'target_employee_id': display_name,
+            'target_employee_name': real_name or '',
+            'target_employee_department': real_dept or '',
+            'target_employee_position': real_pos or '',
+            'evaluations': [ev_data],
+        }
+    }, 200

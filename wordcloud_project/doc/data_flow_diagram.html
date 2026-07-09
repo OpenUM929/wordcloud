@@ -69,7 +69,7 @@
         <div class="legend">
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #3498db;"></div>
-                <span>메타데이터 변화</span>
+                <span>통합데이터 변화</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background-color: #e74c3c;"></div>
@@ -82,10 +82,10 @@
         </div>
 
         <div class="diagram-section metadata-flow">
-            <h2>메타데이터 단계별 변화 흐름</h2>
+            <h2>통합데이터 단계별 변화 흐름</h2>
             <div class="mermaid">
                 flowchart LR
-                    A[데이터 입력] --> B[메타데이터 초기 생성]
+                    A[데이터 입력] --> B[통합데이터 초기 생성]
                     B --> C[데이터 정제]
                     C --> D[자연어 분석]
                     D --> E[감정 분석]
@@ -135,7 +135,7 @@
             <h2>전체 데이터 처리 흐름도</h2>
             <div class="mermaid">
                 flowchart TD
-                    A[데이터 입력] --> B[메타데이터 초기 생성]
+                    A[데이터 입력] --> B[통합데이터 초기 생성]
                     B --> C[데이터 정제]
                     C --> D[자연어 분석]
                     D --> E[감정 분석]
@@ -146,7 +146,7 @@
                         direction LR
                         C1[파일 형식 검증] --> C2[데이터 미리보기]
                         C2 --> C3[열 정보 설정]
-                        C3 --> C4[메타데이터 구조화]
+                        C3 --> C4[통합데이터 구조화]
                         C4 --> C5[텍스트 정규화]
                         C5 --> C6[노이즈 제거]
                         C6 --> C7[품질 검증]
@@ -176,7 +176,7 @@
                         F1[단어 빈도 계산] --> F2[색상 매핑 함수 생성]
                         F2 --> F3[워드클라우드 생성]
                         F3 --> F4[이미지 파일 저장]
-                        F4 --> F5[메타데이터 업데이트]
+                        F4 --> F5[통합데이터 업데이트]
                     end
 
                     subgraph G["추세 분석 단계"]
@@ -205,18 +205,18 @@
         </div>
 
         <div class="diagram-section">
-            <h2>메타데이터 상태 변화 상세</h2>
+            <h2>통합데이터 상태 변화 상세</h2>
             <div class="mermaid">
                 gantt
-                    title 메타데이터 상태 변화
+                    title 통합데이터 상태 변화
                     dateFormat YYYY-MM-DDTHH:mm:ss
                     section 초기 설정
-                        초기 메타데이터 생성 :done, 2026-01-15T08:00:00, 30s
-                        파일 업로드 완료 :done, after 초기 메타데이터 생성, 30s
+                        초기 통합데이터 생성 :done, 2026-01-15T08:00:00, 30s
+                        파일 업로드 완료 :done, after 초기 통합데이터 생성, 30s
                         열 설정 완료 :done, after 파일 업로드 완료, 30s
-                        메타데이터 완성 :done, after 열 설정 완료, 30s
+                        통합데이터 완성 :done, after 열 설정 완료, 30s
                     section 데이터 처리
-                        데이터 정제 단계 :done, after 메타데이터 완성, 1m
+                        데이터 정제 단계 :done, after 통합데이터 완성, 1m
                         NLP 분석 단계 :done, after 데이터 정제 단계, 1m
                         감정 분석 단계 :done, after NLP 분석 단계, 1m
                         워드클라우드 생성 :done, after 감정 분석 단계, 1m
@@ -233,7 +233,7 @@
                     C --> D[15/]
                     D --> E[session_xxx/]
 
-                    E --> F[metadata.json<br/>통합 메타데이터<br/>모든 분석 결과 포함]
+                    E --> F[metadata.json<br/>통합 통합데이터<br/>모든 분석 결과 포함]
                     E --> G[wordcloud.png<br/>감정 기반 색상화<br/>워드클라우드 이미지]
 
                     style A fill:#3498db,color:#fff
@@ -246,9 +246,9 @@
         </div>
 
         <div class="diagram-section">
-            <h2>메타데이터 구조 참고</h2>
-            <p>메타데이터의 상세한 구조와 필드 설명은 <code>metadata_structure.md</code> 파일을 참고하세요.</p>
-            <p>해당 문서에는 트리 구조와 표 형식으로 메타데이터의 모든 필드가 설명되어 있습니다.</p>
+            <h2>통합데이터 구조 참고</h2>
+            <p>통합데이터의 상세한 구조와 필드 설명은 <code>metadata_structure.md</code> 파일을 참고하세요.</p>
+            <p>해당 문서에는 트리 구조와 표 형식으로 통합데이터의 모든 필드가 설명되어 있습니다.</p>
         </div>
     </div>
 

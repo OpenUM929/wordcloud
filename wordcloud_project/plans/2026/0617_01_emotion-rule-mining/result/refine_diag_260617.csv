@@ -1,0 +1,476 @@
+﻿id,sentence_text,kote_pos,kote_neg,kote_neutral,raw_model_label,applied_rule,corrected_label,override_score,is_last,total_sentences,model_label_at_capture
+477,보완필요점이 없습니다,0.3246,0.2859,0.3895,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+478,최신 지식·정보를 꾸준히 학습,0.431,0.0249,0.5441,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+476,(업무실행력)업무 시스템을 개선하기 위해 노력,0.1555,0.1246,0.7198,neutral,neutral_dominant,neutral,0.0,True,3,neutral
+475,(혁신주도)혁신적 아이디어 제시,0.4049,0.0451,0.5499,neutral,neutral_dominant,neutral,0.0,False,3,neutral
+474,(전문성)최신 지식정보를 꾸준히 학습,0.3586,0.0236,0.6178,neutral,neutral_dominant,neutral,0.0,False,3,neutral
+472,업무외의 자기개발에 관심이 많음,0.2531,0.2427,0.5042,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+473,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+471,하위직원 존중,0.257,0.7278,0.0152,negative,rule4_default,negative,-0.4708,True,2,negative
+470,업무 열의도,0.1532,0.8117,0.0351,negative,rule4_default,negative,-0.6585,False,2,negative
+469,수평적 의사소통 능력으로 부서원과 소통함,0.4212,0.0305,0.5483,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+468,(혁신주도)목표를 위한 구체적 전략 제시,0.2951,0.1066,0.5983,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+467,크게 장점은 잘 모르겠습니다,0.0964,0.7768,0.1268,negative,rule4_default,negative,-0.6804,True,1,negative
+466,업무지시 명확함,0.3237,0.5284,0.1479,negative,rule4_default,negative,-0.2047,True,1,negative
+465,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+463,부드러운 리더십으로 부서원의 참여를 유도함,0.4752,0.0342,0.4906,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+464,성과 극대화 및 조직목표 달성을 위해 신속한 의사결정을 함,0.4278,0.0626,0.5096,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+462,복잡한 문제를 체계적으로 세분화하여 인과관계를 파악하고 현상과 자료를 조직화,0.4458,0.0426,0.5116,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+460,동료의 의견을 경청하며 의사를 결정함,0.3441,0.0967,0.5591,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+461,수평적 업무지시로 조직을 통솔함,0.4339,0.1102,0.4559,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+459,우선순위를 정하여 해결책 제시,0.3686,0.3766,0.2548,negative,rule3_last_low,negative,-0.7452,True,1,negative
+457,통신 분야의 전문적인 지식,0.3567,0.0589,0.5844,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+458,필요한 외부 네트워크 형성,0.276,0.0665,0.6575,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+456,특별한 장점을 알지 못합니다,0.1974,0.6188,0.1837,negative,rule4_default,negative,-0.4214,True,1,negative
+455,성과 기여 업무 열의 전문성 협업 윤리의식,0.5188,0.3891,0.0922,positive,rule3_last_low,negative,-0.9079,True,1,negative
+454,"정보 수집, 고객지향, 청렴성",0.3728,0.2784,0.3488,positive,rule3_last_low,negative,-0.6512,True,1,negative
+453,"리더십, 업무전문성, 창의력",0.5096,0.3169,0.1736,positive,rule3_last_low,negative,-0.8265,True,1,negative
+452,"조직구성원 소통 노력, 현장 안전중시",0.4268,0.3136,0.2596,positive,rule3_last_low,negative,-0.7404,True,1,negative
+451,조직이 추가하는 업무방햐을 이해하고 있습니다,0.3991,0.0659,0.535,neutral,neutral_dominant,neutral,0.0,True,3,neutral
+449,구성원과의 소통을 강화합니다,0.4531,0.0337,0.5132,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+450,"조직비전을 달성하기 위하여 목표를 위한 구체적 전략을 제시하고, 구성원들의 자발적 참여를 유도합니다",0.4233,0.0227,0.5539,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+447,ㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇ,0.3464,0.0803,0.5733,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+448,"리더십, 의사소통 능력",0.3074,0.2127,0.4799,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+445,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+446,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+444,조직이 추구하는 업무방향 이해,0.319,0.0387,0.6423,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+443,아직 정확히 알 수 없습니다,0.1052,0.5722,0.3226,negative,rule4_default,negative,-0.467,True,1,negative
+442,"자기개발과 배우고자 하는 의지, 학구열이 높음",0.3795,0.1771,0.4434,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+441,"리더십, 업무전문성, 창의력",0.5096,0.3169,0.1736,positive,rule3_last_low,negative,-0.8265,True,1,negative
+439,목표를 위한 구체적인 전략제시 및 조직비전 달성,0.4563,0.0577,0.486,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+440,변환부 직원들과  의사소통 및 설비 문제해결에 적극적으로 참여할 수 있도록 유도,0.4112,0.0474,0.5414,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+438,전문적인 지식을 기반으로 업무를 수행함,0.4032,0.0356,0.5612,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+437,수평적 의사소통 및 문제해결,0.2489,0.0315,0.7196,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+436,업무 추진 시 체계적으로 지시를 함,0.2316,0.0393,0.7291,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+435,[성과지향] 도전적 목표를 설정하고 사업비용 절감 등 핵심성과 도출을 이끌어 냄,0.3471,0.0365,0.6164,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+434,모든 활동에 적극적이고 의사소통에 자발적 참여 유도,0.4003,0.0395,0.5602,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+433,성과지향적인 모습으로 가능한 자원 최대 동원하여 성과를 극대화 하려고 노력함,0.4129,0.0344,0.5527,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+432,"건설본부 내 소수 직군인 토목, 건축 관련 업무에 대한 이해도 높음(민원)",0.4042,0.0333,0.5626,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+431,잘 모르겠습니다,0.0437,0.9016,0.0547,negative,rule4_default,negative,-0.8579,True,1,negative
+430,의견이 없습니다,0.0927,0.5576,0.3497,negative,rule4_default,negative,-0.4649,True,1,negative
+429,"성과기여, 업무열의, 전문성",0.3672,0.549,0.0838,negative,rule3_last_low,negative,-0.9162,True,1,negative
+428,성과를 많이 내려고 다양한 사업을 지시함,0.2154,0.1418,0.6428,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+427,1111111111111111111111111111111111111111111111111111111,0.1306,0.2293,0.6401,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+426,전략 및 계획 변경을 통한 구체적 변화 창조함,0.228,0.0341,0.738,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+425,열정적이고 후진 양성에 관심이 많으심,0.3702,0.4254,0.2044,negative,rule3_last_low,negative,-0.7956,True,1,negative
+424,업무열의가 매우 높습니다,0.0421,0.9259,0.032,negative,rule4_default,negative,-0.8838,True,1,negative
+423,"무난한 업무 처리, 성실한 근무 태도",0.9703,0.0049,0.0248,positive,neutral_keyword,neutral,0.0,True,1,neutral
+421,수평적 의사소통이 있습니다,0.2642,0.0544,0.6813,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+422,조직이 추구하는 업무방향 이해,0.319,0.0387,0.6423,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+420,매사에 신중하고 조심성이 강함,0.4045,0.2793,0.3162,positive,rule3_last_low,negative,-0.6838,True,1,negative
+419,업무에 대한 관심이 많음,0.3999,0.2433,0.3567,positive,rule3_last_low,negative,-0.6432,True,1,negative
+418,전략 및 계획 변경을 통한 구체적 변화 창조,0.3612,0.0669,0.5718,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+417,12111111111,0.3398,0.2261,0.4341,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+416,내용없음 내용없음 내용없음,0.0041,0.991,0.0049,negative,rule4_default,negative,-0.9869,True,1,negative
+415,잘모르겠습니다,0.0481,0.8267,0.1252,negative,rule4_default,negative,-0.7786,True,1,negative
+414,업무처리를 효율적으로 추진,0.4267,0.1157,0.4576,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+413,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+412,임직원과 협업하며 수평적 소통,0.386,0.0326,0.5814,neutral,neutral_dominant,neutral,0.0,True,3,neutral
+411,명확한 업무지시,0.0786,0.8587,0.0627,negative,rule4_default,negative,-0.7801,True,1,negative
+410,경영 목표를 명확하게 전달하고 해결방안을 제시,0.233,0.5297,0.2373,negative,rule4_default,negative,-0.2967,True,1,negative
+409,제대로 만난적이 없습니다,0.0946,0.8106,0.0947,negative,rule4_default,negative,-0.716,True,1,negative
+408,"출,퇴근시간 준수",0.3235,0.1484,0.528,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+407,수평적 리더십,0.1942,0.2505,0.5554,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+405,직원들과의 의사소통,0.1496,0.2685,0.5819,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+406,정보보안 및 위해행위 건수 0건,0.1209,0.1771,0.7021,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+404,수평적 의사소통,0.1896,0.0696,0.7407,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+402,수평적의사소통,0.2753,0.0342,0.6905,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+403,수평적인 관계 유지,0.3138,0.0754,0.6108,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+401,부하 중심의 쌍방향 커뮤니케이션,0.2535,0.1085,0.6379,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+400,기본 업무 이행,0.1999,0.3799,0.4203,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+399,비전과 정책을 명확히 제시,0.2815,0.4545,0.264,negative,rule3_last_low,negative,-0.736,True,1,negative
+398,잘모르겠습니다,0.0481,0.8267,0.1252,negative,rule4_default,negative,-0.7786,True,1,negative
+397,조용하면서 소신있게 문제해결,0.4513,0.0755,0.4732,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+396,최신 지식 정보를 꾸준히 학습한다,0.4443,0.0382,0.5176,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+395,"부하직원의 의견을 청취하며, 불필요한 회식 등을 하지 않음",0.379,0.1208,0.5002,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+393,유연하고 구체적인 계획 수립,0.4349,0.055,0.5101,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+394,개별업무에 직접적 통제는 없음,0.1951,0.2161,0.5888,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+391,수평적 의사소통으로 구성원들의 자발적 참여를 유도함,0.4583,0.0271,0.5146,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+392,성과지향업무열의코칭,0.2126,0.0494,0.7381,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+390,지사운영에 대한 적극성 열의,0.278,0.6501,0.072,negative,rule4_default,negative,-0.3721,True,1,negative
+389,잘 모르겠음,0.0408,0.911,0.0481,negative,rule4_default,negative,-0.8702,True,1,negative
+388,부하직원의 의견을 경청하여 전략적 의사결정을 함,0.2883,0.0507,0.661,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+387,사업소 안전업무 다각적으로 시행,0.3074,0.0564,0.6362,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+386,"근면, 성실",0.4146,0.0676,0.5177,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+385,업무경험을 토대로 진행함,0.3853,0.0412,0.5735,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+384,특이사항 및 해당사항 없음,0.0794,0.5148,0.4058,negative,rule4_default,negative,-0.4354,True,1,negative
+383,장점은 딱히 잘모르겠습니다 10자 채우라니까 씀니다,0.1237,0.6246,0.2517,negative,rule4_default,negative,-0.5009,True,1,negative
+382,업무의 권한 위양과 책임 부여 의식이 강함,0.1471,0.5953,0.2576,negative,rule4_default,negative,-0.4482,True,1,negative
+381,비전과 정책을 명확히 제시,0.2815,0.4545,0.264,negative,rule3_last_low,negative,-0.736,True,1,negative
+380,보고들어갈때 필요한거만 물어보시고 불필요한 업무지시 X,0.1375,0.4189,0.4436,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+379,사업추진 과정에서 사업 적기 가압 달성을 지시하며 열정을 보임,0.3818,0.0447,0.5734,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+378,"리더십, 업무전문성, 창의력",0.5096,0.3169,0.1736,positive,rule3_last_low,negative,-0.8265,True,1,negative
+377,잘 모르겠습니다,0.0437,0.9016,0.0547,negative,rule4_default,negative,-0.8579,True,1,negative
+376,문제해결의지,0.0958,0.885,0.0192,negative,rule4_default,negative,-0.7892,True,1,negative
+374,센터 목표를 위한 구체적 전략을 제시함,0.2716,0.0347,0.6937,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+375,도전적 목표 설정과 목표를 위한 구체적 전략 제시,0.2664,0.0793,0.6542,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+373,도전적 목표를 설정하여 추진함,0.4648,0.0259,0.5092,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+372,평소 책임강이 강하며 절차와 기준을 준수하여 업무처리에 임함,0.4132,0.0447,0.5421,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+371,환경변화 예측 및 기회로 활용하십니다,0.4501,0.0281,0.5219,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+369,사내외 이해관계자와 폭넓은 네트워크 형성,0.4692,0.0268,0.504,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+370,"리더십, 의사소통 능력",0.3074,0.2127,0.4799,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+368,상대방이 분명하게 이해할 수 있도록,0.1398,0.5223,0.3379,negative,rule4_default,negative,-0.3825,True,1,negative
+367,경영목표를 정확하게 구성원에게 제시하고 이를 달성할 수 있는 실행력을 높이기 위해 가능한 자원지원과 조직선도 등을 추진함,0.3173,0.0415,0.6412,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+366,조직 목표 달성을 위해 노력,0.3401,0.1076,0.5523,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+365,특수사업소 비전과 정책을 명확히 제시,0.3638,0.1709,0.4653,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+364,같이 근무를 안해서 모름,0.0324,0.8399,0.1276,negative,rule4_default,negative,-0.8075,True,1,negative
+363,리더쉽 및 리드쉽 함양,0.5191,0.3239,0.157,positive,rule3_last_low,negative,-0.843,True,2,negative
+362,명확한 업무지시 및 업무개선에 대한 열정,0.1836,0.7679,0.0485,negative,rule4_default,negative,-0.5843,True,1,negative
+361,도전적 목표 설정,0.2795,0.056,0.6645,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+360,특별히 서술할 내용 없음,0.1566,0.4743,0.3691,negative,rule4_default,negative,-0.3177,True,1,negative
+359,예상치 못한 문제 상황에서도 대안을 제시,0.2238,0.5589,0.2174,negative,rule4_default,negative,-0.3351,True,1,negative
+358,"상대방의 이해,",0.3037,0.5902,0.1061,negative,rule4_default,negative,-0.2865,True,1,negative
+357,"업무적 관심, 타부서 업무협조",0.1345,0.7023,0.1631,negative,rule4_default,negative,-0.5678,True,1,negative
+356,구성원들의 자발적 참여를 유도한다,0.4066,0.0498,0.5436,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+355,"예민, 열정, 과다",0.2671,0.2723,0.4607,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+354,목표를 달성할 수 있도록 함,0.4762,0.039,0.4848,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+353,업무 중 혼란이 없도록 실무자들에게 정확한 업무지시를 함,0.3566,0.4076,0.2358,negative,rule4_default,negative,-0.051,False,2,negative
+352,직원의 동기부여에 집중함,0.368,0.0946,0.5374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+351,보완필요점이 전혀 없습니다,0.3652,0.4628,0.172,negative,rule3_last_low,negative,-0.828,True,1,negative
+350,자발적으로 업무를 할 수 있도록 강압적이지 않음,0.2893,0.2548,0.4559,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+349,"리더십, 업무전문성, 창의력",0.5096,0.3169,0.1736,positive,rule3_last_low,negative,-0.8265,True,1,negative
+348,부서원들과 수평적 관계를 유지하며 고압적인 태도를 보이지 않음,0.321,0.1458,0.5332,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+347,조직성과 창출을 위한 업무열의,0.2671,0.5361,0.1968,negative,rule4_default,negative,-0.269,True,1,negative
+346,"명확한 업무지시, 수평적 태도",0.4074,0.491,0.1016,negative,rule3_last_low,negative,-0.8984,True,1,negative
+345,"협력업체,공사업체,설비제조업체와 폭넓은 네트워크를 형성합니다",0.3182,0.0277,0.6541,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+344,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+343,화합하는 부서 분위기 조성,0.4505,0.0947,0.4547,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+342,수평적 의사소통으로 구성원들의 자발적 참여 유도,0.3126,0.0472,0.6402,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+340,조직을 위한 목표와 방향 제시,0.4433,0.0562,0.5005,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+341,업무 시스템을 개선하기 위해 노력,0.3018,0.1344,0.5638,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+338,도전적 목표를 설정함,0.3983,0.0509,0.5507,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+339,최신 지식,0.2728,0.0472,0.68,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+337,"우선순위에 따른 업무 추진, 업무에 대한 관심이 많음",0.2673,0.0508,0.6819,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+336,"청렴성, 공감능력, 어휘력",0.4661,0.3537,0.1802,positive,rule3_last_low,negative,-0.8198,True,1,negative
+335,업무 추진 및 민원대응에 있어 적극적 해소 노력,0.421,0.1225,0.4565,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+334,세세한 지시 감독하는 성향이 강함,0.3552,0.2271,0.4177,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+333,학구열이 높고 자기개발에 힘씀,0.3259,0.1599,0.5143,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+332,권위의식이 없음,0.0502,0.906,0.0438,negative,rule4_default,neutral,-0.8558,True,1,negative
+331,의사 결정이 빠르다,0.4806,0.339,0.1804,positive,rule3_last_low,negative,-0.8196,True,1,negative
+330,개인 업무와 회사 비전 연계,0.3052,0.159,0.5358,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+329,안전사고 big-data 분석 예측 알고리즘 개발 핵심성과지표 운영,0.31,0.0383,0.6517,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+328,---------------,0.3559,0.2225,0.4217,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+327,의사소통을 중시함,0.2213,0.0851,0.6936,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+326,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+325,"명확한 목표제시가 가능하고, 부서원들이 목표에 맞춰서 성과를 낼 수 있도록 방향성 제시 등 명확화",0.3668,0.1041,0.5291,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+323,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+324,수평적 업무지시 및 진취적 업무추진,0.4625,0.0569,0.4806,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+321,수평적 의사소통으로 구성원들의 자발적 참여를 유도함,0.4583,0.0271,0.5146,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+322,수평적 의사소통과 리더십,0.4267,0.0462,0.5271,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+320,수평적 의사소통을 통해 구성원들의 자발적 참여를 유도함,0.4231,0.0289,0.5479,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+319,핵심성과 도출을 위해 항시 사고함,0.2496,0.0647,0.6857,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+318,다양한 소통채널 운영,0.4442,0.0321,0.5237,neutral,neutral_dominant,neutral,0.0,True,3,neutral
+317,도전적 목표 설정,0.2795,0.056,0.6645,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+316,필요한 외부 네트워크 형성,0.276,0.0665,0.6575,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+315,업무 열의 변화를 모색함,0.3776,0.0835,0.5389,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+314,환경변화 예측 및 기회로 활용,0.4827,0.0325,0.4848,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+313,넓은 분야에 관심이 많음,0.4301,0.1355,0.4343,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+312,"도전적 목표설정, 새로운 도전의식, 창의적 도전 격려, 수직적 업무지시",0.3719,0.0427,0.5854,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+311,-----------------,0.3678,0.2165,0.4157,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+310,수직적 의사소통과 강력한 상관 마인드로 문제해결을 강요하며 구성원의 수동적 참여를 유도함,0.1146,0.4562,0.4292,negative,neutral_dominant,neutral,0.0,True,1,neutral
+309,11111111111111,0.3012,0.2334,0.4654,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+308,출세의지가 강하고 회의 시 발언시간이 길다,0.347,0.305,0.348,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+307,내용없음 내용 없음 내용 없음,0.0048,0.9892,0.006,negative,rule4_default,negative,-0.9844,True,1,negative
+306,업무지침을 명확히 하심,0.4686,0.3673,0.1641,positive,rule3_last_low,negative,-0.8359,True,1,negative
+305,강원의 문제점을 알고 해결하기 위한 고민을 하는중이다,0.3985,0.2593,0.3423,positive,rule3_last_low,negative,-0.6578,True,1,negative
+304,업무열의 매우 높음,0.0618,0.8809,0.0573,negative,rule4_default,negative,-0.8191,True,1,negative
+303,아주 많이 높은 업무 열정,0.4273,0.347,0.2257,positive,rule3_last_low,negative,-0.7743,True,1,negative
+302,적극적인 업무개선 의지 및 안전확보 의지,0.0553,0.9394,0.0053,negative,rule4_default,negative,-0.8841,True,1,negative
+301,직원들의 의견을 들으려고 많이함,0.3412,0.3399,0.3189,positive,rule3_last_low,negative,-0.6811,True,1,negative
+300,업무에 관심이 많음,0.3859,0.2718,0.3424,positive,rule3_last_low,negative,-0.6577,True,1,negative
+299,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+298,"- 우수 사업소 달성을 위한 업무수행(내부평가, 특허 등)에 성과기여도가 매우 높음",0.3591,0.0335,0.6074,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+297,비전을 명확하게 제시,0.2327,0.4217,0.3456,negative,rule3_last_low,negative,-0.6544,True,1,negative
+296,"신, 구세대 간의 차이를 이해하며 융합을 통해 조화로운 분위기 형성에 기여",0.4678,0.0229,0.5093,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+295,최신 지식·정보를 꾸준히 학습,0.431,0.0249,0.5441,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+294,목표를 위한 구체적 전략제시,0.2883,0.235,0.4766,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+293,수평적 의사소통으로 구성원들의 자발적인 참여을 유도함,0.4277,0.0269,0.5454,neutral,neutral_dominant,neutral,0.0,False,3,neutral
+292,최신 지식정보를 꾸준히 학습,0.4277,0.0253,0.5471,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+291,직원의 안녕과 안전에 대한 관심이 많음,0.4407,0.4875,0.0718,negative,rule3_last_low,negative,-0.9282,True,1,negative
+290,직원 안전에 대한 중요시 여김,0.3528,0.4791,0.1681,negative,rule3_last_low,negative,-0.8319,True,1,negative
+289,타 부서 입장에서 생각,0.1055,0.7201,0.1743,negative,rule4_default,negative,-0.6146,True,1,negative
+288,리더십 분위기 주도 소통,0.4064,0.1253,0.4683,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+287,직원의 업무능력 향상을 위해 학습조직 등 인재육성에 힘씀,0.2856,0.0747,0.6397,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+286,수평적인사 및 업무처리,0.421,0.0661,0.5128,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+285,안전관리에 모든역략을 동원하여 현장중심업무를 수행함,0.4623,0.0355,0.5021,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+284,도전적목표를 설정하며 성과를 극대화함,0.3608,0.0519,0.5873,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+283,"전문성, 업무열의",0.2258,0.7058,0.0685,negative,rule4_default,negative,-0.48,True,1,negative
+282,평소 직원들의 업무에 관심이 많고 직접 알아보시려고 하는 솔선수범태도가 강하심,0.3539,0.5922,0.054,negative,rule4_default,negative,-0.2383,False,2,negative
+281,문제를 분석하여 핵심 원인을 착고 여러 요인들의 상관관계를 파악한다,0.2617,0.0249,0.7134,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+280,상/하 지원간 월활한 교류,0.2197,0.0485,0.7318,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+279,수평적인 조직문화를 위해 구성원들과 소통함,0.2507,0.0387,0.7106,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+278,직원들 입장에서 생각하고 행동하심,0.0379,0.9594,0.0026,negative,rule4_default,negative,-0.9215,True,1,negative
+277,조직 통솔,0.3206,0.1521,0.5273,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+276,"상황변화에 대한 인식, 해결책 제시",0.1298,0.7675,0.1027,negative,rule4_default,negative,-0.6377,True,1,negative
+275,부서원들과 소통하려는 자세를 지님,0.5123,0.43,0.0577,positive,rule3_last_low,negative,-0.9423,True,1,negative
+274,업무처리 우선순위 결정,0.2525,0.0815,0.6659,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+273,업무파악 및 확인능력,0.1813,0.1691,0.6496,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+272,지사장으로서 직원들에 모벙이 됨,0.1766,0.7945,0.0289,negative,rule4_default,negative,-0.6179,True,1,negative
+271,배전에 대한 높은 업무 이해도로 인한 대화 트러블 없음,0.4324,0.1239,0.4437,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+270,최신 지식 정보를 꾸준히 학습,0.4644,0.0273,0.5083,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+269,우선순위를 정하여 해결책 제시 / 인과관계 파악 / 다양한 관점에서 대안 제시,0.3405,0.1014,0.558,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+268,안전을 중요시 한다,0.3331,0.1378,0.5291,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+267,안전관리에 대한 관심이 매우 높음,0.2185,0.2999,0.4816,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+266,안전중심의 목표를 지향합니다,0.3642,0.0469,0.5889,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+265,세세한 업무지시를 통해 관리처의 발전에 힘씀,0.4139,0.0304,0.5557,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+264,안전에 무척 철저합니다,0.3499,0.1179,0.5322,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+263,업무에 대한 관심이 많음,0.3999,0.2433,0.3567,positive,rule3_last_low,negative,-0.6432,True,1,negative
+262,"관리처 직원들의 업무 역량향상에 많은 노력을 하시며, 업무량 경감을 위해서 형식적인 보고서를",0.4337,0.5155,0.0507,negative,rule4_default,negative,-0.0818,False,2,negative
+261,중요한 항목 및 핵심적인 항목을 찾아 업무지시를 함,0.1557,0.0838,0.7605,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+260,최신 지식 정보를 꾸준히 학습,0.4644,0.0273,0.5083,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+259,"오지, 취약사업소 임에도 무재해, 무고장 성과",0.3316,0.5226,0.1458,negative,rule3_last_low,negative,-0.8542,True,1,negative
+258,목표를 위한 구체적 전략을 제시한다,0.171,0.0592,0.7698,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+257,목표와 방향성을 명확히 제사하여 부서원의 집중도를 높임,0.4328,0.0329,0.5343,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+256,자기개발에 힘쓰고 학구열이 높음,0.3884,0.1275,0.4841,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+255,"금품향응수수, 인산청탁 등의 부당한 사적이익을 취득하지 않음",0.1737,0.1346,0.6916,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+254,여러 가지 상황들의 연관관계를 분석하여 의사결정 한다,0.2686,0.0364,0.695,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+253,부서장이나 직원들에게 업무 외적으로 불필요한 지시를 하지 않음,0.329,0.1341,0.5369,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+252,전략 및 계획 변경을 통한 구체적 변화 창조,0.3612,0.0669,0.5718,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+251,수평적 의사소통과 강압적이지않다,0.3706,0.1823,0.447,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+250,본부장 이름도 모르겠음,0.0177,0.9626,0.0197,negative,rule4_default,negative,-0.9449,True,1,negative
+249,같이 일해 본적이 없어서 잘 모르겠어요,0.0416,0.8893,0.0691,negative,rule4_default,negative,-0.8477,True,1,negative
+248,업무에 대한 관심이 많음,0.3999,0.2433,0.3567,positive,rule3_last_low,negative,-0.6432,True,2,negative
+247,직접 마주할일이 없어 잘 모르겠습니다,0.0858,0.8076,0.1066,negative,rule4_default,negative,-0.7218,True,1,negative
+246,별로 마주칠 일이 없어서 모르겠음,0.1014,0.7909,0.1076,negative,rule4_default,negative,-0.6895,True,1,negative
+245,조직의 핵심 성과를 달성하기 위한 지시를 많이 함,0.3136,0.1215,0.5649,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+244,수평적 의사소통으로 구성원들의 자발적 참여를 유도함,0.4583,0.0271,0.5146,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+243,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+242,목표를 위한 구체적 전략적 제시,0.2205,0.1512,0.6284,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+241,ㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇ,0.1728,0.1368,0.6904,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+240,명확한 업무지시와 일버리기에 앞장섬,0.0559,0.8537,0.0904,negative,rule4_default,negative,-0.7978,True,1,negative
+239,불필요한 행사를 만들지 않는다,0.1709,0.5999,0.2293,negative,rule4_default,negative,-0.429,True,1,negative
+238,뵌 적이 없어서 잘 모르겠습니다,0.0699,0.7865,0.1436,negative,rule4_default,negative,-0.7166,True,1,negative
+237,"업무에 대한 전문성, 리더십",0.4086,0.446,0.1454,negative,rule3_last_low,negative,-0.8546,True,1,negative
+236,뵙지를 못해 잘 모르겠습니다,0.0691,0.9107,0.0202,negative,rule4_default,negative,-0.8416,True,1,negative
+235,전문가적 지식과 분석적 사고력을 바탕으로 전력설비의 취약점 개선,0.3853,0.0351,0.5796,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+234,업무에 열성적입니다,0.4115,0.3886,0.1999,positive,rule3_last_low,negative,-0.8001,True,1,negative
+233,목표를 위한 구체적 전략을 제시하고 적기에 필요한 지시를 함,0.1846,0.043,0.7723,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+232,수평적 의사소통으로 전직원의 화합을 강조,0.3272,0.0567,0.6161,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+231,인사이동후 대면한 적이 없어서 평가 할 수가 없습니다,0.0893,0.5615,0.3493,negative,rule4_default,negative,-0.4722,True,1,negative
+230,"잘 모르겟습니다, 많이 뵌적이 없습니다",0.0856,0.5391,0.3753,negative,rule4_default,negative,-0.4535,True,1,negative
+229,매사에 열정적임,0.4956,0.3328,0.1716,positive,rule3_last_low,negative,-0.8284,True,1,negative
+228,수평적인 의사소통과 적극적인 대외 활동,0.3414,0.025,0.6336,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+227,수평적 의사소통과 솔선수범,0.4526,0.0518,0.4955,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+226,업무열의가 높음,0.0477,0.922,0.0304,negative,rule4_default,negative,-0.8743,True,1,negative
+225,수평적 의사소통을 통한 직원들의 자발적 참여를 유도함,0.4498,0.0342,0.5159,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+224,조직원들의 자발적 참여 유도함,0.0936,0.1125,0.7939,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+223,호기심이 많음 업무관련 자료수집,0.3119,0.107,0.5811,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+222,도전적 목표를 설정한다,0.3689,0.0357,0.5954,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+221,안전에 관심이 많음,0.2489,0.213,0.5381,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+220,최신 지식·정보를 꾸준히 학습,0.431,0.0249,0.5441,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+219,조직원들의 자율성을 존중해서 스스로 해나갈수 있도록 유도함,0.4537,0.058,0.4883,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+218,가능한 자원을 최대한 동원하여 도전적 목표 설정 후 이루고자 함,0.4705,0.0359,0.4935,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+217,수평적 의사소통이 있음,0.4238,0.0781,0.4981,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+216,도전적 목표 설정,0.2795,0.056,0.6645,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+215,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+214,조직이 추구하는 업무방향 이해,0.319,0.0387,0.6423,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+213,"환경 변화를 감지, 예측",0.3099,0.1452,0.5449,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+212,회의나 업무진행시 의견을 명확히 전달함,0.3129,0.0827,0.6043,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+211,유연하고 구체적인 계획 수립,0.4349,0.055,0.5101,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+210,의사소통과 리더쉽으로 문제해결하며 구성원들의 참여 유발,0.3876,0.0274,0.585,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+209,수평적 의사소통으로 구성원들의 자발적 참여를 유도함,0.4583,0.0271,0.5146,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+208,일반적인 관리자의 업무 형태,0.1469,0.6335,0.2196,negative,rule4_default,negative,-0.4866,True,1,negative
+207,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+206,업무에 대한 이해가 높으며 관심을 갖음,0.4336,0.0295,0.5369,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+205,비논리적인 말을 하는 것 같지 않음,0.0605,0.8333,0.1062,negative,rule4_default,negative,-0.7728,True,1,negative
+204,목표를 위한 구체적 전력제시,0.2642,0.2712,0.4646,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+203,목표를 위한 구체적인 전략제시 및 조직비전 달성,0.4563,0.0577,0.486,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+202,직원과의 수평적 의사소통,0.3814,0.1057,0.5129,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+201,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+200,전반적인 관리처 관리 시행,0.3566,0.2728,0.3707,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+199,우선순위에 따른 업무 추진,0.2497,0.0565,0.6937,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+198,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+197,"리더십 발휘, 구성원들 참여 유도",0.2673,0.0789,0.6537,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+196,문제를 인식하는 능력,0.2274,0.4801,0.2924,negative,rule4_default,negative,-0.2527,True,1,negative
+195,업무 중요성 판단 능력,0.3353,0.2207,0.444,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+194,조직을 통솔함에 있어 구성원들의 자발적 참여를 유도,0.3073,0.1216,0.5711,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+193,수평적 의사소통 수평적 의사소통,0.1555,0.2395,0.605,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+192,핵심성과 도출과 목표를 위한 구체적 전략제시를 한다,0.2333,0.0998,0.6669,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+191,조직이 추구하는 업무방향 이해성이 높음,0.2189,0.5425,0.2386,negative,rule4_default,negative,-0.3236,True,1,negative
+190,비전과 정책을 명확히 제시,0.2815,0.4545,0.264,negative,rule3_last_low,negative,-0.736,True,1,negative
+189,전문적인 지식을 바탕으로 업무처리를 시행함,0.4669,0.0295,0.5036,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+188,"리더십, 업무전문성, 창의력",0.5096,0.3169,0.1736,positive,rule3_last_low,negative,-0.8265,True,1,negative
+187,구성원들의 자발적으로 유도함,0.1806,0.1971,0.6223,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+186,조직이 추구하는 업무방향 이해,0.319,0.0387,0.6423,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+185,리더로써 문제해결을 적극적으로 대화로써 해결,0.1685,0.812,0.0194,negative,rule4_default,negative,-0.6435,False,2,negative
+184,전력지사에 대한 이해도,0.1119,0.8033,0.0848,negative,rule4_default,negative,-0.6914,True,1,negative
+183,안전에 대한 열의가 강함,0.3698,0.3607,0.2695,positive,rule3_last_low,negative,-0.7305,True,1,negative
+182,업무열의와 전문성 그리고 윤리의식이 투절함,0.0242,0.9678,0.0081,negative,rule4_default,negative,-0.9436,True,1,negative
+181,성과 기여도 업무열의,0.3055,0.5908,0.1037,negative,rule4_default,negative,-0.2853,True,1,negative
+180,"환경 변화를 감지,에측",0.1996,0.1047,0.6957,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+178,수평적 의사소통,0.1896,0.0696,0.7407,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+179,수평적 업무지시로 문제해결,0.3008,0.0793,0.6199,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+177,수평적 의사소통 리더쉽,0.3766,0.0443,0.5791,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+176,사업소장으로서 리더쉽이 강함,0.4525,0.3841,0.1635,positive,rule3_last_low,negative,-0.8366,True,1,negative
+175,"부하직원 독려, 전문성",0.0546,0.9354,0.01,negative,rule4_default,negative,-0.8808,True,1,negative
+174,우선 순위를 정하여 해결책 제시,0.3631,0.3975,0.2394,negative,rule3_last_low,negative,-0.7606,True,1,negative
+173,업무열의가 있으며 직원들에게 관심이 있음,0.3032,0.2054,0.4914,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+172,수평적 의사소통,0.1896,0.0696,0.7407,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+171,중장기 경영전략 및 목표에 따른 전략적 핵심방향 제시,0.283,0.0559,0.6611,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+170,잘모르겠음,0.0733,0.7712,0.1555,negative,rule4_default,negative,-0.6979,True,1,negative
+169,ㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈㅈ,0.0805,0.5963,0.3231,negative,rule4_default,negative,-0.5158,True,1,negative
+168,리더쉽이강함,0.293,0.5901,0.1169,negative,rule4_default,negative,-0.2971,True,1,negative
+167,ㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂ,0.1071,0.2818,0.6111,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+166,도전적 목표설정으로 가능한 자원을 최대한 동원하여 성과를 극대화시키고 비용절감하려는 의도가 높음,0.3151,0.0806,0.6043,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+165,사업소 안전 및 업무평가에 대한 조직목표 달성에 적극적인 마인드,0.3406,0.0392,0.6202,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+164,온화하고 부드러운 업무처리 조직통솔에 무난함,0.9365,0.015,0.0485,positive,neutral_keyword,neutral,0.0,True,1,neutral
+163,ㄴㅇㄻㅇㄴㄹㅇㄴㄹㅇㄴㄹㅇㄻㄴㅇㄹ,0.0978,0.1745,0.7277,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+161,수평적 의사소통으로 구성원들의 자발적으로 참여를 유도함,0.4371,0.0265,0.5363,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+162,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+160,수평적 리더십,0.1942,0.2505,0.5554,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+159,수평적인 의사소통과 적극적인 대외 활동,0.3414,0.025,0.6336,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+158,무작위 부서원들과 소통하는 자리도 만들어 지사 인원들의 의견을 수렴함,0.4568,0.0213,0.5219,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+157,수평적인 의사소통으로 리더쉽으로 문제해결,0.3184,0.0407,0.6409,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+156,수평적 의사소통을 하려고는 함,0.0961,0.7284,0.1756,negative,rule4_default,negative,-0.6323,True,1,negative
+155,직원들의 자발적 참여 유도함,0.1358,0.1357,0.7285,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+154,협업능력 윤리의식 업무열의,0.2358,0.7207,0.0435,negative,rule4_default,negative,-0.4849,True,1,negative
+153,ㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂ,0.1056,0.2875,0.6069,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+152,수평적 의사소통,0.1896,0.0696,0.7407,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+151,ㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂ,0.107,0.2702,0.6228,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+150,ㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂㅂ,0.1071,0.2818,0.6111,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+149,부드러운 권위와 소통을 통해 직원들의 자발적 참여를 유도함,0.4363,0.0368,0.5269,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+148,"리더십, 소통능력, 자기계발, 솔선수범",0.5224,0.3329,0.1447,positive,rule3_last_low,negative,-0.8553,True,1,negative
+147,직원과의 소통이 원할하다,0.3117,0.1934,0.4949,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+146,수평적 업무지시,0.0772,0.5513,0.3714,negative,rule4_default,negative,-0.4741,True,1,negative
+145,장점 서술사항은 없습니다,0.1047,0.252,0.6434,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+144,구성원들의 자발적 참여 유도함,0.195,0.0954,0.7096,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+143,전문적인 지식과 수평적 마인드 보유,0.4522,0.0941,0.4537,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+142,문제해결에 구성원들의 자발적 참여를 유도함,0.3035,0.0708,0.6257,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+141,직원들에게 잔소리를 안한다,0.2651,0.5424,0.1926,negative,rule4_default,neutral,-0.2773,True,1,negative
+140,최신정보를 꾸준히 학습,0.4816,0.0353,0.4831,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+139,부하 직원들에게 수평적인 자세,0.2153,0.7496,0.0351,negative,rule4_default,negative,-0.5343,True,1,negative
+138,수평적인 관계 유지에 따른 조직 유연성 확보,0.4304,0.0427,0.5269,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+137,업무에 대한 해박한 지식,0.3737,0.0644,0.5619,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+136,수평적 의사소통능력,0.282,0.1174,0.6007,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+135,직무 관심도 높음,0.2065,0.2272,0.5663,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+134,스스로 성과에 만족못해 계속 개선을 시도한다,0.243,0.3546,0.4025,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+133,"열정넘침 항상과함, 자발적참여유도",0.0801,0.8707,0.0492,negative,rule4_default,negative,-0.7906,True,1,negative
+132,불필요한 의전을 지양함,0.1304,0.4317,0.438,neutral,neutral_dominant,neutral,0.0,True,5,neutral
+131,인자한 상사,0.4636,0.0596,0.4768,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+130,챙겨야 할 것과 위임할 것의 구분이 확실함,0.3472,0.2968,0.3561,neutral,neutral_dominant,neutral,0.0,True,3,neutral
+129,비전과 정책을 명확히 제시하여 조직이 추구하는 업무방향을 지도함,0.3493,0.0451,0.6056,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+128,쓸데없는 업무를 만들어내지 않음,0.3711,0.434,0.1949,negative,rule4_default,negative,-0.0629,False,5,negative
+127,솔선수범하여 모범을 보임,0.5748,0.378,0.0472,positive,rule3_last_low,negative,-0.9528,True,1,negative
+126,업무지시에 있어서 명확한 업무지시 등 불필요한 업무지시가 없음,0.3331,0.1014,0.5655,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+125,구성원들의 자발적 참여를 유도,0.251,0.0818,0.6672,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+124,사업소 업무에 대한 열정,0.402,0.3263,0.2717,positive,rule3_last_low,negative,-0.7283,True,1,negative
+123,명확한 기준으로 업무처리,0.262,0.6712,0.0669,negative,rule4_default,negative,-0.4092,True,1,negative
+122,비전과 정책을 명확히 제시,0.2815,0.4545,0.264,negative,rule3_last_low,negative,-0.736,True,1,negative
+121,직원들에 관심이 많음,0.4232,0.2779,0.2989,positive,rule3_last_low,negative,-0.7011,True,1,negative
+120,구성원들 자발적 참여 유도,0.1598,0.0844,0.7558,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+119,도전적인 목표를 설정하여 달성하려함,0.4136,0.0395,0.5469,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+118,"업무지시를 정확히 하여, 수행함에 있어 혼선이 없도록 함",0.425,0.0445,0.5305,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+117,"해당 분야 오랜 경험, 수평적 업무지시",0.3742,0.0428,0.5831,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+116,"목표를 위한 구체적 전략 제시,우선순위를 정하여 해결책 제시",0.3736,0.1923,0.4341,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+115,수평적 의사소통,0.1896,0.0696,0.7407,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+114,부서원들끼리 잘 어울리 수 있도록 분위기를 조성함,0.3102,0.0929,0.5968,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+113,조직원들에게 관심이 많음,0.4095,0.1551,0.4355,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+112,상황변화에 대한 인식이 확실함,0.4742,0.3387,0.1871,positive,rule3_last_low,negative,-0.8129,True,1,negative
+111,해당 분야 오랜 경험으로 부서원들에게 구체적 업무 지시,0.3771,0.0409,0.582,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+110,조직이 추구하는 업무방향 이해능력,0.2161,0.229,0.5549,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+109,불필요한 업무지시를 지양함,0.1067,0.4232,0.47,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+108,솔선수범하고 명확한 업무지시,0.4242,0.4654,0.1104,negative,rule3_last_low,negative,-0.8896,True,1,negative
+107,업무 지시가 명확합니다,0.4091,0.31,0.2809,positive,rule3_last_low,negative,-0.7191,True,1,negative
+106,규정에 의거한 업무처리 및 개선방향 코치,0.3685,0.1005,0.531,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+105,사업소 인원 모두를 살피심,0.2638,0.2949,0.4413,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+104,안전에 대한 경각심을 가지고 업무에 임한다,0.4236,0.4166,0.1599,positive,rule3_last_low,negative,-0.8402,True,1,negative
+103,직원과 소통을 중요시 합니다,0.3409,0.1226,0.5365,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+102,"구체적 전략 제시, 솔선수범,",0.3712,0.4401,0.1887,negative,rule3_last_low,negative,-0.8113,True,1,negative
+101,지사와 업무수행에 필요한 핵심 목표를 수립하며 자발적으로 추진할수 있도록 동기를 부여함,0.383,0.0293,0.5877,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+100,조직목표 달성을 위해 성과 도출,0.2101,0.0734,0.7165,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+99,조직 목표 달성을 위해 전략적으로 부서를 이끌고 성과를 창출합니다,0.3242,0.0309,0.6449,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+98,최신 지식,0.2728,0.0472,0.68,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+97,비전과 정책을 명확히 제시,0.2815,0.4545,0.264,negative,rule3_last_low,negative,-0.736,True,1,negative
+96,성과기여도와 업무열의가 있음,0.4297,0.1306,0.4397,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+95,부하 중심의 쌍방향 커뮤니케이이션,0.254,0.1001,0.6459,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+94,"회의시에도 개인카드로 커피를 내시거나, 식사비도 개인카드로~",0.172,0.6884,0.1396,negative,rule4_default,negative,-0.5164,False,4,negative
+93,비전과 정책을 명확히 제시 / 조직이 추구하는 업무방향 이해,0.3721,0.0396,0.5883,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+92,비전과 정책을 명확히 제시,0.2815,0.4545,0.264,negative,rule3_last_low,negative,-0.736,True,1,negative
+91,업무에 열성적입니다,0.4115,0.3886,0.1999,positive,rule3_last_low,negative,-0.8001,True,1,negative
+90,배전운영실 업무관련 협조적,0.4718,0.0449,0.4833,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+89,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+88,수평적 의사소통으로 구성원들의 자발적 참여를 유도함,0.4583,0.0271,0.5146,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+87,업무효율증대를 위한 노력,0.3404,0.4223,0.2373,negative,rule3_last_low,negative,-0.7627,True,1,negative
+86,우선순위를 정하여 해결책 제시,0.3686,0.3766,0.2548,negative,rule3_last_low,negative,-0.7452,True,1,negative
+85,세부사항에 대해 검토를 중요시,0.2918,0.222,0.4862,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+84,자발적 참여 유도,0.1979,0.0919,0.7102,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+83,수평적인 의사소통과 적극적인 대외 활동,0.3414,0.025,0.6336,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+82,매사에 매우 의욕적이심,0.5033,0.3722,0.1246,positive,rule3_last_low,negative,-0.8755,True,1,negative
+81,직원들을 이해하려고 하는 마음이 큼,0.3935,0.5936,0.0129,negative,rule4_default,negative,-0.2001,True,1,negative
+80,상대방의 이해 / 민원인과 소통,0.4522,0.0882,0.4595,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+79,상황에 따라 원활히 대처,0.3344,0.0464,0.6192,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+78,"자기개발에 힘씀, 업무외에도 학구열이 높음",0.4315,0.0884,0.4802,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+77,전문적 업무지식 전달,0.21,0.0417,0.7483,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+76,업무 협의를 통한 필요한 네트워크 형성,0.2864,0.0373,0.6763,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+75,수평적 리더십,0.1942,0.2505,0.5554,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+74,보안필요점이 존재하지 않음,0.07,0.5177,0.4123,negative,rule4_default,negative,-0.4477,True,1,negative
+73,도전적 목표 설정을 통해 조직의 성과를 극대화,0.4777,0.0265,0.4958,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+72,상대방의 이해와 명확한 업무지시,0.376,0.1972,0.4268,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+71,ㅁㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄻㄴㅇㄹ,0.0735,0.4535,0.473,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+70,공감능력과 대화하는 분위기를 조성함,0.3825,0.1618,0.4557,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+69,수평적 의사소통,0.1896,0.0696,0.7407,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+68,상대방의 이해와 명확한 의사전달,0.4482,0.3584,0.1933,positive,rule3_last_low,negative,-0.8066,True,1,negative
+67,의견을 경청하여 업무를 처리함,0.3247,0.1391,0.5363,neutral,neutral_dominant,neutral,0.0,True,3,neutral
+66,굵직한 업무처리 시 브레인스토밍과 같은 여러사람의,0.4093,0.035,0.5557,neutral,neutral_dominant,neutral,0.0,False,3,neutral
+65,도전적 목표 설정,0.2795,0.056,0.6645,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+64,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+63,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+62,성실성실성실성실성실,0.1008,0.8737,0.0255,negative,rule4_default,negative,-0.7729,True,1,negative
+61,최신 지식 정보를 꾸준히 학습,0.4644,0.0273,0.5083,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+60,업무의 중요도에 따른 관심도에 차별을 두며 고압적이지 않습니다,0.3283,0.0748,0.5968,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+59,전력지사의 최고책임자로서 공감능력이 우수함,0.2923,0.6633,0.0444,negative,rule4_default,negative,-0.371,True,1,negative
+58,목표를 위한 구체적 전략제시,0.2883,0.235,0.4766,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+57,수평적 의사소통과 리더십으로 문제해결,0.4382,0.0289,0.5329,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+56,학구열이 높음,0.1119,0.4365,0.4516,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+55,명확한 의사전달,0.0659,0.8882,0.0458,negative,rule4_default,negative,-0.8223,True,2,negative
+54,상대방의이해,0.093,0.6183,0.2887,negative,rule4_default,negative,-0.5253,False,2,negative
+50,자발적 참여를 유도함,0.3474,0.0513,0.6014,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+49,"전문성, 업무 열의",0.393,0.4963,0.1107,negative,rule3_last_low,negative,-0.8893,True,1,negative
+48,회사를 먼저 생각하여 업무에 대한 욕심이 많음,0.1911,0.6035,0.2054,negative,rule4_default,negative,-0.4124,True,1,negative
+47,구성원들의 자발전 참여를 유도,0.2859,0.1234,0.5907,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+46,사업소장 회의에서 관련 의견 개진,0.1156,0.095,0.7895,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+45,"수평적 의사소통, 구성원들의 자발적 참여를 유도함",0.4413,0.0324,0.5262,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+44,우선순위를 정하여 해결책 제시,0.3686,0.3766,0.2548,negative,rule3_last_low,negative,-0.7452,True,1,negative
+43,자발적 참여를 유도함,0.3474,0.0513,0.6014,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+42,업무상황파악의 정확성 유지,0.264,0.1032,0.6329,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+41,"목표를 위한 구체적 전략 제시, 조직 통솔",0.2174,0.0958,0.6868,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+40,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+39,업무에열의가 넘친다,0.1758,0.754,0.0701,negative,rule4_default,negative,-0.5782,True,1,negative
+38,조직목표 달성을 위해 열정적,0.3832,0.4214,0.1955,negative,rule3_last_low,negative,-0.8046,True,1,negative
+37,업무의 방향성을 제시해 주어 올바른 방향으로 업무를 처리할 수 있도록 지도함,0.4464,0.051,0.5026,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+36,리더쉽을 바탕으로 직원들의 참여유도를 통해 일을 진행함,0.3364,0.0553,0.6083,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+35,써번트 리더쉽으로 구성원들의 자발적 참여 유도,0.3779,0.063,0.5591,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+34,"목표를 위한 구체적 전략 제시, 문제 발생 시 해결방안 제시 등을 통한 조직의 핵심성과 도출 가능",0.3166,0.073,0.6105,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+33,변화의 방향을 예측하고 변화를 주도한다,0.3439,0.0318,0.6243,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+32,"목표를 위한 구체적 전략 제시 및 조직이 추구하는 업무방향 이해, 높은 윤리의식 보유",0.4679,0.0302,0.5019,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+30,직원들과 소통하려 함,0.36,0.1565,0.4835,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+31,업무 효율성 증대를 위해 고심함,0.2169,0.1058,0.6774,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+29,최신 지식 정보를 꾸준히 학습하며 목표를 위한 구체적 전략을 제시합니다,0.3506,0.0213,0.6281,neutral,neutral_dominant,neutral,0.0,False,2,neutral
+28,평소 책임강이 강하며 절차와 기준을 준수하여 업무처리에 임함,0.4132,0.0447,0.5421,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+27,불필요한일을 시키지 않습니다,0.2534,0.5874,0.1592,negative,rule4_default,negative,-0.334,True,1,negative
+26,부하직원과의 수평적 의사소통을 추구하고 전문적 지식을 보유하여 해결책을 제시함,0.4574,0.0275,0.5152,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+25,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+24,자신에 업무에 대한 자심감이 높음,0.1781,0.5723,0.2496,negative,rule4_default,negative,-0.3942,True,1,negative
+23,안전위주의 업무 추진사항 공유,0.4165,0.0864,0.4971,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+22,다양한 업무 경험 및 노하우,0.4795,0.0336,0.4869,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+21,동료 및 상하간 화합분위기 조성,0.2894,0.0632,0.6475,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+20,구성원들의 자발적 참여를 유도함,0.2924,0.0544,0.6532,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+19,"비전과 정책을 명확히 제시, 수평적 업무지시",0.2697,0.181,0.5493,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+17,목표를 위한 구체적인 전략을 제시함,0.2273,0.0532,0.7196,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+18,목표를 위한 구체적 전략 제시,0.2307,0.1319,0.6374,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+16,업무열의가 있음,0.1304,0.681,0.1886,negative,rule4_default,negative,-0.5506,True,1,negative
+15,업무에 관심이 많음,0.3859,0.2718,0.3424,positive,rule3_last_low,negative,-0.6577,True,1,negative
+14,부하 직원들과 양방향 소통을 한다,0.3023,0.0403,0.6574,neutral,neutral_dominant,neutral,0.0,True,2,neutral
+12,지속적인 학습과 자기개발에 힘씀,0.4697,0.0344,0.496,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+13,세부적인 검토를 통해 업무방향을 명확하게 제시하여 사업 진행이 원활하도록 함,0.41,0.0815,0.5084,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+11,업무 문제 해결에 전문지식을 가지고 접근한다,0.4503,0.0329,0.5168,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+10,보일러에 대한 전문성,0.4684,0.2737,0.2579,positive,rule3_last_low,negative,-0.7421,True,1,negative
+9,온화함 갈등 없음,0.0631,0.8554,0.0815,negative,rule4_default,negative,-0.7923,True,1,negative
+8,발상의 전환을 통해 대안을 제시한다,0.3936,0.0747,0.5318,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+7,원전 수출 분야에 누적된 업무 경험,0.3613,0.13,0.5087,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+6,발전사업에 발생하는 다양한 문제점 해결을 위해 전문지식을 갖춤,0.4115,0.0434,0.5451,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+5,"전무, 처장 회의만 참석",0.0622,0.4644,0.4734,neutral,neutral_dominant,neutral,0.0,True,1,neutral
+4,기술에 대한 이해능력,0.1597,0.6255,0.2147,negative,rule4_default,negative,-0.4658,True,1,negative
+3,업무열의가 있습니다,0.1826,0.4786,0.3388,negative,rule4_default,negative,-0.296,True,1,negative
+2,업무에 대한 전문성,0.4018,0.4012,0.197,positive,rule3_last_low,negative,-0.803,True,1,negative
+1,조직의 목표 달성을 위해 복표를 명확히 제시하고 자발적 참여를 이끌어 냄,0.3621,0.0389,0.5989,neutral,neutral_dominant,neutral,0.0,True,1,neutral

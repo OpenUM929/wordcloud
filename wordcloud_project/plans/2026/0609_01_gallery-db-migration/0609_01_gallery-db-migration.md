@@ -1,6 +1,6 @@
-# 0609_01_gallery-db-migration — deploy_manifest.json → SQLite 전환 계획서
+﻿# 0609_01_gallery-db-migration — deploy_manifest.json → SQLite 전환 계획서
 
-> 상태: DN | 작성일: 2026-06-09 | 완료일: 2026-06-09
+> 상태: Done | 작성일: 2026-06-09 | 완료일: 2026-06-09
 
 ---
 

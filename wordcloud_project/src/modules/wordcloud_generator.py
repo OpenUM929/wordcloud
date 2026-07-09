@@ -301,7 +301,7 @@ class WordCloudGenerator:
                 self.logger.error("단어 빈도 정보가 없습니다.")
                 return False
 
-            random.seed(42)
+            rng = random.Random(42)  # 호출 지역 RNG — 스레드 간 상태 공유 없음(병렬 저장 안전)
 
             sorted_words = sorted(processed_word_freq.items(), key=lambda x: x[1], reverse=True)
             sorted_words = sorted_words[:max_words]
@@ -358,19 +358,28 @@ class WordCloudGenerator:
             margin = 3
             placed = 0
 
+            dummy_draw = ImageDraw.Draw(Image.new('L', (1, 1)))  # 루프 밖 1회 생성(작업2-b)
+            font_cache = {}  # 폰트 크기별 ImageFont 재사용(작업2-c)
+
+            def _get_font(font_size):
+                cached = font_cache.get(font_size)
+                if cached is None:
+                    try:
+                        cached = ImageFont.truetype(font_path, font_size)
+                    except Exception:
+                        cached = ImageFont.load_default()
+                    font_cache[font_size] = cached
+                return cached
+
             for word, freq in sorted_words:
                 font_size = get_font_size(freq)
-                try:
-                    font = ImageFont.truetype(font_path, font_size)
-                except Exception:
-                    font = ImageFont.load_default()
+                font = _get_font(font_size)
 
-                dummy_draw = ImageDraw.Draw(Image.new('L', (1, 1)))
                 bbox = dummy_draw.textbbox((0, 0), word, font=font)
                 tw = bbox[2] - bbox[0] + margin * 2
                 th = bbox[3] - bbox[1] + margin * 2
 
-                start_angle = random.uniform(0, 2 * math.pi)
+                start_angle = rng.uniform(0, 2 * math.pi)
                 placed_this = False
 
                 for sx, sy in spiral_positions(cx, cy, start_angle):
@@ -381,7 +390,7 @@ class WordCloudGenerator:
                     if x1 < 0 or y1 < 0 or x2 > width or y2 > height:
                         continue
                     region = img_grey.crop((x1, y1, x2, y2))
-                    if max(region.getdata()) == 0:
+                    if region.getextrema()[1] == 0:  # 영역 픽셀 최댓값 0 == 충돌 없음(C레벨, GIL 해제)
                         draw_grey.text(
                             (x1 + margin - bbox[0], y1 + margin - bbox[1]),
                             word, font=font, fill=255

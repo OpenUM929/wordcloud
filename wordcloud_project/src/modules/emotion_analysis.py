@@ -3,9 +3,12 @@
 
 import json
 import os
+import threading
+import torch
 from typing import Dict, Any, Optional
 from transformers import pipeline
 from utils.logger import setup_logger, get_log_file_path, get_timestamp
+from src.modules.kote_shared import KoTEModel
 
 class EmotionAnalysis:
     """감정 분석 모듈"""
@@ -36,7 +39,7 @@ class EmotionAnalysis:
 
         # 파인튜닝된 모델
         if self.config["model"]["use_fine_tuned"]:
-            ft_path = os.path.join(project_root, self.config["model"]["fine_tuned_path"])
+            ft_path = os.path.abspath(os.path.join(project_root, self.config["model"]["fine_tuned_path"]))
             if os.path.exists(ft_path):
                 try:
                     self.classifiers["fine_tuned"] = pipeline(
@@ -47,29 +50,17 @@ class EmotionAnalysis:
                 except Exception as e:
                     self.logger.error(f"파인튜닝 모델 로드 실패: {e}")
 
-        # 기본 모델
-        base_path = os.path.join(project_root, self.config["model"]["base_path"])
-        self.logger.info(f"기본 모델 경로 확인: {base_path}, 존재: {os.path.exists(base_path)}")
-        if os.path.exists(base_path):
-            try:
-                self.logger.info(f"{os.path.basename(base_path)} 모델 로드 시작...")
-                # 로컬 모델 로드 (분류 헤드 추가)
-                from transformers import AutoModelForSequenceClassification, AutoTokenizer
-                self.logger.info("AutoModelForSequenceClassification 로드 중...")
-                # num_labels 미지정: 모델 체크포인트의 config에서 자동으로 읽음.
-                # 명시하면 저장된 헤드와 크기가 다를 때 무작위 재초기화 위험이 있음.
-                model = AutoModelForSequenceClassification.from_pretrained(base_path)
-                self.logger.info("AutoTokenizer 로드 중...")
-                tokenizer = AutoTokenizer.from_pretrained(base_path)
-
-                self.logger.info("Pipeline 생성 중...")
-                # pipeline 대신 직접 모델 호출로 모든 score 얻기
-                self.classifiers["base"] = (model, tokenizer)
-                self.logger.info(f"로컬 {os.path.basename(base_path)} 모델 로드 완료")
-            except Exception as e:
-                self.logger.error(f"기본 모델 로드 실패: {e}")
-                import traceback
-                self.logger.error(f"상세 오류: {traceback.format_exc()}")
+        # 기본 모델 (leadership_analysis와 GPU 인스턴스 공유 — 중복 로드 시 VRAM 한도 초과)
+        try:
+            self.logger.info("공유 KoTE 모델(KoTEModel) 로드 중...")
+            shared = KoTEModel()
+            # pipeline 대신 직접 모델 호출로 모든 score 얻기
+            self.classifiers["base"] = (shared.model, shared.tokenizer)
+            self.logger.info(f"공유 KoTE 모델 로드 완료 (device={shared.device})")
+        except Exception as e:
+            self.logger.error(f"기본 모델 로드 실패: {e}")
+            import traceback
+            self.logger.error(f"상세 오류: {traceback.format_exc()}")
 
         if not self.classifiers:
             raise RuntimeError("사용 가능한 모델이 없습니다.")
@@ -78,6 +69,131 @@ class EmotionAnalysis:
         """설정 파일 로드"""
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
+
+    def _postprocess_predictions(self, predictions) -> Dict[str, Any]:
+        """예측 결과(label/score 리스트) 후처리: top_3, 레이블 매핑, 감성 점수 집계.
+
+        analyze()(단일)와 analyze_batch()(배치) 양쪽에서 공유 — 두 경로의 결과가
+        항상 동일한 로직으로 계산되도록 보장(배치화로 인한 결과 오차 방지).
+        """
+        top_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:3]
+        prediction = top_predictions[0]
+
+        # 레이블 매핑
+        label_id = prediction.get("label", "")
+
+        mapped_label = "알 수 없음"
+        if label_id in self.config["labels"]:
+            # 설정 파일에 직접 정의된 레이블인 경우
+            mapped_label = self.config["labels"][label_id]
+        elif label_id.startswith("LABEL_"):
+            # LABEL_0, LABEL_1, LABEL_2 형식
+            numeric_label = int(label_id.split("_")[1])
+            mapped_label = self.config["labels"].get(str(numeric_label), "알 수 없음")
+        else:
+            # 감정 이름이 직접 오는 경우 (model config의 label2id처럼)
+            for key, value in self.config["labels"].items():
+                if value == label_id:
+                    mapped_label = label_id
+                    break
+
+        # 긍정/부정/중립 확률 합산
+        positive_score = 0.0
+        negative_score = 0.0
+        neutral_score = 0.0
+
+        for p in predictions:
+            p_label_id = p['label']
+            p_score = p['score']
+
+            p_sentiment = 2
+            if p_label_id.startswith("LABEL_"):
+                p_numeric_label = int(p_label_id.split("_")[1])
+                p_sentiment = self.config["emotion_to_sentiment"].get(str(p_numeric_label), 2)
+            else:
+                p_numeric_label = None
+                for key, value in self.config["labels"].items():
+                    if value == p_label_id:
+                        p_numeric_label = key
+                        break
+                if p_numeric_label:
+                    p_sentiment = self.config["emotion_to_sentiment"].get(p_numeric_label, 2)
+
+            if p_sentiment == 0:
+                positive_score += p_score
+            elif p_sentiment == 1:
+                negative_score += p_score
+            else:
+                neutral_score += p_score
+
+        # 최종 감성 결정
+        final_sentiment = 2
+        if positive_score > negative_score and positive_score > neutral_score:
+            final_sentiment = 0
+        elif negative_score > positive_score and negative_score > neutral_score:
+            final_sentiment = 1
+
+        final_sentiment_str = "중립"
+        if final_sentiment == 0:
+            final_sentiment_str = "긍정"
+        elif final_sentiment == 1:
+            final_sentiment_str = "부정"
+
+        # 상위 3개 예측 결과 매핑
+        mapped_top_predictions = []
+        for p in top_predictions:
+            p_label_id = p['label']
+            p_mapped_label = "알 수 없음"
+            if p_label_id in self.config["labels"]:
+                p_mapped_label = self.config["labels"][p_label_id]
+            elif p_label_id.startswith("LABEL_"):
+                p_numeric_label = int(p_label_id.split("_")[1])
+                p_mapped_label = self.config["labels"].get(str(p_numeric_label), "알 수 없음")
+            else:
+                for key, value in self.config["labels"].items():
+                    if value == p_label_id:
+                        p_mapped_label = p_label_id
+                        break
+
+            p_sentiment = 2
+            if p_label_id.startswith("LABEL_"):
+                p_numeric_label = int(p_label_id.split("_")[1])
+                p_sentiment = self.config["emotion_to_sentiment"].get(str(p_numeric_label), 2)
+            else:
+                p_numeric_label = None
+                for key, value in self.config["labels"].items():
+                    if value == p_label_id:
+                        p_numeric_label = key
+                        break
+                if p_numeric_label:
+                    p_sentiment = self.config["emotion_to_sentiment"].get(p_numeric_label, 2)
+
+            p_sentiment_str = "중립"
+            if p_sentiment == 0:
+                p_sentiment_str = "긍정"
+            elif p_sentiment == 1:
+                p_sentiment_str = "부정"
+
+            mapped_top_predictions.append({
+                "label": p_mapped_label,
+                "sentiment": p_sentiment_str,
+                "confidence": round(p['score'], 4)
+            })
+
+        return {
+            "raw": prediction,
+            "mapped": {
+                "label": mapped_label,
+                "sentiment": final_sentiment_str,
+                "confidence": prediction.get("score", 0.0),
+                "top_3": mapped_top_predictions,
+                "sentiment_scores": {
+                    "positive": round(positive_score, 4),
+                    "negative": round(negative_score, 4),
+                    "neutral": round(neutral_score, 4)
+                }
+            }
+        }
 
     def analyze(self, text: str, output_path: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -104,181 +220,25 @@ class EmotionAnalysis:
                     # 직접 모델 호출로 모든 score 얻기
                     model, tokenizer = classifier
                     inputs = tokenizer(text, return_tensors="pt")
-                    outputs = model(**inputs)
+                    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+                    with torch.no_grad():
+                        outputs = model(**inputs)
                     logits = outputs.logits[0]
+                    if logits.is_cuda:
+                        logits = logits.cpu()
                     scores = logits.softmax(dim=0).tolist()
-                    
+
                     # id2label 매핑 (모델 config에서 가져오기)
                     id2label = model.config.id2label
-                    
-                    # predictions 생성
-                    predictions = []
-                    for i, score in enumerate(scores):
-                        label = id2label[i]
-                        predictions.append({"label": label, "score": score})
-                    
-                    self.logger.info(f"{model_name} 모델 예측 완료")
+                    predictions = [{"label": id2label[i], "score": score} for i, score in enumerate(scores)]
                 else:
                     # 파인튜닝 모델은 pipeline 사용
                     predictions = classifier(text)
-                    self.logger.info(f"{model_name} 모델 예측 완료")
                     if isinstance(predictions[0], list):
                         predictions = predictions[0]
-                
-                # 상위 3개 예측 결과 출력
-                top_predictions = sorted(predictions, key=lambda x: x['score'], reverse=True)[:3]
-                self.logger.info(f"상위 3개 예측 결과: {[(p['label'], round(p['score'], 4)) for p in top_predictions]}")
-                
-                prediction = top_predictions[0]
 
-                # 레이블 매핑
-                label_id = prediction.get("label", "")
-                self.logger.info(f"Raw label ID: {label_id}")  # 디버그용 로그
-                
-                mapped_label = "알 수 없음"
-                if label_id in self.config["labels"]:
-                    # 설정 파일에 직접 정의된 레이블인 경우
-                    mapped_label = self.config["labels"][label_id]
-                elif label_id.startswith("LABEL_"):
-                    # LABEL_0, LABEL_1, LABEL_2 형식
-                    numeric_label = int(label_id.split("_")[1])
-                    mapped_label = self.config["labels"].get(str(numeric_label), "알 수 없음")
-                else:
-                    # 감정 이름이 직접 오는 경우 (model config의 label2id처럼)
-                    # config의 labels에서 값이 label_id인 키 찾기
-                    for key, value in self.config["labels"].items():
-                        if value == label_id:
-                            mapped_label = label_id
-                            break
-                
-                self.logger.info(f"Mapped label: {mapped_label}")  # 디버그용 로그
-
-                # 감성 분류 (0: 긍정, 1: 부정, 2: 중립)
-                if label_id.startswith("LABEL_"):
-                    numeric_label = int(label_id.split("_")[1])
-                    sentiment = self.config["emotion_to_sentiment"].get(str(numeric_label), 2)
-                else:
-                    # label_id가 감정 이름인 경우, config의 labels에서 해당 이름에 대한 키 찾기
-                    numeric_label = None
-                    for key, value in self.config["labels"].items():
-                        if value == label_id:
-                            numeric_label = key
-                            break
-                    if numeric_label:
-                        sentiment = self.config["emotion_to_sentiment"].get(numeric_label, 2)
-                    else:
-                        sentiment = 2  # 기본값: 중립
-
-                # 감성 문자열로 변환
-                sentiment_str = "중립"
-                if sentiment == 0:
-                    sentiment_str = "긍정"
-                elif sentiment == 1:
-                    sentiment_str = "부정"
-
-                # 긍정/부정/중립 확률 합산
-                positive_score = 0.0
-                negative_score = 0.0
-                neutral_score = 0.0
-                
-                for p in predictions:
-                    p_label_id = p['label']
-                    p_score = p['score']
-                    
-                    # 감성 분류
-                    p_sentiment = 2
-                    if p_label_id.startswith("LABEL_"):
-                        p_numeric_label = int(p_label_id.split("_")[1])
-                        p_sentiment = self.config["emotion_to_sentiment"].get(str(p_numeric_label), 2)
-                    else:
-                        p_numeric_label = None
-                        for key, value in self.config["labels"].items():
-                            if value == p_label_id:
-                                p_numeric_label = key
-                                break
-                        if p_numeric_label:
-                            p_sentiment = self.config["emotion_to_sentiment"].get(p_numeric_label, 2)
-                    
-                    if p_sentiment == 0:
-                        positive_score += p_score
-                    elif p_sentiment == 1:
-                        negative_score += p_score
-                    else:
-                        neutral_score += p_score
-                
-                self.logger.info(f"긍정: {round(positive_score, 4)}, 부정: {round(negative_score, 4)}, 중립: {round(neutral_score, 4)}")
-                
-                # 최종 감성 결정
-                final_sentiment = 2
-                if positive_score > negative_score and positive_score > neutral_score:
-                    final_sentiment = 0
-                elif negative_score > positive_score and negative_score > neutral_score:
-                    final_sentiment = 1
-                
-                final_sentiment_str = "중립"
-                if final_sentiment == 0:
-                    final_sentiment_str = "긍정"
-                elif final_sentiment == 1:
-                    final_sentiment_str = "부정"
-                
-                # 상위 3개 예측 결과 매핑
-                mapped_top_predictions = []
-                for p in top_predictions:
-                    p_label_id = p['label']
-                    p_mapped_label = "알 수 없음"
-                    if p_label_id in self.config["labels"]:
-                        p_mapped_label = self.config["labels"][p_label_id]
-                    elif p_label_id.startswith("LABEL_"):
-                        p_numeric_label = int(p_label_id.split("_")[1])
-                        p_mapped_label = self.config["labels"].get(str(p_numeric_label), "알 수 없음")
-                    else:
-                        for key, value in self.config["labels"].items():
-                            if value == p_label_id:
-                                p_mapped_label = p_label_id
-                                break
-                    
-                    # 감성 분류
-                    p_sentiment = 2
-                    if p_label_id.startswith("LABEL_"):
-                        p_numeric_label = int(p_label_id.split("_")[1])
-                        p_sentiment = self.config["emotion_to_sentiment"].get(str(p_numeric_label), 2)
-                    else:
-                        p_numeric_label = None
-                        for key, value in self.config["labels"].items():
-                            if value == p_label_id:
-                                p_numeric_label = key
-                                break
-                        if p_numeric_label:
-                            p_sentiment = self.config["emotion_to_sentiment"].get(p_numeric_label, 2)
-                    
-                    p_sentiment_str = "중립"
-                    if p_sentiment == 0:
-                        p_sentiment_str = "긍정"
-                    elif p_sentiment == 1:
-                        p_sentiment_str = "부정"
-                    
-                    mapped_top_predictions.append({
-                        "label": p_mapped_label,
-                        "sentiment": p_sentiment_str,
-                        "confidence": round(p['score'], 4)
-                    })
-
-                results["analysis"][f"{model_name}_result"] = {
-                    "raw": prediction,
-                    "mapped": {
-                        "label": mapped_label,
-                        "sentiment": final_sentiment_str,
-                        "confidence": prediction.get("score", 0.0),
-                        "top_3": mapped_top_predictions,
-                        "sentiment_scores": {
-                            "positive": round(positive_score, 4),
-                            "negative": round(negative_score, 4),
-                            "neutral": round(neutral_score, 4)
-                        }
-                    }
-                }
-
-                self.logger.info(f"{model_name} 모델 분석 완료: {mapped_label}")
+                results["analysis"][f"{model_name}_result"] = self._postprocess_predictions(predictions)
+                self.logger.info(f"{model_name} 모델 분석 완료")
             except Exception as e:
                 results["analysis"][f"{model_name}_result"] = {"error": str(e)}
                 self.logger.error(f"{model_name} 모델 분석 실패: {e}")
@@ -293,8 +253,46 @@ class EmotionAnalysis:
         self.logger.info("감정 분석 완료")
         return results
 
+    def analyze_batch(self, texts: list) -> list:
+        """다건 텍스트 배치 추론 ('base' 분류기만 대상).
+
+        sentence_emotion.py처럼 문장 단위로 동일 모델을 반복 호출하던 곳에서
+        텍스트를 모아 1회 forward pass로 처리 — GPU 커널 launch 오버헤드 절감.
+        파인튜닝 모델(use_fine_tuned)은 현재 비활성 상태라 배치 대상에서 제외.
+
+        Args:
+            texts: 분석할 텍스트 리스트
+
+        Returns:
+            list[dict]: 각 항목은 analyze()의 단일 반환값과 동일한 구조
+                        ({"input_text": ..., "analysis": {"base_result": {...}}})
+        """
+        if "base" not in self.classifiers:
+            raise RuntimeError("base 분류기가 로드되지 않았습니다.")
+        model, tokenizer = self.classifiers["base"]
+
+        inputs = tokenizer(texts, return_tensors="pt", truncation=True, padding=True, max_length=512)
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        with torch.no_grad():
+            outputs = model(**inputs)
+        logits = outputs.logits
+        if logits.is_cuda:
+            logits = logits.cpu()
+        scores_batch = logits.softmax(dim=1).tolist()
+        id2label = model.config.id2label
+
+        batch_results = []
+        for text, scores in zip(texts, scores_batch):
+            predictions = [{"label": id2label[i], "score": score} for i, score in enumerate(scores)]
+            batch_results.append({
+                "input_text": text,
+                "analysis": {"base_result": self._postprocess_predictions(predictions)}
+            })
+        return batch_results
+
 # 싱글톤 인스턴스 저장
 _emotion_analyzer_instance = None
+_emotion_analyzer_lock = threading.Lock()
 
 def analyze_emotion(text: str, config_path: Optional[str] = None,
                    output_path: Optional[str] = None) -> Dict[str, Any]:
@@ -316,5 +314,30 @@ def analyze_emotion(text: str, config_path: Optional[str] = None,
         config_path = EMOTION_CONFIG_PATH
 
     if _emotion_analyzer_instance is None:
-        _emotion_analyzer_instance = EmotionAnalysis(config_path)
+        with _emotion_analyzer_lock:
+            if _emotion_analyzer_instance is None:
+                _emotion_analyzer_instance = EmotionAnalysis(config_path)
     return _emotion_analyzer_instance.analyze(text, output_path)
+
+
+def analyze_emotion_batch(texts: list, config_path: Optional[str] = None) -> list:
+    """
+    편의 함수: 다건 텍스트 배치 감정 분석 (예: 문장 단위 반복 호출 대체)
+
+    Args:
+        texts: 분석할 텍스트 리스트
+        config_path: 설정 파일 경로 (None이면 기본 경로 사용)
+
+    Returns:
+        list[dict]: analyze_emotion()의 단일 반환값과 동일한 구조의 리스트
+    """
+    global _emotion_analyzer_instance
+    if config_path is None:
+        from src.config.settings import EMOTION_CONFIG_PATH
+        config_path = EMOTION_CONFIG_PATH
+
+    if _emotion_analyzer_instance is None:
+        with _emotion_analyzer_lock:
+            if _emotion_analyzer_instance is None:
+                _emotion_analyzer_instance = EmotionAnalysis(config_path)
+    return _emotion_analyzer_instance.analyze_batch(texts)

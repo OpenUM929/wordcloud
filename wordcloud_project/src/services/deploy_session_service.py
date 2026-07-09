@@ -92,6 +92,34 @@ def _init_db():
             CREATE INDEX IF NOT EXISTS idx_ev_evaluator ON evaluations (evaluator_id);
             CREATE UNIQUE INDEX IF NOT EXISTS idx_ev_fp ON evaluations (employee_id, fingerprint);
 
+            -- batch_work_orders (배치 작업서: 설정 스냅샷 + 진행상황 영구 보존 → Resume 지원)
+            CREATE TABLE IF NOT EXISTS batch_work_orders (
+                id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+                batch_id             TEXT UNIQUE NOT NULL,
+                batch_dir            TEXT NOT NULL,
+                status               TEXT NOT NULL DEFAULT 'running',
+                settings             TEXT NOT NULL,
+                file_info            TEXT NOT NULL,
+                total_employees      INTEGER DEFAULT 0,
+                processed_employees  INTEGER DEFAULT 0,
+                success_count        INTEGER DEFAULT 0,
+                error_count          INTEGER DEFAULT 0,
+                total_rows           INTEGER DEFAULT 0,
+                completed_employees  TEXT DEFAULT '[]',
+                created_at           TEXT DEFAULT (datetime('now','localtime')),
+                updated_at           TEXT DEFAULT (datetime('now','localtime')),
+                completed_at         TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_wo_status ON batch_work_orders (status);
+            CREATE INDEX IF NOT EXISTS idx_wo_created ON batch_work_orders (created_at DESC);
+
+            -- batch_work_order_items (작업서별 완료 직원 목록 — 1직원 1행, 대용량 O(델타) append)
+            CREATE TABLE IF NOT EXISTS batch_work_order_items (
+                batch_id    TEXT NOT NULL,
+                employee_id TEXT NOT NULL,
+                PRIMARY KEY (batch_id, employee_id)
+            );
+
             -- 스키마 버전 관리
             CREATE TABLE IF NOT EXISTS schema_version (
                 version    INTEGER PRIMARY KEY,
@@ -187,6 +215,81 @@ def _apply_schema_migrations():
             )
             conn.commit()
             print("[DB] Schema v5: acquired_sentences 테이블 추가 완료")
+            current = 5
+
+        if current < 6:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS profanity_employees (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    batch_id        TEXT NOT NULL,
+                    employee_id     TEXT NOT NULL,
+                    profanity_count INTEGER NOT NULL,
+                    profanity_words TEXT,
+                    created_at      TEXT DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_pe_batch ON profanity_employees (batch_id);
+                CREATE INDEX IF NOT EXISTS idx_pe_employee ON profanity_employees (employee_id);
+
+                CREATE TABLE IF NOT EXISTS profanity_sentences (
+                    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                    profanity_employee_id INTEGER NOT NULL,
+                    original_text       TEXT,
+                    filtered_text       TEXT,
+                    detected_words      TEXT,
+                    evaluator_id        TEXT,
+                    FOREIGN KEY (profanity_employee_id) REFERENCES profanity_employees(id) ON DELETE CASCADE
+                );
+            """)
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (6, datetime('now'), ?)",
+                ('add profanity_employees and profanity_sentences tables for profanity tracking',)
+            )
+            conn.commit()
+            print("[DB] Schema v6: profanity_employees, profanity_sentences 테이블 추가 완료")
+            current = 6
+
+        if current < 7:
+            # acquired_sentences에 분류 시점 KoTE 값 + 출처 구분 컬럼 추가 (additive, CHECK 재빌드 없음)
+            for ddl in (
+                "ALTER TABLE acquired_sentences ADD COLUMN kote_pos       REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN kote_neg       REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN kote_neutral   REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN override_score REAL",
+                "ALTER TABLE acquired_sentences ADD COLUMN source_kind    TEXT DEFAULT ''",
+            ):
+                try:
+                    conn.execute(ddl)
+                except sqlite3.OperationalError as e:
+                    # 컬럼이 이미 존재하면 무시 (재실행 안전)
+                    if 'duplicate column name' not in str(e).lower():
+                        raise
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (7, datetime('now'), ?)",
+                ('add kote_pos/neg/neutral, override_score, source_kind to acquired_sentences',)
+            )
+            conn.commit()
+            print("[DB] Schema v7: acquired_sentences KoTE 값·source_kind 컬럼 추가 완료")
+            current = 7
+    finally:
+        conn.close()
+
+
+def _cleanup_stale_running_orders():
+    """서버 기동 시 running 상태의 작업서를 interrupted로 전환 (좀비 배치 정리).
+    
+    서버가 강제 종료되면 백그라운드 배치 스레드도 함께 죽지만
+    DB의 status='running'은 그대로 남는다. 서버 기동 시점에 이들을
+    'interrupted'로 표시하여 사용자가 Resume할 수 있게 한다.
+    """
+    conn = _get_conn()
+    try:
+        conn.execute("""
+            UPDATE batch_work_orders
+            SET status = 'interrupted',
+                updated_at = datetime('now','localtime')
+            WHERE status = 'running'
+        """)
+        conn.commit()
     finally:
         conn.close()
 
@@ -243,6 +346,7 @@ def _auto_migrate_evaluations():
 
 _init_db()
 _apply_schema_migrations()
+_cleanup_stale_running_orders()
 _auto_migrate_manifest()
 
 

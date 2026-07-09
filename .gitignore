@@ -41,3 +41,36 @@ model/
 
 # Vendor Python packages (offline pip install packages)
 wordcloud_project/vendor_python_pkgs/
+
+# Deployment build output
+wordcloud-internal/
+wordcloud-internal-test/
+
+# Backup archives / temp
+wordcloud-project.zip
+wordcloud-source/
+wordcloud-backup-*/
+wordcloud_project/failed/
+*.bak
+
+# Flask runtime output
+wordcloud_project/flask_out.txt
+wordcloud_project/flask_err.txt
+
+# Data files
+data/
+
+# Daily notes
+2606*.txt
+
+# Batch output files
+wordcloud_project/batch_*.jsonl
+
+# Large dataset export files (>100MB, exceeds GitHub limit)
+wordcloud_project/plans/_datasets/kote_finetune/emotion/weak_export_*.jsonl
+
+# Backup / test / mockup
+wordcloud_project/default/
+wordcloud_project/default.zip
+wordcloud_project/web/templates/mockup/
+wordcloud_project/web/templates/*.backup

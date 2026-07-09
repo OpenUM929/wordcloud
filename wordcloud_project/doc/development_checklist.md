@@ -21,11 +21,11 @@
    - [ ] test_web_api.py → tests/api/
    - [ ] test_wordcloud_endpoints.py → tests/api/
 
-3. **메타데이터 테스트**
+3. **통합데이터 테스트**
    - [ ] test_metadata_read.py → tests/metadata/
-   - [ ] test_tmeta_file.py → tests/metadata/
-   - [ ] tests/test_metadata_analysis.py → tests/metadata/
-   - [ ] tests/test_metadata_manager.py → tests/metadata/
+   - [ ] test_tdata_file.py → tests/metadata/
+   - [ ] tests/test_integrated_analysis.py → tests/metadata/
+   - [ ] tests/test_integrated_data_manager.py → tests/metadata/
 
 4. **배치 처리 테스트**
    - [ ] test_batch_dir.py → tests/batch/
@@ -73,8 +73,8 @@
    - [ ] src/web/ 폴더 생성 (웹 앱)
 
 2. **기존 파일 이동**
-   - [ ] modules/metadata_analysis.py → src/core/
-   - [ ] modules/metadata_manager.py → src/core/
+   - [ ] modules/integrated_analysis.py → src/core/
+   - [ ] modules/integrated_data_manager.py → src/core/
    - [ ] modules/nlp_analysis.py → src/core/
    - [ ] modules/wordcloud_generator.py → src/core/
    - [ ] modules/sarcasm_analysis.py → src/core/
@@ -84,13 +84,13 @@
    - [ ] utils/logger.py → src/utils/
 
 3. **새 서비스 모듈 생성**
-   - [ ] src/services/metadata_service.py 생성
+   - [ ] src/services/integrated_data_service.py 생성
    - [ ] src/services/batch_service.py 생성
    - [ ] src/services/wordcloud_service.py 생성
    - [ ] src/services/analysis_service.py 생성
 
 4. **새 라우터 모듈 생성**
-   - [ ] src/routes/metadata_routes.py 생성 (Blueprint)
+   - [ ] src/routes/integrated_data_routes.py 생성 (Blueprint)
    - [ ] src/routes/batch_routes.py 생성 (Blueprint)
    - [ ] src/routes/wordcloud_routes.py 생성 (Blueprint)
    - [ ] src/routes/analysis_routes.py 생성 (Blueprint)
@@ -121,7 +121,7 @@
    - [ ] 서비스 인스턴스 생성
 
 2. **Blueprint 라우터 등록**
-   - [ ] metadata_routes 블루프린트 등록
+   - [ ] integrated_data_routes 블루프린트 등록
    - [ ] batch_routes 블루프린트 등록
    - [ ] wordcloud_routes 블루프린트 등록
    - [ ] analysis_routes 블루프린트 등록

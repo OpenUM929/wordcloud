@@ -122,9 +122,9 @@
         cursor: not-allowed;
     }
     .pagination-bar button.active {
-        background: #007bff;
+        background: #6366f1;
         color: white;
-        border-color: #007bff;
+        border-color: #6366f1;
     }
     .pagination-bar .page-info {
         font-size: 13px;
@@ -298,7 +298,7 @@
         padding: 2px 6px; border-radius: 10px;
         pointer-events: none;
     }
-    .source-badge--deploy { background: #d1ecf1; color: #0c5460; }
+    .source-badge--deploy { background: #ede9fe; color: #6b21a8; }
     .source-badge--matrix { background: #fce8b2; color: #6d4c0a; }
 
     /* 칩 필터 */
@@ -314,7 +314,7 @@
         transition: background 0.15s, color 0.15s;
     }
     .chip:hover:not(:disabled) { background: #e9ecef; }
-    .chip--active   { background: #007bff; color: white; border-color: #007bff; }
+    .chip--active   { background: #6366f1; color: white; border-color: #6366f1; }
     .chip--disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* 모달 탭 바 — 헤더 바로 아래 */
@@ -342,8 +342,8 @@
     }
     .modal-tab:hover:not(.active) { color: #343a40; }
     .modal-tab.active {
-        color: #007bff;
-        border-bottom-color: #007bff;
+        color: #6366f1;
+        border-bottom-color: #6366f1;
     }
 
     /* 필터 영역 */
@@ -457,6 +457,37 @@
         display: none;
     }
     .delete-mode-active .date-group-select-all { display: inline-block; }
+
+    /* ── 선택 모드(삭제/다운로드) 경량 텍스트 행 + 그룹 접기 ── */
+    .date-group-content { display: none; grid-column: 1 / -1; }
+    .date-group-content.open { display: block; }
+    .gallery-card--row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        background: white;
+    }
+    .gallery-card--row:hover { background: #f8f9fa; }
+    .gallery-card--row.selected { background: #fdecea; }
+    .gallery-card--row .row-id { font-weight: 600; color: #333; font-size: 13px; }
+    .gallery-card--row .row-meta { font-size: 12px; color: #6c757d; }
+    .gallery-card--row .row-preview {
+        margin-left: auto; font-size: 12px; color: #2563eb; cursor: pointer;
+    }
+    .gallery-card--row .row-preview:hover { text-decoration: underline; }
+    .date-group-header .arrow {
+        display: none;
+        cursor: pointer;
+        transition: transform 0.2s;
+        font-size: 12px;
+        color: #999;
+        user-select: none;
+    }
+    .delete-mode-active .date-group-header .arrow { display: inline-block; }
+    .date-group-header .arrow.open { transform: rotate(90deg); }
 
     /* ── 삭제 하단 바 ── */
     #deleteBottomBar {
@@ -617,8 +648,8 @@
         transition: background 0.15s, color 0.15s, border-color 0.15s;
         white-space: nowrap;
     }
-    .download-chip:hover { border-color: #007bff; color: #007bff; }
-    .download-chip--active { background: #007bff; color: white; border-color: #007bff; }
+    .download-chip:hover { border-color: #6366f1; color: #6366f1; }
+    .download-chip--active { background: #6366f1; color: white; border-color: #6366f1; }
     .download-chip--disabled { opacity: 0.4; cursor: not-allowed; border-color: #ced4da; color: #adb5bd; }
     .download-select-row {
         flex-basis: 100%;
@@ -1036,7 +1067,8 @@ async function loadGallery(page) {
 function renderGalleryGrid(entries) {
     const grid = document.getElementById('galleryGrid');
     grid.innerHTML = '';
-    grid.classList.toggle('delete-mode-active', deleteMode || downloadMode);
+    const selectMode = deleteMode || downloadMode;
+    grid.classList.toggle('delete-mode-active', selectMode);
 
     // 1차: batch_title 그룹핑
     const batchGroups = {};
@@ -1089,19 +1121,48 @@ function renderGalleryGrid(entries) {
             groupSpan.textContent = `${label} (${dateGroups[dateKey].length}개)`;
 
             header.appendChild(groupCb);
+
+            // 선택 모드: ▶ 접기/펼치기 화살표 (헤더 선택 토글과 역할 분리)
+            //  - 기본 접힘(이미지·DOM 미생성), 펼칠 때만 1회 지연 렌더 → 모드 진입 즉시 종료
+            let groupContent = null;
+            if (selectMode) {
+                groupContent = document.createElement('div');
+                groupContent.className = 'date-group-content';
+
+                const arrowEl = document.createElement('span');
+                arrowEl.className = 'arrow';
+                arrowEl.textContent = '▶';
+                arrowEl.onclick = (e) => {
+                    e.stopPropagation();   // 헤더 onclick(그룹 전체 선택)과 분리
+                    const opening = !groupContent.classList.contains('open');
+                    if (opening && groupContent.children.length === 0) {
+                        dateGroups[dateKey].forEach(item =>
+                            groupContent.appendChild(buildSelectRow(item)));
+                    }
+                    groupContent.classList.toggle('open', opening);
+                    arrowEl.classList.toggle('open', opening);
+                };
+                header.appendChild(arrowEl);
+            }
+
             header.appendChild(groupSpan);
 
             // 선택 모드에서 헤더 행 클릭 → 날짜 그룹 전체 선택 토글
             header.onclick = (e) => {
                 if (!deleteMode && !downloadMode) return;
                 if (e.target.closest('input[type="checkbox"]')) return;
+                if (e.target.closest('.arrow')) return;   // 화살표 클릭은 접기 전용
                 const newState = !groupCb.checked || groupCb.indeterminate;
                 groupCb.checked = newState;
                 groupToggleFn(primaryKey, newState);
             };
             grid.appendChild(header);
 
-            dateGroups[dateKey].forEach(item => grid.appendChild(buildGalleryCard(item)));
+            if (selectMode) {
+                grid.appendChild(groupContent);   // 접힌 상태 (펼칠 때 행 지연 생성)
+            } else {
+                dateGroups[dateKey].forEach(item => grid.appendChild(buildGalleryCard(item)));
+            }
         });
     });
 }
@@ -1137,7 +1198,7 @@ function buildGalleryCard(item) {
             </div>
         </div>
         <div class="card-body">
-            <div class="card-title">${escapeHtml(item.display_title || item.deploy_name || item.employee_id)}</div>
+            <div class="card-title">${escapeHtml((item.deploy_name && item.deploy_name !== item.employee_id) ? `${item.deploy_name} (${item.employee_id})` : (item.employee_id || item.deploy_name || '-'))}</div>
             ${item.batch_title ? `<div class="card-batch-label" style="font-size:11px;color:#666;margin-top:2px;">${escapeHtml(item.batch_title)}</div>` : ''}
             <div class="card-meta">
                 <span>${dateStr}</span>
@@ -1159,6 +1220,46 @@ function buildGalleryCard(item) {
         }
     };
     return card;
+}
+
+// ── 선택 모드(삭제/다운로드) 경량 행 — 이미지 없음, 행 클릭=선택, [미리보기]=상세 모달 ──
+//   선택 로직 호환을 위해 .gallery-card·data-entry-id·.selected 규약을 그대로 유지한다.
+function buildSelectRow(item) {
+    const row = document.createElement('div');
+    row.className = 'gallery-card gallery-card--row';
+    const selectedSet = deleteMode ? selectedEntryIds : selectedDownloadEntryIds;
+    const isSel = selectedSet.has(item.id);
+    if (isSel) row.classList.add('selected');
+    row.dataset.entryId = item.id;
+
+    const dateStr = item.timestamp
+        ? `${item.timestamp.slice(0,4)}-${item.timestamp.slice(4,6)}-${item.timestamp.slice(6,8)} ${item.timestamp.slice(9,11)}:${item.timestamp.slice(11,13)}`
+        : '-';
+    const src = item.source || 'deploy';
+    const srcLabel = src === 'matrix' ? '매트릭스' : '제출용';
+    const idLabel = (item.deploy_name && item.deploy_name !== item.employee_id)
+        ? `${item.deploy_name} (${item.employee_id})`
+        : (item.employee_id || item.deploy_name || '-');
+    const toggleFn = deleteMode ? 'toggleCardSelect' : 'toggleDownloadCardSelect';
+
+    row.innerHTML = `
+        <input type="checkbox" data-entry-id="${escapeHtml(item.id)}"${isSel ? ' checked' : ''}
+               onclick="event.stopPropagation(); ${toggleFn}('${escapeHtml(item.id)}', this.checked)">
+        <span class="row-id">${escapeHtml(idLabel)}</span>
+        <span class="row-meta">${dateStr}</span>
+        <span class="source-badge source-badge--${escapeHtml(src)}" style="position:static;">${srcLabel}</span>
+        <span class="row-preview">미리보기</span>
+    `;
+    row.onclick = () => {
+        const cb = row.querySelector('input[type="checkbox"]');
+        cb.checked = !cb.checked;
+        (deleteMode ? toggleCardSelect : toggleDownloadCardSelect)(item.id, cb.checked);
+    };
+    row.querySelector('.row-preview').onclick = (e) => {
+        e.stopPropagation();   // 행 선택 토글과 분리 — 그 1건만 on-demand 이미지 로드
+        openDetail(item.id, item.employee_id);
+    };
+    return row;
 }
 
 // ── 삭제 모드 ────────────────────────────────────────────────────
@@ -1611,8 +1712,9 @@ async function executeDownload() {
             body: JSON.stringify({ entry_ids: ids, folder_mode: folderMode }),
         });
         if (!res.ok) {
-            const data = await res.json();
-            alert(`다운로드 실패: ${data.error || '알 수 없음'}`);
+            let errMsg = `HTTP ${res.status}`;
+            try { const d = await res.json(); errMsg = d.error || errMsg; } catch { /* HTML 응답 무시 */ }
+            alert(`다운로드 실패: ${errMsg}`);
             return;
         }
         const blob = await res.blob();

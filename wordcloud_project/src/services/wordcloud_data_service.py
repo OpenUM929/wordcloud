@@ -1,9 +1,8 @@
-"""Wordcloud data service - extracts rendering data from employee JSON for SVG animation."""
+"""Wordcloud data service - extracts rendering data from DB for SVG animation."""
 
-import os
 import json
+from collections import Counter
 from datetime import datetime
-from src.config.settings import PROCESSED_DATA_DIR_PATH
 
 EMOTION_COLORS = {
     "강한_긍정": "#64BF91",
@@ -14,6 +13,11 @@ EMOTION_COLORS = {
 }
 
 _STOP_CHARS = set('.,:;!?()[]{}"\'/\\-_*+=#@~`^&%$<>|')
+
+
+def _get_conn():
+    from src.services.user_data_manager import _get_eval_conn
+    return _get_eval_conn()
 
 
 def _score_to_emotion(score: float) -> str:
@@ -48,8 +52,24 @@ def _calc_emotion_from_evaluations(evaluations: list) -> dict:
     avg_pos = sum(pos_scores) / len(pos_scores)
     avg_neg = sum(neg_scores) / len(neg_scores)
     avg_neu = sum(neu_scores) / len(neu_scores) if neu_scores else max(0.0, 1.0 - avg_pos - avg_neg)
-    emotion_score = avg_pos - avg_neg
-    return {'avg_pos': avg_pos, 'avg_neg': avg_neg, 'avg_neu': avg_neu, 'emotion_score': emotion_score}
+    return {'avg_pos': avg_pos, 'avg_neg': avg_neg, 'avg_neu': avg_neu,
+            'emotion_score': avg_pos - avg_neg}
+
+
+def _extract_meaningful_words(ev: dict) -> list:
+    nlp = ev.get('nlp_analysis_results', {})
+    if 'analysis' in nlp and 'meaningful_words' in nlp['analysis']:
+        return nlp['analysis']['meaningful_words']
+    if 'meaningful_words' in nlp:
+        return nlp['meaningful_words']
+    return []
+
+
+def _build_word_frequency(evaluations: list) -> dict:
+    counter = Counter()
+    for ev in evaluations:
+        counter.update(_extract_meaningful_words(ev))
+    return dict(counter)
 
 
 def _filter_words(word_frequency: dict) -> dict:
@@ -64,22 +84,69 @@ def _filter_words(word_frequency: dict) -> dict:
     return result
 
 
+def _load_evaluations(batch_id: str, employee_id: str = None) -> tuple:
+    """DB에서 evaluations 로드. (evaluations_list, emp_info_dict or None, error_str)"""
+    conn = _get_conn()
+    try:
+        if employee_id:
+            rows = conn.execute("""
+                SELECT e.employee_id, e.name, e.department, e.position, ev.data
+                FROM employees e
+                INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+                WHERE ev.batch_id = ? AND e.employee_id = ?
+                ORDER BY ev.id
+            """, (batch_id, employee_id)).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT e.employee_id, e.name, e.department, e.position, ev.data
+                FROM employees e
+                INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+                WHERE ev.batch_id = ?
+                ORDER BY e.employee_id, ev.id
+            """, (batch_id,)).fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        label = f"{batch_id}/{employee_id}" if employee_id else batch_id
+        return None, None, f"데이터 없음: {label}"
+
+    from src.modules.pseudonym_manager import PseudonymManager
+    from src.config.settings import PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD
+    pseudo_mgr = PseudonymManager(PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD)
+
+    emp_info = {}
+    emp_evals = {}
+    for row in rows:
+        eid = row['employee_id']
+        if eid not in emp_info:
+            real_id = pseudo_mgr.get_real_id(eid) if eid else eid
+            real_name = pseudo_mgr.get_real_id(row['name']) if row['name'] else row['name']
+            real_dept = pseudo_mgr.get_real_id(row['department']) if row['department'] else row['department']
+            real_pos = pseudo_mgr.get_real_id(row['position']) if row['position'] else row['position']
+            emp_info[eid] = {
+                'name': real_name or real_id or '',
+                'department': real_dept or '',
+                'position': real_pos or '',
+                'real_employee_id': real_id or eid,
+            }
+            emp_evals[eid] = []
+        if row['data']:
+            emp_evals[eid].append(json.loads(row['data']))
+
+    return emp_evals, emp_info, None
+
+
 def get_employee_wordcloud_data(batch_id: str, employee_id: str) -> tuple:
-    """
-    Returns (data_dict, error_str). error_str is None on success.
-    """
-    tmeta_dir = os.path.join(PROCESSED_DATA_DIR_PATH, "batch", batch_id, "tmeta")
-    emp_file = os.path.join(tmeta_dir, f"employee_{employee_id}.json")
-    if not os.path.exists(emp_file):
-        return None, f"직원 데이터 없음: {employee_id}"
+    """Returns (data_dict, error_str). error_str is None on success."""
+    emp_evals, emp_info, err = _load_evaluations(batch_id, employee_id)
+    if err:
+        return None, err
 
-    with open(emp_file, encoding='utf-8') as f:
-        raw = json.load(f)
+    evaluations = emp_evals.get(employee_id, [])
+    info = emp_info.get(employee_id, {})
 
-    ca = raw.get('consolidated_analysis', {})
-    word_frequency = ca.get('word_frequency', {})
-    evaluations = raw.get('evaluations', [])
-
+    word_frequency = _build_word_frequency(evaluations)
     emotion = _calc_emotion_from_evaluations(evaluations)
     emotion_score = emotion['emotion_score']
     emotion_label = _score_to_emotion(emotion_score)
@@ -115,9 +182,9 @@ def get_employee_wordcloud_data(batch_id: str, employee_id: str) -> tuple:
         "meta": {
             "employee_id": employee_id,
             "batch_id": batch_id,
-            "department": raw.get('target_employee_department', ''),
-            "position": raw.get('target_employee_position', ''),
-            "total_evaluations": raw.get('total_evaluations', len(evaluations)),
+            "department": info.get('department', ''),
+            "position": info.get('position', ''),
+            "total_evaluations": len(evaluations),
             "generated_at": datetime.now().isoformat(),
         },
         "words": words,
@@ -136,46 +203,36 @@ def get_employee_wordcloud_data(batch_id: str, employee_id: str) -> tuple:
 
 
 def get_batch_employee_list(batch_id: str) -> tuple:
-    """
-    Returns (employee_ids list, error_str).
-    """
-    tmeta_dir = os.path.join(PROCESSED_DATA_DIR_PATH, "batch", batch_id, "tmeta")
-    summary_file = os.path.join(tmeta_dir, "batch_summary.json")
-    if not os.path.exists(summary_file):
+    """Returns (employee_ids list, error_str)."""
+    conn = _get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT employee_id FROM evaluations WHERE batch_id = ? ORDER BY employee_id",
+            (batch_id,)
+        ).fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
         return None, f"배치 없음: {batch_id}"
-
-    with open(summary_file, encoding='utf-8') as f:
-        summary = json.load(f)
-
-    employee_ids = summary.get('employee_ids', [])
-    return employee_ids, None
+    return [r['employee_id'] for r in rows], None
 
 
 def get_batch_aggregate_data(batch_id: str) -> tuple:
-    """
-    Aggregates word frequencies across all employees in the batch.
-    Returns (data_dict, error_str).
-    """
-    employee_ids, err = get_batch_employee_list(batch_id)
+    """Aggregates word frequencies across all employees in the batch."""
+    emp_evals, emp_info, err = _load_evaluations(batch_id)
     if err:
         return None, err
 
     combined_freq: dict = {}
     all_pos, all_neg, all_neu = [], [], []
 
-    tmeta_dir = os.path.join(PROCESSED_DATA_DIR_PATH, "batch", batch_id, "tmeta")
-    for emp_id in employee_ids:
-        emp_file = os.path.join(tmeta_dir, f"employee_{emp_id}.json")
-        if not os.path.exists(emp_file):
-            continue
-        with open(emp_file, encoding='utf-8') as f:
-            raw = json.load(f)
-
-        wf = _filter_words(raw.get('consolidated_analysis', {}).get('word_frequency', {}))
+    for eid, evaluations in emp_evals.items():
+        wf = _filter_words(_build_word_frequency(evaluations))
         for word, freq in wf.items():
             combined_freq[word] = combined_freq.get(word, 0) + freq
 
-        emotion = _calc_emotion_from_evaluations(raw.get('evaluations', []))
+        emotion = _calc_emotion_from_evaluations(evaluations)
         all_pos.append(emotion['avg_pos'])
         all_neg.append(emotion['avg_neg'])
         all_neu.append(emotion['avg_neu'])
@@ -204,14 +261,13 @@ def get_batch_aggregate_data(batch_id: str) -> tuple:
         for text, freq in sorted(combined_freq.items(), key=lambda x: -x[1])
     ]
 
-    dominant = "positive" if avg_pos >= avg_neg and avg_pos >= avg_neu else (
-        "negative" if avg_neg >= avg_neu else "neutral"
-    )
+    dominant = ("positive" if avg_pos >= avg_neg and avg_pos >= avg_neu
+                else "negative" if avg_neg >= avg_neu else "neutral")
 
     return {
         "meta": {
             "batch_id": batch_id,
-            "employee_count": len(employee_ids),
+            "employee_count": len(emp_evals),
             "generated_at": datetime.now().isoformat(),
         },
         "words": words,

@@ -9,7 +9,7 @@ from src.services.file_parser import parse_uploaded_file, parse_csv_file, extrac
 from src.services.batch_manager import (
     get_batch_list as get_batch_list_manager,
     delete_batch_directory,
-    get_sample_metadata_from_results
+    get_sample_integrated_data_from_results
 )
 from src.services.batch_events import create_sse_response, create_batch_zip
 from src.services.batch_processor import process_batch
@@ -83,7 +83,7 @@ def upload_batch_file(request_obj, session_obj):
                         common_columns &= set(file_cols)
                     
                     for _, row in df_sample.head(5).iterrows():
-                        row_data = row.to_dict()
+                        row_data = row.replace({float('nan'): None, float('inf'): None, float('-inf'): None}).to_dict()
                         row_data['_source_file'] = os.path.basename(file_path)
                         aggregated_preview.append(row_data)
                 except Exception as e:
@@ -131,25 +131,17 @@ def upload_batch_file(request_obj, session_obj):
             os.makedirs(temp_dir, exist_ok=True)
             
             all_dfs = []
-            for idx, file_path in enumerate(all_files):
+            for file_path in all_files:
                 try:
                     if file_path.endswith('.csv'):
-                        if idx == 0:
-                            df = pd.read_csv(file_path)
-                        else:
-                            df = pd.read_csv(file_path, skiprows=1, header=None)
-                            df.columns = common_columns
+                        df = pd.read_csv(file_path)
                     else:
-                        if idx == 0:
-                            df = pd.read_excel(file_path)
-                        else:
-                            df = pd.read_excel(file_path, skiprows=1, header=None)
-                            df.columns = common_columns
-                    
+                        df = pd.read_excel(file_path)
+
                     missing_cols = set(common_columns) - set(df.columns)
                     for col in missing_cols:
                         df[col] = None
-                    
+
                     df = df[common_columns]
                     all_dfs.append(df)
                 except Exception:
@@ -289,12 +281,28 @@ def _run_batch_process(data, session_data):
     except Exception as e:
         batch_processing_state['status_message'] = f'오류: {str(e)}'
         batch_processing_state['error'] = str(e)
+        # 처리 실패 시 staging.db 잔존 방지 (수백 MB 임시 디스크 회수)
+        sdir = batch_processing_state.pop('_active_staging_dir', None)
+        if sdir:
+            try:
+                from src.services.batch_staging import remove_staging_files
+                remove_staging_files(sdir)
+            except Exception:
+                pass
+        # 전체 배치 중단 → 작업서 failed 처리
+        bid = batch_processing_state.get('batch_id')
+        if bid:
+            try:
+                from src.services.batch_work_order_service import fail_work_order
+                fail_work_order(bid)
+            except Exception:
+                pass
     finally:
         with _batch_lock:
             _batch_busy = False
 
 
-def process_batch_metadata(data, session_obj):
+def process_batch_integrated_data(data, session_obj):
     """Process batch metadata - coordinates the full batch processing.
     
     Returns immediately with {'success': True, 'status': 'started'}
@@ -324,6 +332,8 @@ def process_batch_metadata(data, session_obj):
             del batch_processing_state['error']
         if 'batch_dir' in batch_processing_state:
             del batch_processing_state['batch_dir']
+        if 'batch_id' in batch_processing_state:
+            del batch_processing_state['batch_id']
 
         # Extract plain dict from Flask session to avoid thread-safety issues
         session_data = {
@@ -348,9 +358,64 @@ def process_batch_metadata(data, session_obj):
         return {'error': str(e)}, 500
 
 
-def get_sample_metadata(session_obj):
+def resume_batch_metadata(batch_id, session_obj):
+    """작업서 기반으로 중단된 배치를 이어서 처리한다.
+
+    작업서에서 settings/file_info/completed_employees를 로드하여 data와 session을
+    재구성한 뒤, 기존 process_batch_integrated_data 진입점을 재사용한다(별도 스레드 생성 없음).
+    """
+    import os
+    from src.services.batch_work_order_service import (
+        get_work_order_by_batch_id, get_completed_employee_ids,
+    )
+
+    wo = get_work_order_by_batch_id(batch_id)
+    if not wo:
+        return {'success': False, 'error': '작업서를 찾을 수 없습니다.'}, 404
+    status = wo.get('status')
+    if status == 'completed':
+        return {'success': False, 'error': '이미 완료된 작업입니다.'}, 400
+    if status == 'running':
+        return {'success': False, 'error': '현재 처리 중인 작업입니다. 서버가 재시작된 후 다시 시도해주세요.'}, 400
+
+    try:
+        settings = json.loads(wo.get('settings') or '{}')
+        file_info = json.loads(wo.get('file_info') or '{}')
+        completed_employees = get_completed_employee_ids(batch_id)
+    except Exception:
+        return {'success': False, 'error': '작업서 데이터가 손상되었습니다.'}, 500
+
+    batch_dir = wo.get('batch_dir')
+
+    # CSV 파일 확인: 원본 경로 → batch_dir/original.csv fallback
+    csv_path = file_info.get('csv_file_path')
+    if not csv_path or not os.path.exists(csv_path):
+        fallback = os.path.join(batch_dir, 'original.csv') if batch_dir else None
+        if fallback and os.path.exists(fallback):
+            csv_path = fallback
+        else:
+            return {'success': False, 'error': '원본 파일을 찾을 수 없습니다. 데이터를 다시 업로드해주세요.'}, 400
+
+    # session 재구성 (process_batch_integrated_data가 여기서 session_data를 추출)
+    session_obj['csv_file_path'] = csv_path
+    session_obj['input_type'] = file_info.get('input_type', 'file')
+    session_obj['csv_filename'] = file_info.get('csv_filename')
+    session_obj['csv_rows'] = file_info.get('csv_rows')
+    session_obj['batch_id'] = batch_id
+
+    # data 재구성 (settings 스냅샷 + resume 플래그)
+    data = dict(settings)
+    data['resume'] = True
+    data['batch_id'] = batch_id
+    data['batch_dir'] = batch_dir
+    data['completed_employees'] = completed_employees
+
+    return process_batch_integrated_data(data, session_obj)
+
+
+def get_sample_integrated_data(session_obj):
     """Get sample metadata from batch processing results."""
-    return get_sample_metadata_from_results(
+    return get_sample_integrated_data_from_results(
         None,
         session_obj.get('batch_dir'),
         PROCESSED_DATA_DIR_PATH
@@ -368,6 +433,34 @@ def download_batch_results(session_obj):
 def get_processing_events():
     """Get batch processing events via SSE."""
     return create_sse_response(batch_processing_state)
+
+
+def get_skipped_evaluations(batch_id):
+    """배치 요약(batch_summary.json)에서 중복 미저장 평가 목록을 조회한다.
+
+    on-demand(모달 오픈 시) 호출. 파일/키가 없으면 빈 목록을 반환한다.
+    """
+    import os
+    import json
+
+    if not batch_id:
+        return {'success': False, 'error': 'batch_id가 필요합니다.', 'skipped_count': 0, 'skipped': []}
+
+    summary_path = os.path.join(
+        PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tdata', 'batch_summary.json'
+    )
+    if not os.path.exists(summary_path):
+        return {'success': True, 'skipped_count': 0, 'skipped': []}
+
+    try:
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary = json.load(f)
+    except Exception as e:
+        return {'success': False, 'error': str(e), 'skipped_count': 0, 'skipped': []}
+
+    skipped_count = summary.get('batch_info', {}).get('skipped_count', 0)
+    skipped = summary.get('skipped_evaluations', []) or []
+    return {'success': True, 'skipped_count': skipped_count, 'skipped': skipped}
 
 
 def get_failed_list():

@@ -1,8 +1,9 @@
-# 배치 처리 대용량 최적화 개발 계획
+﻿# 배치 처리 대용량 최적화 개발 계획
 
 > 문서 작성일: 2026-04-21
 > 작업 유형: 리팩토링 (대용량 데이터 처리 최적화)
 > 대상: 150K+ 행 (20,000 직원)
+> 상태: Done(2026-06-18) — 본 로드맵의 목표(모델 싱글톤·직원 단위 병렬·체크포인트·CSV 청크/스트리밍)는 후속 계획서로 실현됨: 싱글톤=`kote_shared.py`·각 모듈 `_instance`, 병렬=`batch_processor` ThreadPoolExecutor([[0617_07_hardware-adaptive-worker-plan]]), 체크포인트=`CHECKPOINT_INTERVAL`, 청크/스트리밍=`batch_staging`([[0615_01_batch-csv-stream]]), WC 병렬=[[0618_03_deploy-wc-parallel]]. (구현 형태는 ProcessPool→ThreadPool, tmeta JSON→staging.db로 변경됨)
 
 ---
 

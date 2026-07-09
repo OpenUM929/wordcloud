@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}통합데이터 생성{% endblock %}
+
+{% block extra_head %}
+<style>
+    input[type="text"], input[type="date"], select {
+        width: 100%;
+        padding: 8px 12px;
+        margin: 5px 0;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    
+    input:focus, select:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+    }
+    
+    textarea {
+        width: 100%;
+        height: 200px;
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    
+    textarea:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .checkbox-group {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: normal;
+        cursor: pointer;
+    }
+    
+    .json-result {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <h1>통합데이터 생성</h1>
+    
+    <div class="wordcloud-options">
+        <h3>통합데이터 입력 정보</h3>
+        <form id="metadataForm">
+            <div class="cards-container">
+                <div class="option-card">
+                    <h4>대상자 정보</h4>
+                    <div class="form-group">
+                        <label for="target_employee_id">대상자 ID:</label>
+                        <input type="text" id="target_employee_id" placeholder="예: EMP_00123" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="target_employee_department">대상자 부서 (선택):</label>
+                        <input type="text" id="target_employee_department" placeholder="예: 개발1팀">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="target_employee_position">대상자 직위 (선택):</label>
+                        <input type="text" id="target_employee_position" placeholder="예: 선임개발자">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="target_hierarchy_level">대상자 계층 레벨 (선택):</label>
+                        <select id="target_hierarchy_level">
+                            <option value="staff">Staff</option>
+                            <option value="manager">Manager</option>
+                            <option value="director">Director</option>
+                            <option value="executive">Executive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="option-card">
+                    <h4>평가자 정보</h4>
+                    <div class="form-group">
+                        <label for="evaluator_id">평가자 ID (선택):</label>
+                        <input type="text" id="evaluator_id" placeholder="예: MGR_00456">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="evaluator_department">평가자 부서 (선택):</label>
+                        <input type="text" id="evaluator_department" placeholder="예: 개발1팀">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="evaluator_position">평가자 직위 (선택):</label>
+                        <input type="text" id="evaluator_position" placeholder="예: 팀장">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="evaluator_hierarchy_level">평가자 계층 레벨 (선택):</label>
+                        <select id="evaluator_hierarchy_level">
+                            <option value="staff">Staff</option>
+                            <option value="manager">Manager</option>
+                            <option value="director">Director</option>
+                            <option value="executive">Executive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="option-card">
+                <h4>평가 정보</h4>
+                <div class="form-group">
+                    <label for="evaluation_document">평가 문서:</label>
+                    <textarea id="evaluation_document" placeholder="평가 문서를 입력하세요." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="evaluation_date">평가 일자 (선택):</label>
+                    <input type="date" id="evaluation_date">
+                </div>
+            </div>
+            
+            <div class="option-card">
+                <h4>데이터 정제 옵션</h4>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="remove_profanity" checked> 욕설 제거</label>
+                    <label><input type="checkbox" id="remove_stop_words" checked> 불용어 제거</label>
+                    <label><input type="checkbox" id="remove_unhealthy" checked> 비건전 단어 제거</label>
+                    <label><input type="checkbox" id="remove_special_chars" checked> 특수문자 제거</label>
+                </div>
+            </div>
+            
+            <button type="submit" class="regenerate-btn">통합데이터 생성</button>
+        </form>
+    </div>
+
+    <div id="results" style="display: none;">
+        <div class="info-section">
+            <h4>생성 결과</h4>
+            <div id="classificationResult"></div>
+        </div>
+        
+        <div id="wordcloudResult" class="info-section" style="display: none;">
+            <h4>워드클라우드</h4>
+            <div style="text-align: center; margin: 20px 0;">
+                <img id="wordcloudImage" src="" alt="워드클라우드 이미지" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h4>통합데이터 JSON</h4>
+            <div id="metadataResult" class="json-result"></div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+        document.getElementById('metadataForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const data = {
+                target_employee_id: document.getElementById('target_employee_id').value,
+                target_employee_department: document.getElementById('target_employee_department').value || 'Unknown',
+                target_employee_position: document.getElementById('target_employee_position').value || 'Unknown',
+                target_hierarchy_level: document.getElementById('target_hierarchy_level').value,
+                evaluation_document: document.getElementById('evaluation_document').value,
+                evaluator_id: document.getElementById('evaluator_id').value || null,
+                evaluator_department: document.getElementById('evaluator_department').value || 'Unknown',
+                evaluator_position: document.getElementById('evaluator_position').value || 'Unknown',
+                evaluator_hierarchy_level: document.getElementById('evaluator_hierarchy_level').value,
+                evaluation_date: document.getElementById('evaluation_date').value || null,
+                remove_profanity: document.getElementById('remove_profanity').checked,
+                remove_stop_words: document.getElementById('remove_stop_words').checked,
+                remove_unhealthy: document.getElementById('remove_unhealthy').checked,
+                remove_special_chars: document.getElementById('remove_special_chars').checked
+            };
+
+            fetch('/generate_metadata', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    alert('오류: ' + result.error);
+                    return;
+                }
+
+                // 분류 결과 표시
+                let classificationHtml = '<h3>분류 결과</h3>';
+                classificationHtml += `<p><strong>전체 감정:</strong> ${result.classification.overall_sentiment}</p>`;
+                classificationHtml += `<p><strong>신뢰도:</strong> ${(result.classification.confidence_score * 100).toFixed(1)}%</p>`;
+
+                if (result.classification.key_emotion_words) {
+                    classificationHtml += '<h4>감정별 키워드</h4>';
+                    for (const [sentiment, words] of Object.entries(result.classification.key_emotion_words)) {
+                        if (words.length > 0) {
+                            classificationHtml += `<p><strong>${sentiment}:</strong> ${words.join(', ')}</p>`;
+                        }
+                    }
+                }
+
+                document.getElementById('classificationResult').innerHTML = classificationHtml;
+
+                // 통합데이터 JSON 표시
+                document.getElementById('metadataResult').textContent = JSON.stringify(result.metadata, null, 2);
+
+                // 워드클라우드 이미지 표시 (경로가 있는 경우)
+                const wcPath = result.metadata && result.metadata.wordcloud_path;
+                const wcContainer = document.getElementById('wordcloudResult');
+                const wcImage = document.getElementById('wordcloudImage');
+                if (wcPath) {
+                    wcImage.src = wcPath;
+                    wcContainer.style.display = 'block';
+                } else {
+                    wcContainer.style.display = 'none';
+                    wcImage.src = '';
+                }
+
+                // 결과 영역 표시
+                document.getElementById('results').style.display = 'block';
+            })
+            .catch(error => {
+                alert('통합데이터 생성 중 오류가 발생했습니다: ' + error.message);
+            });
+        });
+    </script>
+{% endblock %}

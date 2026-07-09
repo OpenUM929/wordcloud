@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}판정 패킷 추출{% endblock %}
+
+{% block extra_head %}
+<style>
+:root {
+  --color-primary: #6366f1; --color-primary-hover: #4f46e5;
+  --color-success: #28a745; --color-danger: #dc3545;
+  --text-muted: #666; --text-body: #495057;
+  --border-color: #dee2e6;
+  --radius-md: 6px; --radius-lg: 8px;
+  --font-sm: 13px; --font-xs: 12px;
+  --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px;
+}
+
+.je-page { max-width: 800px; margin: 20px auto; padding: 0 20px; }
+.je-panel { background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); }
+.je-panel h3 { margin: 0 0 var(--space-4); font-size: 16px; }
+
+.je-intro { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); }
+.je-intro h3 { margin: 0 0 var(--space-2); }
+.je-intro p { margin: var(--space-2) 0; color: var(--text-muted); font-size: var(--font-sm); }
+.je-steps { display: flex; gap: var(--space-4); margin: var(--space-4) 0; }
+.je-step { flex: 1; text-align: center; padding: var(--space-3); background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.je-step__num { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; margin-bottom: var(--space-2); }
+.je-step__label { font-size: var(--font-sm); font-weight: 600; }
+.je-step__desc { font-size: var(--font-xs); color: var(--text-muted); margin-top: var(--space-2); }
+
+.je-form { display: flex; gap: var(--space-4); align-items: flex-end; flex-wrap: wrap; }
+.je-field { display: flex; flex-direction: column; gap: 4px; }
+.je-field label { font-size: var(--font-sm); font-weight: 600; color: var(--text-body); }
+.je-field select, .je-field input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: var(--font-sm); min-width: 180px; }
+.je-btn { padding: 8px 20px; border: none; border-radius: var(--radius-md); cursor: pointer; font-size: var(--font-sm); font-weight: 600; }
+.je-btn--primary { background: var(--color-primary); color: #fff; }
+.je-btn--primary:hover { background: var(--color-primary-hover); }
+.je-btn--primary:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+#jeResult { display: none; margin-top: var(--space-5); }
+.je-summary { display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.je-stat { flex: 1; min-width: 120px; text-align: center; padding: var(--space-4); background: #f8f9fa; border-radius: var(--radius-md); }
+.je-stat__num { font-size: 24px; font-weight: 700; color: var(--color-primary); }
+.je-stat__label { font-size: var(--font-xs); color: var(--text-muted); margin-top: var(--space-1); }
+
+.je-error { color: var(--color-danger); font-weight: 600; padding: var(--space-3); background: #fdf0f0; border-radius: var(--radius-md); margin-top: var(--space-3); }
+.je-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e9ecef; border-top-color: var(--color-primary); border-radius: 50%; animation: je-spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes je-spin { to { transform: rotate(360deg); } }
+
+.je-admin-block { text-align: center; padding: 40px; background: #fff3cd; border: 1px solid #ffc107; border-radius: var(--radius-lg); }
+.je-admin-block h3 { margin: 0 0 var(--space-3); color: #856404; }
+.je-admin-block p { color: #856404; font-size: var(--font-sm); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="je-page">
+  <h2 style="margin-bottom:var(--space-5);">📦 판정 패킷 추출</h2>
+
+  {% if not _is_admin_session %}
+  <div class="je-admin-block">
+    <h3>🔒 관리자 로그인 필요</h3>
+    <p>판정 패킷 추출은 관리자만 사용할 수 있습니다.<br>우측 하단의 인증 버튼을 통해 관리자 로그인 후 이용해 주세요.</p>
+  </div>
+  {% else %}
+
+  <div class="je-intro">
+    <h3>📋 판정 패킷 워크플로</h3>
+    <p>아래 3단계로 진행됩니다. 추출된 패킷은 가명 처리되어 있어 외부 AI 판정에 안전하게 전달할 수 있습니다.</p>
+    <div class="je-steps">
+      <div class="je-step">
+        <div class="je-step__num">1</div>
+        <div class="je-step__label">패킷 추출</div>
+        <div class="je-step__desc">배치 선택 → 마진 설정 → JSON 다운로드</div>
+      </div>
+      <div class="je-step">
+        <div class="je-step__num">2</div>
+        <div class="je-step__label">AI 판정</div>
+        <div class="je-step__desc">패킷을 AI에 전달하여 판정 결과 획득</div>
+      </div>
+      <div class="je-step">
+        <div class="je-step__num">3</div>
+        <div class="je-step__label">판정 결과 반영</div>
+        <div class="je-step__desc"><a href="/judgment_apply">판정 결과 반영 페이지</a>에 업로드</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="je-panel">
+    <h3>⚙️ 추출 설정</h3>
+    <div class="je-form">
+      <div class="je-field">
+        <label for="jeBatchSelect">배치 선택</label>
+        <select id="jeBatchSelect">
+          <option value="">-- 전체 배치 --</option>
+        </select>
+      </div>
+      <div class="je-field">
+        <label for="jeMarginSelect">마진 (판정 경계)</label>
+        <select id="jeMarginSelect">
+          <option value="auto">자동 (auto)</option>
+          <option value="0.05">0.05 (tight)</option>
+          <option value="0.10">0.10</option>
+          <option value="0.15">0.15 (wide)</option>
+        </select>
+      </div>
+      <div>
+        <button class="je-btn je-btn--primary" id="jeExtractBtn" onclick="jeExtract()">패킷 추출</button>
+      </div>
+    </div>
+
+    <div id="jeLoading" style="display:none;margin-top:var(--space-4);">
+      <span class="je-spinner"></span> 추출 중...
+    </div>
+
+    <div id="jeResult">
+      <hr style="border:none;border-top:1px solid var(--border-color);margin:var(--space-5) 0;">
+      <div class="je-summary" id="jeSummary"></div>
+      <div id="jeDownloadArea"></div>
+    </div>
+
+    <div id="jeError" class="je-error" style="display:none;"></div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function jeLoadBatches() {
+  fetch('/api/batch/work-orders')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (!d.success || !d.data) { return; }
+      var sel = document.getElementById('jeBatchSelect');
+      d.data.forEach(function(wo) {
+        if (wo.status === 'completed') {
+          var opt = document.createElement('option');
+          opt.value = wo.batch_id;
+          opt.textContent = wo.batch_id + ' (완료)';
+          sel.appendChild(opt);
+        }
+      });
+    })
+    .catch(function() {});
+}
+
+function jeFormatCounts(counts) {
+  if (!counts) return '';
+  var parts = [];
+  if (counts.total !== undefined) parts.push('전체: ' + counts.total);
+  if (counts.positive !== undefined) parts.push('긍정: ' + counts.positive);
+  if (counts.negative !== undefined) parts.push('부정: ' + counts.negative);
+  if (counts.neutral !== undefined) parts.push('중립: ' + counts.neutral);
+  if (counts.quarantined !== undefined) parts.push('격리: ' + counts.quarantined);
+  return parts.join(' | ');
+}
+
+function jeExtract() {
+  var batchId = document.getElementById('jeBatchSelect').value;
+  var marginRaw = document.getElementById('jeMarginSelect').value;
+  var margin = marginRaw === 'auto' ? null : parseFloat(marginRaw);
+
+  var btn = document.getElementById('jeExtractBtn');
+  var loading = document.getElementById('jeLoading');
+  var resultDiv = document.getElementById('jeResult');
+  var errorDiv = document.getElementById('jeError');
+  var summary = document.getElementById('jeSummary');
+  var downloadArea = document.getElementById('jeDownloadArea');
+
+  btn.disabled = true;
+  loading.style.display = 'block';
+  resultDiv.style.display = 'none';
+  errorDiv.style.display = 'none';
+
+  fetch('/api/perspective/judgment/extract', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ batch_id: batchId || null, margin: margin }),
+  })
+  .then(function(resp) {
+    if (!resp.ok) {
+      return resp.json().then(function(d) { throw new Error(d.error || '추출 실패'); });
+    }
+    var disposition = resp.headers.get('Content-Disposition') || '';
+    var filename = 'packet.json';
+    var match = disposition.match(/filename="?(.+?)"?$/);
+    if (match) { filename = match[1]; }
+
+    return resp.blob().then(function(blob) {
+      return { blob: blob, filename: filename };
+    });
+  })
+  .then(function(result) {
+    var url = URL.createObjectURL(result.blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = result.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 10000);
+
+    var h = '<div class="je-stat"><div class="je-stat__num">✓</div><div class="je-stat__label">다운로드 완료</div></div>';
+    h += '<div class="je-stat"><div class="je-stat__num">' + result.filename + '</div><div class="je-stat__label">파일명</div></div>';
+    summary.innerHTML = h;
+    downloadArea.innerHTML = '<p style="font-size:var(--font-sm);color:var(--text-muted);"><a href="/judgment_apply">→ 판정 결과 반영 페이지로 이동</a></p>';
+    resultDiv.style.display = 'block';
+  })
+  .catch(function(err) {
+    errorDiv.textContent = err.message || '추출 중 오류가 발생했습니다.';
+    errorDiv.style.display = 'block';
+  })
+  .finally(function() {
+    btn.disabled = false;
+    loading.style.display = 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  jeLoadBatches();
+});
+</script>
+{% endblock %}

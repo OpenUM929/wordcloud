@@ -16,8 +16,12 @@ CONFIGS_DIR = os.getenv('CONFIGS_DIR', 'configs')
 OUTPUTS_DIR = os.getenv('OUTPUTS_DIR', 'outputs')
 PROCESSED_DATA_DIR = os.getenv('PROCESSED_DATA_DIR', 'processed_data')
 
-# Model paths
-MODEL_PATH = os.path.join(BASE_ROOT, "model", "kote_for_easygoing_people")
+# Model paths (PROJECT_ROOT 기준으로 고정 — os.getcwd() 의존 제거)
+MODEL_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', '..', 'model', 'kote_for_easygoing_people'))
+
+# HR 도메인 파인튜닝 감정모델(3분류 극성)
+HR_SENTIMENT_MODEL_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', '..', 'model', 'hr_sentiment_finetuned'))
+USE_HR_SENTIMENT_MODEL = os.getenv('USE_HR_SENTIMENT_MODEL', '1') not in ('0', 'false', 'False', '')
 
 # Configuration file paths
 CONFIGS_DIR_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, CONFIGS_DIR))
@@ -46,6 +50,12 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key_here')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin1234')
 PSEUDONYM_MAPPINGS_PATH = os.path.abspath(os.path.join(CONFIGS_DIR_PATH, 'pseudonym_mappings.enc'))
 POSITION_HIERARCHY_PATH = os.path.abspath(os.path.join(CONFIGS_DIR_PATH, 'position_hierarchy.json'))
+
+# Plans directory (칸반보드 대상, 다중 프로젝트 지원)
+PROJECT_ROOT_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, '..'))
+PLANS_DIR = os.getenv('PLANS_DIR', os.path.join(PROJECT_ROOT_DIR, 'plans', '2026'))
+PLANS_ROOTS = os.getenv('PLANS_ROOTS', '')
+PLANS_ROOTS_LIST = [p.strip() for p in PLANS_ROOTS.split(',') if p.strip()] if PLANS_ROOTS else []
 
 # Processing settings
 DEFAULT_WORDCLOUD_POS = ['Noun']

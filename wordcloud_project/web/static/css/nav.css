@@ -1,45 +1,54 @@
+/* ============================================================
+   nav.css — 좌측 네비게이션 (Modern Minimal)
+   디자인 토큰은 base.css(:root)에서 가져온다. base.css가 먼저 로드됨.
+   지침: .clinerules/docs/ui/common/design-system/06-navigation.md
+   ============================================================ */
 nav {
     width: 170px;
     min-height: 100vh;
     height: 100vh;
     position: sticky;
     top: 0;
-    background: #f8f9fa;
-    border-right: 1px solid #dee2e6;
+    background: var(--bg-nav);
+    border-right: 2px solid var(--border-color-light);
     padding: 12px 8px;
     display: flex;
     flex-direction: column;
     gap: 4px;
     flex-shrink: 0;
     overflow-y: auto;
-    font-family: Arial, sans-serif;
+    font-family: var(--font-family);
     box-sizing: border-box;
 }
 nav a {
     display: block;
-    padding: 7px 10px;
+    padding: 8px 10px;
     text-decoration: none;
-    color: #495057;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    transition: all 0.2s;
-    font-size: 13px;
-    font-family: Arial, sans-serif;
+    color: #4b5563;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-normal);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    font-family: var(--font-family);
 }
 nav a:hover {
-    background: #007bff;
-    color: white;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-primary-hover);
+    border-color: var(--color-primary);
 }
 nav .sep {
-    color: #999;
-    font-weight: bold;
+    color: #bbb;
+    font-weight: var(--font-weight-semibold);
     user-select: none;
-    font-size: 11px;
-    padding: 6px 4px 2px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 4px 4px;
     display: block;
-    font-family: Arial, sans-serif;
+    font-family: var(--font-family);
 }
 
 /* ── 드롭다운 (테스트 메뉴) ─────────────────────────────── */
@@ -50,15 +59,16 @@ nav .dropdown {
 nav .dropbtn {
     display: block;
     width: 100%;
-    padding: 7px 10px;
+    padding: 8px 10px;
     text-decoration: none;
-    color: #495057;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    transition: all 0.2s;
-    font-size: 13px;
-    font-family: Arial, sans-serif;
+    color: #4b5563;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-normal);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    font-family: var(--font-family);
     cursor: pointer;
     text-align: left;
     box-sizing: border-box;
@@ -66,13 +76,14 @@ nav .dropbtn {
 nav .dropbtn::after {
     content: ' ▼';
     font-size: 10px;
-    color: #adb5bd;
+    color: #999;
     float: right;
 }
 nav .dropdown:hover .dropbtn {
-    background: #007bff;
-    color: white;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-primary-hover);
+    border-color: var(--color-primary);
 }
 nav .dropdown:hover .dropbtn::after {
     color: #fff;
@@ -90,14 +101,100 @@ nav .dropdown:hover .dropdown-content {
 nav .dropdown-content a {
     display: block;
     padding: 6px 10px;
-    font-size: 12px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
     border: none;
     background: transparent;
-    border-radius: 4px;
-    color: #495057;
+    border-radius: var(--radius-sm);
+    color: #4b5563;
 }
 nav .dropdown-content a:hover {
-    background: #e9ecef;
-    color: #007bff;
+    background: #f3f4f6;
+    color: var(--color-primary);
     box-shadow: none;
+}
+
+/* ── 섹션 구분 ─────────────────────────────── */
+nav .nav-section {
+    padding: 12px 0 4px 0;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+nav .nav-section:last-child {
+    border-bottom: none;
+}
+
+nav .nav-section-title {
+    font-size: var(--font-size-2xs);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+nav .nav-section-title:hover {
+    color: #4b5563;
+}
+nav .nav-section-title .collapse-caret {
+    font-size: 10px;
+    color: #999;
+    transition: transform 0.2s;
+}
+nav .nav-section.collapsed .collapse-caret {
+    transform: rotate(-90deg);
+}
+nav .nav-section.collapsed > a {
+    display: none;
+}
+
+/* ── active 하이라이트 ─────────────────────────────── */
+nav .nav-section a.active {
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-primary-hover);
+    border-color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+}
+
+/* ── 버전 배지 ─────────────────────────────── */
+nav .version-badge {
+    margin-top: auto;
+    padding: 8px 10px;
+    font-size: 10px;
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+nav .version-badge:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    color: #374151;
+}
+nav .version-badge .status-ok {
+    color: #28a745;
+    font-weight: bold;
+}
+nav .version-badge .status-fallback {
+    color: #dc3545;
+    font-weight: bold;
 }

@@ -4,18 +4,24 @@ import re
 import json as json_lib
 import zipfile
 import tempfile
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, request, jsonify, session, Response, send_file
 from src.services.perspective_service import (
-    load_all_batches, get_matrix_meta,
+    load_all_batches, load_employee_batch, list_all_employee_ids,
+    load_batch_history,
+    get_matrix_meta, get_matrix_meta_light,
     generate_perspective_matrix, save_to_deploy,
     generate_all_employee_matrix, parse_csv_employee_ids,
     build_profanity_summary, _get_pseudo_mgr,
     TEST_SENTENCES_100, split_sentences, has_contrastive,
     sentence_sentiment_override, _get_sentence_level_scores,
-    _load_corrections_map,
+    _load_corrections_map, _setup_korean_font,
     save_acquired_sentence, list_acquired_sentences,
-    delete_acquired_sentence, analyze_acquired_sentences,
-    export_acquired_sentences_csv,
+    delete_acquired_sentence, delete_acquired_sentences_bulk,
+    delete_acquired_sentences_filtered, analyze_acquired_sentences,
+    export_acquired_sentences_csv, export_acquired_sentences_refined_csv,
+    import_acquired_sentences_csv, save_acquired_sentences_bulk,
     OUTPUTS_DIR_PATH,
 )
 from src.services.deploy_session_service import (
@@ -47,19 +53,10 @@ def _resolve_output_mode(data):
 def api_get_meta():
     data = request.get_json(silent=True) or {}
     employee_id = data.get('employee_id')
-    unified = load_all_batches()
-    if not unified:
-        return jsonify({
-            'success': True,
-            'admin': _is_admin(),
-            'employees': [],
-            'row_options': [],
-            'col_modes': [],
-            'analysis_types': [],
-            'batch_count': 0,
-            'total_evaluations': 0,
-        })
-    meta = get_matrix_meta(unified, employee_id=employee_id, enrich=_is_admin())
+    # 0619_03 후속: X축(시간/회차) 메타도 load_all_batches()의 19,000건 json.loads
+    # 병목을 그대로 타고 있었다. row_options는 batch_id·evaluation_date 인덱스 컬럼
+    # GROUP BY만으로 산출 가능하므로 data blob 미적재 경량 빌더로 교체.
+    meta = get_matrix_meta_light(employee_id=employee_id, enrich=_is_admin())
     return jsonify({'success': True, 'admin': _is_admin(), **meta})
 
 
@@ -363,12 +360,14 @@ def api_deploy_session_download():
 
     from datetime import datetime as _dt
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
-    with zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zf:
+    tmp_name = tmp.name
+    tmp.close()
+    with zipfile.ZipFile(tmp_name, 'w', zipfile.ZIP_DEFLATED) as zf:
         for fp in file_paths:
             arcname = os.path.relpath(fp, OUTPUTS_DIR_PATH).replace('\\', '/')
             zf.write(fp, arcname)
 
-    return send_file(tmp.name, mimetype='application/zip',
+    return send_file(tmp_name, mimetype='application/zip',
                      as_attachment=True,
                      download_name=f'deploy_{session_id[:8]}_{_dt.now().strftime("%Y%m%d")}.zip')
 
@@ -475,24 +474,17 @@ def api_save_deploy():
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
-    unified = load_all_batches()
-    if not unified:
-        return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 400
+    _setup_korean_font()  # 배치/단일 분기 진입 전 1회 호출(save_to_deploy 내부 호출 대체)
 
+    # 0619_02: 전체 코퍼스 일괄 적재(load_all_batches) 제거 → 직원 1명분만 로딩하여 메모리 폭증 방지.
     if all_employees and not employee_ids:
-        seen = set()
-        all_ids = []
-        for er in unified.get('employee_results', []):
-            eid = er.get('metadata', {}).get('target_employee_id')
-            if eid and eid not in seen:
-                seen.add(eid)
-                all_ids.append(eid)
-        employee_ids = all_ids
+        employee_ids = list_all_employee_ids()
 
     if employee_ids:
         results_list = []
         for eid in employee_ids:
-            result = save_to_deploy(unified, eid, row_field, col_mode, analysis_type, options, request)
+            emp_unified = load_employee_batch(eid)
+            result = save_to_deploy(emp_unified, eid, row_field, col_mode, analysis_type, options, request)
             if result:
                 results_list.append(result)
 
@@ -514,7 +506,8 @@ def api_save_deploy():
             'batch': True,
         })
 
-    results = save_to_deploy(unified, employee_id, row_field, col_mode, analysis_type, options, request)
+    emp_unified = load_employee_batch(employee_id)
+    results = save_to_deploy(emp_unified, employee_id, row_field, col_mode, analysis_type, options, request)
     if not results:
         return jsonify({
             'success': False,
@@ -598,6 +591,75 @@ def api_save_sentence_corrections():
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         conn.close()
+
+
+@perspective_bp.route('/judgment/extract', methods=['POST'])
+def api_judgment_extract():
+    """판정 작업 패킷 추출 — 가명 평가에서 하드케이스를 뽑아 자기설명 패킷(JSON) 다운로드.
+
+    body: {batch_id?, margin?}. 패킷은 가명(실 ID 없음)이라 그대로 LLM 전달 가능.
+    """
+    import logging as _logging
+    from flask import Response
+    _logger = _logging.getLogger(__name__)
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    batch_id = data.get('batch_id') or None
+    # margin 미지정 시 None → 가장 넓은 밴드로 추출 + 마진 밴드 요약(검색형). 지정 시 그 값만.
+    margin = None
+    if data.get('margin') is not None:
+        try:
+            margin = float(data.get('margin'))
+        except (TypeError, ValueError):
+            margin = None
+    try:
+        from src.services.judgment_packet_service import build_judgment_packet
+        packet, quarantined = build_judgment_packet(batch_id=batch_id, margin=margin)
+        packet['_status']['counts']['quarantined'] = len(quarantined)
+        _logger.info(f"[judgment/extract] batch={batch_id} items={len(packet['items'])} "
+                     f"quarantined={len(quarantined)}")
+        body = json_lib.dumps(packet, ensure_ascii=False, indent=1)
+        return Response(
+            body, mimetype='application/json',
+            headers={'Content-Disposition': f'attachment; filename="{packet["packet_id"]}.json"'})
+    except Exception as e:
+        _logger.error(f"[judgment/extract] 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@perspective_bp.route('/judgment/apply', methods=['POST'])
+def api_judgment_apply():
+    """판정 완료 패킷 삽입 — 업로드한 패킷의 result 를 가명 키로 corrections 에 in-place 반영.
+
+    파일 업로드(request.files['packet']) 또는 JSON body(패킷) 허용.
+    """
+    import logging as _logging
+    _logger = _logging.getLogger(__name__)
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    packet = None
+    if 'packet' in request.files:
+        try:
+            packet = json_lib.loads(request.files['packet'].read().decode('utf-8'))
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'패킷 파싱 실패: {e}'}), 400
+    else:
+        packet = request.get_json(silent=True)
+    if not isinstance(packet, dict) or 'items' not in packet:
+        return jsonify({'success': False, 'error': '유효한 패킷이 아닙니다(items 필요).'}), 400
+    try:
+        from src.services.judgment_packet_service import apply_judgment_packet
+        summary = apply_judgment_packet(packet)
+        # needs_human 목록은 모달 큐로 — 본문 노출 최소화(가명 텍스트만)
+        nh = [{'text': it.get('text', ''), 'key': it.get('key'), 'result': it.get('result')}
+              for it in summary.pop('needs_human_items', [])]
+        _logger.info(f"[judgment/apply] inserted={summary['inserted_sentences']} "
+                     f"needs_human={summary['needs_human']} skipped={summary['skipped']}")
+        return jsonify({'success': True, 'summary': summary, 'needs_human_queue': nh})
+    except Exception as e:
+        _logger.error(f"[judgment/apply] 오류: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @perspective_bp.route('/matrix/regenerate', methods=['POST'])
@@ -687,19 +749,9 @@ def api_save_deploy_stream():
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
-    unified = load_all_batches()
-    if not unified:
-        return jsonify({'success': False, 'error': '배치 데이터가 없습니다.'}), 404
-
+    # 0619_02: 전체 코퍼스 일괄 적재 제거 → all_employees는 ID만 경량 조회, 워커가 직원 1명분만 로딩.
     if all_employees and not employee_ids:
-        seen = set()
-        all_ids = []
-        for er in unified.get('employee_results', []):
-            eid = er.get('metadata', {}).get('target_employee_id')
-            if eid and eid not in seen:
-                seen.add(eid)
-                all_ids.append(eid)
-        employee_ids = all_ids
+        employee_ids = list_all_employee_ids()
 
     ids = employee_ids if employee_ids else [employee_id]
 
@@ -708,22 +760,37 @@ def api_save_deploy_stream():
         fail_list = []
         total = len(ids)
 
-        for idx, eid in enumerate(ids):
-            try:
-                yield json_lib.dumps({'employee': eid, 'status': 'processing', 'current': idx + 1, 'total': total}) + '\n'
-                result = save_to_deploy(unified, eid, row_field, col_mode, analysis_type, options, request)
-                if result:
-                    real_name = result.get('name', eid)
-                    result['employee_id'] = eid
-                    result['profanity_summary'] = build_profanity_summary(unified, eid)
-                    success_list.append(result)
-                    yield json_lib.dumps({'employee': eid, 'name': real_name, 'status': 'done', 'result': result, 'current': idx + 1, 'total': total}) + '\n'
-                else:
-                    fail_list.append({'employee_id': eid, 'error': '평가 데이터 없음'})
-                    yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': '평가 데이터 없음', 'current': idx + 1, 'total': total}) + '\n'
-            except Exception as ex:
-                fail_list.append({'employee_id': eid, 'error': str(ex)})
-                yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': str(ex), 'current': idx + 1, 'total': total}) + '\n'
+        _setup_korean_font()  # 워커 진입 전 1회 호출(작업4 — save_to_deploy 내부 호출 대체)
+        num_workers = min(multiprocessing.cpu_count(), 8)  # 매트릭스 경로와 동일 관례, GPU 미사용 CPU/IO 워크로드
+        completed = 0
+
+        def _work(eid):
+            # request는 save_to_deploy 본문에서 미사용(죽은 파라미터) + 워커 스레드엔 Flask 요청 컨텍스트 없음 → None 전달
+            # 0619_02: 직원 1명분만 로딩(전체 적재 제거). emp_unified는 _work 종료 시 회수.
+            emp_unified = load_employee_batch(eid)
+            result = save_to_deploy(emp_unified, eid, row_field, col_mode, analysis_type, options, None)
+            if result is not None:
+                result['profanity_summary'] = build_profanity_summary(emp_unified, eid)
+            return result
+
+        with ThreadPoolExecutor(max_workers=num_workers) as ex:
+            futures = {ex.submit(_work, eid): eid for eid in ids}
+            for fut in as_completed(futures):
+                eid = futures[fut]
+                completed += 1
+                try:
+                    result = fut.result()
+                    if result:
+                        real_name = result.get('name', eid)
+                        result['employee_id'] = eid
+                        success_list.append(result)
+                        yield json_lib.dumps({'employee': eid, 'name': real_name, 'status': 'done', 'result': result, 'current': completed, 'total': total}) + '\n'
+                    else:
+                        fail_list.append({'employee_id': eid, 'error': '평가 데이터 없음'})
+                        yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': '평가 데이터 없음', 'current': completed, 'total': total}) + '\n'
+                except Exception as exc:
+                    fail_list.append({'employee_id': eid, 'error': str(exc)})
+                    yield json_lib.dumps({'employee': eid, 'status': 'fail', 'error': str(exc), 'current': completed, 'total': total}) + '\n'
 
         log_action('csv_batch_save_deploy_stream', {
             'total': total,
@@ -792,7 +859,9 @@ def api_get_users():
 def api_batch_history():
     if not _is_admin():
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
-    unified = load_all_batches()
+    # 0619_03: 이력은 목록·카운트만 필요하므로 전체 적재(load_all_batches) 대신
+    # 경량 로더 사용 — 1.7만명 평가 본문 미적재로 조회 지연/메모리 폭증 해소.
+    unified = load_batch_history()
     if not unified:
         return jsonify({'success': False, 'batches': []})
     return jsonify({
@@ -808,28 +877,72 @@ def api_batch_delete(batch_id):
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
     from src.config.settings import PROCESSED_DATA_DIR_PATH
     from src.services.user_data_manager import remove_batch_from_all
-    batch_dir = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id)
-    if not os.path.isdir(batch_dir):
+    from src.services.batch_work_order_service import (
+        get_work_order_by_batch_id, delete_work_order,
+    )
+
+    # 0. 작업서 레지스트리 존재 여부 (평가 중복 제거로 evaluations 행이 0건일 수 있음)
+    work_order = get_work_order_by_batch_id(batch_id)
+
+    # 1. Remove batch data from DB
+    removed_count = remove_batch_from_all(batch_id, [])
+    if removed_count == 0 and work_order is None:
         return jsonify({'success': False, 'error': f'배치({batch_id})를 찾을 수 없습니다.'}), 404
 
-    # 1. Get employee_ids from lightweight batch_summary
-    from src.services.perspective_service import load_batch_summary
-    summary = load_batch_summary(batch_dir)
-    employee_ids = summary.get('employee_ids', []) if summary else []
+    # 2. 작업서 레지스트리 정리 (이력은 작업서 기준으로 출력되므로 함께 삭제)
+    delete_work_order(batch_id)
 
-    # 2. Remove batch data from user files
-    removed_count = remove_batch_from_all(batch_id, employee_ids)
-
-    # 3. Remove batch directory
+    # 3. Remove physical batch directory (if exists)
     import shutil
-    shutil.rmtree(batch_dir)
+    batch_dir = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id)
+    if os.path.isdir(batch_dir):
+        try:
+            shutil.rmtree(batch_dir)
+        except Exception:
+            pass
 
     log_action('batch_delete', {
         'batch_id': batch_id, 'path': batch_dir,
-        'affected_employees': len(employee_ids),
         'removed_evaluations': removed_count,
     }, request)
     return jsonify({'success': True, 'message': f'배치 {batch_id} 삭제 완료 ({removed_count}건 평가 제거)'})
+
+
+@perspective_bp.route('/batch/<batch_id>/display-name', methods=['PATCH'])
+def api_batch_update_display_name(batch_id):
+    """배치 명칭(display_name) 수정"""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    data = request.get_json(silent=True) or {}
+    display_name = (data.get('display_name') or '').strip()
+
+    from src.config.settings import PROCESSED_DATA_DIR_PATH
+    summary_path = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tdata', 'batch_summary.json')
+
+    try:
+        if os.path.exists(summary_path):
+            with open(summary_path, 'r', encoding='utf-8') as f:
+                summary = json_lib.load(f)
+        else:
+            os.makedirs(os.path.dirname(summary_path), exist_ok=True)
+            summary = {'batch_info': {'batch_id': batch_id}}
+
+        if 'batch_info' not in summary:
+            summary['batch_info'] = {}
+        summary['batch_info']['display_name'] = display_name
+
+        with open(summary_path, 'w', encoding='utf-8') as f:
+            json_lib.dump(summary, f, ensure_ascii=False, indent=2)
+
+        log_action('batch_display_name_update', {
+            'batch_id': batch_id,
+            'display_name': display_name,
+        }, request)
+
+        return jsonify({'success': True, 'display_name': display_name})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @perspective_bp.route('/test/sentence-sentiment', methods=['POST'])
@@ -846,9 +959,8 @@ def api_test_sentence_sentiment():
     include_idiomatic = data.get('include_idiomatic', True)
 
     from src.modules.emotion_analysis import analyze_emotion
-    from src.services.translation_service import back_translate
 
-    def analyze_one(sent_text, is_last=False, total=1, item_expected=None, include_bt=False):
+    def analyze_one(sent_text, is_last=False, total=1, item_expected=None):
         """한 문장 분석 + 교정."""
         try:
             result = analyze_emotion(sent_text)
@@ -865,7 +977,6 @@ def api_test_sentence_sentiment():
                 threshold=threshold, weight=weight, neutral=neutral
             ), 4)
 
-            # 판정
             if corrected_score > 0:
                 result_label = 'positive'
             elif corrected_score < 0:
@@ -893,36 +1004,6 @@ def api_test_sentence_sentiment():
                 'match': match,
             }
 
-            # Back-translation comparison (optional)
-            if include_bt and sent_text.strip():
-                try:
-                    # opus-mt back-translation
-                    opus = back_translate(sent_text, 'opus')
-                    opus_result = analyze_emotion(opus['back_translated'])
-                    opus_scores = opus_result.get('analysis', {}).get('base_result', {}).get('mapped', {}).get('sentiment_scores', {})
-
-                    # nllb back-translation
-                    nllb = back_translate(sent_text, 'nllb')
-                    nllb_result = analyze_emotion(nllb['back_translated'])
-                    nllb_scores = nllb_result.get('analysis', {}).get('base_result', {}).get('mapped', {}).get('sentiment_scores', {})
-
-                    res['back_translation'] = {
-                        'opus': {
-                            'english': opus['english'],
-                            'back_translated': opus['back_translated'],
-                            'pos': round(opus_scores.get('positive', 0.0), 4),
-                            'neg': round(opus_scores.get('negative', 0.0), 4),
-                        },
-                        'nllb': {
-                            'english': nllb['english'],
-                            'back_translated': nllb['back_translated'],
-                            'pos': round(nllb_scores.get('positive', 0.0), 4),
-                            'neg': round(nllb_scores.get('negative', 0.0), 4),
-                        }
-                    }
-                except Exception as bt_err:
-                    res['back_translation_error'] = str(bt_err)
-
             return res
         except Exception as e:
             return {
@@ -945,7 +1026,7 @@ def api_test_sentence_sentiment():
                 is_last = (i == total - 1)
                 # 마지막 문장의 판정만 평가 기준으로 삼음
                 expected = item['expected'] if is_last else None
-                res = analyze_one(sent, is_last, total, expected, include_bt=True)
+                res = analyze_one(sent, is_last, total, expected)
                 sent_results.append(res)
                 if is_last:
                     if res.get('match') is True:
@@ -975,7 +1056,7 @@ def api_test_sentence_sentiment():
     sent_results = []
     for i, sent in enumerate(sentences):
         is_last = (i == total - 1)
-        res = analyze_one(sent, is_last, total, include_bt=True)
+        res = analyze_one(sent, is_last, total)
         sent_results.append(res)
 
     return jsonify({
@@ -1106,59 +1187,65 @@ def api_deploy_gallery_delete():
 @perspective_bp.route('/deploy-gallery/download', methods=['POST'])
 def api_deploy_gallery_download():
     """갤러리 선택 항목 이미지 ZIP 다운로드."""
+    from datetime import datetime as _dt
     data = request.get_json(silent=True) or {}
     entry_ids = data.get('entry_ids', [])
     folder_mode = data.get('folder_mode', 'flat')  # 'flat' | 'by_type'
     if not entry_ids:
         return jsonify({'success': False, 'error': 'entry_ids가 필요합니다.'}), 400
 
-    from src.services import gallery_db_service
-    is_admin = _is_admin()
-    selected = gallery_db_service.get_entries_by_ids(entry_ids, is_admin=is_admin)
+    try:
+        from src.services import gallery_db_service
+        is_admin = _is_admin()
+        selected = gallery_db_service.get_entries_by_ids(entry_ids, is_admin=is_admin)
 
-    if not selected:
-        return jsonify({'success': False, 'error': '다운로드할 항목이 없습니다.'}), 404
+        if not selected:
+            return jsonify({'success': False, 'error': '다운로드할 항목이 없습니다.'}), 404
 
-    # 이미지 수집
-    file_items = []  # [(abs_path, arc_name)]
-    for entry in selected:
-        emp_id = entry.get('employee_id', 'unknown')
-        images = entry.get('images', {})
-        row_results = entry.get('row_results', {})
+        # 이미지 수집
+        file_items = []  # [(abs_path, arc_name)]
+        for entry in selected:
+            emp_id = entry.get('employee_id', 'unknown')
+            images = entry.get('images', {})
+            row_results = entry.get('row_results', {})
 
-        # 최상위 images
-        for img_type, url in images.items():
-            if not url:
-                continue
-            abs_path = _url_to_abs_path(url)
-            if abs_path and os.path.exists(abs_path):
-                arc_name = _build_arc_name(folder_mode, emp_id, None, img_type, abs_path)
-                file_items.append((abs_path, arc_name))
-
-        # row_results (연도별)
-        for year, row_data in row_results.items():
-            if not isinstance(row_data, dict):
-                continue
-            for img_type, url in row_data.items():
+            # 최상위 images
+            for img_type, url in images.items():
                 if not url:
                     continue
                 abs_path = _url_to_abs_path(url)
                 if abs_path and os.path.exists(abs_path):
-                    arc_name = _build_arc_name(folder_mode, emp_id, year, img_type, abs_path)
+                    arc_name = _build_arc_name(folder_mode, emp_id, None, img_type, abs_path)
                     file_items.append((abs_path, arc_name))
 
-    if not file_items:
-        return jsonify({'success': False, 'error': '다운로드할 이미지 파일이 없습니다.'}), 404
+            # row_results (연도별)
+            for year, row_data in row_results.items():
+                if not isinstance(row_data, dict):
+                    continue
+                for img_type, url in row_data.items():
+                    if not url:
+                        continue
+                    abs_path = _url_to_abs_path(url)
+                    if abs_path and os.path.exists(abs_path):
+                        arc_name = _build_arc_name(folder_mode, emp_id, year, img_type, abs_path)
+                        file_items.append((abs_path, arc_name))
 
-    # ZIP 생성
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
-    with zipfile.ZipFile(tmp.name, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for abs_path, arc_name in file_items:
-            zf.write(abs_path, arc_name)
+        if not file_items:
+            return jsonify({'success': False, 'error': '다운로드할 이미지 파일이 없습니다.'}), 404
 
-    return send_file(tmp.name, mimetype='application/zip',
-                     as_attachment=True,
-                     download_name=f'gallery_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip')
+        # ZIP 생성 — Windows: NamedTemporaryFile 핸들을 먼저 닫아야 같은 이름으로 재오픈 가능
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        tmp_name = tmp.name
+        tmp.close()
+        with zipfile.ZipFile(tmp_name, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for abs_path, arc_name in file_items:
+                zf.write(abs_path, arc_name)
+
+        return send_file(tmp_name, mimetype='application/zip',
+                         as_attachment=True,
+                         download_name=f'gallery_{_dt.now().strftime("%Y%m%d_%H%M%S")}.zip')
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 def _url_to_abs_path(url):
@@ -1240,6 +1327,36 @@ def api_acquired_sentences_delete(sentence_id):
     return jsonify({'success': ok})
 
 
+@perspective_bp.route('/acquired-sentences/delete-bulk', methods=['POST'])
+def api_acquired_sentences_delete_bulk():
+    """선택한 id 목록 일괄 삭제."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    ids = data.get('ids', [])
+    if not ids:
+        return jsonify({'success': False, 'error': '삭제할 항목을 선택하세요.'}), 400
+    deleted = delete_acquired_sentences_bulk(ids)
+    return jsonify({'success': True, 'deleted': deleted})
+
+
+@perspective_bp.route('/acquired-sentences/delete-all', methods=['POST'])
+def api_acquired_sentences_delete_all():
+    """현재 필터(불일치/라벨/기간)에 해당하는 전체 삭제. 필터 없으면 전체."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    mismatch_only = bool(data.get('mismatch_only', False))
+    label = (data.get('label') or '').strip() or None
+    date_from = (data.get('date_from') or '').strip() or None
+    date_to = (data.get('date_to') or '').strip() or None
+    deleted = delete_acquired_sentences_filtered(
+        mismatch_only=mismatch_only, label=label,
+        date_from=date_from, date_to=date_to,
+    )
+    return jsonify({'success': True, 'deleted': deleted})
+
+
 @perspective_bp.route('/acquired-sentences/analyze', methods=['POST'])
 def api_acquired_sentences_analyze():
     """선택 문장 분석 실행."""
@@ -1267,3 +1384,159 @@ def api_acquired_sentences_export():
         mimetype='text/csv',
         headers={'Content-Disposition': f'attachment; filename=acquired_sentences_{_dt.now().strftime("%Y%m%d")}.csv'},
     )
+
+
+@perspective_bp.route('/acquired-sentences/export-refined', methods=['GET'])
+def api_acquired_sentences_export_refined():
+    """정제(KoTE 재계산 + 규칙 재현) CSV 내보내기 — 규칙 마이닝용 데이터셋."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    mismatch_only = request.args.get('mismatch_only', '0') == '1'
+    csv_content = export_acquired_sentences_refined_csv(mismatch_only=mismatch_only)
+    from datetime import datetime as _dt
+    return Response(
+        csv_content,
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=acquired_sentences_refined_{_dt.now().strftime("%Y%m%d")}.csv'},
+    )
+
+
+@perspective_bp.route('/acquired-sentences/import', methods=['POST'])
+def api_acquired_sentences_import():
+    """기본/정제 CSV 업로드 → acquired_sentences 적재 (dev 검증용 데이터 반입)."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    file = request.files.get('file')
+    if not file or not file.filename:
+        return jsonify({'success': False, 'error': '업로드할 CSV 파일을 선택하세요.'}), 400
+    overwrite = request.form.get('overwrite', '0') == '1'
+    try:
+        raw = file.read()
+        try:
+            csv_text = raw.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            csv_text = raw.decode('cp949', errors='replace')
+        result = import_acquired_sentences_csv(csv_text, overwrite=overwrite)
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@perspective_bp.route('/acquired-sentences/save-bulk', methods=['POST'])
+def api_acquired_sentences_save_bulk():
+    """집단 분석/제출용 배포 결과 문장(긍/부/중/욕)을 acquired_sentences에 일괄 적재."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+    data = request.get_json(silent=True) or {}
+    items = data.get('items')
+    if not items or not isinstance(items, list):
+        return jsonify({'success': False, 'error': '이동할 문장이 없습니다.'}), 400
+    overwrite = bool(data.get('overwrite', False))
+    try:
+        result = save_acquired_sentences_bulk(items, overwrite=overwrite)
+        return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@perspective_bp.route('/profanity-list', methods=['GET'])
+def api_profanity_list():
+    """전사 욕설 리스트 조회."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    search = request.args.get('search', '')
+    department = request.args.get('department', '')
+    min_count = request.args.get('min_count', 1, type=int)
+    sort = request.args.get('sort', 'count')
+    order = request.args.get('order', 'desc')
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 50, type=int)
+
+    from src.services.perspective_service import build_all_profanity_summary
+    result = build_all_profanity_summary(
+        search=search or None,
+        department=department or None,
+        min_count=min_count,
+        sort=sort,
+        order=order,
+        page=page,
+        limit=limit,
+    )
+    return jsonify({'success': True, **result})
+
+
+@perspective_bp.route('/profanity-list/csv', methods=['GET'])
+def api_profanity_list_csv():
+    """전사 욕설 리스트 CSV 다운로드."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    search = request.args.get('search', '')
+    department = request.args.get('department', '')
+    min_count = request.args.get('min_count', 1, type=int)
+    sort = request.args.get('sort', 'count')
+    order = request.args.get('order', 'desc')
+
+    from src.services.perspective_service import build_all_profanity_summary
+    result = build_all_profanity_summary(
+        search=search or None,
+        department=department or None,
+        min_count=min_count,
+        sort=sort,
+        order=order,
+        page=1,
+        limit=10000,  # CSV는 전체
+        include_sentences=True,
+    )
+
+    import csv
+    import io
+    from datetime import datetime as _dt
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['사번', '이름', '부서', '총평가수', '욕설건수', '비율', '감지단어', '문장목록'])
+
+    for item in result.get('items', []):
+        sentences = []
+        for s in item.get('profanity_sentences', []):
+            sentences.append(s.get('original_text', ''))
+        writer.writerow([
+            item['employee_id'],
+            item['name'],
+            item['department'],
+            item['total_evaluations'],
+            item['profanity_count'],
+            f"{item['profanity_ratio']:.2%}",
+            ', '.join(item.get('profanity_words', [])),
+            ' | '.join(sentences),
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=profanity_list_{_dt.now().strftime("%Y%m%d")}.csv'},
+    )
+
+
+@perspective_bp.route('/profanity-list/sentences/<employee_id>', methods=['GET'])
+def api_profanity_list_sentences(employee_id):
+    """특정 직원의 욕설 문장 조회."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    from src.services.profanity_db_service import get_profanity_sentences
+    sentences = get_profanity_sentences(employee_id)
+    return jsonify({'success': True, 'sentences': sentences})
+
+
+@perspective_bp.route('/profanity-list/departments', methods=['GET'])
+def api_profanity_list_departments():
+    """욕설 데이터가 있는 부서 목록."""
+    if not _is_admin():
+        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
+
+    from src.services.profanity_db_service import get_distinct_departments
+    departments = get_distinct_departments()
+    return jsonify({'success': True, 'departments': departments})

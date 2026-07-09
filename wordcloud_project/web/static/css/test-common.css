@@ -3,20 +3,20 @@
 .test-input-area { display: flex; gap: 10px; margin-bottom: 15px; }
 .test-textarea { flex: 1; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: vertical; }
 .test-btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
-.test-btn-primary { background: #007bff; color: white; }
+.test-btn-primary { background: #6366f1; color: white; }
 .test-btn-success { background: #28a745; color: white; }
 .test-btn-secondary { background: #6c757d; color: white; }
 .test-btn:disabled { background: #ccc; cursor: not-allowed; }
 
 /* 프리셋 버튼 */
 .preset-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
-.preset-btn { padding: 6px 12px; border: 1px solid #007bff; background: white; color: #007bff; border-radius: 4px; cursor: pointer; font-size: 12px; }
-.preset-btn:hover { background: #007bff; color: white; }
+.preset-btn { padding: 6px 12px; border: 1px solid #6366f1; background: white; color: #6366f1; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.preset-btn:hover { background: #6366f1; color: white; }
 
 /* 요약 패널 */
 .test-summary { display: flex; gap: 30px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; }
 .test-summary-item { text-align: center; }
-.test-summary-item .number { font-size: 28px; font-weight: bold; color: #007bff; }
+.test-summary-item .number { font-size: 28px; font-weight: bold; color: #6366f1; }
 .test-summary-item .label { font-size: 12px; color: #666; }
 
 /* 결과 테이블 */
@@ -29,7 +29,7 @@
 .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
 .badge-pass { background: #d4edda; color: #155724; }
 .badge-fail { background: #f8d7da; color: #721c24; }
-.badge-layer1 { background: #cce5ff; color: #004085; }
+.badge-layer1 { background: #e9d5ff; color: #4338ca; }
 .badge-layer2 { background: #fff3cd; color: #856404; }
 
 /* 로그 영역 */
