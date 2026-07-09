@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메타데이터 구조 시각화</title>
+    <title>통합데이터 구조 시각화</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <style>
         body {
@@ -117,7 +117,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>메타데이터 구조 시각화</h1>
+        <h1>통합데이터 구조 시각화</h1>
 
         <div class="legend">
             <div class="legend-item">
@@ -135,11 +135,11 @@
         </div>
 
         <div class="diagram-section">
-            <h2>메타데이터 트리 구조</h2>
+            <h2>통합데이터 트리 구조</h2>
             <div class="tree-legend">※ 색상으로 각 영역의 역할을 구분</div>
             <div class="mermaid">
                 graph TD
-                    A[메타데이터<br/>JSON 객체] --> B[기본 정보]
+                    A[통합데이터<br/>JSON 객체] --> B[기본 정보]
                     A --> C[처리 상태]
                     A --> D[분석 결과<br/>단계별 추가]
 
@@ -184,7 +184,7 @@
         </div>
 
         <div class="diagram-section">
-            <h2>메타데이터 필드 상세 정보</h2>
+            <h2>통합데이터 필드 상세 정보</h2>
             <div class="table-container">
                 <table>
                     <thead>
@@ -208,14 +208,14 @@
                             <td><code>created_at</code></td>
                             <td>ISO 8601 timestamp</td>
                             <td class="required">필수</td>
-                            <td>메타데이터 생성 시각 (UTC 기준)</td>
+                            <td>통합데이터 생성 시각 (UTC 기준)</td>
                             <td><code>"2026-01-15T05:25:30.123Z"</code></td>
                         </tr>
                         <tr>
                             <td><code>version</code></td>
                             <td>semantic version string</td>
                             <td class="required">필수</td>
-                            <td>메타데이터 스키마 버전 (MAJOR.MINOR.PATCH)</td>
+                            <td>통합데이터 스키마 버전 (MAJOR.MINOR.PATCH)</td>
                             <td><code>"1.0.0"</code></td>
                         </tr>
                         <tr>
@@ -343,7 +343,7 @@
         </div>
 
         <div class="diagram-section">
-            <h2>메타데이터 JSON 예시</h2>
+            <h2>통합데이터 JSON 예시</h2>
             <div class="json-example">
 {
   "session_id": "session_20260115_142530_550e8400-e29b-41d4-a716-446655440000",

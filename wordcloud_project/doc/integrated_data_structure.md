@@ -1,12 +1,12 @@
-# 메타데이터 구조 설명서
+# 통합데이터 구조 설명서
 
-## 1. 메타데이터 구조 트리
+## 1. 통합데이터 구조 트리
 
 ```
 metadata (JSON Object)
 ├── session_id: string                    # 세션 고유 식별자
-├── created_at: ISO 8601 timestamp        # 메타데이터 생성 시각
-├── version: semantic version string      # 메타데이터 스키마 버전
+├── created_at: ISO 8601 timestamp        # 통합데이터 생성 시각
+├── version: semantic version string      # 통합데이터 스키마 버전
 ├── target_employee_id: string            # 평가 대상자 ID
 ├── evaluation_document: string           # 평가 문서 원본 텍스트
 ├── evaluator_id: string (optional)       # 평가자 ID
@@ -34,13 +34,13 @@ metadata (JSON Object)
 └── data_integrity_hash: string           # 데이터 무결성 검증 해시
 ```
 
-## 2. 메타데이터 필드 상세 설명 표
+## 2. 통합데이터 필드 상세 설명 표
 
 | 필드명 | 데이터 타입 | 필수 여부 | 설명 | 예시 값 |
 |--------|-------------|-----------|------|---------|
 | `session_id` | string | 필수 | 각 분석 세션의 고유 식별자로 UUID 기반 생성 | `"session_20260115_142530_550e8400-e29b-41d4-a716-446655440000"` |
-| `created_at` | ISO 8601 timestamp | 필수 | 메타데이터 생성 시각 (UTC 기준) | `"2026-01-15T05:25:30.123Z"` |
-| `version` | semantic version string | 필수 | 메타데이터 스키마 버전 (MAJOR.MINOR.PATCH) | `"1.0.0"` |
+| `created_at` | ISO 8601 timestamp | 필수 | 통합데이터 생성 시각 (UTC 기준) | `"2026-01-15T05:25:30.123Z"` |
+| `version` | semantic version string | 필수 | 통합데이터 스키마 버전 (MAJOR.MINOR.PATCH) | `"1.0.0"` |
 | `target_employee_id` | string | 필수 | 인사 평가 대상자의 고유 식별자 | `"EMP_00123"` |
 | `evaluation_document` | string | 필수 | 평가 문서의 원본 텍스트 내용 | `"평가 대상자의 업무 수행 능력이 우수하며 팀워크가 뛰어나다."` |
 | `evaluator_id` | string | 선택 | 평가를 수행한 평가자의 식별자 | `"MGR_00456"` |
@@ -63,7 +63,7 @@ metadata (JSON Object)
 | `wordcloud_path` | string | 필수 | 생성된 워드클라우드 이미지 파일 경로 | `"processed_data/2026/01/15/session_xxx/wordcloud.png"` |
 | `data_integrity_hash` | string | 필수 | 모든 분석 결과의 SHA-256 해시 (무결성 검증용) | `"a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"` |
 
-## 3. 메타데이터 JSON 예시
+## 3. 통합데이터 JSON 예시
 
 ```json
 {
@@ -126,9 +126,9 @@ metadata (JSON Object)
 }
 ```
 
-## 4. 메타데이터 처리 흐름
+## 4. 통합데이터 처리 흐름
 
-1. **초기 생성**: 데이터 입력 단계에서 기본 메타데이터 구조 생성
+1. **초기 생성**: 데이터 입력 단계에서 기본 통합데이터 구조 생성
 2. **점진적 업데이트**: 각 처리 단계 완료 시 해당 결과 필드 추가
 3. **상태 추적**: `processing_status`를 통해 진행 상황 모니터링
 4. **무결성 검증**: 최종 해시를 통한 데이터 변조 방지

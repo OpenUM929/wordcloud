@@ -57,6 +57,19 @@ def get_timestamp() -> str:
     """현재 타임스탬프 반환"""
     return datetime.now().strftime('%Y%m%d_%H%M%S')
 
+_pipeline_logger = None
+
+def get_pipeline_logger() -> logging.Logger:
+    global _pipeline_logger
+    if _pipeline_logger is None:
+        _pipeline_logger = setup_logger('pipeline')
+    return _pipeline_logger
+
+def _mask_real_id(id_str: str) -> str:
+    if not id_str or len(id_str) < 4:
+        return "***"
+    return id_str[:2] + "***" + id_str[-2:]
+
 def get_log_file_path(module_name: str, timestamp: str = None) -> str:
     """모듈별 로그 파일 경로 생성"""
     if timestamp is None:

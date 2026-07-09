@@ -1033,7 +1033,7 @@ def _resolve_field_name(raw_field):
 
 
 def load_batch_summary(batch_path):
-    summary_path = os.path.join(batch_path, "tmeta", "batch_summary.json")
+    summary_path = os.path.join(batch_path, "tdata", "batch_summary.json")
     if not os.path.exists(summary_path):
         return None
     with open(summary_path, 'r', encoding='utf-8') as f:
@@ -1042,7 +1042,7 @@ def load_batch_summary(batch_path):
 
 def _batch_display_name(processed_data_dir, batch_id):
     """배치 디렉토리의 batch_summary.json에서 표시 명칭을 읽는다."""
-    summary_path = os.path.join(processed_data_dir, 'batch', batch_id, "tmeta", "batch_summary.json")
+    summary_path = os.path.join(processed_data_dir, 'batch', batch_id, "tdata", "batch_summary.json")
     if os.path.exists(summary_path):
         try:
             with open(summary_path, 'r', encoding='utf-8') as _sf:

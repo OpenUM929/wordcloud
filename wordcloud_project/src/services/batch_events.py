@@ -90,7 +90,7 @@ def create_batch_zip(batch_dir, session_results):
         if not batch_dir or not os.path.exists(batch_dir):
             return {'error': '배치 처리 결과를 찾을 수 없습니다.'}, 404
         
-        summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
+        summary_path = os.path.join(batch_dir, "tdata", "batch_summary.json")
         if not os.path.exists(summary_path):
             return {'error': 'batch_summary.json을 찾을 수 없습니다.'}, 404
         with open(summary_path, 'r', encoding='utf-8') as f:
@@ -100,11 +100,11 @@ def create_batch_zip(batch_dir, session_results):
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             zf.writestr('batch_summary.json', json.dumps(summary, ensure_ascii=False, indent=2))
             
-            # Add tmeta files
-            tmeta_dir = os.path.join(batch_dir, 'tmeta')
-            if os.path.exists(tmeta_dir):
-                for file_name in os.listdir(tmeta_dir):
-                    file_path = os.path.join(tmeta_dir, file_name)
+            # Add tdata files
+            tdata_dir = os.path.join(batch_dir, 'tdata')
+            if os.path.exists(tdata_dir):
+                for file_name in os.listdir(tdata_dir):
+                    file_path = os.path.join(tdata_dir, file_name)
                     if os.path.isfile(file_path):
                         relative_path = os.path.relpath(file_path, batch_dir)
                         zf.write(file_path, relative_path)

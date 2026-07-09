@@ -38,7 +38,7 @@ from src.config.settings import (
 
 # Import blueprints
 from src.routes.ui_routes import ui_bp
-from src.routes.metadata_routes import metadata_bp
+from src.routes.integrated_data_routes import integrated_bp
 from src.routes.batch_routes import batch_bp
 from src.routes.wordcloud_routes import wordcloud_bp
 from src.routes.api_routes import api_bp
@@ -64,7 +64,7 @@ def create_app():
     
     # Register blueprints
     app.register_blueprint(ui_bp)
-    app.register_blueprint(metadata_bp)
+    app.register_blueprint(integrated_bp)
     app.register_blueprint(batch_bp)
     app.register_blueprint(wordcloud_bp)
     app.register_blueprint(api_bp, url_prefix='/api')

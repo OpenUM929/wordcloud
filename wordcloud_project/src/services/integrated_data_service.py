@@ -11,8 +11,8 @@ from src.config.settings import (
     EMOTION_NAMES,
     SENTIMENT_MAP
 )
-from src.models.metadata_manager import MetadataManager
-from src.modules.metadata_analysis import calculate_consolidated_analysis
+from src.models.integrated_data_manager import IntegratedDataManager
+from src.modules.integrated_analysis import calculate_consolidated_analysis
 
 
 def load_config():
@@ -38,9 +38,9 @@ def save_config(config):
         return False
 
 
-def generate_metadata(data):
+def generate_integrated_data(data):
     """Generate metadata from evaluation data."""
-    metadata_manager = MetadataManager(PROCESSED_DATA_DIR_PATH)
+    integrated_data_manager = IntegratedDataManager(PROCESSED_DATA_DIR_PATH)
     
     # Extract data from request
     target_employee_id = data.get('target_employee_id')
@@ -183,9 +183,9 @@ def get_batch_list():
     return sorted_batches
 
 
-def get_batch_metadata(batch_path):
+def get_batch_integrated_data(batch_path):
     """Get metadata for a specific batch."""
-    metadata_manager = MetadataManager(PROCESSED_DATA_DIR_PATH)
+    integrated_data_manager = IntegratedDataManager(PROCESSED_DATA_DIR_PATH)
     metadata_list = []
     
     tmeta_path = os.path.join(batch_path, 'tmeta')
@@ -194,7 +194,7 @@ def get_batch_metadata(batch_path):
             if file.startswith('employee_') and file.endswith('.json'):
                 try:
                     employee_id = file.split('_')[1].split('.')[0]
-                    metadata = metadata_manager.load_employee_metadata(employee_id, batch_path)
+                    metadata = integrated_data_manager.load_employee_metadata(employee_id, batch_path)
                     
                     # Process metadata for API response
                     wordcloud_path = metadata.get('wordcloud_path')

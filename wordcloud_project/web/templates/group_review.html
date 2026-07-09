@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}그룹 검토{% endblock %}
+
+{% block extra_head %}
+<style>
+  .gr-intro { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
+    border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; color: #444; }
+  .gr-intro kbd { background: #eef1f5; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 5px; font-size: 12px; }
+  .gr-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .gr-bar select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+  .gr-bar label { font-size: 13px; color: #555; cursor: pointer; }
+  .gr-progress { font-size: 13px; color: #555; margin-left: auto; }
+  table.gr-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; background: #fff;
+    border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; table-layout: fixed; }
+  .gr-tbl th { background: #f8fafc; text-align: left; padding: 9px 10px; color: #555;
+    font-weight: 600; border-bottom: 1px solid #e5e7eb; }
+  .gr-tbl td { padding: 9px 10px; border-bottom: 1px solid #f1f3f5; vertical-align: top; }
+  .gr-tbl tr.decided { background: #f6fbf7; }
+  .gr-tbl tr.dirty { background: #fffbeb; }
+  .gr-tbl tr.cursor { box-shadow: inset 3px 0 0 #2563eb; background: #eef4ff; }
+  .gr-tbl tr.cursor.dirty { background: #fdf3d8; }
+  .gr-tbl .txt { color: #111; line-height: 1.45; word-break: keep-all; }
+  .gr-tbl .sub { color: #94a3b8; font-size: 12px; }
+  .gr-ref { font-size: 12px; color: #45506b; }
+  .pol { font-weight: 700; }
+  .pol.positive { color: #1a7f37; } .pol.negative { color: #c0392b; } .pol.neutral { color: #555; } .pol.not_group { color: #8a6d3b; }
+  .gr-pick { display: flex; gap: 4px; flex-wrap: wrap; }
+  .gr-pb { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .gr-pb.pos { color: #1a7f37; } .gr-pb.neg { color: #c0392b; } .gr-pb.neu { color: #555; } .gr-pb.non { color: #8a6d3b; }
+  .gr-pb.on.pos { background: #1a7f37; color: #fff; border-color: #1a7f37; }
+  .gr-pb.on.neg { background: #c0392b; color: #fff; border-color: #c0392b; }
+  .gr-pb.on.neu { background: #555; color: #fff; border-color: #555; }
+  .gr-pb.on.non { background: #8a6d3b; color: #fff; border-color: #8a6d3b; }
+  .gr-pb.pending { outline: 2px dashed #f59e0b; outline-offset: 1px; }
+  .gr-src { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700;
+    padding: 1px 5px; border-radius: 6px; vertical-align: middle; }
+  .gr-src.human { background: #dcfce7; color: #166534; }
+  .gr-src.auto { background: #f1f5f9; color: #64748b; }
+  .gr-savebtn { padding: 8px 16px; border: none; border-radius: 8px; background: #2563eb; color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; }
+  .gr-savebtn:disabled { background: #cbd5e1; cursor: default; }
+  .gr-page { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 14px 0; }
+  .gr-page button { padding: 7px 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; cursor: pointer; }
+  .gr-page button:disabled { opacity: .4; cursor: default; }
+  .gr-empty { color: #888; padding: 20px; }
+  .gr-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 14px;
+    opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 999; }
+  .gr-toast.show { opacity: .92; }
+  /* 컬럼 폭: 문장·알고리즘결과·네판정 가변, 현규칙·필드 좁게, 판정 고정 */
+  .col-txt { width: 24%; } .col-cur { width: 56px; } .col-algo { width: 22%; } .col-claude { width: 22%; } .col-pick { width: 200px; } .col-fld { width: 54px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>🏷️ 그룹 검토 — 신규 그룹 gold 라벨링 (게시판)</h2>
+<div class="gr-intro">
+  <code>eval/*.jsonl</code>을 불러와 행을 판정하면 <b>자동 저장</b>됩니다(<b>💾</b>는 즉시 저장). 페이지를 넘기거나 파일을 바꿔도 저장분은 유지됩니다.
+  키보드: <kbd>↑</kbd><kbd>↓</kbd> 행 이동 · <kbd>1</kbd> 긍정 · <kbd>2</kbd> 부정 · <kbd>3</kbd> 중립 · <kbd>4</kbd> 그룹아님(선택 후 자동으로 다음 행).
+  <b>현규칙</b>·<b>알고리즘 결과</b>는 규칙엔진 산출값(참고), <b>네 판정</b>은 Claude가 그룹 기준으로 판단한 결과+근거입니다. 최종 <b>판정</b>은 직접 선택하세요.
+</div>
+
+<div class="gr-bar">
+  <select id="grFile"><option value="">— 검토 파일 선택 —</option></select>
+  <select id="grSort" title="파일 정렬">
+    <option value="date_desc">날짜 ↓ (최신)</option>
+    <option value="date_asc">날짜 ↑ (오래된)</option>
+    <option value="name_asc">이름 ↑</option>
+    <option value="name_desc">이름 ↓</option>
+  </select>
+  <label><input type="checkbox" id="grUndecided" checked> 미판정만</label>
+  <button id="grSave" class="gr-savebtn" disabled>💾 저장 (0)</button>
+  <button id="grApplyDb" class="gr-savebtn" disabled style="background:#e67e22; display:none;">💾 DB에 반영</button>
+  <span class="gr-progress" id="grProgress"></span>
+</div>
+
+<div id="grEmpty" class="gr-empty">파일을 선택하면 검토 게시판이 표시됩니다.</div>
+
+<table class="gr-tbl" id="grTbl" style="display:none;">
+  <thead><tr>
+    <th class="col-txt">문장</th><th class="col-cur">현규칙</th>
+    <th class="col-algo">알고리즘 결과</th><th class="col-claude">네 판정(설명)</th>
+    <th class="col-pick">판정</th><th class="col-fld">필드</th>
+  </tr></thead>
+  <tbody id="grBody"></tbody>
+</table>
+
+<div class="gr-page" id="grPage" style="display:none;">
+  <button id="grPrev">◀ 이전</button>
+  <span id="grPageInfo"></span>
+  <button id="grNext">다음 ▶</button>
+</div>
+
+<div class="gr-toast" id="grToast"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/group_review.js"></script>
+{% endblock %}

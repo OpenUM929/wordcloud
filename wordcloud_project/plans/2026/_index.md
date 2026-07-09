@@ -36,7 +36,7 @@
 | 0615_06_emp-id-match-fix | 그룹분석·제출용저장 회귀 수정 (target_employee_id 매칭 키 복원) | Done | 2026-06-15 |
 | 0615_07_sentiment-save-fix | 워드클라우드 감정 분리 모드 저장 누락 수정 | Done | 2026-06-15 |
 | 0615_08_sentence-kote-cache | 배치 시 문장 단위 KoTE 캐시 저장 + 그룹 분석 재사용 | Done | 2026-06-15 |
-| 0615_09_metadata-group-fix | 메타데이터 생성·그룹 분석 결함 수정 (D·A 해결 / B·C·E 무해·보류→0618_01) | Done | 2026-06-15 |
+| 0615_09_metadata-group-fix | 통합데이터 생성·그룹 분석 결함 수정 (D·A 해결 / B·C·E 무해·보류→0618_01) | Done | 2026-06-15 |
 | 0615_10_corpus-refine-csv | 취득 코퍼스 정제 후 CSV 내보내기 (규칙 마이닝용 데이터셋) | Done | 2026-06-15 |
 | 0617_01_emotion-rule-mining | 코퍼스 기반 감정 규칙 마이닝 + KoTE 분류 정당성 검증 + 긍정어 강화 (코드완료, 잔여 deferred) | Done | 2026-06-17 |
 | 0617_02_group-bulk-move | 집단 분석 결과 → 습득 데이터 일괄 이동(감정 버킷·욕설·KoTE 값 동반) | Done | 2026-06-17 |
@@ -54,13 +54,13 @@
 | 0619_02_deploy-mem-stream | 제출용 저장 메모리 폭증(17k명 29~30GB 정지) 해소 — 직원 단위 로딩(load_employee_batch)으로 전환 | Pre-Done | 2026-06-19 |
 | 0619_03_busy-lock-progress | 배치 이력 + X축(시간/회차) 메타 조회 속도 개선(load_all_batches 제거) + 장시간 작업 전면 차단 오버레이 | Pre-Done | 2026-06-19 |
 | 0619_04_leadership-judge-ai | 리더십 판단 AI 설계(외부 OpenUM929 골격 + 우리 코퍼스 gold, 문장→micro 추출기·전용분류기, LP0~LP5) | Todo | 2026-06-19 |
-| 0622_01_metadata-acq-extract | 메타데이터 시점 문장+KoTE 인라인 추출(그룹분석 불요) → 압축 JSONL 핸드오프 코퍼스(LLM 분석용) 전량 적립 | Pre-Done | 2026-06-22 |
+| 0622_01_metadata-acq-extract | 통합데이터 시점 문장+KoTE 인라인 추출(그룹분석 불요) → 압축 JSONL 핸드오프 코퍼스(LLM 분석용) 전량 적립 | Pre-Done | 2026-06-22 |
 | 0622_02_kanban-predone | Kanban 보드 Pre-Done(PDN) 상태 추가 | Pre-Done | 2026-06-22 |
 | 0622_03_wc-logger-fd-leak | 워드클라우드 로거 핸들러 누수로 인한 FD 고갈(Too many open files) 수정 — 그룹/대량 저장 500 | Todo | 2026-06-22 |
 | 0623_01_judgment-extract-ui | 판정 패킷 추출 배치 체크박스 연동(핸드오프 동형, 둘 다 기본 체크) + eval/judgment 저장 | Pre-Done | 2026-06-23 |
 | 0623_02_sentiment-rule3-rescue | rule3_last_low 긍→부 보강(장점). 장점 0.6→94.5%·긍↔부0이나 **단점 적대검증서 부→긍 187 회귀** → 결핍·희망·과잉·역접 가드 선결(보류) | Pre-Done | 2026-06-23 |
 | 0623_03_sentiment-cons-guard | 단점 맥락 부→긍 가드(has_improvement_request) — 0623_02 장점수정의 단점 적대검증 회귀 차단. 단점 부→긍 11,039→8,802, 양방향 긍↔부 0(장점94.5%·하드84.9%) | Pre-Done | 2026-06-24 |
-| 0624_01_metadata-generation-ui | 메타데이터 생성 UI 버그(로딩 미표시, 폴더선택 공백) + 배치명칭 자동입력 | Done | 2026-06-24 |
+| 0624_01_metadata-generation-ui | 통합데이터 생성 UI 버그(로딩 미표시, 폴더선택 공백) + 배치명칭 자동입력 | Done | 2026-06-24 |
 | 0624_02_css-standardization | CSS 표준안 위반 수정 + 최대 너비 1600px 확장 | Done | 2026-06-24 |
 | 0624_03_judgment-apply-ui | 판정 결과 반영 UI(주기능) — 판정 완료 패킷 업로드→/judgment/apply→요약·검토큐. 추출↔반영 end-to-end 연결 | Pre-Done | 2026-06-24 |
 | 0624_04_emotion-clustering | KoTE 파인튜닝용 신규 HR 감정그룹 군집 발굴(감정 스트림) — 미피복 484K(56%) 멀티뷰 군집 24개→3대 화행(G1약점부재·G2개선요청·G3역량서술). D1·D3·D4·D5 완료(176K weak 전파·gold 1,318·baseline 1,500). 군집≠gold·필드 1급·긍↔부0 | Doing | 2026-06-24 |
@@ -72,3 +72,5 @@
 | 0630_04_deficiency-noun-neg | 결핍명사(부족·미흡·결여·부재) substring 부정화 시도 — 전수 재생서 긍→부 263(장점 138) 잔존(술어결정 토픽명사), 코드 원복·극성표/파인튜닝 트랙 이관 | Drop | 2026-06-30 |
 | 0630_05_perspective-sort-feature | perspective_test 워드클라우드/매트릭스 정렬 기능(오름/내림/긍/부/중/욕설) | Todo | 2026-06-30 |
 | 0701_01_nav-hub-version | Nav 2쌍 탭 병합(설정+불용어·욕설+습득) + 섹션 접기 기억 + 버전 배지(모델 로드/무결성) | Todo | 2026-07-01 |
+| 0709_01_metadata-rename | 메타데이터→통합데이터 용어 통일 리팩토링 (src/·web/·doc/ 43파일, 기존 데이터 마이그레이션) | Doing | 2026-07-09 |
+| 0709_02_playwright-mcp-test | Playwright MCP 설치 및 용어변경 후 전 기능 회귀 검증 (헤드리스+헤디드 병행, 15주제) | Doing | 2026-07-09 |

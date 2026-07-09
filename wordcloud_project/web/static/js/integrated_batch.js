@@ -1,4 +1,4 @@
-﻿// metadata_batch.js - 메타데이터 배치 처리 JavaScript
+﻿// integrated_batch.js - 통합데이터 배치 처리 JavaScript
 
 var currentStep = 1;
 var uploadedData = null;
@@ -12,6 +12,20 @@ var isProcessing = false;
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function getUploadedFileLabel() {
+    if (!uploadedData || !uploadedData.filename) return '';
+    var name = uploadedData.filename;
+    var structures = uploadedData.file_structures;
+    if (structures && structures.length > 1) {
+        var names = structures.map(function(s) { return s.filename; });
+        if (names.length > 3) {
+            return names.slice(0, 3).join(', ') + ' 외 ' + (names.length - 3) + '개';
+        }
+        return names.join(', ');
+    }
+    return name;
 }
 
 function switchUploadTab(tab) {
@@ -95,7 +109,7 @@ function calculateSimilarity(str1, str2) {
     return maxWords > 0 ? commonWords / maxWords : 0;
 }
 
-var defaultMetadataStructure = {
+var defaultIntegratedDataStructure = {
     "session_id": { type: "string", required: true, auto: true, system: true, description: "세션 고유 식별자" },
     "created_at": { type: "timestamp", required: true, auto: true, system: true, description: "생성 시각" },
     "version": { type: "string", required: true, auto: true, system: true, description: "스키마 버전" },
@@ -121,29 +135,29 @@ var defaultMetadataStructure = {
     "evaluations": { type: "array", required: true, auto: true, system: false, description: "개별 평가 리스트" }
 };
 
-var metadataStructure = loadMetadataStructure();
+var integratedDataStructure = loadIntegratedDataStructure();
 
-function loadMetadataStructure() {
-    var saved = localStorage.getItem('metadataStructure');
+function loadIntegratedDataStructure() {
+    var saved = localStorage.getItem('integratedDataStructure');
     if (saved) {
         try {
             var parsed = JSON.parse(saved);
-            return Object.assign({}, defaultMetadataStructure, parsed);
+            return Object.assign({}, defaultIntegratedDataStructure, parsed);
         } catch (e) {
-            console.error('메타데이터 구조 로드 실패:', e);
+            console.error('통합데이터 구조 로드 실패:', e);
         }
     }
-    return Object.assign({}, defaultMetadataStructure);
+    return Object.assign({}, defaultIntegratedDataStructure);
 }
 
-function saveMetadataStructure() {
+function saveIntegratedDataStructure() {
     var userFields = {};
-    Object.keys(metadataStructure).forEach(function(key) {
-        if (!metadataStructure[key].system) {
-            userFields[key] = metadataStructure[key];
+    Object.keys(integratedDataStructure).forEach(function(key) {
+        if (!integratedDataStructure[key].system) {
+            userFields[key] = integratedDataStructure[key];
         }
     });
-    localStorage.setItem('metadataStructure', JSON.stringify(userFields));
+    localStorage.setItem('integratedDataStructure', JSON.stringify(userFields));
 }
 
 function savePseudonymFieldsToLocal() {
@@ -220,7 +234,7 @@ function loadPreviousMapping() {
                 }
             });
 
-            renderMetadataTree();
+            renderIntegratedDataTree();
             renderDataColumns();
             updateMappingStatus();
 
@@ -341,8 +355,8 @@ function updateStepButtons() {
             }
 
             if (currentStep === 2) {
-                var requiredFields = Object.keys(metadataStructure).filter(function(key) {
-                    return metadataStructure[key].required && !metadataStructure[key].auto;
+                var requiredFields = Object.keys(integratedDataStructure).filter(function(key) {
+                    return integratedDataStructure[key].required && !integratedDataStructure[key].auto;
                 });
                 var missingRequiredFields = requiredFields.filter(function(key) { return !columnMappings[key]; });
                 
@@ -373,21 +387,23 @@ function updateStepButtons() {
     if (currentStepInfo) {
         var stepMessages = {
             1: '1단계: 데이터 업로드',
-            2: '2단계: 메타데이터 매핑',
+            2: '2단계: 통합데이터 매핑',
             3: '3단계: 미리보기',
             4: '4단계: 배치 처리 및 저장'
         };
-        currentStepInfo.textContent = stepMessages[currentStep] || '';
+        var base = stepMessages[currentStep] || '';
+        var label = getUploadedFileLabel();
+        currentStepInfo.textContent = base + (label ? ' (' + label + ')' : '');
     }
 }
 
-function renderMetadataTree() {
-    var container = document.getElementById('metadataTree');
+function renderIntegratedDataTree() {
+    var container = document.getElementById('integratedDataTree');
     container.innerHTML = '';
     
     var displayIndex = 0;
-    Object.keys(metadataStructure).forEach(function(key) {
-        var field = metadataStructure[key];
+    Object.keys(integratedDataStructure).forEach(function(key) {
+        var field = integratedDataStructure[key];
         if (field.auto) {
             return;
         }
@@ -449,7 +465,7 @@ function renderDataColumns() {
 
 function selectField(key) {
     selectedField = key;
-    renderMetadataTree();
+    renderIntegratedDataTree();
     renderDataColumns();
     updateSelectedFieldInfo();
 }
@@ -473,7 +489,7 @@ function selectDataColumn(column) {
         }
     }
     
-    renderMetadataTree();
+    renderIntegratedDataTree();
     renderDataColumns();
     updateMappingStatus();
 }
@@ -488,7 +504,7 @@ function updateSelectedFieldInfo() {
         return;
     }
     
-    var field = metadataStructure[selectedField];
+    var field = integratedDataStructure[selectedField];
     var mappedInfo = columnMappings[selectedField] || '미매핑';
     
     container.innerHTML = '<p><strong>필드명:</strong> ' + selectedField + '</p><p><strong>타입:</strong> ' + field.type + '</p><p><strong>필수:</strong> ' + (field.required ? '예' : '아니오') + '</p><p><strong>자동생성:</strong> ' + (field.auto ? '예' : '아니오') + '</p><p><strong>설명:</strong> ' + field.description + '</p><p><strong>매핑된 열:</strong> ' + mappedInfo + '</p>';
@@ -498,8 +514,8 @@ function updateSelectedFieldInfo() {
 function updateMappingStatus() {
     var container = document.getElementById('mappingStatus');
     
-    var requiredFields = Object.keys(metadataStructure).filter(function(key) {
-        return metadataStructure[key].required && !metadataStructure[key].auto;
+    var requiredFields = Object.keys(integratedDataStructure).filter(function(key) {
+        return integratedDataStructure[key].required && !integratedDataStructure[key].auto;
     });
     
     var mappedRequiredFields = requiredFields.filter(function(key) { return !!columnMappings[key]; });
@@ -509,7 +525,7 @@ function updateMappingStatus() {
         mappingListHtml += '<li>' + field + ' → ' + columnMappings[field] + '</li>';
     });
     
-    container.innerHTML = '<p><strong>필수 필드 매핑:</strong> ' + mappedRequiredFields.length + '/' + requiredFields.length + '</p><p><strong>전체 필드 매핑:</strong> ' + Object.keys(columnMappings).length + '/' + Object.keys(metadataStructure).length + '</p><ul>' + mappingListHtml + '</ul>';
+    container.innerHTML = '<p><strong>필수 필드 매핑:</strong> ' + mappedRequiredFields.length + '/' + requiredFields.length + '</p><p><strong>전체 필드 매핑:</strong> ' + Object.keys(columnMappings).length + '/' + Object.keys(integratedDataStructure).length + '</p><ul>' + mappingListHtml + '</ul>';
     
     if (currentStep === 2) {
         updateStepButtons();
@@ -540,12 +556,12 @@ function saveField() {
         return;
     }
     
-    if (metadataStructure[name]) {
+    if (integratedDataStructure[name]) {
         alert('이미 존재하는 필드입니다.');
         return;
     }
     
-    metadataStructure[name] = {
+    integratedDataStructure[name] = {
         type: type,
         required: required,
         auto: false,
@@ -553,8 +569,8 @@ function saveField() {
         description: description
     };
     
-    saveMetadataStructure();
-    renderMetadataTree();
+    saveIntegratedDataStructure();
+    renderIntegratedDataTree();
     cancelFieldEdit();
 }
 
@@ -585,8 +601,8 @@ function nextStep() {
             }
             showStep(2);
         } else if (currentStep === 2) {
-            var requiredFields = Object.keys(metadataStructure).filter(function(key) {
-                return metadataStructure[key].required && !metadataStructure[key].auto;
+            var requiredFields = Object.keys(integratedDataStructure).filter(function(key) {
+                return integratedDataStructure[key].required && !integratedDataStructure[key].auto;
             });
             
             var missingRequiredFields = requiredFields.filter(function(key) { return !columnMappings[key]; });
@@ -647,7 +663,7 @@ function generatePreview() {
     }
     
     if (Object.keys(columnMappings).length === 0) {
-        container.innerHTML = '<p style="color: orange;">⚠️ 경고: 메타데이터 매핑이 완료되지 않았습니다.</p>';
+        container.innerHTML = '<p style="color: orange;">⚠️ 경고: 통합데이터 매핑이 완료되지 않았습니다.</p>';
         return;
     }
     
@@ -747,8 +763,8 @@ function startBatchProcessing() {
         return;
     }
     
-    var requiredFields = Object.keys(metadataStructure).filter(function(key) {
-        return metadataStructure[key].required && !metadataStructure[key].auto;
+    var requiredFields = Object.keys(integratedDataStructure).filter(function(key) {
+        return integratedDataStructure[key].required && !integratedDataStructure[key].auto;
     });
     
     var missingRequiredFields = requiredFields.filter(function(key) { return !columnMappings[key]; });
@@ -760,7 +776,7 @@ function startBatchProcessing() {
     
     isProcessing = true;
     // 0619_03: 배치 처리 중 전면 차단(종료 시 isProcessing=false 지점마다 해제)
-    if (window.showBusyOverlay) showBusyOverlay('메타데이터 생성 중… 완료까지 페이지를 벗어나지 마세요');
+    if (window.showBusyOverlay) showBusyOverlay('통합데이터 생성 중… 완료까지 페이지를 벗어나지 마세요');
     document.getElementById('processingStatus').classList.remove('hidden');
 
     var settings = {
@@ -785,9 +801,9 @@ function startBatchProcessing() {
             if (data.step !== undefined) {
                 var steps = [
                     '파일 로드 중...',
-                    '메타데이터 생성 중...',
-                    'imeta 저장 중...',
-                    'tmeta 저장 중...',
+                    '통합데이터 생성 중...',
+                    'idata 저장 중...',
+                    'tdata 저장 중...',
                     '워드클라우드 생성 중...',
                     '처리 완료'
                 ];
@@ -1107,7 +1123,7 @@ function loadMappingByName(name) {
                 }
             });
 
-            renderMetadataTree();
+            renderIntegratedDataTree();
             renderDataColumns();
             updateMappingStatus();
 
@@ -1422,8 +1438,8 @@ function openBatchSse() {
         try { data = JSON.parse(event.data); } catch (e) { return; }
 
         if (data.step !== undefined) {
-            var steps = ['파일 로드 중...', '메타데이터 생성 중...', 'imeta 저장 중...',
-                         'tmeta 저장 중...', '워드클라우드 생성 중...', '처리 완료'];
+            var steps = ['파일 로드 중...', '통합데이터 생성 중...', 'idata 저장 중...',
+                         'tdata 저장 중...', '워드클라우드 생성 중...', '처리 완료'];
             var currentStepIdx = data.step;
             var statusText = (data.status && data.status.trim()) ? data.status : (steps[currentStepIdx] || '');
             var textEl = document.getElementById('processingText');
@@ -1479,70 +1495,89 @@ function openBatchSse() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    renderMetadataTree();
-    loadWorkOrders();
-    updateStepButtons();  // 초기 로드 시 '다음 단계' 버튼 노출(데이터 적재 전 비활성화)
-    
-    // 0624_01: 배치 명칭 입력 시 적립대상 라벨 자동 채우기
-    (function() {
-        var batchNameInput = document.getElementById('batchDisplayName');
-        var handoffInput = document.getElementById('acqHandoffLabel');
-        var judgmentInput = document.getElementById('judgmentExtractLabel');
-        var handoffAuto = true, judgmentAuto = true;
-        if (!batchNameInput || !handoffInput || !judgmentInput) return;
-        handoffInput.addEventListener('input', function() {
-            handoffAuto = false;
-        });
-        judgmentInput.addEventListener('input', function() {
-            judgmentAuto = false;
-        });
-        batchNameInput.addEventListener('input', function() {
-            var val = this.value.trim();
-            if (handoffAuto) { handoffInput.value = val; }
-            if (judgmentAuto) { judgmentInput.value = val; }
-        });
-    })();
+    // fileInput change 리스너 — 독립·최우선 부착 (이전 로직 예외와 무관하게 항상 동작)
+    var fi = document.getElementById('fileInput');
+    var fileUploadArea = document.getElementById('fileUploadArea');
+    if (fi) {
+        fi.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                var file = e.target.files[0];
+                var formData = new FormData();
+                formData.append('file', file);
+                setUploadLoading(true);
 
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        if (e.target.files.length > 0) {
-            var file = e.target.files[0];
-            var formData = new FormData();
-            formData.append('file', file);
-            setUploadLoading(true);
+                fetch('/api/batch/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    setUploadLoading(false);
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    uploadedData = data;
+                    columnMappings = {};
+                    fieldOrder = [];
+                    var fd = document.getElementById('fileDetails');
+                    if (fd) fd.textContent = '파일명: ' + data.filename + ', 행: ' + data.rows + ', 열: ' + data.columns.length;
+                    var fiEl = document.getElementById('fileInfo');
+                    if (fiEl) fiEl.classList.remove('hidden');
 
-            fetch('/api/batch/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                setUploadLoading(false);
-                if (data.error) {
-                    alert(data.error);
-                    return;
+                    renderDataColumns();
+                    updateStepButtons();
+
+                    setTimeout(function() { showStep(2); }, 1000);
+                })
+                .catch(function(error) {
+                    setUploadLoading(false);
+                    console.error('파일 업로드 오류:', error);
+                    alert('파일 업로드 중 오류가 발생했습니다.');
+                });
+            }
+        });
+
+        // .upload-area 클릭 → fileInput.click() (영역 클릭 진입 지원)
+        if (fileUploadArea) {
+            fileUploadArea.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+                    fi.click();
                 }
-                
-                uploadedData = data;
-                columnMappings = {};
-                fieldOrder = [];
-                document.getElementById('fileDetails').textContent = '파일명: ' + data.filename + ', 행: ' + data.rows + ', 열: ' + data.columns.length;
-                document.getElementById('fileInfo').classList.remove('hidden');
-
-                renderDataColumns();
-                updateStepButtons();
-
-                // 파일은 기존처럼 자동으로 다음 단계 이동(버튼은 활성화된 채 노출)
-                setTimeout(function() { showStep(2); }, 1000);
-            })
-            .catch(function(error) {
-                setUploadLoading(false);
-                console.error('파일 업로드 오류:', error);
-                alert('파일 업로드 중 오류가 발생했습니다.');
             });
         }
-    });
-    
-    document.getElementById('nextBtn').addEventListener('click', nextStep);
-    document.getElementById('prevBtn').addEventListener('click', prevStep);
-    
+    }
+
+    // 나머지 초기화 — 예외 격리
+    try {
+        renderIntegratedDataTree();
+        loadWorkOrders();
+        updateStepButtons();
+        
+        // 0624_01: 배치 명칭 입력 시 적립대상 라벨 자동 채우기
+        (function() {
+            var batchNameInput = document.getElementById('batchDisplayName');
+            var handoffInput = document.getElementById('acqHandoffLabel');
+            var judgmentInput = document.getElementById('judgmentExtractLabel');
+            var handoffAuto = true, judgmentAuto = true;
+            if (!batchNameInput || !handoffInput || !judgmentInput) return;
+            handoffInput.addEventListener('input', function() {
+                handoffAuto = false;
+            });
+            judgmentInput.addEventListener('input', function() {
+                judgmentAuto = false;
+            });
+            batchNameInput.addEventListener('input', function() {
+                var val = this.value.trim();
+                if (handoffAuto) { handoffInput.value = val; }
+                if (judgmentAuto) { judgmentInput.value = val; }
+            });
+        })();
+
+        document.getElementById('nextBtn').addEventListener('click', nextStep);
+        document.getElementById('prevBtn').addEventListener('click', prevStep);
+    } catch (e) {
+        console.warn('integrated_batch 초기화 예외:', e);
+    }
 });

@@ -37,7 +37,7 @@
 
     <div class="ja-intro">
         <h3>AI 판정이 끝난 패킷을 평가 DB에 반영합니다</h3>
-        <p>메타데이터 생성 시 추출한 <strong>판정 패킷</strong>(어려운 문장 모음)을 AI/사람이 판정해 <code>result.label</code>을 채운 뒤, 그 JSON을 여기에 업로드하면 각 문장의 감정 보정값(<code>sentiment_corrections</code>)에 반영됩니다.</p>
+        <p>통합데이터 생성 시 추출한 <strong>판정 패킷</strong>(어려운 문장 모음)을 AI/사람이 판정해 <code>result.label</code>을 채운 뒤, 그 JSON을 여기에 업로드하면 각 문장의 감정 보정값(<code>sentiment_corrections</code>)에 반영됩니다.</p>
         <p>· 가명 키(<code>db_id</code>, <code>sent_idx</code>) 기준으로 in-place 병합 — 기존 보정은 보존되고 신규 판정이 우선합니다.</p>
         <p>· <code>needs_human: true</code> 항목은 DB에 넣지 않고 아래 검토 큐로만 표시됩니다.</p>
     </div>

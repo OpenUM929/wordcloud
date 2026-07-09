@@ -1,6 +1,6 @@
 ﻿{% extends "base.html" %}
 
-{% block title %}메타데이터 생성 (배치 처리){% endblock %}
+{% block title %}통합데이터 생성 (배치 처리){% endblock %}
 
 {% block extra_head %}
 <style>
@@ -197,7 +197,7 @@
 {% endblock %}
 
 {% block content %}
-    <h1>메타데이터 생성 (배치 처리)</h1>
+    <h1>통합데이터 생성 (배치 처리)</h1>
 
     <div style="margin: 15px 0;">
         <a href="/perspective_test" class="btn btn-outline-info">📊 그룹분석 (Perspective Analysis)</a>
@@ -237,7 +237,7 @@
 
     <div class="step-status">
         <div id="step1-status">1단계: 데이터 업로드 대기 중</div>
-        <div id="step2-status">2단계: 메타데이터 매핑 진행 중</div>
+        <div id="step2-status">2단계: 통합데이터 매핑 진행 중</div>
         <div id="step3-status">3단계: 미리보기 대기 중</div>
         <div id="step4-status">4단계: 배치 저장 대기 중</div>
     </div>
@@ -253,7 +253,7 @@
             
             <div id="fileUploadArea" class="upload-area">
                 <p>CSV 파일을 드래그하거나 클릭하여 선택하세요</p>
-                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none;">
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;">
                 <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">파일 선택</button>
                 <p class="upload-area__hint">지원 형식: CSV, Excel (.xlsx, .xls) | 최대 크기: 100MB</p>
             </div>
@@ -296,7 +296,7 @@
 
 <div id="step2" class="step-content hidden">
             <div class="flex flex--between">
-                <h2>2. 메타데이터 매핑</h2>
+                <h2>2. 통합데이터 매핑</h2>
                 <div class="flex gap-2">
                     <button class="btn btn-outline-secondary" onclick="loadPreviousMapping()">이전 매핑 불러오기</button>
                     <button class="btn btn-outline-info" onclick="showMappingManager()">📁 매핑 관리</button>
@@ -304,8 +304,8 @@
             </div>
             <div class="mapping-area">
                 <div class="tree-panel">
-                    <h3>메타데이터 구조</h3>
-                    <div id="metadataTree"></div>
+                    <h3>통합데이터 구조</h3>
+                    <div id="integratedDataTree"></div>
 
                     <div id="fieldManagement">
                         <h4>필드 관리</h4>
@@ -445,17 +445,17 @@
                     <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="2" data-group="green-light">
                         <div class="proc-step-circle">3</div>
-                        <div class="proc-step-text">메타데이터</div>
+                        <div class="proc-step-text">통합데이터</div>
                     </div>
                     <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="3" data-group="blue">
                         <div class="proc-step-circle">4</div>
-                        <div class="proc-step-text">imeta 저장</div>
+                        <div class="proc-step-text">idata 저장</div>
                     </div>
                     <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="4" data-group="blue">
                         <div class="proc-step-circle">5</div>
-                        <div class="proc-step-text">tmeta 저장</div>
+                        <div class="proc-step-text">tdata 저장</div>
                     </div>
                     <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="5" data-group="green">
@@ -487,7 +487,7 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="{{ url_for('static', filename='js/metadata_batch.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/integrated_batch.js') }}"></script>
 
         <div id="mappingManagerModal">
             <div class="modal-card" style="width:600px; max-height:80vh; margin:50px auto; overflow-y:auto;">

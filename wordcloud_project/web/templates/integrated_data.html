@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}메타데이터 생성{% endblock %}
+{% block title %}통합데이터 생성{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -76,10 +76,10 @@
 {% endblock %}
 
 {% block content %}
-    <h1>메타데이터 생성</h1>
+    <h1>통합데이터 생성</h1>
     
     <div class="wordcloud-options">
-        <h3>메타데이터 입력 정보</h3>
+        <h3>통합데이터 입력 정보</h3>
         <form id="metadataForm">
             <div class="cards-container">
                 <div class="option-card">
@@ -162,7 +162,7 @@
                 </div>
             </div>
             
-            <button type="submit" class="regenerate-btn">메타데이터 생성</button>
+            <button type="submit" class="regenerate-btn">통합데이터 생성</button>
         </form>
     </div>
 
@@ -180,7 +180,7 @@
         </div>
         
         <div class="info-section">
-            <h4>메타데이터 JSON</h4>
+            <h4>통합데이터 JSON</h4>
             <div id="metadataResult" class="json-result"></div>
         </div>
     </div>
@@ -237,7 +237,7 @@
 
                 document.getElementById('classificationResult').innerHTML = classificationHtml;
 
-                // 메타데이터 JSON 표시
+                // 통합데이터 JSON 표시
                 document.getElementById('metadataResult').textContent = JSON.stringify(result.metadata, null, 2);
 
                 // 워드클라우드 이미지 표시 (경로가 있는 경우)
@@ -256,7 +256,7 @@
                 document.getElementById('results').style.display = 'block';
             })
             .catch(error => {
-                alert('메타데이터 생성 중 오류가 발생했습니다: ' + error.message);
+                alert('통합데이터 생성 중 오류가 발생했습니다: ' + error.message);
             });
         });
     </script>

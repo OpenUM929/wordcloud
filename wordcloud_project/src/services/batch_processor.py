@@ -259,13 +259,13 @@ def _extract_rows_from_chunk(chunk, target_id_column, mappings,
     return out
 
 
-def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_dir,
+def process_employee_metadata(integrated_data_manager, employee_id, evaluations, batch_dir,
                               department, position, mappings):
     """
     Process metadata for a single employee.
 
     Args:
-        metadata_manager: MetadataManager instance
+        integrated_data_manager: IntegratedDataManager instance
         employee_id: Employee ID
         evaluations: List of evaluation data
         batch_dir: Batch directory path
@@ -277,7 +277,7 @@ def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_
         tuple: (metadata, success, error_message)
     """
     try:
-        metadata = metadata_manager.create_employee_metadata(
+        metadata = integrated_data_manager.create_employee_integrated_data(
             employee_id=employee_id,
             evaluations=evaluations,
             department=department,
@@ -303,7 +303,7 @@ def process_employee_metadata(metadata_manager, employee_id, evaluations, batch_
                 metadata['target_employee_name'] = name_val
         
         # Stage 2에서 Stage 3/4에서 별도로 저장하므로 여기서는 저장 안 함
-        # metadata_path = metadata_manager.save_employee_metadata(metadata, batch_dir)
+        # metadata_path = integrated_data_manager.save_employee_integrated_data(metadata, batch_dir)
 
         return metadata, True, None, None
 
@@ -472,8 +472,8 @@ def create_batch_summary(batch_dir, grouped_data, employee_results,
             'error_count': batch_processing_state.get('error_count', 0)
         },
         'metadata_info': {
-            'individual_metadata_dir': 'imeta',
-            'consolidated_metadata_dir': 'tmeta'
+            'individual_metadata_dir': 'idata',
+            'consolidated_metadata_dir': 'tdata'
         },
         'employee_ids': list(set(
             er.get('employee_id') or er.get('metadata', {}).get('target_employee_id', '')
@@ -483,7 +483,7 @@ def create_batch_summary(batch_dir, grouped_data, employee_results,
     }
     
     # Save summary
-    summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
+    summary_path = os.path.join(batch_dir, "tdata", "batch_summary.json")
     with open(summary_path, 'w', encoding='utf-8') as f:
         json.dump(batch_summary, f, ensure_ascii=False, indent=2)
     
@@ -493,7 +493,7 @@ def create_batch_summary(batch_dir, grouped_data, employee_results,
 def _ensure_batch_summary(batch_dir, batch_processing_state, display_name='',
                           skipped_count=0, skipped_detail=None):
     """batch_summary.json 생성 또는 갱신 (display_name 저장용)."""
-    summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
+    summary_path = os.path.join(batch_dir, "tdata", "batch_summary.json")
     os.makedirs(os.path.dirname(summary_path), exist_ok=True)
 
     summary = {
@@ -534,7 +534,7 @@ def process_batch(processed_data_dir, data, session_data):
     from src.services.batch_service import batch_processing_state
     from io import StringIO
     import pandas as pd
-    from src.models.metadata_manager import MetadataManager
+    from src.models.integrated_data_manager import IntegratedDataManager
     import os
     
     # Load data from session file path
@@ -724,7 +724,7 @@ def process_batch(processed_data_dir, data, session_data):
             logging.getLogger(__name__).warning(f'Work order 생성 실패: {e}')
 
     # Initialize metadata manager
-    metadata_manager = MetadataManager(processed_data_dir)
+    integrated_data_manager = IntegratedDataManager(processed_data_dir)
     
     # Import concurrent.futures for parallel processing
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -777,7 +777,7 @@ def process_batch(processed_data_dir, data, session_data):
             conn = batch_staging.get_reader(batch_dir)
             evaluations = batch_staging.load_employee_evaluations(conn, employee_id)
             metadata, success, error, _ = process_employee_metadata(
-                metadata_manager, employee_id, evaluations, batch_dir,
+                integrated_data_manager, employee_id, evaluations, batch_dir,
                 data.get('target_employee_department', '생산부'),
                 data.get('target_employee_position', '사원'),
                 mappings

@@ -275,7 +275,7 @@
         background: #555;
     }
 
-    /* 직원 메타데이터 목록도 동일하게 적용 */
+    /* 직원 통합데이터 목록도 동일하게 적용 */
     #metadataTree {
         max-height: 400px;
         overflow-y: auto;
@@ -305,7 +305,7 @@
 {% endblock %}
 
 {% block content %}
-<h1>메타데이터 워드클라우드</h1>
+<h1>통합데이터 워드클라우드</h1>
 
 <div class="mapping-area">
     <div class="tree-panel">
@@ -314,7 +314,7 @@
     </div>
 
     <div class="data-panel">
-        <h3>직원 메타데이터 선택</h3>
+        <h3>직원 통합데이터 선택</h3>
         <div id="metadataTree"></div>
     </div>
 </div>
@@ -422,7 +422,7 @@
 
 <script src="/static/js/wordcloud/WordCloudPreset.js"></script>
 <script>
-// 공통 모듈: 메타데이터 정보 HTML 생성
+// 공통 모듈: 통합데이터 정보 HTML 생성
 function generateMetadataInfoHtml(metadata) {
     // metadata 객체가 metadata 필드 내에 포함된 경우, 내부 metadata를 사용
     const actualMetadata = metadata.metadata || metadata;
@@ -714,11 +714,11 @@ function selectBatch(batch, element) {
     // 선택된 배치 하이라이트
     element.classList.add('selected');
 
-    // 메타데이터 로드
+    // 통합데이터 로드
     loadBatchMetadata(batch.path);
 }
 
-// 메타데이터 트리 렌더링
+// 통합데이터 트리 렌더링
 async function loadBatchMetadata(batchPath) {
     const treeContainer = document.getElementById('metadataTree');
     treeContainer.innerHTML = '<h4>직원 목록</h4>';
@@ -754,24 +754,24 @@ async function loadBatchMetadata(batchPath) {
                 treeContainer.appendChild(metaNode);
             });
         } else {
-            treeContainer.innerHTML += '<p>메타데이터가 없습니다.</p>';
+            treeContainer.innerHTML += '<p>통합데이터가 없습니다.</p>';
         }
     } catch (error) {
-        console.error('메타데이터 로드 실패:', error);
-        treeContainer.innerHTML += '<p>메타데이터 로드 실패</p>';
+        console.error('통합데이터 로드 실패:', error);
+        treeContainer.innerHTML += '<p>통합데이터 로드 실패</p>';
     }
 }
 
-// 메타데이터 선택
+// 통합데이터 선택
 function selectMetadata(metadata, element) {
     selectedMetadata = metadata;
 
-    // 다른 메타데이터 선택 해제
+    // 다른 통합데이터 선택 해제
     document.querySelectorAll('#metadataTree .tree-node').forEach(node => {
         node.classList.remove('selected');
     });
 
-    // 선택된 메타데이터 하이라이트
+    // 선택된 통합데이터 하이라이트
     element.classList.add('selected');
 
     // 워드클 라우드 표시
@@ -1001,7 +1001,7 @@ document.getElementById('regenerateBtn').addEventListener('click', async functio
     }
 
     if (!selectedMetadata) {
-        alert('메타데이터를 먼저 선택해주세요.');
+        alert('통합데이터를 먼저 선택해주세요.');
         return;
     }
 

@@ -19,6 +19,10 @@ PROCESSED_DATA_DIR = os.getenv('PROCESSED_DATA_DIR', 'processed_data')
 # Model paths (PROJECT_ROOT 기준으로 고정 — os.getcwd() 의존 제거)
 MODEL_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', '..', 'model', 'kote_for_easygoing_people'))
 
+# HR 도메인 파인튜닝 감정모델(3분류 극성)
+HR_SENTIMENT_MODEL_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', '..', 'model', 'hr_sentiment_finetuned'))
+USE_HR_SENTIMENT_MODEL = os.getenv('USE_HR_SENTIMENT_MODEL', '1') not in ('0', 'false', 'False', '')
+
 # Configuration file paths
 CONFIGS_DIR_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, CONFIGS_DIR))
 SENTIMENT_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "sentiment_config.json")

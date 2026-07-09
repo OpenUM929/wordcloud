@@ -4,11 +4,11 @@ from flask import Blueprint, request, jsonify, session
 from src.services.batch_service import (
     upload_batch_file,
     start_preprocessing,
-    process_batch_metadata,
+    process_batch_integrated_data,
     get_batch_list,
     delete_batch,
     download_batch_results,
-    get_sample_metadata,
+    get_sample_integrated_data,
     get_failed_list,
     retry_failed_employees,
     resume_batch_metadata
@@ -43,7 +43,7 @@ def process():
     """Process batch metadata."""
     try:
         data = request.json
-        result, status = process_batch_metadata(data, session)
+        result, status = process_batch_integrated_data(data, session)
         return jsonify(result), status
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -94,7 +94,7 @@ def download():
 def sample():
     """Get sample metadata from batch processing results."""
     try:
-        result, status = get_sample_metadata(session)
+        result, status = get_sample_integrated_data(session)
         return jsonify(result), status
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

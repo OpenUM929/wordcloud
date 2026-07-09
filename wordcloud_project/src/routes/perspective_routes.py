@@ -918,7 +918,7 @@ def api_batch_update_display_name(batch_id):
     display_name = (data.get('display_name') or '').strip()
 
     from src.config.settings import PROCESSED_DATA_DIR_PATH
-    summary_path = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tmeta', 'batch_summary.json')
+    summary_path = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tdata', 'batch_summary.json')
 
     try:
         if os.path.exists(summary_path):

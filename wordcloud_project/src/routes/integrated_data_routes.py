@@ -1,28 +1,28 @@
-"""Metadata routes for the WordCloud application."""
+"""Integrated data routes for the WordCloud application."""
 
 from flask import Blueprint, request, jsonify
-from src.services.metadata_service import (
-    generate_metadata,
-    get_batch_metadata,
+from src.services.integrated_data_service import (
+    generate_integrated_data,
+    get_batch_integrated_data,
     load_config,
     save_config
 )
 
-metadata_bp = Blueprint('metadata', __name__, url_prefix='/api/metadata')
+integrated_bp = Blueprint('metadata', __name__, url_prefix='/api/integrated')
 
 
-@metadata_bp.route('/generate', methods=['POST'])
+@integrated_bp.route('/generate', methods=['POST'])
 def generate():
     """Generate metadata from evaluation data."""
     try:
         data = request.json
-        result = generate_metadata(data)
+        result = generate_integrated_data(data)
         return jsonify({'success': True, 'data': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@metadata_bp.route('/batch', methods=['GET'])
+@integrated_bp.route('/batch', methods=['GET'])
 def get_batch():
     """Get metadata for a specific batch."""
     try:
@@ -30,13 +30,13 @@ def get_batch():
         if not batch_path:
             return jsonify({'success': False, 'error': '배치 경로가 필요합니다.'}), 400
             
-        metadata_list = get_batch_metadata(batch_path)
+        metadata_list = get_batch_integrated_data(batch_path)
         return jsonify({'success': True, 'data': metadata_list})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@metadata_bp.route('/config', methods=['GET'])
+@integrated_bp.route('/config', methods=['GET'])
 def get_config():
     """Get current configuration."""
     try:
@@ -46,7 +46,7 @@ def get_config():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@metadata_bp.route('/config', methods=['POST'])
+@integrated_bp.route('/config', methods=['POST'])
 def update_config():
     """Update configuration."""
     try:

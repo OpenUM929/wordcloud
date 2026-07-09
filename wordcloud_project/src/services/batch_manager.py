@@ -37,7 +37,7 @@ def get_batch_list(processed_data_dir=None):
 
         # batch_summary.json에서 저장된 display_name 우선 로드
         display_name = ''
-        summary_path = os.path.join(processed_data_dir, 'batch', batch_id, 'tmeta', 'batch_summary.json') if processed_data_dir else None
+        summary_path = os.path.join(processed_data_dir, 'batch', batch_id, 'tdata', 'batch_summary.json') if processed_data_dir else None
         if summary_path and os.path.exists(summary_path):
             try:
                 with open(summary_path, 'r', encoding='utf-8') as _sf:
@@ -167,7 +167,7 @@ def get_batch_summary(processed_data_dir, batch_path):
     }
 
 
-def get_sample_metadata_from_results(session_results, batch_dir, processed_data_dir):
+def get_sample_integrated_data_from_results(session_results, batch_dir, processed_data_dir):
     """Get sample metadata from DB for a given batch (가명 복원 포함)."""
     batch_id = os.path.basename(batch_dir) if batch_dir else None
     if not batch_id:

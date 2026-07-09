@@ -25,7 +25,7 @@ wordcloud_project/
 ├── test_metadata_read.py
 ├── test_qwen_model.py
 ├── test_server_status.py
-├── test_tmeta_file.py
+├── test_tdata_file.py
 ├── test_user_feedback_scenario.py
 ├── test_web_api.py
 ├── test_web_page.py
@@ -36,8 +36,8 @@ wordcloud_project/
 ├── test_wordcloud_serve2.py
 ├── test_wordcloud_serve3.py
 ├── tests/
-│   ├── test_metadata_analysis.py
-│   └── test_metadata_manager.py
+│   ├── test_integrated_analysis.py
+│   └── test_integrated_data_manager.py
 ```
 
 #### 분류 기준
@@ -45,7 +45,7 @@ wordcloud_project/
 |---------|--------|
 | **통합 분석** | test_actual_data.py, test_consolidated_analysis.py, test_confidence_calculation.py |
 | **API 테스트** | test_api_quick.py, test_api_simple.py, test_web_api.py, test_wordcloud_endpoints.py |
-| **메타데이터** | test_metadata_read.py, test_tmeta_file.py, tests/test_metadata_analysis.py, tests/test_metadata_manager.py |
+| **통합데이터** | test_metadata_read.py, test_tdata_file.py, tests/test_integrated_analysis.py, tests/test_integrated_data_manager.py |
 | **배치 처리** | test_batch_dir.py |
 | **워드클라우드** | test_improved_wordcloud.py, test_wordcloud_file_existence.py, test_wordcloud_page.html, test_wordcloud_serve.py, test_wordcloud_serve2.py, test_wordcloud_serve3.py |
 | **Flask 앱** | test_flask_app_with_context.py, test_web_page.py |
@@ -73,9 +73,9 @@ wordcloud_project/
 │   ├── metadata/
 │   │   ├── __init__.py
 │   │   ├── test_metadata_read.py
-│   │   ├── test_tmeta_file.py
-│   │   ├── test_metadata_analysis.py
-│   │   └── test_metadata_manager.py
+│   │   ├── test_tdata_file.py
+│   │   ├── test_integrated_analysis.py
+│   │   └── test_integrated_data_manager.py
 │   ├── batch/
 │   │   ├── __init__.py
 │   │   └── test_batch_dir.py
@@ -131,8 +131,8 @@ wordcloud_project/
 ├── src/
 │   ├── core/         # 핵심 기능 모듈
 │   │   ├── __init__.py
-│   │   ├── metadata_analysis.py
-│   │   ├── metadata_manager.py
+│   │   ├── integrated_analysis.py
+│   │   ├── integrated_data_manager.py
 │   │   ├── nlp_analysis.py
 │   │   ├── wordcloud_generator.py
 │   │   ├── sarcasm_analysis.py
@@ -141,13 +141,13 @@ wordcloud_project/
 │   │   └── emotion_analysis.py
 │   ├── services/     # 비즈니스 로직 서비스
 │   │   ├── __init__.py
-│   │   ├── metadata_service.py
+│   │   ├── integrated_data_service.py
 │   │   ├── batch_service.py
 │   │   ├── wordcloud_service.py
 │   │   └── analysis_service.py
 │   ├── routes/       # Flask 라우터
 │   │   ├── __init__.py
-│   │   ├── metadata_routes.py
+│   │   ├── integrated_data_routes.py
 │   │   ├── batch_routes.py
 │   │   ├── wordcloud_routes.py
 │   │   ├── analysis_routes.py
@@ -206,11 +206,11 @@ path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 load_dotenv()
 
 # 서비스와 라우터 import
-from src.services.metadata_service import MetadataService
+from src.services.integrated_data_service import MetadataService
 from src.services.batch_service import BatchService
 from src.services.wordcloud_service import WordCloudService
 from src.services.analysis_service import AnalysisService
-from src.routes.metadata_routes import metadata_routes
+from src.routes.integrated_data_routes import integrated_data_routes
 from src.routes.batch_routes import batch_routes
 from src.routes.wordcloud_routes import wordcloud_routes
 from src.routes.analysis_routes import analysis_routes
@@ -223,13 +223,13 @@ app.config['JSON_AS_ASCII'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
 # 서비스 인스턴스 생성
-metadata_service = MetadataService()
+integrated_data_service = MetadataService()
 batch_service = BatchService()
 wordcloud_service = WordCloudService()
 analysis_service = AnalysisService()
 
 # 라우터 등록
-app.register_blueprint(metadata_routes)
+app.register_blueprint(integrated_data_routes)
 app.register_blueprint(batch_routes)
 app.register_blueprint(wordcloud_routes)
 app.register_blueprint(analysis_routes)
@@ -246,48 +246,48 @@ if __name__ == '__main__':
 
 ### Step 4: 라우터 모듈화 (Blueprints 사용)
 
-#### metadata_routes.py 예시
+#### integrated_data_routes.py 예시
 ```python
 from flask import Blueprint, request, jsonify, send_from_directory
-from src.services.metadata_service import MetadataService
+from src.services.integrated_data_service import MetadataService
 
-metadata_routes = Blueprint('metadata', __name__)
-metadata_service = MetadataService()
+integrated_data_routes = Blueprint('metadata', __name__)
+integrated_data_service = MetadataService()
 
-@metadata_routes.route('/generate_metadata', methods=['POST'])
+@integrated_data_routes.route('/generate_metadata', methods=['POST'])
 def generate_metadata():
     try:
-        return metadata_service.generate_metadata(request.json)
+        return integrated_data_service.generate_metadata(request.json)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@metadata_routes.route('/get_batch_metadata')
+@integrated_data_routes.route('/get_batch_metadata')
 def get_batch_metadata():
     try:
-        return metadata_service.get_batch_metadata(request.args)
+        return integrated_data_service.get_batch_metadata(request.args)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 추가 메타데이터 관련 라우터...
+# 추가 통합데이터 관련 라우터...
 ```
 
 ### Step 5: 서비스 모듈화
 
-#### metadata_service.py 예시
+#### integrated_data_service.py 예시
 ```python
 class MetadataService:
     def __init__(self):
-        self.metadata_manager = MetadataManager()
+        self.integrated_data_manager = IntegratedDataManager()
     
     def generate_metadata(self, data):
-        # 메타데이터 생성 로직
+        # 통합데이터 생성 로직
         pass
     
     def get_batch_metadata(self, args):
-        # 배치 메타데이터 조회 로직
+        # 배치 통합데이터 조회 로직
         pass
     
-    # 추가 메타데이터 관리 메서드...
+    # 추가 통합데이터 관리 메서드...
 ```
 
 ## Phase 6: 개발 체크리스트 상세 정리 (1일)

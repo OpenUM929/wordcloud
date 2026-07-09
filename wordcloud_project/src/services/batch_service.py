@@ -9,7 +9,7 @@ from src.services.file_parser import parse_uploaded_file, parse_csv_file, extrac
 from src.services.batch_manager import (
     get_batch_list as get_batch_list_manager,
     delete_batch_directory,
-    get_sample_metadata_from_results
+    get_sample_integrated_data_from_results
 )
 from src.services.batch_events import create_sse_response, create_batch_zip
 from src.services.batch_processor import process_batch
@@ -302,7 +302,7 @@ def _run_batch_process(data, session_data):
             _batch_busy = False
 
 
-def process_batch_metadata(data, session_obj):
+def process_batch_integrated_data(data, session_obj):
     """Process batch metadata - coordinates the full batch processing.
     
     Returns immediately with {'success': True, 'status': 'started'}
@@ -362,7 +362,7 @@ def resume_batch_metadata(batch_id, session_obj):
     """작업서 기반으로 중단된 배치를 이어서 처리한다.
 
     작업서에서 settings/file_info/completed_employees를 로드하여 data와 session을
-    재구성한 뒤, 기존 process_batch_metadata 진입점을 재사용한다(별도 스레드 생성 없음).
+    재구성한 뒤, 기존 process_batch_integrated_data 진입점을 재사용한다(별도 스레드 생성 없음).
     """
     import os
     from src.services.batch_work_order_service import (
@@ -396,7 +396,7 @@ def resume_batch_metadata(batch_id, session_obj):
         else:
             return {'success': False, 'error': '원본 파일을 찾을 수 없습니다. 데이터를 다시 업로드해주세요.'}, 400
 
-    # session 재구성 (process_batch_metadata가 여기서 session_data를 추출)
+    # session 재구성 (process_batch_integrated_data가 여기서 session_data를 추출)
     session_obj['csv_file_path'] = csv_path
     session_obj['input_type'] = file_info.get('input_type', 'file')
     session_obj['csv_filename'] = file_info.get('csv_filename')
@@ -410,12 +410,12 @@ def resume_batch_metadata(batch_id, session_obj):
     data['batch_dir'] = batch_dir
     data['completed_employees'] = completed_employees
 
-    return process_batch_metadata(data, session_obj)
+    return process_batch_integrated_data(data, session_obj)
 
 
-def get_sample_metadata(session_obj):
+def get_sample_integrated_data(session_obj):
     """Get sample metadata from batch processing results."""
-    return get_sample_metadata_from_results(
+    return get_sample_integrated_data_from_results(
         None,
         session_obj.get('batch_dir'),
         PROCESSED_DATA_DIR_PATH
@@ -447,7 +447,7 @@ def get_skipped_evaluations(batch_id):
         return {'success': False, 'error': 'batch_id가 필요합니다.', 'skipped_count': 0, 'skipped': []}
 
     summary_path = os.path.join(
-        PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tmeta', 'batch_summary.json'
+        PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tdata', 'batch_summary.json'
     )
     if not os.path.exists(summary_path):
         return {'success': True, 'skipped_count': 0, 'skipped': []}

@@ -16,7 +16,7 @@ def index():
 @ui_bp.route('/settings')
 def settings():
     """Settings hub page (settings + stopwords tabs)."""
-    from src.services.metadata_service import load_config
+    from src.services.integrated_data_service import load_config
     
     current_config = load_config()
     from src.config.settings import EMOTION_NAMES
@@ -60,10 +60,10 @@ def metadata():
     return render_template('metadata.html')
 
 
-@ui_bp.route('/metadata_batch')
-def metadata_batch():
-    """Batch metadata page."""
-    return render_template('metadata_batch.html')
+@ui_bp.route('/integrated_batch')
+def integrated_batch():
+    """Batch integrated data page."""
+    return render_template('integrated_batch.html')
 
 
 @ui_bp.route('/judgment_apply')
@@ -82,7 +82,7 @@ def group_review():
 def get_batch_list_api():
     """API to get list of batches."""
     try:
-        from src.services.metadata_service import get_batch_list
+        from src.services.integrated_data_service import get_batch_list
         
         batches = get_batch_list()
         return jsonify({'batches': batches})
@@ -90,17 +90,17 @@ def get_batch_list_api():
         return jsonify({'error': str(e)}), 500
 
 
-@ui_bp.route('/get_batch_metadata')
-def get_batch_metadata_api():
+@ui_bp.route('/get_batch_integrated_data')
+def get_batch_integrated_data_api():
     """API to get metadata for a specific batch."""
     try:
-        from src.services.metadata_service import get_batch_metadata
+        from src.services.integrated_data_service import get_batch_integrated_data
         
         batch_path = request.args.get('path')
         if not batch_path:
             return jsonify({'error': 'Batch path is required'}), 400
             
-        metadata = get_batch_metadata(batch_path)
+        metadata = get_batch_integrated_data(batch_path)
         return jsonify({'metadata': metadata})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -110,7 +110,7 @@ def get_batch_metadata_api():
 def wordcloud():
     """Wordcloud page with metadata information."""
     try:
-        from src.services.metadata_service import get_batch_list
+        from src.services.integrated_data_service import get_batch_list
         
         batches = get_batch_list()
         return render_template('wordcloud.html', batches=batches)

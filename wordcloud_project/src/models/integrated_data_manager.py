@@ -15,7 +15,7 @@ from src.config.settings import (
 )
 
 
-class MetadataManager:
+class IntegratedDataManager:
     """메타데이터 생성, 저장, 검색, 수정 관리 클래스"""
     
     def __init__(self, processed_data_dir=PROCESSED_DATA_DIR_PATH):
@@ -27,7 +27,7 @@ class MetadataManager:
         """
         self.processed_data_dir = processed_data_dir
     
-    def create_employee_metadata(self, employee_id, evaluations, department="생산부", position="사원",
+    def create_employee_integrated_data(self, employee_id, evaluations, department="생산부", position="사원",
                               target_hierarchy_level="staff", evaluator_hierarchy_level="staff"):
         """
         직원 메타데이터 생성
@@ -126,12 +126,12 @@ class MetadataManager:
         }
         
         # 통합 분석 결과 추가
-        from src.modules.metadata_analysis import calculate_consolidated_analysis
+        from src.modules.integrated_analysis import calculate_consolidated_analysis
         metadata['consolidated_analysis'] = calculate_consolidated_analysis(analyzed_evaluations)
         
         return metadata
     
-    def save_employee_metadata(self, metadata, batch_dir=None):
+    def save_employee_integrated_data(self, metadata, batch_dir=None):
         """
         직원 메타데이터 저장 (통합 인사데이터)
         
@@ -144,9 +144,9 @@ class MetadataManager:
         """
         if batch_dir:
             # 배치 처리의 경우
-            tmeta_dir = os.path.join(batch_dir, "tmeta")
-            os.makedirs(tmeta_dir, exist_ok=True)
-            metadata_path = os.path.join(tmeta_dir, f"employee_{metadata['target_employee_id']}.json")
+            tdata_dir = os.path.join(batch_dir, "tdata")
+            os.makedirs(tdata_dir, exist_ok=True)
+            metadata_path = os.path.join(tdata_dir, f"employee_{metadata['target_employee_id']}.json")
         else:
             # 단일 처리의 경우
             current_year_month = datetime.now().strftime('%Y%m')
@@ -161,7 +161,7 @@ class MetadataManager:
         with open(metadata_path, 'w', encoding='utf-8') as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
         
-        # 기본 인사데이터 저장 (imeta 폴더)
+        # 기본 인사데이터 저장 (idata 폴더)
         if batch_dir and 'evaluations' in metadata:
             self.save_individual_metadata(metadata, batch_dir)
         
@@ -178,8 +178,8 @@ class MetadataManager:
         Returns:
             list: 저장된 기본 메타데이터 파일 경로 리스트
         """
-        imeta_dir = os.path.join(batch_dir, "imeta")
-        os.makedirs(imeta_dir, exist_ok=True)
+        idata_dir = os.path.join(batch_dir, "idata")
+        os.makedirs(idata_dir, exist_ok=True)
         
         saved_paths = []
         target_id = consolidated_metadata.get('target_employee_id')
@@ -211,7 +211,7 @@ class MetadataManager:
             
             # 파일명: eval_{target_id}_{index}.json
             eval_id = evaluation.get('evaluation_id', f'eval-{target_id}-{idx+1}')
-            individual_path = os.path.join(imeta_dir, f"{eval_id}.json")
+            individual_path = os.path.join(idata_dir, f"{eval_id}.json")
             
             # 데이터 무결성 해시 생성
             metadata_json = json.dumps(individual_metadata, sort_keys=True, ensure_ascii=False)
@@ -236,7 +236,7 @@ class MetadataManager:
             dict or None: 로드된 메타데이터 or None (파일 없음)
         """
         if batch_dir:
-            metadata_path = os.path.join(batch_dir, "tmeta", f"employee_{employee_id}.json")
+            metadata_path = os.path.join(batch_dir, "tdata", f"employee_{employee_id}.json")
         else:
             # 단일 처리의 경우 최신 날짜 폴더 찾기
             return None
@@ -265,7 +265,7 @@ class MetadataManager:
             metadata_json = json.dumps(metadata, sort_keys=True, ensure_ascii=False)
             metadata["data_integrity_hash"] = hashlib.sha256(metadata_json.encode('utf-8')).hexdigest()
             
-            self.save_employee_metadata(metadata, batch_dir)
+            self.save_employee_integrated_data(metadata, batch_dir)
             return metadata
         return None
     
@@ -300,7 +300,7 @@ class MetadataManager:
         Returns:
             dict or None: 배치 요약 정보
         """
-        summary_path = os.path.join(batch_dir, "tmeta", "batch_summary.json")
+        summary_path = os.path.join(batch_dir, "tdata", "batch_summary.json")
         if os.path.exists(summary_path):
             with open(summary_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
