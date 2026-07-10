@@ -3,6 +3,7 @@
 
 import logging
 import os
+import uuid
 from datetime import datetime
 
 def setup_logger(name: str, log_file: str = None, level: int = logging.INFO) -> logging.Logger:
@@ -53,22 +54,59 @@ def setup_logger(name: str, log_file: str = None, level: int = logging.INFO) -> 
 
     return logger
 
+
+def _mask_real_id(val: str) -> str:
+    """실명(사번) 마스킹: 처음 2자리만 노출, 나머지는 * 처리"""
+    if not val or not isinstance(val, str):
+        return val
+    v = val.strip()
+    if len(v) <= 2:
+        return v[0] + '*' * (len(v) - 1) if v else v
+    return v[:2] + '*' * (len(v) - 2)
+
+
+def get_pipeline_logger() -> logging.Logger:
+    """
+    파이프라인 전용 로거 반환.
+    - logs/pipeline/ 디렉토리에 타임스탬프별 파일 생성
+    - request_id, stage 필드 지원 포맷
+    """
+    logger = logging.getLogger('pipeline')
+    if logger.handlers:
+        return logger
+
+    logger.setLevel(logging.DEBUG)
+
+    # 파이프라인 전용 포맷: request_id, stage 지원
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] [STAGE:%(stage)s] - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+    # 콘솔 핸들러
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    # 파일 핸들러: logs/pipeline/pipeline_{timestamp}.log
+    log_dir = os.path.join('logs', 'pipeline')
+    os.makedirs(log_dir, exist_ok=True)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_file = os.path.join(log_dir, f'pipeline_{timestamp}.log')
+
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    return logger
+
+
 def get_timestamp() -> str:
     """현재 타임스탬프 반환"""
     return datetime.now().strftime('%Y%m%d_%H%M%S')
 
-_pipeline_logger = None
-
-def get_pipeline_logger() -> logging.Logger:
-    global _pipeline_logger
-    if _pipeline_logger is None:
-        _pipeline_logger = setup_logger('pipeline')
-    return _pipeline_logger
-
-def _mask_real_id(id_str: str) -> str:
-    if not id_str or len(id_str) < 4:
-        return "***"
-    return id_str[:2] + "***" + id_str[-2:]
 
 def get_log_file_path(module_name: str, timestamp: str = None) -> str:
     """모듈별 로그 파일 경로 생성"""

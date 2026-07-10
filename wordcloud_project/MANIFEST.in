@@ -1,0 +1,4 @@
+include .env
+recursive-include web/templates *
+recursive-include web/static *
+recursive-include src/configs *

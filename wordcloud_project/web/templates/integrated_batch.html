@@ -78,17 +78,6 @@
 .btn-outline-info { background: transparent; color: var(--color-info); border: 1px solid var(--color-info); }
 .btn-outline-info:hover { background: #d1ecf1; }
 
-/* ===== Step Indicator ===== */
-.step-indicator { display: flex; justify-content: center; align-items: center; margin-bottom: var(--space-5); }
-.step { display: flex; flex-direction: column; align-items: center; margin: 0 10px; cursor: default; }
-.step .step-number { width: 40px; height: 40px; border-radius: var(--radius-full); background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: var(--font-body); font-weight: 600; color: var(--text-muted); transition: all 0.3s; }
-.step.active .step-number { background: var(--color-primary); color: var(--text-inverse); box-shadow: 0 0 0 4px var(--color-primary-light); }
-.step.completed .step-number { background: var(--color-success); color: var(--text-inverse); }
-.step .step-text { font-size: var(--font-2xs); color: var(--text-muted); margin-top: var(--space-1); text-align: center; white-space: nowrap; }
-.step.active .step-text { color: var(--color-primary); font-weight: 600; }
-.step.completed .step-text { color: var(--color-success); font-weight: 600; }
-.step-arrow { margin: 0 15px; color: #ccc; font-size: 18px; margin-bottom: 20px; }
-
 /* ===== Step Navigation ===== */
 .step-navigation { display: flex; justify-content: space-between; align-items: center; background: var(--color-secondary-bg); padding: var(--space-4) var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin: 20px 0; }
 .step-info { font-size: var(--font-body); font-weight: 700; color: var(--text-body); }
@@ -149,6 +138,8 @@
 
 /* ===== Batch Name ===== */
 .batch-name-card { margin: 15px 0; padding: var(--space-4); background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
+.batch-cards-row { display: flex; gap: var(--space-3); align-items: stretch; }
+.batch-cards-row .batch-name-card { flex: 1 1 0; min-width: 0; margin: 0; }
 .batch-name-label { font-weight: 600; display: block; margin-bottom: var(--space-2); color: var(--text-primary); }
 #batchDisplayName { width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: var(--font-body); box-sizing: border-box; }
 .batch-name-hint { font-size: var(--font-xs); color: var(--text-subtle); margin: var(--space-1) 0 0 0; }
@@ -166,13 +157,6 @@
 #rmRemain { color: var(--color-danger); }
 .modal-close { font-size: 24px; border: none; background: none; cursor: pointer; color: var(--text-muted); padding: 0 var(--space-2); }
 
-/* ===== Override base.html conflicts ===== */
-.step { width: auto; height: auto; border-radius: 0; background: none; flex-direction: row; cursor: default; }
-.step.active { background: none; color: inherit; }
-.step.completed { background: none; color: inherit; }
-.step-number { font-size: var(--font-body); font-weight: 600; }
-.step-text { font-size: var(--font-2xs); margin-top: var(--space-1); }
-.step-arrow { margin: 0 15px; }
 .content { margin-top: 0; }
 .step-navigation { margin: 20px 0; }
 .tree-panel { border: 1px solid var(--border-muted); border-radius: var(--radius-lg); padding: var(--space-4); }
@@ -203,31 +187,9 @@
         <a href="/perspective_test" class="btn btn-outline-info">📊 그룹분석 (Perspective Analysis)</a>
     </div>
 
-    <div class="step-indicator">
-        <div class="step active" data-step="1">
-            <div class="step-number">1</div>
-            <div class="step-text">업로드</div>
-        </div>
-        <div class="step-arrow">→</div>
-        <div class="step" data-step="2">
-            <div class="step-number">2</div>
-            <div class="step-text">매핑</div>
-        </div>
-        <div class="step-arrow">→</div>
-        <div class="step" data-step="3">
-            <div class="step-number">3</div>
-            <div class="step-text">미리보기</div>
-        </div>
-        <div class="step-arrow">→</div>
-        <div class="step" data-step="4">
-            <div class="step-number">4</div>
-            <div class="step-text">저장</div>
-        </div>
-    </div>
-
     <div class="step-navigation">
         <div class="step-info">
-            <span id="current-step-info">1단계: 데이터 업로드 대기 중</span>
+            <span id="current-step-info">데이터 업로드 대기 중</span>
         </div>
         <div class="step-buttons">
             <button class="btn btn-secondary" id="prevBtn" onclick="prevStep()" style="display: none;">이전 단계</button>
@@ -244,7 +206,7 @@
 
     <div class="content">
         <div id="step1" class="step-content">
-            <h2>1. 데이터 업로드</h2>
+            <h2>데이터 업로드</h2>
             
             <div class="upload-tabs">
                 <button class="btn btn-primary" id="tabFile" onclick="switchUploadTab('file')" style="margin-right:10px;">파일 선택</button>
@@ -361,7 +323,7 @@
         </div>
 
         <div id="step3" class="step-content hidden">
-            <h2>3. 미리보기</h2>
+            <h2>미리보기</h2>
             <div class="preview-area">
                 <h3>target_employee_id별 그룹화된 데이터 미리보기</h3>
                 <div id="previewResults"></div>
@@ -369,33 +331,37 @@
         </div>
 
         <div id="step4" class="step-content hidden">
-            <h2>4. 배치 처리 및 저장</h2>
+            <h2>배치 처리 및 저장</h2>
             <div>
-                <h3>처리 설정</h3>
-                <label><input type="checkbox" id="enablePreprocessing" checked> 데이터 정제 적용</label><br>
-                <label><input type="checkbox" id="enableEmotionAnalysis" checked> 감정 분석 적용</label><br>
+                <div class="proc-settings-row" style="display:flex; align-items:center; gap:var(--space-4);">
+                    <h3>처리 설정</h3>
+                    <label><input type="checkbox" id="enablePreprocessing" checked> 데이터 정제 적용</label>
+                    <label><input type="checkbox" id="enableEmotionAnalysis" checked> 감정 분석 적용</label>
+                </div>
             <div id="pseudonymInfo">
                 <strong>🔒 가명 처리</strong>
                 <span id="pseudonymFieldsDisplay">모든 PII 필드가 항상 가명처리됩니다</span>
             </div>
-            <div class="batch-name-card">
-                <label for="batchDisplayName" class="batch-name-label">배치 명칭 (선택)</label>
-                <input type="text" id="batchDisplayName" placeholder="예: 2025년 상반기 개발팀 평가">
-                <p class="batch-name-hint">미입력 시 배치 ID(batch_YYYYMMDD_X)가 표시됩니다</p>
-            </div>
-            <div class="batch-name-card">
-                <label><input type="checkbox" id="acqHandoffEnabled" checked> 핸드오프 코퍼스 적립 (감정 규칙 학습용)</label>
-                <p class="batch-name-hint">배치 저장 중 문장+KoTE(top-3 감정)를 압축 JSONL로 함께 적립합니다.<br>저장 위치: <code>plans/_datasets/kote_finetune/emotion/handoff/&lt;라벨&gt;/&lt;batch_id&gt;.jsonl</code></p>
-                <label for="acqHandoffLabel" class="batch-name-label">적립 대상 라벨</label>
-                <input type="text" id="acqHandoffLabel" placeholder="default">
-                <p class="batch-name-hint">데이터셋 폴더 하위 서브폴더명. 미입력 시 default. (경로 루트는 고정)</p>
-            </div>
-            <div class="batch-name-card">
-                <label><input type="checkbox" id="judgmentExtractEnabled" checked> 판정 패킷 추출 (어려운 문장 AI 판정용)</label>
-                <p class="batch-name-hint">배치 종료 후 긍↔부 경계·저마진 문장만 자기설명 패킷으로 추출합니다. 마진 3단(0.05·0.10·0.15) 동시 산출(기본 0.05).<br>저장 위치: <code>plans/_datasets/kote_finetune/eval/judgment/&lt;라벨&gt;/&lt;batch_id&gt;.json</code></p>
-                <label for="judgmentExtractLabel" class="batch-name-label">적립 대상 라벨</label>
-                <input type="text" id="judgmentExtractLabel" placeholder="default">
-                <p class="batch-name-hint">데이터셋 폴더 하위 서브폴더명. 미입력 시 default. (경로 루트는 고정)</p>
+            <div class="batch-cards-row">
+                <div class="batch-name-card">
+                    <label for="batchDisplayName" class="batch-name-label">배치 명칭 (선택)</label>
+                    <input type="text" id="batchDisplayName" placeholder="예: 2025년 상반기 개발팀 평가">
+                    <p class="batch-name-hint">미입력 시 배치 ID(batch_YYYYMMDD_X)가 표시됩니다</p>
+                </div>
+                <div class="batch-name-card">
+                    <label><input type="checkbox" id="acqHandoffEnabled" checked> 핸드오프 코퍼스 적립 (감정 규칙 학습용)</label>
+                    <p class="batch-name-hint">배치 저장 중 문장+KoTE(top-3 감정)를 압축 JSONL로 함께 적립합니다.<br>저장 위치: <code>plans/_datasets/kote_finetune/emotion/handoff/&lt;라벨&gt;/&lt;batch_id&gt;.jsonl</code></p>
+                    <label for="acqHandoffLabel" class="batch-name-label">적립 대상 라벨</label>
+                    <input type="text" id="acqHandoffLabel" placeholder="default">
+                    <p class="batch-name-hint">데이터셋 폴더 하위 서브폴더명. 미입력 시 default. (경로 루트는 고정)</p>
+                </div>
+                <div class="batch-name-card">
+                    <label><input type="checkbox" id="judgmentExtractEnabled" checked> 판정 패킷 추출 (어려운 문장 AI 판정용)</label>
+                    <p class="batch-name-hint">배치 종료 후 긍↔부 경계·저마진 문장만 자기설명 패킷으로 추출합니다. 마진 3단(0.05·0.10·0.15) 동시 산출(기본 0.05).<br>저장 위치: <code>plans/_datasets/kote_finetune/eval/judgment/&lt;라벨&gt;/&lt;batch_id&gt;.json</code></p>
+                    <label for="judgmentExtractLabel" class="batch-name-label">적립 대상 라벨</label>
+                    <input type="text" id="judgmentExtractLabel" placeholder="default">
+                    <p class="batch-name-hint">데이터셋 폴더 하위 서브폴더명. 미입력 시 default. (경로 루트는 고정)</p>
+                </div>
             </div>
             <button class="btn btn-primary" onclick="startBatchProcessing()">배치 처리 시작</button>
             <button class="btn btn-warning" id="resumeBtn" style="display:none;" onclick="showResumeModal()">이어서 배치 처리 시작</button>
@@ -434,12 +400,12 @@
 
                 <div class="processing-steps" id="processingStepsIndicator">
                     <div class="proc-step" data-step="0" data-group="green-light">
-                        <div class="proc-step-circle">1</div>
+                        <div class="proc-step-circle"></div>
                         <div class="proc-step-text">데이터 수집</div>
                     </div>
                     <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="1" data-group="green-light">
-                        <div class="proc-step-circle">2</div>
+                        <div class="proc-step-circle"></div>
                         <div class="proc-step-text">초기화</div>
                     </div>
                     <span class="proc-arrow">→</span>
@@ -459,7 +425,7 @@
                     </div>
                     <span class="proc-arrow">→</span>
                     <div class="proc-step" data-step="5" data-group="green">
-                        <div class="proc-step-circle">6</div>
+                        <div class="proc-step-circle"></div>
                         <div class="proc-step-text">워드클라우드</div>
                     </div>
                     <span class="proc-arrow">→</span>
@@ -471,6 +437,10 @@
 
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+                </div>
+                <div id="progressTimeInfo" style="margin: 6px 0; font-size: 13px; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap;">
+                    <span>경과: <strong id="elapsedTime">0초</strong></span>
+                    <span>예상 종료: <strong id="etaTime">계산 중...</strong></span>
                 </div>
                 <p id="processingText">처리 준비 중...</p>
             </div>
@@ -487,6 +457,7 @@
 {% endblock %}
 
 {% block scripts %}
+    <script src="{{ url_for('static', filename='js/progress-time.js') }}"></script>
     <script src="{{ url_for('static', filename='js/integrated_batch.js') }}"></script>
 
         <div id="mappingManagerModal">

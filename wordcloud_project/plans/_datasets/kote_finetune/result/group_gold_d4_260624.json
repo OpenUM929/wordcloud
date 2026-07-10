@@ -1,0 +1,17 @@
+{
+ "date": "260624",
+ "g1": 128265,
+ "g2": 48218,
+ "g1_rule": {
+  "neutral": 119203,
+  "positive": 9062
+ },
+ "g2_rule": {
+  "positive": 8496,
+  "negative": 26906,
+  "neutral": 12816
+ },
+ "g2_leak_positive": 8496,
+ "reps_each": 1000,
+ "baseline": 1500
+}

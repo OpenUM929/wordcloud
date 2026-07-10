@@ -1,0 +1,22 @@
+{
+ "n_train": 3979,
+ "surface_conflict_groups": 22,
+ "queue_total": 644,
+ "oof": {
+  "oof_acc": 0.8135,
+  "n_disagree": 742,
+  "n_suspect": 498,
+  "n_pn_direction": 53,
+  "conf_threshold": 0.8,
+  "disagree_by_gold": {
+   "positive": 150,
+   "negative": 198,
+   "neutral": 394
+  }
+ },
+ "queue_by_kind": {
+  "surface_conflict": 68,
+  "oof": 498,
+  "test_slice": 78
+ }
+}

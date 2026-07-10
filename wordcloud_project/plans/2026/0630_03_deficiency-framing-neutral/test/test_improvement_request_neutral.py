@@ -17,7 +17,9 @@ from src.services.perspective_service import (
 
 
 def test_deficiency_framing_demoted_to_neutral():
-    # pos>neg(긍정으로 갈 것)인 결핍/개선요청 → improvement_request_neutral(중립)
+    # pos>neg(긍정으로 갈 것)인 결핍/개선요청 → 부정 확정.
+    # 0709 갱신: 0630_03 당시엔 중립 강등이었으나 0702_03 사용자 정책 재정(요청형=결여=부정,
+    #   pos>=0.75 강긍정만 중립 보류)으로 기대값을 부정으로 교체 — 부→긍 위반 제거 취지는 동일.
     cases = [
         '근면 성실 장점 보완 필요',        # 원 케이스(#6): 부→긍 위반 제거
         '더욱더 적극적인 자세가 필요',
@@ -27,9 +29,9 @@ def test_deficiency_framing_demoted_to_neutral():
     ]
     for s in cases:
         score, rule = explain(0.55, 0.25, s, True, 1, neutral=0.20)
-        assert rule == 'improvement_request_neutral', f'{s} -> {rule}'
-        assert score == 0.0, f'{s} score={score}'
-    print('[OK] 결핍/개선요청(pos>neg) → 중립 강등')
+        assert rule == 'improvement_request_neg', f'{s} -> {rule}'
+        assert score < 0, f'{s} score={score}'
+    print('[OK] 결핍/개선요청(pos>neg) → 부정 확정(0702_03 정책)')
 
 
 def test_neutral_only_never_flips_to_negative():
@@ -68,12 +70,22 @@ def test_trap_helping_difficulty_preserved():
 
 
 def test_trap_renegation_concession_preserved():
-    # 재부정("필요 없")·양보·부재선언은 중립화 미발동(긍정 보존)
-    for s in ['보완할 점이 없다', '어려움을 극복함', '추가 보완은 필요 없음']:
+    # 재부정("필요 없")·양보·부재선언은 개선요청 미발동 — 부정으로 안 감(긍↔부 안전).
+    # 0709 갱신: 0702 무결점 정책으로 무보완 선언("보완할 점이 없다")은 긍정 아닌
+    #   no_weakness_neutral(중립)이 정답 — 기대를 score>0 에서 score>=0 + 규칙 확인으로 교체.
+    for s, want_rules in [
+            ('보완할 점이 없다', ('no_weakness_neutral', 'no_weakness_positive')),
+            ('어려움을 극복함', None),                       # 긍정 유지(rule4/구제)
+            ('추가 보완은 필요 없음', ('no_weakness_neutral', 'no_weakness_positive'))]:
         score, rule = explain(0.8, 0.1, s, True, 1, neutral=0.1)
-        assert rule != 'improvement_request_neutral', f'{s} 오강등: {rule}'
-        assert score > 0, f'{s} score={score}'
-    print('[OK] 재부정/양보/부재선언 → 긍정 보존')
+        assert rule != 'improvement_request_neutral' and rule != 'improvement_request_neg', \
+            f'{s} 오강등: {rule}'
+        assert score >= 0, f'{s} score={score}'
+        if want_rules:
+            assert rule in want_rules, f'{s} -> {rule}'
+        else:
+            assert score > 0, f'{s} score={score}'
+    print('[OK] 재부정/양보/부재선언 → 부정 미생성(무결점=중립, 0702 정책)')
 
 
 def test_excess_not_guarded_stays_critical():

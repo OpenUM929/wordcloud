@@ -52,6 +52,34 @@ function Exec-Robocopy {
     if ($LASTEXITCODE -ge 8) { throw "robocopy failed ($LASTEXITCODE)" }
 }
 
+# ─── Sync VERSION.json (배포 정본: 모델 해시·학습일) ──────────────────
+# 배포할 때마다 현재 model/hr_sentiment_finetuned 로 VERSION.json 을 재생성하고
+# 모델 해시가 실제로 채워졌는지 확인한다. (구본이 그대로 실려 모달 학습일·무결성검사가
+# 불일치로 뜨는 사고 방지 — VERSION.json 은 항상 이 빌드 단계가 정본으로 만든다.)
+function Sync-Version {
+    Write-Step "VERSION.json 동기화 (모델 해시·학습일 재생성)"
+    $genScript = Join-Path $ProjectRoot "scripts\gen_version.py"
+    if (-not (Test-Path $genScript)) {
+        Write-Warning "gen_version.py 없음 — VERSION.json 동기화 생략"
+        return
+    }
+    $py = if (Test-Path "$BasePythonPath\python.exe") { "$BasePythonPath\python.exe" } else { "python" }
+    & $py $genScript
+    if ($LASTEXITCODE -ne 0) { throw "gen_version.py 실패 ($LASTEXITCODE)" }
+
+    # 검증: 모델 해시가 실제로 채워졌는지 (모델 누락 시 배포 후 무결성검사 불일치 예방)
+    $vjson = Join-Path $ProjectRoot "VERSION.json"
+    if (Test-Path $vjson) {
+        $vi = Get-Content $vjson -Raw | ConvertFrom-Json
+        if (-not $vi.model_sha256 -or $vi.model_sha256 -eq '-') {
+            Write-Warning "  [!] 모델(model.safetensors)을 못 찾아 해시가 비었습니다 — 이대로 배포하면 무결성검사가 불일치로 뜹니다. 모델 경로 확인 후 재빌드하세요."
+        } else {
+            $shaShort = $vi.model_sha256.Substring(0, [Math]::Min(16, $vi.model_sha256.Length))
+            Write-Host "  VERSION.json OK  학습일=$($vi.model_trained)  sha=$shaShort..  commit=$($vi.source_commit)" -ForegroundColor Green
+        }
+    }
+}
+
 # ─── Build Source-Only ────────────────────────────────────────────
 function Build-SourceOnly {
     Write-Step "[소스 전용] wordcloud-project.zip 생성"
@@ -262,6 +290,11 @@ pause
 # ─── Main ─────────────────────────────────────────────────────────
 Write-Host "Wordcloud Deployment Builder" -ForegroundColor Yellow
 Write-Host ""
+
+# Regenerate+verify VERSION.json from the current model before any build mode.
+# (ASCII comment on purpose: PS5.1 reads this file as cp949 and a multibyte char
+#  at a comment line-end can swallow the next statement. Keep this line ASCII.)
+Sync-Version
 
 if ($Package) {
     Write-Host "[전체 패키지 모드] runtime + model + source" -ForegroundColor Cyan

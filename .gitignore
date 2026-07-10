@@ -74,3 +74,20 @@ wordcloud_project/default/
 wordcloud_project/default.zip
 wordcloud_project/web/templates/mockup/
 wordcloud_project/web/templates/*.backup
+
+# KoTE finetune model outputs (477MB each, recreated from training scripts)
+wordcloud_project/plans/_datasets/kote_finetune/model_out*/
+wordcloud_project/plans/_datasets/kote_finetune/model_soup_*/
+
+# Gold standard backups (intermediate snapshots, recreated from primary emotion.jsonl)
+wordcloud_project/plans/_datasets/kote_finetune/eval/_gold_backup/
+
+# Timestamped backups (*.bak_YYYYMMDD_HHMMSS format, temporary snapshots)
+**/*.bak_*
+
+# Setup.py build output
+wordcloud_project/build/
+
+# Root output directory (scratch outputs from analysis)
+outputs/
+.opencode/

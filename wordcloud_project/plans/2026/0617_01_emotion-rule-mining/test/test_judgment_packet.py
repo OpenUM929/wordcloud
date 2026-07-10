@@ -4,7 +4,10 @@
 검증:
   1) select_hard_sentences: 하드케이스(긍↔부 불일치·저마진)만 추출, 이미 보정분/PII 제외.
   2) 패킷 골격: 자기설명(_stages/judge.rules/output_schema) + 가명 키만(실 ID 없음).
-  3) apply_judgment_packet: result 를 corrections 에 in-place 병합, needs_human 분리, 기존 보존.
+  3) apply_judgment_packet(집계) + apply_db_to_packet(반영): status 전이·in-place 병합·기존 보존.
+
+수정 이력: 0709 — v2 status 패킷(0701_03 재설계: rec_id/status/ai_reference/human_decision,
+  집계와 DB 반영 분리)에 맞춰 v1 스키마(result/needs_human) 단언 교체.
 """
 import json
 import os
@@ -15,7 +18,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 
 from src.services.judgment_packet_service import (
     select_hard_sentences, _packet_skeleton, apply_judgment_packet,
-    _kote_label, _audit_pii,
+    apply_db_to_packet, _kote_label, _audit_pii,
+    STATUS_AI_PENDING, STATUS_HUMAN_PENDING, STATUS_AI_READY,
+    STATUS_AI_APPLIED,
 )
 
 
@@ -38,8 +43,11 @@ def test_select_hard_only():
     assert '보다 적극적인 문제 해결 태도' in texts, texts
     assert '업무 능력이 매우 뛰어남' not in texts
     for it in items:
-        assert it['result'] is None and set(it['key']) == {'db_id', 'sent_idx'}
-    print('[OK] 하드케이스(저마진/극불일치)만 추출, 명확분 제외')
+        assert it['status'] == STATUS_AI_PENDING and it['human_decision'] is None
+        assert it['ai_reference'] == {'polarity': None, 'confidence': None, 'reason': None}
+        assert set(it['key']) == {'db_id', 'sent_idx'}
+        assert it['rec_id'] == '%s_%s' % (it['key']['db_id'], it['key']['sent_idx'])
+    print('[OK] 하드케이스(저마진/극불일치)만 추출, 명확분 제외, status=1 초기화')
 
 
 def test_skip_existing_correction():
@@ -60,7 +68,7 @@ def test_packet_self_describing_no_real_id():
     pk = _packet_skeleton('judge_test', {'batch_id': 'b1'})
     assert pk['_status']['current_stage'] == 'judge'
     j = pk['_stages']['judge']
-    assert j['rules'] and j['output_schema']['label'].startswith('positive')
+    assert j['rules'] and 'ai_reference' in j['output_schema'] and 'status' in j['output_schema']
     # 실명/원본 ID 필드가 골격에 없음
     blob = json.dumps(pk, ensure_ascii=False)
     assert 'employee_id' not in blob and 'target_employee' not in blob
@@ -75,16 +83,29 @@ def test_apply_roundtrip_inmemory():
     conn.commit()
     packet = _packet_skeleton('judge_test', {})
     packet['items'] = [
-        {'key': {'db_id': 10, 'sent_idx': 2}, 'text': '...', 'result': {'label': 'negative', 'needs_human': False}},
-        {'key': {'db_id': 10, 'sent_idx': 3}, 'text': '...', 'result': {'label': 'neutral', 'needs_human': True}},  # 모달로
-        {'key': {'db_id': 10, 'sent_idx': 4}, 'text': '...', 'result': None},  # 미판정 skip
+        {'rec_id': '10_2', 'key': {'db_id': 10, 'sent_idx': 2}, 'text': '...',
+         'ai_reference': {'polarity': 'negative', 'confidence': 0.9, 'reason': ''},
+         'status': STATUS_AI_READY, 'human_decision': None},                    # AI 확신 → 반영 대상
+        {'rec_id': '10_3', 'key': {'db_id': 10, 'sent_idx': 3}, 'text': '...',
+         'ai_reference': {'polarity': 'neutral', 'confidence': 0.4, 'reason': ''},
+         'status': STATUS_HUMAN_PENDING, 'human_decision': None},               # 사람 게시판 대기
+        {'rec_id': '10_4', 'key': {'db_id': 10, 'sent_idx': 4}, 'text': '...',
+         'ai_reference': {'polarity': None, 'confidence': None, 'reason': None},
+         'status': STATUS_AI_PENDING, 'human_decision': None},                  # 미판정
     ]
+    # 1) 집계: 반영은 하지 않고 status 분포만
     summary = apply_judgment_packet(packet, conn=conn)
-    assert summary['inserted_sentences'] == 1 and summary['needs_human'] == 1 and summary['skipped'] == 1, summary
+    assert summary['ai_ready'] == 1 and summary['pending_human'] == 1 \
+        and summary['pending_ai'] == 1 and summary['inserted_sentences'] == 0, summary
+    # 2) 반영: ai_ready(3) → DB 병합 + status 10 전이
+    result = apply_db_to_packet(packet, conn=conn, target='ai')
+    assert result['applied_ai'] == 1, result
     stored = json.loads(conn.execute("SELECT sentiment_corrections FROM evaluations WHERE id=10").fetchone()[0])
     assert stored == {'5': 'positive', '2': 'negative'}, stored   # 기존 보존 + 신규 병합
+    assert packet['items'][0]['status'] == STATUS_AI_APPLIED
+    assert packet['items'][1]['status'] == STATUS_HUMAN_PENDING   # 게시판 대기는 불변
     conn.close()
-    print('[OK] 삽입 왕복: in-place 병합(기존 보존)·needs_human 분리·미판정 skip')
+    print('[OK] 집계/반영 분리 왕복: in-place 병합(기존 보존)·status 전이·미판정 보존')
 
 
 if __name__ == '__main__':

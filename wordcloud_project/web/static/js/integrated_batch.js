@@ -51,6 +51,37 @@ function setUploadLoading(on) {
     if (e) e.classList.toggle('show', on);
 }
 
+// 폴더 선택 실패 시 — 어디에 무엇을 두어야 하는지(정확한 경로 포함) 자세히 안내
+function renderFolderError(data) {
+    var el = document.getElementById('folderDetails');
+    var path = data.inputs_dir || '';
+    var reason = data.reason || '';
+    var title, guide;
+    if (reason === 'missing') {
+        title = '데이터 폴더가 없습니다';
+        guide = '아래 경로에 <b>inputs</b> 폴더를 만들고, 그 안에 CSV 또는 Excel(.xlsx/.xls) 파일을 넣은 뒤 다시 [폴더 선택]을 눌러주세요.';
+    } else if (reason === 'empty') {
+        title = '폴더에 데이터 파일이 없습니다';
+        guide = '아래 폴더에 CSV 또는 Excel(.xlsx/.xls) 파일을 넣은 뒤 다시 [폴더 선택]을 눌러주세요.';
+    } else {
+        title = '폴더를 사용할 수 없습니다';
+        guide = escapeHtml(data.error || '폴더 선택 중 오류가 발생했습니다.');
+    }
+    var html = '<div style="border:1px solid #f5c2c7;background:#f8d7da;color:#842029;border-radius:6px;padding:12px 14px;">'
+        + '<div style="font-weight:700;margin-bottom:6px;">⚠️ ' + title + '</div>'
+        + '<div style="margin-bottom:8px;line-height:1.5;">' + guide + '</div>';
+    if (path) {
+        var jsPath = path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        html += '<div style="font-size:12px;color:#6c2b32;margin-bottom:4px;">데이터 폴더 경로</div>'
+            + '<div style="display:flex;gap:8px;align-items:center;">'
+            + '<code style="flex:1;background:#fff;border:1px solid #e0a3a9;border-radius:4px;padding:6px 8px;font-size:12px;word-break:break-all;">' + escapeHtml(path) + '</code>'
+            + '<button class="btn btn-outline-secondary" style="padding:4px 10px;font-size:12px;white-space:nowrap;" onclick="copyPath(\'' + jsPath + '\')">📋 경로 복사</button>'
+            + '</div>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+}
+
 function selectFolder() {
     var formData = new FormData();
     formData.append('folder', 'true');
@@ -64,7 +95,7 @@ function selectFolder() {
     .then(function(data) {
         setUploadLoading(false);
         if (data.error) {
-            document.getElementById('folderDetails').innerHTML = '<span style="color: red;">' + data.error + '</span>';
+            renderFolderError(data);
             document.getElementById('folderInfo').classList.remove('hidden');
             return;
         }
@@ -117,7 +148,9 @@ var defaultIntegratedDataStructure = {
     "target_employee_department": { type: "string", required: false, auto: true, system: false, pseudonymable: true, description: "평가 대상자 부서" },
     "target_employee_position": { type: "string", required: false, auto: true, system: false, pseudonymable: true, description: "평가 대상자 직책" },
     "total_evaluations": { type: "number", required: true, auto: true, system: false, description: "총 평가 수" },
-    "evaluation_document": { type: "string", required: true, auto: false, system: false, description: "평가 문서 내용" },
+    "evaluation_document": { type: "string", required: false, auto: false, system: false, description: "평가 문서 내용 (일반/극성 미지정)" },
+    "evaluation_document_strength": { type: "string", required: false, auto: false, system: false, description: "장점 평가 문서 (긍정 극성 신호로 학습)" },
+    "evaluation_document_weakness": { type: "string", required: false, auto: false, system: false, description: "단점 평가 문서 (부정 극성 신호로 학습)" },
     "evaluation_score": { type: "number", required: false, auto: false, system: false, description: "다면평가 점수 (기본 1점)" },
     "evaluator_department": { type: "string", required: false, auto: false, system: false, pseudonymable: true, description: "평가자 부서 정보" },
     "evaluator_position": { type: "string", required: false, auto: false, system: false, pseudonymable: true, description: "평가자 직책" },
@@ -736,10 +769,12 @@ function generatePreview() {
             
             var sourceInfo = sourceCount > 1 ? '<span style="background: #17a2b8; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">' + sourceCount + '개 파일</span>' : '';
             
-            if (columnMappings['evaluation_document']) {
+            // 미리보기 문서 컬럼: 일반→장점→단점 순으로 매핑된 것 사용(극성 파일도 샘플 표시)
+            var docCol = columnMappings['evaluation_document'] || columnMappings['evaluation_document_strength'] || columnMappings['evaluation_document_weakness'];
+            if (docCol) {
                 var sampleHtml = '';
                 data.rows.slice(0, 3).forEach(function(row) {
-                    var evalDoc = row[columnMappings['evaluation_document']] || '';
+                    var evalDoc = row[docCol] || '';
                     sampleHtml += '<li style="font-size: 12px; margin: 5px 0;">' + evalDoc.substring(0, 100) + (evalDoc.length > 100 ? '...' : '') + '</li>';
                 });
                 
@@ -768,9 +803,17 @@ function startBatchProcessing() {
     });
     
     var missingRequiredFields = requiredFields.filter(function(key) { return !columnMappings[key]; });
-    
+
     if (missingRequiredFields.length > 0) {
         alert('필수 필드 매핑이 완료되지 않았습니다: ' + missingRequiredFields.join(', '));
+        return;
+    }
+
+    // 평가 문서 필드(일반/장점/단점) 중 최소 하나는 매핑돼야 함. 장점·단점을 각각 매핑하면
+    // 파일에 장단점이 함께 있는 것(둘 다), 하나만 매핑하면 단일 극성 파일(0707_01).
+    var docFields = ['evaluation_document', 'evaluation_document_strength', 'evaluation_document_weakness'];
+    if (!docFields.some(function(k) { return columnMappings[k]; })) {
+        alert('평가 문서 필드(일반 / 장점 / 단점) 중 최소 하나는 매핑해야 합니다.');
         return;
     }
     
@@ -831,6 +874,27 @@ function startBatchProcessing() {
                 } else {
                     var progress = (currentStep + 1) * 10;
                     document.getElementById('progressFill').style.width = progress + '%';
+                }
+
+                if (data.started_at) {
+                    var elapsedEl = document.getElementById('elapsedTime');
+                    var etaEl = document.getElementById('etaTime');
+                    if (elapsedEl) {
+                        elapsedEl.textContent = formatElapsed(data.started_at);
+                    }
+                    if (etaEl) {
+                        var current = data.processed_employees || 0;
+                        var total = data.unique_employees || data.total_processed || 0;
+                        if (total > 0 && current > 0) {
+                            var startTime = new Date(data.started_at).getTime();
+                            var rate = current / ((Date.now() - startTime) / 1000);
+                            if (rate > 0) {
+                                var remainSec = (total - current) / rate;
+                                var etaDate = new Date(Date.now() + remainSec * 1000);
+                                etaEl.textContent = etaDate.toLocaleTimeString('ko-KR', { hour12: false });
+                            }
+                        }
+                    }
                 }
             }
 
@@ -897,7 +961,24 @@ function startBatchProcessing() {
                             + ' <button class="btn btn-warning" style="margin-left: 8px; padding: 2px 10px; font-size: 13px;" onclick="showSkippedModal(\'' + escapeHtml(skBatchId) + '\')">자세히 보기</button>'
                             + '</div>';
                     }
-                    var html = '<div class="status-success"><h4>✅ 배치 처리<br>완료</h4><div style="margin-top: 15px;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;"><thead><tr style="background: #f8f9fa;"><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">총 처리된 행</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">고유 직원 수</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">성공한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">실패한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">비속어 발견 직원</th></tr></thead><tbody><tr style="background: #ffffff;"><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #007bff;">' + (data.total_rows || data.total_processed || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #6c757d;">' + (data.total_employees || data.unique_employees || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #28a745;">' + (data.success_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #dc3545;">' + (data.error_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: left; color: #ffc107;">' + (data.profanity_employees && data.profanity_employees.length > 0 ? data.profanity_employees.map(function(emp) { return '<div style="margin-bottom: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.profanities.join(', ')) + '</div>'; }).join('') : '없음') + '</td></tr></tbody></table>' + failedListHtml + skippedHtml + '</div></div>';
+                    var outputPathsHtml = '';
+                    if (data.handoff_path) {
+                        var hp = escapeHtml(data.handoff_path);
+                        outputPathsHtml += '<div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 5px;"><strong>📁 핸드오프 코퍼스:</strong> '
+                            + '<span style="font-size: 12px; color: #666;">' + hp + '</span>'
+                            + ' <button class="btn btn-outline-info" style="padding: 2px 8px; font-size: 12px;" onclick="openFolder(\'' + hp.replace(/'/g, "\\'") + '\')">📂 폴더 열기</button>'
+                            + ' <button class="btn btn-outline-secondary" style="padding: 2px 8px; font-size: 12px;" onclick="copyPath(\'' + hp.replace(/'/g, "\\'") + '\')">📋 복사</button>'
+                            + '</div>';
+                    }
+                    if (data.judgment_path) {
+                        var jp = escapeHtml(data.judgment_path);
+                        outputPathsHtml += '<div style="margin-top: 6px; padding: 10px; background: #f0fdf4; border-radius: 5px;"><strong>📁 판정 패킷:</strong> '
+                            + '<span style="font-size: 12px; color: #666;">' + jp + '</span>'
+                            + ' <button class="btn btn-outline-info" style="padding: 2px 8px; font-size: 12px;" onclick="openFolder(\'' + jp.replace(/'/g, "\\'") + '\')">📂 폴더 열기</button>'
+                            + ' <button class="btn btn-outline-secondary" style="padding: 2px 8px; font-size: 12px;" onclick="copyPath(\'' + jp.replace(/'/g, "\\'") + '\')">📋 복사</button>'
+                            + '</div>';
+                    }
+                    var html = '<div class="status-success"><h4>✅ 배치 처리<br>완료</h4><div style="margin-top: 15px;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;"><thead><tr style="background: #f8f9fa;"><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">총 처리된 행</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">고유 직원 수</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">성공한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">실패한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">비속어 발견 직원</th></tr></thead><tbody><tr style="background: #ffffff;"><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #007bff;">' + (data.total_rows || data.total_processed || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #6c757d;">' + (data.total_employees || data.unique_employees || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #28a745;">' + (data.success_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #dc3545;">' + (data.error_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: left; color: #ffc107;">' + (data.profanity_employees && data.profanity_employees.length > 0 ? data.profanity_employees.map(function(emp) { return '<div style="margin-bottom: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.profanities.join(', ')) + '</div>'; }).join('') : '없음') + '</td></tr></tbody></table>' + outputPathsHtml + failedListHtml + skippedHtml + '</div></div>';
                     document.getElementById('resultsSummary').innerHTML = html;
                 }, 500);
 
@@ -1484,6 +1565,8 @@ function openBatchSse() {
             loadWorkOrders();
             var rbtn = document.getElementById('resumeBtn');
             if (rbtn) rbtn.style.display = 'none';
+            // 결과 표시
+            showBatchResults(data);
         }
     };
 
@@ -1492,6 +1575,80 @@ function openBatchSse() {
         eventSource.close();
         isProcessing = false; if (window.hideBusyOverlay) hideBusyOverlay();
     };
+}
+
+function showBatchResults(data) {
+    setTimeout(function() {
+        document.getElementById('processingResults').classList.remove('hidden');
+        var hasFailures = data.failed_employees && data.failed_employees.length > 0;
+        var failedListHtml = '';
+        if (hasFailures) {
+            var btn = document.getElementById('retryFailedBtn');
+            btn.style.display = 'inline-block';
+            btn.dataset.failedEmployees = JSON.stringify(data.failed_employees);
+            failedListHtml = '<div style="margin-top: 10px; padding: 10px; background: #f8d7da; border-radius: 5px;"><strong style="color: #721c24;">실패 상세:</strong>';
+            data.failed_employees.forEach(function(emp) {
+                failedListHtml += '<div style="margin-top: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.error) + '</div>';
+            });
+            failedListHtml += '</div>';
+        }
+        var skippedHtml = '';
+        var skippedCount = data.skipped_count || 0;
+        if (skippedCount > 0) {
+            var skBatchId = data.batch_id || '';
+            skippedHtml = '<div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px;">'
+                + '<strong style="color: #856404;">⚠️ 중복으로 저장되지 않은 평가: ' + skippedCount + '건</strong>'
+                + ' <span style="color: #856404;">— 이미 동일한 데이터가 등록되어 있어 새로 저장되지 않았습니다.</span>'
+                + ' <button class="btn btn-warning" style="margin-left: 8px; padding: 2px 10px; font-size: 13px;" onclick="showSkippedModal(\'' + escapeHtml(skBatchId) + '\')">자세히 보기</button>'
+                + '</div>';
+        }
+        var outputPathsHtml = '';
+        if (data.handoff_path) {
+            var hp = escapeHtml(data.handoff_path);
+            outputPathsHtml += '<div style="margin-top: 10px; padding: 10px; background: #f0fdf4; border-radius: 5px;"><strong>📁 핸드오프 코퍼스:</strong> '
+                + '<span style="font-size: 12px; color: #666;">' + hp + '</span>'
+                + ' <button class="btn btn-outline-info" style="padding: 2px 8px; font-size: 12px;" onclick="openFolder(\'' + hp.replace(/'/g, "\\'") + '\')">📂 폴더 열기</button>'
+                + ' <button class="btn btn-outline-secondary" style="padding: 2px 8px; font-size: 12px;" onclick="copyPath(\'' + hp.replace(/'/g, "\\'") + '\')">📋 복사</button>'
+                + '</div>';
+        }
+        if (data.judgment_path) {
+            var jp = escapeHtml(data.judgment_path);
+            outputPathsHtml += '<div style="margin-top: 6px; padding: 10px; background: #f0fdf4; border-radius: 5px;"><strong>📁 판정 패킷:</strong> '
+                + '<span style="font-size: 12px; color: #666;">' + jp + '</span>'
+                + ' <button class="btn btn-outline-info" style="padding: 2px 8px; font-size: 12px;" onclick="openFolder(\'' + jp.replace(/'/g, "\\'") + '\')">📂 폴더 열기</button>'
+                + ' <button class="btn btn-outline-secondary" style="padding: 2px 8px; font-size: 12px;" onclick="copyPath(\'' + jp.replace(/'/g, "\\'") + '\')">📋 복사</button>'
+                + '</div>';
+        }
+        var html = '<div class="status-success"><h4>✅ 배치 처리<br>완료</h4><div style="margin-top: 15px;"><table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6;"><thead><tr style="background: #f8f9fa;"><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">총 처리된 행</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">고유 직원 수</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">성공한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">실패한 직원</th><th style="padding: 12px; border: 1px solid #dee2e6; font-weight: bold; text-align: center;">비속어 발견 직원</th></tr></thead><tbody><tr style="background: #ffffff;"><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #007bff;">' + (data.total_rows || data.total_processed || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #6c757d;">' + (data.total_employees || data.unique_employees || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #28a745;">' + (data.success_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: center; font-weight: bold; color: #dc3545;">' + (data.error_count || 0) + '</td><td style="padding: 12px; border: 1px solid #dee2e6; text-align: left; color: #ffc107;">' + (data.profanity_employees && data.profanity_employees.length > 0 ? data.profanity_employees.map(function(emp) { return '<div style="margin-bottom: 5px;"><strong>' + escapeHtml(emp.employee_id) + ':</strong> ' + escapeHtml(emp.profanities.join(', ')) + '</div>'; }).join('') : '없음') + '</td></tr></tbody></table>' + outputPathsHtml + failedListHtml + skippedHtml + '</div></div>';
+        document.getElementById('resultsSummary').innerHTML = html;
+    }, 500);
+}
+
+function openFolder(path) {
+    fetch('/api/batch/open-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: path })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.success) {
+            alert('폴더 열기 실패: ' + (data.error || '알 수 없는 오류'));
+        }
+    })
+    .catch(function(e) {
+        alert('폴더 열기 중 오류가 발생했습니다.');
+    });
+}
+
+function copyPath(path) {
+    var ta = document.createElement('textarea');
+    ta.value = path;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    alert('경로가 클립보드에 복사되었습니다.');
 }
 
 document.addEventListener('DOMContentLoaded', function() {

@@ -13,6 +13,7 @@ from src.config.settings import (
 )
 from src.models.integrated_data_manager import IntegratedDataManager
 from src.modules.integrated_analysis import calculate_consolidated_analysis
+from utils.date_normalize import normalize_eval_date
 
 
 def load_config():
@@ -46,7 +47,9 @@ def generate_integrated_data(data):
     target_employee_id = data.get('target_employee_id')
     evaluation_document = data.get('evaluation_document')
     evaluator_id = data.get('evaluator_id')
-    evaluation_date = data.get('evaluation_date')
+    # 다양한 입력 형식(int 2025, '2025-06-01', '20250601', '250105' 등)을 표준형으로
+    # 정규화해 저장한다. DB 컬럼·JSON blob이 동일 값에서 파생되므로 한 곳에서 통일된다.
+    evaluation_date = normalize_eval_date(data.get('evaluation_date'))
     remove_profanity = data.get('remove_profanity', True)
     remove_stop_words = data.get('remove_stop_words', True)
     remove_unhealthy = data.get('remove_unhealthy', True)

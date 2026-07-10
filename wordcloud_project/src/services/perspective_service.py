@@ -114,7 +114,9 @@ CONTRASTIVE_MARKERS = {
     'suffix': [
         # -지만 계열 (역접): "성실하지만", "부족하지만"
         '지만', '이지만',
-        # -(으)나 계열 (역접): "뛰어나나", "부족하나", "소극적이나"
+        # -(으)나 계열 (역접): "뛰어나나", "부족하나", "소극적이나". '이나'는 양보('초임차장이나
+        #   뛰어남')를 지켜 positive_rescue/rule2가 긍정 보존하므로 전역에선 유지. 단 개선요청
+        #   차단용에선 제외(_IMPROVE_BLOCK_CONTRAST) — "소통이나 공감능력 필요"의 명사나열 오인 교정(0703).
         '으나', '이나',
         # -건만 계열 (유감·역접): "노력했건만", "기대했건만"
         '건만',
@@ -154,6 +156,15 @@ ALL_CONTRASTIVE = (
     CONTRASTIVE_MARKERS['suffix'] +
     CONTRASTIVE_MARKERS['idiomatic']
 )
+# 개선요청 부정화 차단 전용 대조어(0703) — '이나'(명사 나열=or, "소통이나 공감능력 필요") 제외.
+#   '이나'는 양보('초임차장이나 뛰어남')로 긍정 보존해야 해 전역 대조엔 남기되, 개선요청이
+#   '이나' 하나 때문에 중립화되지 않도록 이 목록으로만 차단 여부를 판단한다.
+_IMPROVE_BLOCK_CONTRAST = tuple(m for m in ALL_CONTRASTIVE if m != '이나')
+
+
+def _has_improve_blocking_contrast(sentence):
+    """개선요청 부정화를 막아야 할 '진짜' 대조어가 있으면 True('이나' 단독 나열은 불차단)."""
+    return bool(sentence) and any(m in sentence for m in _IMPROVE_BLOCK_CONTRAST)
 
 # ── 50개 단문 테스트 문장 (추정값 포함) ──────────────────────────────────────────
 TEST_SENTENCES_100 = [
@@ -354,6 +365,9 @@ POSITIVE_IMPLYING_PHRASES = [
     #   저신뢰 시 rule3가 무조건 부정화 → positive_rescue가 먼저 구제하도록 표지 append.
     #   부정형("X하지 않")·불공정 등은 아래 게이트/NEGATIVE_CONTEXT로 차단(긍↔부 0 유지).
     '우수', '탁월', '능동', '원만', '신속', '열성', '공정',
+    # 0702_03 시도·폐기: "배울 점이 많음"(칭찬) 위해 '배울' 추가했으나 "배울 점이 없는 사람"(부정)에서
+    #   positive_rescue의 direct-negation 게이트가 원거리 '없'을 못 잡아 부→긍 유발 → revert.
+    #   "보완 필요한 부분보다 배울점이 더 많음"류 비교급 칭찬은 파인튜닝 몫(KoTE 부정+비교구조 규칙불가).
 ]
 
 # positive_rescue 발동을 막는 도메인 부정 문맥어 (기존 NEGATIVE 목록에 없는 보강분)
@@ -468,7 +482,8 @@ _GUARD_EXCLUDED_MARKERS = {'개선', '예측', '효율', '대안', '해결책', 
 _POS_NEGATION_WINDOW = 3
 # 접미 부정형(표지 + 어간 + '지 않/못/아니') 감지용 — 표지~negation 사이 어간을 건너뛰는 넓은 창.
 _POS_SUFFIX_NEGATORS = ['지 않', '지않', '지 못', '지못', '지 아니', '지아니']
-_POS_SUFFIX_NEG_WINDOW = 8
+_POS_SUFFIX_NEG_WINDOW = 14  # 0709: 8→14 — "협업[능력이 뛰어나]지 않고"처럼 명사표지와 '지 않' 사이
+                             #   어간이 긴 부정 칭찬 128건이 창 밖이라 구제되던 것 차단(A/B 실측 채택)
 
 
 def positive_marker_directly_negated(sentence):
@@ -504,6 +519,8 @@ def positive_marker_directly_negated(sentence):
                     continue  # 이중부정 = 칭찬 → 차단하지 않음
                 if any(c in tail for c in _CONCESSIVE_TOKENS):
                     continue  # 양보 = 혼합 → 차단하지 않음
+                if tail.startswith('도록'):
+                    continue  # 목적형 부정("~않도록 배려")=칭찬 → 차단하지 않음(0709)
                 return True
             # 접미 부정형 '~지 않/~지 못/~지 아니'(예: "열성적이지 않습니다", "우수하지 못함").
             #   window-3 직접 negator로는 표지와 '않' 사이 어간('적이지')이 끼어 놓친다.
@@ -513,11 +530,14 @@ def positive_marker_directly_negated(sentence):
                 k = sfx.find(snt)
                 if k == -1:
                     continue
-                stail = sfx[k + len(snt):k + len(snt) + 5]
+                # 꼬리는 원문 기준으로 읽는다 — 창(sfx) 끝에 걸친 '지 않[도록…]'의 후속 확인 누락 방지(0709)
+                stail = sentence[after + k + len(snt):after + k + len(snt) + 5]
                 if any(r in stail for r in _RENEGATION_TOKENS):
                     continue  # "않지 않" 류 이중부정 → 차단 안 함
                 if any(c in stail for c in _CONCESSIVE_TOKENS):
                     continue
+                if stail.startswith('도록'):
+                    continue  # 목적형 부정("불편해하지 않도록 배려")=칭찬 → 차단 안 함(0709 A/B)
                 return True
             i = after
     return False
@@ -570,12 +590,18 @@ def has_unnegated_deficiency(sentence):
 
 # 건설적 필요/요구 — 다면평가 약점 섹션 "[긍정표지]+필요/요구" = "더 ~하면 좋겠다"(부정).
 #   batch_2026062x 약점 배치 부→긍 지배 패턴(경청 필요·소통이 필요함·자세가 필요함·책임감 요구됨).
-_NEED_NEG_WINDOW = 5    # '필요' 뒤 negation 탐색창(필요하지 않/필요 없 = 불요=긍정 → 제외)
+_NEED_NEG_WINDOW = 8    # '필요' 뒤 negation 탐색창(필요하지 않/필요 없 = 불요=긍정 → 제외)
+# 0702: 5→8. "보완 필요점 딱히 없습니다"처럼 '필요'와 부정 '없' 사이에 부사('딱히')·명사꼬리('점')가
+#   끼면 5자 창을 벗어나 '필요'를 건설적필요로 오판 → 무결점 선언이 improvement_request_neg(부)로
+#   새던 것을 교정. 확대는 '불요(必要없음)=중립/긍정' 인식을 넓혀 부→중 방향이라 긍↔부 안전.
 # '필요 [인물/인재/존재…]' = 불가결한 사람(긍정) → 건설적 비판 아님.
 #   배경(0630 재감사·PoC): "강원본부에 절대적 필요 인물"이 '필요'로 has_constructive_need=True가 되어
 #   positive_rescue를 막던 긍→중 트랩. 직후 토큰이 사람명사면 제외(긍정 보존).
 #   ⚠️ '필요 이상'(과도)은 비판("필요이상의 일에 시달려")이라 가드에 넣지 않는다(부→긍 교차 방지, 전수검증).
 _NEED_POSITIVE_TAILS = ('인물', '인재', '존재', '인력', '자원')
+# 0702 폐기: '필요'+명사복합('사항·성·시·업무'…) 제외를 시도했으나 "필요성이 있다"·"소통이 더
+#   필요할 것 같음"(진짜 개선요청)까지 풀어 부→긍 113건 유발 → revert. 공유 게이트는 안 건드리고,
+#   강긍정 보호는 improvement_request_neg 분기의 pos 가드로만 처리(양방향 안전).
 
 
 def has_constructive_need(sentence):
@@ -591,8 +617,19 @@ def has_constructive_need(sentence):
     while p != -1:
         a1 = sentence[p + 2:p + 3]
         window = sentence[p + 2:p + 2 + _NEED_NEG_WINDOW]
+        # 0702: negation 창이 절 경계(쉼표·마침표 등)를 넘지 않게 절단 — "자세 필요, 말이 없음"의
+        #   '없'은 다른 절(말이 없음) 소속인데 창 확대(8)로 잘못 '불요'로 봐 개선요청(부)이 긍정
+        #   구제되던 부→긍 1건 교정. 같은 절 안의 "필요점 딱히 없"만 불요로 인정(무결점 유지).
+        for _sep in (',', '.', '·', ';', '/', '\n', '。', '，'):
+            _ci = window.find(_sep)
+            if _ci != -1:
+                window = window[:_ci]
         before = sentence[max(0, p - 1):p]
         tail = sentence[p + 2:p + 2 + 6].lstrip()         # '필요' 직후(선행 공백 제거) 토큰
+        # 0702_03 시도·폐기: '필요시/필요할 경우/때' 조건형을 개선요청에서 제외하려 했으나,
+        #   "X가 필요할 때가 있음"(개선요청=부)과 "필요시 X를 잘 해줌"(조력=긍)이 동일 표면형이라
+        #   양방향 전수에서 부→긍 72 유발(113 revert와 동형) → 공유게이트 불가침 재확인, 이 폴리세미는
+        #   파인튜닝 몫([[project_field_signal_for_finetune]]). 관형 '필요한'만 기존 유지.
         if before == '불':
             pass                                          # 불필요 → 제외
         elif a1 == '한':
@@ -647,13 +684,22 @@ def _has_improvement_request_core(sentence):
             return True
         i = sentence.find('요함', i + 2)
     # 3) 보완/개선 '요청'(직후 창에 negation 있으면 제외 = "보완점 없음" 중립 보존)
+    # 0702_03: 관형 '필요한'([명사] 수식)만 요청에서 제외 — has_constructive_need(a1=='한' 제외)와
+    #   일관. "보완이 필요한 부분보다 배울점이 더 많음"·"보완이 필요한 부분에 조언 제공"(칭찬)이
+    #   부정/중립화되던 긍 훼손 차단. ⚠️ 조건형 '필요할/필요시'는 제외 안 함 — 이전에 "X 필요할 때가
+    #   있음"(개선요청)까지 풀어 부→긍 72 유발했기 때문(파인튜닝 몫). '필요한'만 좁게 제외.
     for w in ('보완', '개선'):
         j = sentence.find(w)
         while j != -1:
             tail = sentence[j + len(w):j + len(w) + 8]
-            if (not any(neg in tail for neg in ('없', '않', '아니'))
-                    and any(v in tail for v in _IMPROVE_REQ_VERBS)):
-                return True
+            if not any(neg in tail for neg in ('없', '않', '아니')):
+                for v in _IMPROVE_REQ_VERBS:
+                    vi = tail.find(v)
+                    if vi == -1:
+                        continue
+                    if v == '필요' and tail[vi + 2:vi + 3] == '한':
+                        continue                          # 보완이 필요한 [명사] = 관형 수식 → 요청 아님
+                    return True
             j = sentence.find(w, j + len(w))
     return False
 
@@ -686,9 +732,23 @@ def has_improvement_request(sentence):
 #   보고 부정 오분류하던 지배 패턴(batch 실측: 부정 라벨의 23.8%). 비평가성 = 중립(긍↔부 무관).
 _NOWEAK_NOUNS = ['보완', '단점', '개선점', '개선 사항', '개선사항', '보완점', '보완 점',
                  '보완사항', '보완 사항', '보완필요', '문제점', '특이사항', '특이 사항',
-                 '결점', '지적사항', '지적 사항', '미흡한 점', '아쉬운 점', '부족한 점']
+                 '결점', '지적사항', '지적 사항', '미흡한 점', '아쉬운 점', '부족한 점',
+                 # 0702_03: '보안'은 '보완'의 잦은 IME 오타(사용자 제보). "보안점 필요없음"·
+                 #   "보안필요상황없음"류 무결점 선언이 미인식되어 남던 것 흡수. 이 리스트는
+                 #   negation 창이 있을 때만 →중립을 내므로 진짜 보안(security)+없음("보안 문제
+                 #   없음"=긍)도 긍→중(핵심가치 안전)일 뿐 긍↔부 오분류 불가.
+                 '보안', '보안점', '보안 점', '보안사항', '보안 사항', '보안필요',
+                 # 0703: 오타 변형(사용자 제보) — 모완(보완)·단덤(단점)·미비한 점.
+                 '모완', '모완점', '모완사항', '단덤', '미비한 점', '미비점', '미흡점',
+                 # 0702: '특별한 장점 없음'류 무언급 선언 — 강점 부재 서술은 비평가(중립).
+                 #   '장점' 단독은 "장점을 못 살림"(소홀 등 결함어가 상위 가드에서 부정 보존)이라
+                 #   여기 중립화는 순수 "장점 없음" 선언에만 걸림(→중립, 긍↔부 무관).
+                 '장점', '특별한 점', '특이점']
 _NOWEAK_NEG = ('없', '않', '아니')
-_NOWEAK_WINDOW = 8
+# 0702: 8→12. "보완 필요점은 별도로 없습니다"·"부족함 점을 발견할 수 없음"처럼 명사와 '없'
+#   사이에 부사구('별도로'·'발견할 수')가 끼면 8자 창을 벗어나 중립화를 놓치던 부70 케이스 교정.
+#   중립만 산출하므로 창 확대가 긍↔부 오분류를 만들 수 없다.
+_NOWEAK_WINDOW = 12
 # 혼합 판정용 결핍어 — negation 인식으로 체크(약점명사 '보완 필요'와 겹치는 NEGATIVE_IMPLYING_WORDS
 #   평면 매칭은 "보완 필요점 없음"을 오차단하므로 사용 불가 → 전용 negation-aware 게이트).
 _NOWEAK_OTHER_NEG = ('부족', '미흡', '결여', '부재', '아쉽', '여지')
@@ -706,6 +766,89 @@ def _has_unnegated_other_negative(sentence):
     return False
 
 
+# 약점-못찾음/미발견/오타없음 선언 — "보완필요점 찾지 못함"·"단점 발견하지 못함"·"보완필요사항 업음".
+#   0702_03: 실측 15,782건(약점명사 ∧ 표준 negation('없/않/아니') 없음 ∧ 부정라벨)의 지배 패턴.
+#   부정 표지가 '못(찾지 못/느끼지 못)'·'미발견'·'찾기 어려움'·오타 없음('업음/업슴')이라 기존
+#   negation('없/않/아니')·개선요청 core가 이를 부정으로 인식 못 해 "약점을 못 찾음"(=무결점, 중립)이
+#   improvement_request로 부정화되던 것을 교정. 약점 '찾는 행위'의 부정 = 약점 부재 선언 = 중립.
+#   방향이 오직 →중립이라 긍↔부 오분류를 만들 수 없다(부→중, 사용자 라벨원칙 무결점=중립).
+_NOWEAK_NOTFOUND = ('찾지 못', '찾지못', '못 찾', '못찾', '찾기 어려', '찾기어려', '찾기 힘',
+                    '느끼지 못', '느끼지못', '못 느', '못느', '발견하지 못', '발견하지못',
+                    '발견 못', '발견못', '미발견', '못 발견', '모르겠',
+                    # 0702_03: '확인하지 못/확인 못/확인되지 않' — "보완이 필요한 점은 확인하지
+                    #   못하였습니다"(약점 확인행위의 부정=무결점 선언)를 not-found로 포착.
+                    #   약점명사 동시 요구라 순수 '확인'문(성과 확인 등)은 미발동.
+                    '확인하지 못', '확인하지못', '확인 못', '확인못', '확인되지 않', '확인되지않',
+                    # 오타 '없음'(사용자 제보 10~20%) — 표준 '없'으로 안 잡히는 변형만.
+                    '업음', '업슴', '업습니', '업ㅅ', '읎', '엄슴', '엄음')
+# not-found 전용 약점명사 — '장점/특별한 점/특이점'(무언급) 제외. "느끼지 못함이 장점"(칭찬)이나
+#   "장점 못 찾음"(모호)에 not-found가 걸려 진짜 칭찬을 긍→중 하지 않게, 순수 약점명사만 사용.
+_NOWEAK_NOTFOUND_NOUNS = ('보완', '단점', '개선점', '개선 사항', '개선사항', '보완점', '보완 점',
+                          '보완사항', '보완 사항', '보완필요', '문제점', '특이사항', '특이 사항',
+                          '결점', '지적사항', '지적 사항', '미흡한 점', '아쉬운 점', '부족한 점',
+                          # 0702_03: 무공백 관형 변형("부족한점을 발견하지 못했습니다") — 공백형만
+                          #   있어 못 잡던 것 보강(순수 약점명사).
+                          '부족한점', '미흡한점', '아쉬운점',
+                          # 0702_03: '보안'(보완 오타) 무결점 not-found도 흡수 — 순수 약점명사만.
+                          '보안', '보안점', '보안 점', '보안사항', '보안 사항', '보안필요')
+
+
+def _has_unnegated_other_negative_strict(sentence):
+    """_has_unnegated_other_negative와 동일하나 관형 '부족한/미흡한'(not-found 대상)은 제외.
+
+    0702_03: "아직 부족한 점을 발견하지 못했습니다"의 '부족'은 찾지 못한 *대상*(부족한 점)이라
+    실제 결핍 서술이 아니다. _is_weakness_not_found 내부 혼합판정 전용 — →중립만 산출하므로
+    관형 제외가 긍↔부 오분류를 만들 수 없다. 진짜 혼합("단점 못찾으나 소통 미흡함")의 '미흡함'은
+    관형이 아니라 계속 True로 부정 보존.
+    """
+    for w in _NOWEAK_OTHER_NEG:
+        i = sentence.find(w)
+        while i != -1:
+            tail = sentence[i + len(w):i + len(w) + 5]
+            # 관형('한'/'운' 시작) = 약점명사 수식(부족한 점) → not-found 대상, 결핍 서술 아님.
+            if not tail.lstrip().startswith(('한', '운')) \
+                    and not any(n in tail for n in ('없', '않', '아니')):
+                return True
+            i = sentence.find(w, i + len(w))
+    return False
+
+
+def _has_strong_negative_nonadnominal(sentence):
+    """has_unnegated_strong_negative와 동일하나 관형 '필요한'(예: '보완이 필요한')은 강부정에서 제외.
+
+    0702_03: "보완이 필요한 점은 확인하지 못하였습니다"는 '보완이 필요'가 관형으로 not-found의
+    *대상*(찾지 못한 그 점)이라 실제 결핍 서술이 아니다. 이 판정은 →중립만 내므로 관형 제외가
+    긍↔부 오분류를 만들 수 없다(진짜 혼합 결핍은 _has_unnegated_other_negative가 계속 보존).
+    """
+    if not sentence:
+        return False
+    for phrase in STRONG_NEGATIVE_PHRASES:
+        p = sentence.find(phrase)
+        while p != -1:
+            tail = sentence[p + len(phrase):p + len(phrase) + 6]
+            if not tail.lstrip().startswith('한') and not any(r in tail for r in _RENEGATION_TOKENS):
+                return True
+            p = sentence.find(phrase, p + len(phrase))
+    return False
+
+
+def _is_weakness_not_found(sentence):
+    """약점 명사가 있고 그 약점을 '못 찾음/미발견/오타 없음'으로 부재 선언하면 True(무결점=중립).
+
+    고정밀: 약점명사 + not-found 표지 동시 요구 → "보완 필요"(negation 없는 순수 개선요청)는 미매치.
+    혼합("보완점 못찾았지만 소통 미흡")은 미부정 결핍/강부정이 섞이면 False로 부정 보존.
+    """
+    if not any(n in sentence for n in _NOWEAK_NOTFOUND_NOUNS):
+        return False
+    if not any(v in sentence for v in _NOWEAK_NOTFOUND):
+        return False
+    # 혼합 방지 — 다른 미부정 결핍어(부족·미흡…)나 강부정이 섞이면 무결점 단정 보류(부정 보존).
+    #   단 관형 '보완이 필요한'류는 not-found 대상이라 강부정에서 제외(→중립만, 긍↔부 안전).
+    if _has_unnegated_other_negative_strict(sentence) or _has_strong_negative_nonadnominal(sentence):
+        return False
+    return True
+
+
 def is_no_weakness_declaration(sentence):
     """약점 명사(보완/단점/개선점…) 직후 창에 negation이 와 '약점 없음'을 선언하면 True → 중립.
 
@@ -714,6 +857,10 @@ def is_no_weakness_declaration(sentence):
     """
     if not sentence:
         return False
+    # 약점-못찾음/미발견/오타없음 선언은 개선요청 가드보다 우선 인식 — "보완필요점 찾지 못함"류가
+    #   has_constructive_need('필요')에 걸려 부정으로 새던 것을 무결점(중립)으로 확정(0702_03).
+    if _is_weakness_not_found(sentence):
+        return True
     # 혼합("보완점은 없으나 소통이 부족") → 진짜 부정 우선, 약점선언 미발동
     # NOTE: has_improvement_request 는 여기 넣지 않는다. 그 게이트는 후행 '없음'을 negation-aware로
     #   완전 처리하지 못해("개선 및 보완필요점 없음") 약점-없음 선언을 부정으로 밀 수 있다.
@@ -722,6 +869,11 @@ def is_no_weakness_declaration(sentence):
             or has_unnegated_strong_negative(sentence)
             or _has_unnegated_other_negative(sentence)):
         return False
+    # 메타-부재 선언("특별한 사항/별다른 것/딱히 ... 없음") — 특정 약점명사가 없어도 "특별히
+    #   없다"류 무언급=무결점(중립). 위 결핍 가드를 통과했으므로 진짜 결핍(부족·미흡·역량없음)은
+    #   이미 걸러졌다. 방향 →중립뿐이라 긍↔부 안전.
+    if _is_meta_nothing(sentence):
+        return True
     for noun in _NOWEAK_NOUNS:
         i = sentence.find(noun)
         while i != -1:
@@ -730,6 +882,276 @@ def is_no_weakness_declaration(sentence):
                 return True
             i = sentence.find(noun, i + len(noun))
     return False
+
+
+# 메타-부재 선언(0703, 사용자 제보 "보완/개선 필요없음 유사어 다수") — 특정 약점명사 없이 "특별한
+#   사항/별다른 것/딱히/그외 ... 없음"으로 무언급을 선언. 명사구 표지는 어디에 있어도 되지만, 부사
+#   표지(딱히/별로/그외 등)는 competency 결핍("열의가 딱히 없음")과 구분하려 문두에서만 인정한다.
+_META_NOTHING_PHRASE = ('특별한 사항', '특별한 점', '특별한것', '특별한 것', '특별한 부분',
+                        '특별한 내용', '특이사항', '특이 사항', '특이점', '특이한 점', '별다른',
+                        '해당사항', '해당 사항', '기재사항', '기재 사항', '느낀 점', '느낀점',
+                        '느낀 적', '느낀적', '언급할', '작성할', '적을 내용', '적을 것', '적을게',
+                        '생각나는', '생각해본', '기타 특별', '지적할', '언급 사항')
+_META_NOTHING_LEAD = ('딱히', '특별히', '그외', '그 외', '이외', '별로', '그런거', '그런 것',
+                      '그런것', '별 다른', '별거', '별 거', '없음', '없습니다')
+_META_ABSENT = ('없', '않', '아님', '아니', '업음', '업슴', '읎', '엄슴')
+
+
+def _is_meta_nothing(sentence):
+    """메타-부재 선언이면 True(무결점=중립). 부사표지는 문두에서만 인정(competency 결핍 오포착 방지)."""
+    if not sentence or not any(a in sentence for a in _META_ABSENT):
+        return False
+    if any(p in sentence for p in _META_NOTHING_PHRASE):
+        return True
+    head = sentence.lstrip()
+    return any(head.startswith(l) for l in _META_NOTHING_LEAD)
+
+
+# 0702 구조규칙 — 명시적 강긍정 술어. 무결점 선언에 실제 칭찬이 붙으면("보완필요점 없을 정도로
+#   완벽함") 중립화하지 않고 긍정 보존. 폴리세미 명사(노력·전문성 등)는 제외하고, 극성이 명확한
+#   평가 형용사만 수록 → 무결점 중립화 확대가 진짜 칭찬을 삼키지 않게 한다.
+_EXPLICIT_POSITIVE = ('완벽', '뛰어', '우수', '훌륭', '탁월', '최고', '출중', '탄탄', '모범',
+                      '남다른', '타의 추종', '더할 나위',
+                      # 0709: "높은 평가를 드리고 싶음"류 명시 상찬 — 무보완+칭찬어=긍정(4R 재정 원칙).
+                      #   '높은' 단독은 폴리세미(눈높이·연령대 높은)라 '평가' 결합구만 수록.
+                      '높은 평가', '높이 평가', '높게 평가')
+
+
+def has_explicit_strong_positive(sentence):
+    """명시적 강긍정 평가어가 있으면 True(무결점 중립화에서 진짜 칭찬 보존용)."""
+    return bool(sentence) and any(w in sentence for w in _EXPLICIT_POSITIVE)
+
+
+# 건강/사생활 관련 조언 — 사용자 정책(0702_03): 개인 건강(건강관리·음주·체력 등) 조언·개선 언급은
+#   업무 평가가 아니므로 중립. "건강관리가 필요함"·"술을 줄이면 좋겠음"·"건강에 유의". 방향 →중립뿐
+#   이라 긍↔부 무관. 건강 term + 조언/결핍 marker 동시 요구 → "체력이 좋아 업무를 잘함"(건강이
+#   업무역량을 뒷받침하는 칭찬, marker 없음)은 미발동으로 칭찬 보존.
+_HEALTH_TERMS = ('건강관리', '건강 관리', '건강에', '건강을', '건강상', '건강히', '건강관련',
+                 '건강도', '건강까지', '건겅', '건강유지', '체력', '음주', '술을', '술자리',
+                 '과음', '흡연', '담배', '금연', '금주', '지병', '컨디션', '다이어트')
+_HEALTH_ADVICE = ('필요', '보완', '유의', '좋겠', '조심', '신경', '챙기', '해야', '줄이',
+                  '주의', '바랍', '바람', '했으면', '하였으면', '관리가', '관리도')
+
+
+def is_health_advice(sentence):
+    """개인 건강/사생활 조언·개선 언급이면 True → 중립(업무 평가 아님, 사용자 정책)."""
+    if not sentence:
+        return False
+    return (any(t in sentence for t in _HEALTH_TERMS)
+            and any(a in sentence for a in _HEALTH_ADVICE))
+
+
+# ── 개인 심신 안녕(업무 무관) → 중립 (0706 사용자 정책) ────────────────────────────
+# 배경: 건강뿐 아니라 스트레스·상처·휴식·사기 등 개인 안녕에 대한 '바람/염려/조언'은 업무역량
+#   평가가 아니다(사용자: "쉬어가면서 일했으면", "스트레스 받지 않았으면", "상처 덜 받으셨으면").
+#   그런데 이들이 '필요/해야/좋겠'을 포함해 improvement_request·rule3_last_low로 부정화되고 있었다
+#   (검토 코퍼스 실측: 건강 부정 68·개인안녕 부정 32, 대부분 rule3/improvement).
+# 안전: 도메인 명사 AND 염려/바람/조언 마커를 *동시* 요구 → 단순 언급("체력이 좋아 잘함")·역량서술
+#   ("스트레스에 내성이 강함")·업무귀결 부정("음주로 잦은 지각")은 마커가 없어 미발동 → 칭찬/부정 보존.
+#   반환은 중립뿐이라 긍↔부 오분류 불가(방향 →중립만). is_health_advice의 상위집합(건강+마커도 포함).
+# 다의 명사(사기=morale/scam, 마음이=care) 제외 — 긴 문장서 무관 마커와 AND 오발동(강부정 오중립).
+# substring 충돌 명사도 제외: '술을'(→기술을/전술을/예술을), '과로'(→성과로/결과로).
+_PERSONAL_DOMAIN_NOUNS = tuple(t for t in _HEALTH_TERMS if t != '술을') + (
+    '건강이', '건강과', '스트레스', '상처', '휴식', '쉬어', '쉬엄', '쉬면서', '쉬셨',
+    '번아웃', '멘탈', '정신적', '몸이', '몸을', '몸 챙', '몸도',
+)
+# 칭찬형 마커(관리·해소·받지 않·신경) 제외 — "자기관리로 컨디션 유지"·"스트레스 잘 해소"·"스트레스
+#   받지 않는다"(회복력=긍정)·"멘탈케어 신경 써주심"(칭찬)을 오중립하던 것 차단. '생각하'는 명령형
+#   (생각하세/셔/해야)만 — "남을 먼저 생각하고"(칭찬) 오발동 방지. 위시/염려/조언형만 유지.
+_PERSONAL_CONCERN_MARK = (
+    '좋겠', '좋을', '했으면', '하였으면', '하셨으면', '바람', '바랍', '우려', '염려', '안쓰',
+    '조심', '유의', '챙기', '하셔야', '하세요', '드립니다', '드림', '필요', '줄이',
+    '주의', '무리하지', '덜 받', '받지 마', '끊어야', '끊으', '끊고',
+    '생각하세', '생각하셔', '생각해야', '생각하시',
+    '풀었으면', '당부', '기원', '응원', '힘내', '해야', '있어야',
+    '았으면', '었으면',   # 위시 어미("쉬었으면", "안받었으면") — 명사 게이트로 오탐 방지
+)
+
+
+def is_personal_wellbeing_neutral(sentence):
+    """개인 건강·심신 안녕(업무 무관)에 대한 조언·바람·염려면 True → 중립(사용자 정책).
+
+    도메인 명사 + 염려/바람/조언 마커 동시 필요(단순 언급·역량서술·업무귀결 부정은 미발동).
+    방향은 →중립뿐이라 긍↔부 안전. is_health_advice보다 도메인·마커가 넓다.
+    """
+    if not sentence:
+        return False
+    if not any(n in sentence for n in _PERSONAL_DOMAIN_NOUNS):
+        return False
+    return any(m in sentence for m in _PERSONAL_CONCERN_MARK)
+
+
+def _is_effort_needed(sentence):
+    """'노력'이 직후 창(8자)에 '필요'와 함께 오면 True(불요 제외) → 명백한 개선요청.
+
+    0702_03: 코퍼스 실측 '노력+필요' 3,640건(2,300 distinct) 중 칭찬 반례 0 — "노력이 필요함"은
+    노력이 *결여*됐다는 뜻(칭찬은 "노력함/노력이 대단함/아끼지 않음"). 폴리세미 아니므로 KoTE
+    강긍정(pos≥0.75)이어도 pos가드를 무시하고 부정 확정(긍↔부 안전, 방향 편향 없음).
+    """
+    if not sentence:
+        return False
+    p = sentence.find('노력')
+    while p != -1:
+        seg = sentence[p:p + 8]
+        fi = seg.find('필요')
+        if fi != -1 and '필요없' not in seg and '필요 없' not in seg:
+            # 0703: 노력~필요 사이 절 경계(쉼표 등)면 다른 절("노력, 필요한 네트워크 보유"=칭찬) → 제외.
+            if not any(sep in seg[:fi] for sep in (',', '·', '/', '。', '，', ';', '.')):
+                return True
+        p = sentence.find('노력', p + 2)
+    return False
+
+
+# 추측형 필요 — "X가 필요한 것 같음/필요한듯/필요해 보임" = 화자가 결핍을 추정 단언 = 개선요청(부정).
+#   0702_03: 코퍼스 실측 2,932건, KoTE-긍 표본조차 전부 개선요청("적극적 참여가 필요해보인다"·
+#   "챙기는 노력도 필요한 것 같") — 칭찬 반례 0. 관형 '필요한 [실명사]'(필요한 부분/조언=칭찬맥락,
+#   부→긍 72 트랩)와 표면형이 분리(것 같/듯/해 보임 종결)돼 재발 없음. 불가결('필요한 인재/인물')·
+#   불요(필요없)·부정('필요해 보이지 않')은 제외 → 긍↔부 안전.
+_SPEC_NEED = ('필요한 것 같', '필요한것 같', '필요한 듯', '필요한듯', '필요할 듯', '필요할듯',
+              '필요해 보', '필요해보', '필요할 것 같', '필요할것 같', '필요하다고 보',
+              '필요해 지', '필요하지 않나')
+_SPEC_NEED_STOP = ('인재', '인물', '존재', '인력')          # 필요한 인재인 것 같다 = 칭찬 → 제외
+
+
+def _is_speculative_need(sentence):
+    """추측형 필요(결핍 추정) = 개선요청이면 True. 불가결·불요·부정은 제외(긍→부 보호)."""
+    if not sentence:
+        return False
+    for form in _SPEC_NEED:
+        i = sentence.find(form)
+        while i != -1:
+            back = sentence[max(0, i - 4):i]                 # '필요' 앞 4자(인재/인물 수식 확인)
+            if any(s in back for s in _SPEC_NEED_STOP):
+                i = sentence.find(form, i + len(form))
+                continue
+            tail = sentence[i:i + len(form) + 6]
+            if '않' in tail or '없' in tail:                  # 필요해 보이지 않/필요한 것 같지 않 = 제외
+                i = sentence.find(form, i + len(form))
+                continue
+            return True
+    return False
+
+
+# 요청표지 화행 — 사용자 재정 원칙(4R·0630): 요청표지(~해야/~바람/~좋겠/~주세요/자제/지양/보완)가
+#   있으면 개선요청 = 부정. 0709 적대검증 실측: 내부망 부→dev 긍 16,031건 중 positive_rescue 12,275건이
+#   전부 이 화행("협업을 위해 노력해야한다"·"적극적인 업무처리 바랍니다"·"업무열의 및 협업능력 보완")
+#   인데 기존 검출기(improvement_core/constructive/effort/speculative) 전원 미탐 → 긍정 구제돼 긍↔부
+#   위반 위험. 칭찬 트랩은 표면형으로 제외: '바람직'(≠바람), '본받아야'(칭찬), '~어야 할 일을 처리함'
+#   (문말 아님 → regex가 처방형 종결만 매칭), '아쉬움이 없다'(negation), '했으면서도'(양보 연결어미).
+_REQ_PRESCRIPTIVE = re.compile(
+    r'(?:어|아|여|해|되어|돼|져)\s?야\s?(?:함|한다(?!는)|합니다|됨|됩니다|겠(?!다는))')
+# '될' 제외(260709 A/B): "체크해야될 사항들을 제시함"의 관형절(해야 될+명사)이 칭찬문을 오탐.
+_REQ_WISH = re.compile(r'(?:었|았)으면(?!서)')
+# A/B 실측 트랩 제외(260709): '자제'(전자제어 substring)·bare '지양/삼가'("불필요한 업무 지양"=
+#   행위서술 칭찬)·bare '요함'(중요함)·문말 '노력'("조직목표 달성을 위해 노력"=장점 행위서술 1,616건
+#   긍→부 유발) — 처방형 어미/바람/요망 래퍼가 있을 때만 요청으로 본다.
+_REQ_TOKENS = ('좋겠', '좋겟', '면 좋을', '면좋을', '면 좋음', '면 좋다', '면 좋습',
+               '면 될 것', '시면 될', '바랍', '주세요', '주시기 바', '주시길', '주십시오',
+               '해주길', '해 주길', '요망', ' 요함',
+               '이 요구됨', '가 요구됨', '보완한다면', '보완하면', '보완하시면', '보완이 요',
+               '보완 요')
+_REQ_FINAL_BARE = re.compile(r'보완[\s\.\!\?~]*$')            # 문말 bare 명사 요청("협업능력 보완")
+# 문말 '보완'이라도 행위서술(칭찬)인 형태 제외(260709 A/B 실측): ① 수단("중간점검을 통하여 보완"),
+#   ② 부정명사 목적어("문제점을 보완"·"어려움 보완" = 결함을 고쳐준다는 칭찬), ③ 목적/수단 연결
+#   ("효율적 업무처리를 위해 개선보완"·"온화한 성격으로 보완"·"발견하여 보완").
+_REQ_FINAL_BARE_EXCL = ('통하여', '통해', '통한', '바탕으로',
+                        '문제점', '문제를', '어려움', '단점', '약점', '미비점',
+                        '하여', '위해', '위한', '으로')
+# 서술형 칭찬 술어 — 요청표지 *단독* 문장에 동반되면 긍부혼재("업무열의가 매우 좋으며 좀더
+#   노력바랍니다") → 원칙(긍부혼재=중립)대로 부정 대신 중립. 결핍 core 표지가 있으면 부정 유지.
+_PRED_PRAISE = ('좋으며', '좋고', '좋으나', '매우 좋', '아주 좋', '능숙', '잘함', '잘 함')
+
+
+def _has_request_marker(sentence):
+    """요청표지 화행(개선요청=부정, 사용자 재정)이면 True. 칭찬 트랩은 표면형으로 제외."""
+    if not sentence:
+        return False
+    m = _REQ_PRESCRIPTIVE.search(sentence)
+    if m and sentence[max(0, m.start() - 2):m.start()] != '본받':
+        return True
+    if _REQ_WISH.search(sentence):
+        return True
+    for tok in _REQ_TOKENS:
+        i = sentence.find(tok)
+        if i != -1:
+            return True
+    # '바람'은 '바람직'·'예의 바람'(=예의 바름, 칭찬 표기변이) 제외("소통 노력 바람"류만)
+    i = sentence.find('바람')
+    while i != -1:
+        if sentence[i:i + 3] != '바람직' and '예의' not in sentence[max(0, i - 5):i]:
+            return True
+        i = sentence.find('바람', i + 2)
+    # '아쉬'는 negation('아쉬움이 없다') 제외
+    i = sentence.find('아쉬')
+    while i != -1:
+        if not any(n in sentence[i:i + 10] for n in ('없', '않')):
+            return True
+        i = sentence.find('아쉬', i + 2)
+    m = _REQ_FINAL_BARE.search(sentence)
+    if m:
+        win = sentence[max(0, m.start() - 8):m.start()]      # 직전 창만 — 문두 '적극적으로'는 무관
+        if not any(e in win for e in _REQ_FINAL_BARE_EXCL):
+            return True
+    return False
+
+
+# 과잉 호소 — "너무/지나치게 X해서 [부정 귀결]" = 과함이 문제를 낳음 = 부정. '너무' 폴리세미
+#   ("너무 좋음"=칭찬)를 블랭킷 부정화하지 않고, 오직 부정 *귀결* 마커가 붙을 때만 발동.
+#   0702_03: 코퍼스 실측으로 칭찬 오염 0인 마커만 채택(오해·못따라·과함·피로·버거·힘듬·곤란…).
+#   제외(칭찬 오염 有): 부담·눈치·힘들·따라오기힘·'문제해결'. → 긍↔부 안전(실측 pos=0 마커).
+_EXCESS_MARK = ('너무', '지나치게', '지나칠', '과도')
+# 실측 칭찬오염 0 귀결마커만(SCAN2 2026-07-02). '부담/눈치/힘들/문제(bare)'는 칭찬혼입 있어 제외.
+_EXCESS_CONSEQ = ('오해', '못 따라', '못따라', '따라가기 힘', '따라가지 못', '따라오지 못',
+                  '과함', '과하게', '피로', '버거', '벅차', '힘듬', '힘듦', '곤란', '눈치보', '부담스')
+# '문제'는 폴리세미(문제해결/어떠한 문제든=칭찬)라 bare 금지 — 명시적 '문제' 프레이밍 구만.
+_EXCESS_PROBLEM = ('문제입니다', '문제 입니다', '문제임', '문제가 됩', '문제가 된', '문제가 되기',
+                   '문제가 있', '문제점이 됩', '해서 문제', '라서 문제', '문제를 일으', '문제를 야기')
+_CLAUSE_SEP = (',', '.', '·', ';', '/', '\n', '。', '，', '지만', '으나', '나 ', '며', '고 ')
+
+
+def _clause_after(sentence, pos):
+    """pos 이후 같은 절(절 경계 전까지) 텍스트."""
+    seg = sentence[pos:]
+    cut = len(seg)
+    for sep in _CLAUSE_SEP:
+        c = seg.find(sep, 1)
+        if c != -1:
+            cut = min(cut, c)
+    return seg[:cut]
+
+
+def _is_excess_complaint(sentence):
+    """과잉('너무/지나치게') + 부정 귀결 마커면 True → 부정. 마커는 실측 칭찬오염 0만 사용.
+
+    0702_03: '너무'는 강조사라 블랭킷 금지. '지나치게 X하지 않음'(과하지 않음=칭찬)·'어떠한 문제든
+    긍정적'(칭찬)에서 긍→부 위반이 나와, 지나치=같은 절 내 negation('않/없') 확인·문제=명시 프레이밍
+    구로 좁힘(전수 재검증 긍→부 0 확인).
+    """
+    if not sentence:
+        return False
+    if not any(m in sentence for m in _EXCESS_MARK):
+        return False
+    # 칭찬 보존 가드(전수 재검증에서 발굴한 긍→부 위반 차단):
+    #   ① 명시적 강긍정("지나치게 업무능력이 뛰어남")·② 무결점 선언("단점을 찾기가 힘듦"=찾기 어려움)은
+    #   과잉호소가 아니다 → 제외. (has_contrast 혼합문은 호출측에서 제외해 대조규칙에 위임.)
+    if has_explicit_strong_positive(sentence) or _is_weakness_not_found(sentence):
+        return False
+    if any(c in sentence for c in _EXCESS_CONSEQ):
+        return True
+    if any(pf in sentence for pf in _EXCESS_PROBLEM):
+        return True
+    # '지나치'(과도) — 같은 절 안에 negation('않/없')이 있으면 '지나치지 않음'류 칭찬 → 제외.
+    j = sentence.find('지나치')
+    while j != -1:
+        cl = _clause_after(sentence, j)
+        if '않' not in cl and '없' not in cl:
+            return True
+        j = sentence.find('지나치', j + 3)
+    return False
+
+
+# 내용 문자(한글 자모·음절, 영숫자) — 하나도 없으면 구분선('-----')·기호 나열 = 쓰레기 행.
+_CONTENT_CHAR_RE = re.compile(r'[0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ]')
 
 
 def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sentences,
@@ -741,7 +1163,22 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
     """
     confidence = abs(pos - neg)
     strength = pos + neg
+
+    # 구분선/기호-only 쓰레기 행 → 중립 (0709, q.txt ③). '-----' 류에 KoTE가 pos 0.7+를 주어
+    #   rule4_default가 긍정 처리하던 269건 차단. 한글·영숫자가 하나도 없으면 평가 텍스트가 아님.
+    #   방향 →중립뿐이라 긍↔부 무관.
+    if not _CONTENT_CHAR_RE.search(sentence or ''):
+        return 0.0, 'garbage_line_neutral'
+
     has_contrast = has_contrastive(sentence)
+
+    # 개인 심신 안녕(업무 무관) → 중립 (도메인 게이트, 최우선). 0706 사용자 정책: 건강·스트레스·
+    #   휴식·상처 등 개인 안녕에 대한 바람/염려/조언은 업무역량 평가가 아니므로 중립. improvement_request·
+    #   excess·rule3_last_low가 '필요/해야/좋겠'을 부정화하기 전에 선점해 차단한다. 도메인명사+마커
+    #   동시 요구라 칭찬("체력 좋아 잘함")·역량서술("스트레스 내성 강함")·업무귀결 부정은 미발동.
+    #   반환 중립뿐 → 긍↔부 안전(긍→중·부→중만 발생, 전수회귀로 확인).
+    if is_personal_wellbeing_neutral(sentence):
+        return 0.0, 'personal_wellbeing_neutral'
 
     # 긍정 구제(positive_rescue): 인사평가 긍정 표지가 명확하고 부정 신호가 없으면 긍정 상향.
     # neutral_dominant/rule3/rule4보다 앞서 평가해, 긍정이 중립·부정으로 강등되는 것을 사전 차단.
@@ -754,9 +1191,23 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
             and not has_unnegated_deficiency(sentence)
             and not has_constructive_need(sentence)
             and not has_improvement_request(sentence)
+            # 0702_03: 무결점 선언("개선사항 없음"·"개선점 발견 못함")·추측형 필요·과잉호소는
+            #   긍정 구제에서 제외 — 아래 전용 분기(no_weakness/improvement/excess)로 보내
+            #   각각 중립/부정 확정. positive_rescue가 선점해 긍정으로 올리던 것 차단(긍→중·긍 미상향).
+            and not is_no_weakness_declaration(sentence)
+            and not _is_speculative_need(sentence)
+            and not _is_effort_needed(sentence)
+            # 0709 적대검증: 요청표지 화행("노력해야한다"·"바랍니다"·"~ 보완")이 긍정명사(열의·협업)
+            #   때문에 구제되던 부→긍 축(12,275건) 차단 — 아래 improvement_request 분기로 보낸다.
+            and not _has_request_marker(sentence)
+            and not _is_excess_complaint(sentence)
             and not any(ph in sentence for ph in STRONG_NEGATIVE_PHRASES)
             and not any(nc in sentence for nc in NEGATIVE_CONTEXT_FOR_RESCUE)
             and neg < 0.85):
+        # A-1(0702) 시도·폐기: "neg≥0.6·neg>pos면 긍정구제 보류"는 weak_export 전수에서
+        #   긍→부 5,445건 유발, 표본 판정 결과 "학구열이 매우 높음"(n0.63)·"동료의식이 강함"(n0.62)·
+        #   "상대방 배려 커뮤니케이션"(n0.70) 등 진짜 긍정 + 역량 단편 중립→부 다수 → 긍↔부 위반.
+        #   KoTE가 짧은 역량구에 부정 과다예측 → neg 임계 차단은 부적합. 근본해법=필드(A-2). revert.
         return (strength if strength > 1e-6 else 0.3), 'positive_rescue'
 
     # negation 칭찬 구제(negation_praise): "부정어의 부정 = 칭찬"을 긍정 상향.
@@ -770,28 +1221,72 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
     if is_negation_praise(sentence):
         return (strength if strength > 1e-6 else 0.3), 'negation_praise'
 
+    # 과잉 호소(excess_complaint) → 부정. "너무 친절해서 오해를 삼"·"너무 적극적이라 못 따라감".
+    #   0702_03: '너무'는 강조사라 블랭킷 부정화 불가(긍→부 위반). 부정 *귀결* 마커(실측 칭찬오염 0:
+    #   오해·못따라·과함·피로·힘듬·곤란·문제)가 붙을 때만 발동 → "너무 좋음/열정적"(마커 없음)은
+    #   positive_rescue로 긍정 유지. negation_praise('지나치지 않음' 칭찬) 뒤에 둬 칭찬 우선.
+    if not has_contrast and _is_excess_complaint(sentence):
+        return (-strength if strength > 1e-6 else -0.3), 'excess_complaint_neg'
+
+    # ── 비평가/무결점 선언 우선 중립화 (개선요청 부정화·neutral_dominant보다 먼저) ──────
+    # 0702_03: no_response·no_weakness를 neutral_dominant·improvement_request보다 앞으로 이동.
+    #   "보완 필요점은 별도로 없습니다"류 무결점 선언은 '보완/필요' 표지 때문에 improvement_request의
+    #   짧은 negation 창(8자)이 뒤쪽 '없'(별도로 없…)을 놓쳐 부정화되던 것을, is_no_weakness_declaration
+    #   (원거리 '없' 인식)이 먼저 중립화해 차단한다(실측 16,154건 오부정 제거). 방향 →중립뿐, 긍↔부 안전.
+    #   위치 이동 자체는 회귀 무해: neutral_dominant 문장이면 no_resp/no_weak도 중립을 반환(동일 결과),
+    #   비(非)neutral_dominant면 순서 불변. 달라지는 건 improvement_request 선점을 막는 것뿐.
+    if is_no_response(sentence) and not (pos >= 0.6 and pos > neg):
+        return 0.0, 'no_response_neutral'
+    if is_no_weakness_declaration(sentence):
+        # 0703: 명시적 강긍정(완벽/뛰어남)이 붙은 무결점 선언은 중립화 대신 **긍정 확정**. 이전엔
+        #   중립화만 건너뛰고 fall-through시켜 rule4_default가 KoTE neg를 따라 부정으로 뒤집던
+        #   버그("완벽한 업무처리로 보완사항 없습니다"·"보완필요점 없고 역량 뛰어남"→부) 교정.
+        #   무결점+강긍정은 진짜 칭찬이라 긍정 반환이 긍↔부 안전.
+        if has_explicit_strong_positive(sentence):
+            return (strength if strength > 1e-6 else 0.3), 'no_weakness_positive'
+        return 0.0, 'no_weakness_neutral'
+
+    # 건강/사생활 조언 → 중립 (개선요청 부정화보다 먼저). 사용자 정책(0702_03): 개인 건강 코멘트는
+    #   업무 평가가 아니므로 중립. "건강관리가 필요함"·"술을 잘 드셔서 건강관리 보완 필요"가
+    #   improvement_request로 부정화되던 것을 차단. 방향 →중립뿐이라 긍↔부 안전.
+    if is_health_advice(sentence) and not has_explicit_strong_positive(sentence):
+        return 0.0, 'health_advice_neutral'
+
+    # 개선요청/결핍 프레이밍 → 부정 (neutral_dominant 선행·무결점 선언 뒤). 사용자 정책: 요청형=결여=부정.
+    #   neutral_dominant가 'KoTE 중립우세'라는 이유만으로 "X 필요·소통 부족·소홀"류 개선요청을
+    #   선점·중립화하던 것을 교정(polysemy 큐 실측 1,683건). 요청 core 검출기(_has_improvement_request_core/
+    #   has_constructive_need/has_unnegated_deficiency — 모두 내장 가드 有: 관형 '필요한'·불요·
+    #   '필요 인물/인재'·부정의부정)가 참일 때만 발동 → 무술어 단편("업무 열의 및 노력",
+    #   "협업을 통한 성과제고 노력")은 미발동 → 아래 neutral_dominant로 중립 유지(사용자 점3).
+    #   강긍정 보호(pos>=0.75): '필요'가 명사복합(필요사항·필요지식)·부수적 칭찬일 개연이 커 중립 유지
+    #   (긍→부 차단). positive_rescue·negation_praise가 앞서 진짜 긍정을 상향했으므로 여기 도달하는 건
+    #   긍정 표지가 약하거나 없는 개선요청 → 강긍정→중립·그 외→부정. neutral→부정은 핵심가치(긍↔부)
+    #   무관·허용, 긍↔부 0은 장점/단점 양방향 회귀로 확인 후 채택(0702_03).
+    _core_improve = (_has_improvement_request_core(sentence)
+                     or has_constructive_need(sentence)
+                     or has_unnegated_deficiency(sentence)
+                     or _is_speculative_need(sentence)
+                     or _is_effort_needed(sentence))
+    # 0709: 요청표지 화행 편입(부→긍 적대검증). 강긍정(pos>=0.75) 가드는 존중 —
+    #   유지형 위시("지금처럼 하기를 바랍니다")의 긍→부 반전을 막기 위해 중립으로.
+    if (not _has_improve_blocking_contrast(sentence)
+            and (_core_improve or _has_request_marker(sentence))):
+        # 요청표지 *단독* + 서술형 칭찬 동반은 긍부혼재 → 중립(원칙). core 결핍 표지면 부정 유지.
+        if (not _core_improve
+                and (has_explicit_strong_positive(sentence)
+                     or any(pp in sentence for pp in _PRED_PRAISE))):
+            return 0.0, 'improvement_request_neutral'
+        # 노력+필요·추측형필요(불요 제외)는 실측 개선요청(반례 0) → pos가드 무시하고 부정 확정.
+        if pos >= 0.75 and not _is_effort_needed(sentence) and not _is_speculative_need(sentence):
+            return 0.0, 'improvement_request_neutral'
+        return (-strength if strength > 1e-6 else -0.3), 'improvement_request_neg'
+
     # KoTE neutral 우세 또는 근접 우세(±0.05) → 중립 강제
     if neutral > pos and neutral >= neg - 0.05:
         return 0.0, 'neutral_dominant'
 
-    # 무응답 중립화(no_response_neutral): "잘 모르겠습니다"·"뵌 적 없어 모름"·"내용없음"·낙서 등
-    #   평가를 하지 않은 비평가 문장이 rule3/rule4에서 부정으로 강등되는 것을 중립으로 교정.
-    #   neutral_dominant 뒤·euphemistic_negative/rule3 앞에 두어, 이미 중립인 낙서(neutral_dominant)는
-    #   그대로 두고(회귀 영향 0) 부정으로 떨어질 비평가 문장만 중립으로 가로챈다.
-    #   is_no_response는 진짜 부정 신호(부정암시어/완곡부정)가 섞이면 False → 부→중 강등 없음
-    #   (비평가는 긍정도 부정도 아니므로 중립화는 긍↔부 오분류를 만들지 않는다).
-    if is_no_response(sentence):
-        return 0.0, 'no_response_neutral'
-
-    # 약점-없음 선언 중립화(no_weakness_neutral): "보완점 없음"·"단점 없습니다" 等.
-    #   KoTE가 '보완/단점'만 보고 부정 오분류하던 비평가성 선언(batch 실측 부정의 23.8%).
-    #   KoTE 부정 우세(neg>=pos)일 때만 — 긍정문("보완 필요없이 높은 평가")은 미발동(긍정 보존).
-    #   다른 진짜 부정이 섞이면 미발동(혼합은 부정 보존) → 중립만 산출, 긍↔부 안전.
-    #   추가(23년_장점 실측): 저신뢰(|pos-neg|<threshold)면 pos>neg여도 발동 — "같이 근무해보니
-    #   보완할점 없음"(pos 0.5/neg 0.44)류가 rule3_last_low로 긍→부 뒤집히던 것을 중립으로 가로챈다.
-    #   고신뢰 긍정("보완 필요없이 높은 평가")은 confidence가 커 미발동 → 긍정 보존(긍↔부 0).
-    if (neg >= pos or confidence < threshold) and is_no_weakness_declaration(sentence):
-        return 0.0, 'no_weakness_neutral'
+    # (no_response_neutral·no_weakness_neutral은 0702_03 reorder로 neutral_dominant/improvement_request
+    #  앞으로 이동함 — 무결점·무응답 선언이 개선요청 부정화보다 먼저 중립화되도록.)
 
     # 중립 규칙: 중립 문장이 부정으로 극단 오분류되는 케이스 방지
     # 중립→긍정은 허용이므로 긍정 방향 오분류는 교정하지 않음
@@ -806,21 +1301,8 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
             and has_unnegated_strong_negative(sentence)):
         return -strength, 'euphemistic_negative'
 
-    # 개선요청/결핍 프레이밍 중립화(improvement_request_neutral):
-    #   결핍·개선요청 표지("보완 필요"·"소통 부족"·"개선 바람")가 있는데 KoTE가 긍정 우세로 줘
-    #   rule4_default가 그대로 긍정 통과하던 부→긍 누수를 중립으로 가로챈다.
-    #   배경(batch_20260624 단점필드 실측·0630 PoC): 단점필드 30.8% positive, 그중 78%가
-    #   rule4_default 무override = 구조적 구멍. 기존 개선요청 가드는 positive_rescue 전용이라 못 봄.
-    #   안전성: ① pos>neg(긍정으로 갈 것)일 때만 발동 — neg≥pos 진짜 부정은 rule3/rule4가 처리.
-    #          ② 부정이 아니라 *중립*으로만 강등 → 긍↔부 0 보존(부→긍 위반 제거, 긍→부 미발생).
-    #          ③ has_improvement_request/has_constructive_need/has_unnegated_deficiency의 내장 가드
-    #             (없/극복/양보/관형 '필요한'/'필요 인물·이상')가 긍정 trap을 제외 → 긍→중 최소화.
-    #          ④ has_contrast(반전)는 rule1/2가 방향 판단 → 제외.
-    if (pos > neg and not has_contrast
-            and (_has_improvement_request_core(sentence)
-                 or has_constructive_need(sentence)
-                 or has_unnegated_deficiency(sentence))):
-        return 0.0, 'improvement_request_neutral'
+    # (개선요청/결핍 프레이밍 → 부정 분기는 0702_03 reorder로 neutral_dominant 앞으로 이동함.
+    #  euphemistic_negative까지 통과한 잔여는 rule1~4가 처리.)
 
     # 규칙 1: 반전 + 마지막 + 저신뢰도 + strength>0.5 → 모델 방향 기반 가중
     if (has_contrast and is_last and confidence < threshold
@@ -1438,7 +1920,7 @@ def _load_corrections_map(employee_id):
         conn.close()
 
 
-def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None, sentence_cache=None):
+def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None, sentence_cache=None, field=None):
     """문장별 감정 점수(반전 규칙·사용자 교정 적용 후)를 계산.
 
     Returns list of (sent, score, pos, neg) 4-tuples.
@@ -1446,6 +1928,8 @@ def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None
     sentence_cache: 배치 시 저장된 문장 단위 KoTE 원시 점수 리스트
                     [{"sentence"(optional), "pos", "neg", "neutral"}, ...].
                     제공되면 KoTE 재실행 없이 캐시 사용. 없으면 공유 헬퍼로 fallback.
+    field: 문서 단위 극성 필드('장점'/'단점' 등, 0707_01). HR 감정모델 추론 시 학습과 동일
+           프리픽스로 전달(train/serve 정합). None/빈값이면 무프리픽스(하위호환·기존 동작).
     """
     if sentence_cache and isinstance(sentence_cache, list):
         # 캐시 경로: KoTE 재실행 없음. sentence 누락(점수-only) 시 split로 재도출
@@ -1478,7 +1962,12 @@ def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None
         from src.config.settings import USE_HR_SENTIMENT_MODEL
         if USE_HR_SENTIMENT_MODEL:
             from src.modules.hr_sentiment import predict_sentiments
-            model_labels = predict_sentiments(sentences)
+            # 필드(장점/단점)가 있으면 문서 전 문장에 상속(문서 단위 단일극성, 0707_01) → 학습과 동일
+            # 프리픽스로 추론. field는 신 파이프라인(0707_01 극성매핑) 데이터에만 존재하고 그 데이터는
+            # seed45 배포 세계에서만 생기므로, field 존재 자체가 train/serve 정합의 표식(별도 플래그 불요).
+            # 구 데이터·미매핑은 field 없음 → 원문 추론(하위호환·어느 모델에서도 안전).
+            fields = [field] * total if field else None
+            model_labels = predict_sentiments(sentences, fields=fields)
             if model_labels is not None and len(model_labels) != total:
                 model_labels = None
     except Exception:
@@ -1534,7 +2023,7 @@ def calculate_word_scores(filtered_evaluations, word_frequency, threshold=0.20, 
                 continue
             doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
             eval_corrections = corrections_map.get(ev.get('_db_id')) if corrections_map else None
-            sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'))
+            sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'), field=ev.get('evaluation_document_field'))
             # 단어가 속한 문장의 점수 찾기
             word_sent_score = None
             for sent, score, _, _, _ in sent_scores:
@@ -1712,7 +2201,7 @@ def _aggregate_emotion(filtered_items, threshold=0.20, weight=2.0, corrections_m
             scores = {}
         doc = ev.get('evaluation_document', '') or ev.get('evaluation_document_original', '')
         eval_corrections = corrections_map.get(ev.get('_db_id')) if corrections_map else None
-        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'))
+        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'), field=ev.get('evaluation_document_field'))
         for sent, score, _, _, _ in sent_scores:
             pos_sum += max(0, score)
             neg_sum += max(0, -score)
@@ -1782,7 +2271,7 @@ def _generate_emotion_cell(filtered_items, threshold=0.20, weight=2.0, correctio
         eval_id = ev.get('evaluation_id', '')
         db_id = ev.get('_db_id')
         eval_corrections = corrections_map.get(db_id) if corrections_map else None
-        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'))
+        sent_scores = _get_sentence_level_scores(doc, threshold, weight, corrections=eval_corrections, sentence_cache=ev.get('sentence_emotion_cache'), field=ev.get('evaluation_document_field'))
         for i, (sent, score, pos, neg, neutral) in enumerate(sent_scores):
             if not sent:
                 continue
@@ -2573,7 +3062,7 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
             if not doc:
                 continue
             eval_corr = deploy_corrections_map.get(db_id, {}) if deploy_corrections_map else {}
-            sent_scores_list = _get_sentence_level_scores(doc, corrections=eval_corr, sentence_cache=ev.get('sentence_emotion_cache'))
+            sent_scores_list = _get_sentence_level_scores(doc, corrections=eval_corr, sentence_cache=ev.get('sentence_emotion_cache'), field=ev.get('evaluation_document_field'))
             # 문장-점수 단일 출처: _get_sentence_level_scores 결과(문장 텍스트 포함)를 직접 순회한다.
             # split_sentences(doc) 재분할 + index 맵 방식은 캐시 순서/재분할이 어긋나면
             # 점수가 다른 문장에 붙어 긍↔부 오분류로 이어질 수 있어 제거(0618_01 §3-A).

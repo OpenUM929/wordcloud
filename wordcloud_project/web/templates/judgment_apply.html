@@ -37,16 +37,15 @@
 
     <div class="ja-intro">
         <h3>AI 판정이 끝난 패킷을 평가 DB에 반영합니다</h3>
-        <p>통합데이터 생성 시 추출한 <strong>판정 패킷</strong>(어려운 문장 모음)을 AI/사람이 판정해 <code>result.label</code>을 채운 뒤, 그 JSON을 여기에 업로드하면 각 문장의 감정 보정값(<code>sentiment_corrections</code>)에 반영됩니다.</p>
-        <p>· 가명 키(<code>db_id</code>, <code>sent_idx</code>) 기준으로 in-place 병합 — 기존 보정은 보존되고 신규 판정이 우선합니다.</p>
-        <p>· <code>needs_human: true</code> 항목은 DB에 넣지 않고 아래 검토 큐로만 표시됩니다.</p>
+        <p>판정 패킷의 각 문장은 <code>status</code>로 진행됩니다 — <strong>1</strong> AI 판정 대기 · <strong>2</strong> 사람 판정 대기 · <strong>3</strong> AI 작업 완료 · <strong>4</strong> Human 작업 완료 · <strong>10/11</strong> DB 반영 완료. 업로드만으로는 DB에 쓰지 않고, 아래에서 패킷을 고른 뒤 <strong>💾 DB에 반영</strong> 버튼을 눌러야 <strong>AI 작업 완료(3)</strong> 문장이 감정 보정값(<code>sentiment_corrections</code>)에 in-place 병합됩니다(기존 보정 보존, 신규 우선). 반영되면 status가 10으로 전이됩니다.</p>
+        <p>· <strong>status 2(사람 판정 대기)</strong> 문장은 <a href="/group-review">그룹검토 게시판</a>에서 판정(→ status 4)한 뒤, 게시판의 <strong>💾 DB에 반영</strong> 버튼으로 반영하면 됩니다(→ status 11).</p>
     </div>
 
     <div id="jaUploadArea" class="upload-area">
         <p>판정 완료된 패킷 JSON을 드래그하거나 클릭하여 선택하세요</p>
         <input type="file" id="jaFileInput" accept=".json,application/json" style="display:none;">
         <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('jaFileInput').click()">패킷 파일 선택</button>
-        <p class="upload-area__hint">지원 형식: 판정 패킷 JSON (<code>items[].result.label</code> 포함)</p>
+        <p class="upload-area__hint">지원 형식: 판정 패킷 JSON (<code>items[].status</code> 포함)</p>
     </div>
 
     <div id="jaLoading">
@@ -56,9 +55,26 @@
 
     <div id="jaResult">
         <div class="ja-summary" id="jaSummary"></div>
-        <div class="ja-queue" id="jaQueue" style="display:none;">
-            <h3>🙋 사람 검토 필요 큐 <span id="jaQueueCount" style="color:var(--text-muted);font-weight:400;"></span></h3>
-            <div id="jaQueueList"></div>
+        <div class="ja-export" id="jaExport" style="display:none; background:var(--bg-muted); border:1px solid var(--border-color); border-radius:var(--radius-lg); padding:var(--space-4); margin-bottom:var(--space-4);"></div>
+    </div>
+
+    <div class="ja-intro" style="margin-top: var(--space-6);">
+        <h3>🔁 서버 저장 패킷 재적용</h3>
+        <p>패킷을 고르면 상태 분포가 표시됩니다. <strong>AI 작업 완료(status 3)</strong>가 있으면 <strong>💾 DB에 반영</strong> 버튼으로 DB에 병합할 수 있습니다(→ status 10). 그룹검토 게시판에서 <strong>status 2</strong> 문장을 판정하면 <code>status 4</code>로 기록되며, 그쪽은 게시판의 반영 버튼으로 처리합니다.</p>
+        <div style="display:flex; gap:var(--space-3); align-items:center; margin-top:var(--space-3); flex-wrap:wrap;">
+            <select id="jaPacketFile" style="padding:8px 10px; border:1px solid var(--border-color); border-radius:var(--radius-md); font-size:var(--font-sm); min-width:340px;">
+                <option value="">— 서버 저장 패킷 선택 —</option>
+            </select>
+            <button class="btn btn-primary" id="jaReapplyBtn" disabled>재적용</button>
+            <button class="btn" id="jaPacketRefresh" type="button">목록 새로고침</button>
+            <button class="btn btn-primary" id="jaApplyDbBtn" type="button" disabled style="display:none;">💾 DB에 반영</button>
+        </div>
+        <div id="jaReapplyResult" class="ja-summary" style="margin-top:var(--space-4);"></div>
+
+        <div id="jaRedirectAlert" style="display:none; margin-top:var(--space-4); background:#fff7ed; border:1px solid #fed7aa; border-radius:var(--radius-lg); padding:var(--space-4);">
+            <p style="margin:0 0 var(--space-3);">⚠️ AI 작업이 DB에 반영되었습니다. 아직 <strong>사람 판정 대기</strong> 문장이 남아 있습니다. 그룹검토 게시판에서 판정하시겠습니까?</p>
+            <button class="btn btn-primary" id="jaGoGroupReview" type="button">그룹검토로 이동</button>
+            <button class="btn" id="jaDismissRedirect" type="button">닫기</button>
         </div>
     </div>
 </div>

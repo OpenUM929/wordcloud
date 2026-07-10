@@ -218,12 +218,14 @@
             <a href="/profanity-test">🔍 욕설 테스트</a>
         </div>
 
+        {% if _is_admin_session %}
         <!-- 관리자 섹션 -->
         <div class="nav-section" data-nav-section="admin">
             <div class="nav-section-title">👨‍💼 관리자 <span class="collapse-caret">▾</span></div>
             <a href="/admin/dashboard">🔐 관리자 대시보드</a>
             <a href="/admin/plans">📋 계획 현황</a>
         </div>
+        {% endif %}
 
         <span id="globalAuthBadge" style="display:none;background:#28a745;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:4px;">인증됨</span>
 
@@ -237,17 +239,17 @@
 
     <!-- 버전 상세 모달 -->
     <div class="modal-overlay" id="versionModal" onclick="if(event.target===this)closeVersionModal()">
-        <div class="profanity-modal-box" style="background:#ffffff;border-radius:8px;padding:24px;width:480px;max-width:90vw;box-shadow:0 4px 20px rgba(0,0,0,0.3);position:relative;">
+        <div class="profanity-modal-box" style="background:#ffffff;border-radius:8px;padding:24px;width:560px;max-width:90vw;box-shadow:0 4px 20px rgba(0,0,0,0.3);position:relative;">
             <button class="modal-close" onclick="closeVersionModal()" style="float:right;cursor:pointer;font-size:22px;color:#999;background:none;border:none;">&times;</button>
             <h3 style="margin:0 0 16px 0;">⚙ 버전 정보</h3>
             <table style="width:100%;font-size:13px;border-collapse:collapse;">
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">시스템 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_system_version">{{ version_info.system_version }}</td></tr>
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_version">{{ version_info.model_version }}</td></tr>
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 학습일</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_trained">{{ version_info.model_trained }}</td></tr>
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 SHA256</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;" id="vm_model_sha">{{ version_info.model_sha256 }}</td></tr>
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">커밋</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;" id="vm_source_commit">{{ version_info.source_commit }}</td></tr>
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">빌드 날짜</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_build_date">{{ version_info.build_date }}</td></tr>
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;">모델 상태</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_status">{% if version_info.model_status == 'loaded' %}<span style="color:#28a745;font-weight:600;">✓ 로드됨</span>{% else %}<span style="color:#dc3545;font-weight:600;">⚠️ 규칙 폴백</span>{% endif %}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">시스템 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_system_version">{{ version_info.system_version }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_version">{{ version_info.model_version }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 학습일</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_trained">{{ version_info.model_trained }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 SHA256</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;" id="vm_model_sha">{{ version_info.model_sha256 }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">커밋</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;" id="vm_source_commit">{{ version_info.source_commit }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">빌드 날짜</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_build_date">{{ version_info.build_date }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 상태</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_status">{% if version_info.model_status == 'loaded' %}<span style="color:#28a745;font-weight:600;">✓ 로드됨</span>{% else %}<span style="color:#dc3545;font-weight:600;">⚠️ 규칙 폴백</span>{% endif %}</td></tr>
             </table>
             {% if _is_admin_session %}
             <div style="margin-top:16px;text-align:center;">

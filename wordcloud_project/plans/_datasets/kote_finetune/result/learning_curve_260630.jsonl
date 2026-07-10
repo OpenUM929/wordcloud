@@ -4,3 +4,21 @@
 {"tag": "curve_gold100_silver30k", "frac": 1.0, "silver": 30000, "n_train": 31579, "acc": 0.7714, "pos_neg_err": 2, "gp_to_neg": 1, "neg_to_pos": 1}
 {"tag": "round1_hard", "frac": 1.0, "silver": 0, "n_train": 2123, "acc": 0.8995, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
 {"tag": "round0_goldonly_recall", "frac": 1.0, "silver": 0, "n_train": 1579, "acc": 0.902, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_frac1.0_silver0", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 2847, "acc": 0.8071, "pos_neg_err": 1, "gp_to_neg": 0, "neg_to_pos": 1}
+{"tag": "8c_frac1.0_silver0", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3095, "acc": 0.8286, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_frac1.0_silver0", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3328, "acc": 0.7929, "pos_neg_err": 2, "gp_to_neg": 0, "neg_to_pos": 2}
+{"tag": "8c_frac1.0_silver0_ftoff", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3328, "field_token": "off", "acc": 0.8286, "pos_neg_err": 1, "gp_to_neg": 0, "neg_to_pos": 1}
+{"tag": "8c_frac1.0_silver0_fton", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3328, "field_token": "on", "acc": 0.8429, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_frac1.0_silver0_fton", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3443, "field_token": "on", "acc": 0.8429, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_c2", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3743, "field_token": "on", "acc": 0.85, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_c3eval", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3743, "field_token": "on", "acc": 0.8357, "pos_neg_err": 1, "gp_to_neg": 0, "neg_to_pos": 1}
+{"tag": "8c_c4eval", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3976, "field_token": "on", "acc": 0.8214, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_c5eval", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4209, "field_token": "on", "acc": 0.8357, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
+{"tag": "8c_c5eval_r2", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4209, "field_token": "on", "acc": 0.8286, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
+{"tag": "8c_c5rollback", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3979, "field_token": "on", "acc": 0.8071, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_c6eval", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4053, "field_token": "on", "acc": 0.8214, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
+{"tag": "8c_c6eval_r2", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4053, "field_token": "on", "acc": 0.8143, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_c6r", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4053, "field_token": "on", "acc": 0.8286, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}
+{"tag": "8c_c6r_r2", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4053, "field_token": "on", "acc": 0.8286, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
+{"tag": "8c_post_c6rollback", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3979, "field_token": "on", "acc": 0.8357, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
+{"tag": "8c_sa_baseline", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3979, "field_token": "on", "acc": 0.8643, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}

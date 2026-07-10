@@ -7,6 +7,9 @@ import psutil
 import threading
 import time
 from datetime import datetime
+from utils.logger import get_pipeline_logger
+
+logger = get_pipeline_logger()
 
 
 # 체크포인트 관련 상수
@@ -207,13 +210,60 @@ def initialize_batch_directory(processed_data_dir):
     return batch_dir, batch_num
 
 
+# 장점/단점 문서 필드 → 극성 태그(0707_01 Phase2). 메타데이터 구조의 정규 필드로,
+# 사용자가 매핑 UI에서 장점 컬럼·단점 컬럼을 각각 이 필드에 매핑한다. 둘 다 매핑=장단점 혼재
+# 파일, 하나만=단일 극성 파일. 매핑된 필드마다 별도 evaluation 레코드로 방출된다.
+POLARITY_DOCUMENT_FIELDS = {
+    'evaluation_document_strength': '장점',
+    'evaluation_document_weakness': '단점',
+}
+
+
 def _extract_rows_from_chunk(chunk, target_id_column, mappings,
                              _pseudo_mgr, pseudonym_fields):
     """청크 DataFrame → [(pseudo_emp_id, json(evaluation)), ...]
 
     기존 group_data_by_employee의 값 처리(문자열 strip, NaN 보존)를 동일하게 유지하되,
     iterrows 전수 순회 대신 청크 단위 groupby로 그룹핑하고 가명화를 여기서 1회 적용한다.
+
+    장점/단점 문서 필드(POLARITY_DOCUMENT_FIELDS)가 매핑돼 있으면 각 필드를 **별도 evaluation
+    레코드**로 방출하고 'evaluation_document_field'(장점/단점)를 부착한다(0707_01 Phase2 —
+    문서 단위 단일 극성이라 문장 field 가 클린하게 상속). 없으면 기존 단일 evaluation_document
+    경로(field 미부착) 그대로 유지 — 하위호환.
     """
+    # 매핑된 장점/단점 문서 필드 → [(컬럼명, 극성), ...]
+    polar_docs = [(mappings[f], polarity)
+                  for f, polarity in POLARITY_DOCUMENT_FIELDS.items() if mappings.get(f)]
+    # 극성 문서 필드는 항상 기본 루프에서 제외(특수 처리). 극성 분리 시 generic evaluation_document 도 제외.
+    base_skip = {'target_employee_id'} | set(POLARITY_DOCUMENT_FIELDS)
+    if polar_docs:
+        base_skip = base_skip | {'evaluation_document'}
+
+    def _clean(value):
+        # pandas NaN/inf 처리 (float('nan') → None, 유효 float → str), 문자열 strip
+        if isinstance(value, float):
+            if value != value or value == float('inf') or value == float('-inf'):
+                return None
+            return str(value)
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    def _finalize(evaluation):
+        # evaluator_hierarchy_level 기본값 설정
+        if 'evaluator_hierarchy_level' not in evaluation:
+            position = evaluation.get('evaluator_position', '')
+            if any(p in position for p in ['과장', '팀장', '관리자', '总监', 'manager']):
+                evaluation['evaluator_hierarchy_level'] = 'manager'
+            else:
+                evaluation['evaluator_hierarchy_level'] = 'staff'
+        # 가명화 적용 — pseudonym_fields는 target_employee_id 하나뿐이고 evaluation dict에는
+        # target_employee_id 키가 없으므로, evaluation 필드(문서·극성 포함)는 원데이터로 유지된다.
+        # (target_employee_id 가명화는 위 emp_id에서 1회만 수행)
+        if _pseudo_mgr:
+            evaluation = _pseudo_mgr.apply_pseudonyms_to_dict(evaluation, pseudonym_fields)
+        return evaluation
+
     out = []
     for raw_id, group in chunk.groupby(target_id_column):
         emp_id = str(raw_id)
@@ -221,40 +271,27 @@ def _extract_rows_from_chunk(chunk, target_id_column, mappings,
             emp_id = _pseudo_mgr.get_pseudonym(emp_id)
 
         for _, row in group.iterrows():  # 소규모 그룹 내부만 iterrows
-            evaluation = {}
+            base_eval = {}
             for field, column in mappings.items():
-                if field != 'target_employee_id' and column in row.index:
-                    value = row[column]
-                    # pandas NaN/inf 처리 (float('nan') → None, 유효 float → str)
-                    if isinstance(value, float):
-                        if value != value or value == float('inf') or value == float('-inf'):
-                            value = None
-                        else:
-                            value = str(value)
-                    # 문자열 앞뒤 공백 제거
-                    if isinstance(value, str):
-                        value = value.strip()
+                if field not in base_skip and column in row.index:
+                    value = _clean(row[column])
                     if value is not None:
-                        evaluation[field] = value
+                        base_eval[field] = value
 
-            # evaluator_id가 없으면 evaluation_date에서 생성
-            if 'evaluator_id' not in evaluation and 'evaluation_date' in evaluation:
-                date_str = str(evaluation.get('evaluation_date', '')).replace('-', '')
-                evaluation['evaluator_id'] = f"eval-{emp_id}-{date_str}"
-
-            # evaluator_hierarchy_level 기본값 설정
-            if 'evaluator_hierarchy_level' not in evaluation:
-                position = evaluation.get('evaluator_position', '')
-                if any(p in position for p in ['과장', '팀장', '관리자', '总监', 'manager']):
-                    evaluation['evaluator_hierarchy_level'] = 'manager'
-                else:
-                    evaluation['evaluator_hierarchy_level'] = 'staff'
-
-            # 가명화 1회 적용 (이후 metadata dept/pos 후처리 가명화는 삭제됨 — 이중 적용 방지)
-            if _pseudo_mgr:
-                evaluation = _pseudo_mgr.apply_pseudonyms_to_dict(evaluation, pseudonym_fields)
-
-            out.append((emp_id, json.dumps(evaluation, ensure_ascii=False)))
+            if polar_docs:
+                # 장점/단점 필드마다 별도 레코드(문서=단일 극성, 문장 field 클린 상속)
+                for column, polarity in polar_docs:
+                    if column not in row.index:
+                        continue
+                    doc = _clean(row[column])
+                    if not doc:                      # 빈 극성 컬럼은 레코드 생략
+                        continue
+                    ev = dict(base_eval)
+                    ev['evaluation_document'] = doc
+                    ev['evaluation_document_field'] = polarity
+                    out.append((emp_id, json.dumps(_finalize(ev), ensure_ascii=False)))
+            else:
+                out.append((emp_id, json.dumps(_finalize(base_eval), ensure_ascii=False)))
 
     return out
 
@@ -563,6 +600,7 @@ def process_batch(processed_data_dir, data, session_data):
 
     batch_id = os.path.basename(batch_dir)
     batch_processing_state['batch_id'] = batch_id
+    batch_processing_state['started_at'] = datetime.now().isoformat()
 
     # Get mappings
     mappings = data.get('mappings', {})
@@ -571,18 +609,11 @@ def process_batch(processed_data_dir, data, session_data):
     if not target_id_column:
         return {'error': '대상자 ID 필드가 매핑되지 않았습니다.'}, 400
 
-    # Always pseudonymize all PII fields (no user checkbox needed)
-    # 가명화 매니저는 Phase 1 ingest 중 1회 적용되므로 여기서 먼저 준비한다.
-    pseudonym_fields = data.get('pseudonym_fields', [])
-    forced_pseudo = [
-        'target_employee_id', 'evaluator_id',
-        'target_employee_department', 'target_employee_position',
-        'evaluator_department', 'evaluator_position',
-    ]
-    for f in forced_pseudo:
-        if f not in pseudonym_fields:
-            pseudonym_fields.append(f)
+    # 가명화 대상은 target_employee_id 단 하나로 고정한다(설계 원칙).
+    # evaluator_id·부서·직책 등은 가명화하지 않고 원데이터로 DB에 저장한다.
+    pseudonym_fields = ['target_employee_id']
     data['pseudonym_fields'] = pseudonym_fields
+
     _pseudo_mgr = None
     if pseudonym_fields:
         from src.config.settings import ADMIN_PASSWORD, PSEUDONYM_MAPPINGS_PATH
@@ -1030,6 +1061,27 @@ def process_batch(processed_data_dir, data, session_data):
     batch_processing_state['status_message'] = f'Stage 4 완료: DB 저장 ({total_successful}명)'
     batch_processing_state['current_step'] = 4
     batch_processing_state['progress'] = 100
+
+    # 산출물 폴더 경로 저장 (SSE 전달용, completed 전에 설정).
+    # 생성 파일(<batch_id>)이 아닌 라벨 폴더를 연다 — 판정 패킷은 Stage6(=completed 이후)에서야
+    # 파일이 생기므로, 폴더 경로만 미리 확정해 UI 도달을 보장한다(Stage6 타이밍과 분리).
+    import os as _os
+    if _acq_handoff_enabled and _acq_handoff_count > 0:
+        try:
+            from src.services.acquired_handoff import resolve_handoff_path
+            batch_processing_state['handoff_path'] = _os.path.dirname(
+                resolve_handoff_path(_acq_handoff_label, batch_id))
+        except Exception:
+            pass
+    if _judgment_enabled:
+        try:
+            from src.services.judgment_packet_service import (
+                _judgment_root, _safe_segment)
+            batch_processing_state['judgment_path'] = _os.path.join(
+                _judgment_root(), _safe_segment(_judgment_label) or 'default')
+        except Exception:
+            pass
+
     batch_processing_state['completed'] = True
     batch_processing_state['batch_dir'] = batch_dir
 
@@ -1063,6 +1115,8 @@ def process_batch(processed_data_dir, data, session_data):
     # KoTE 재실행 0). 어려운 문장만 자기설명 패킷으로 eval/judgment/<label>/<batch_id>.json에 저장.
     # 마진 3단(0.05/0.10/0.15) 동시 태깅. 실패해도 배치 본류 불방해(핸드오프와 동일 보호).
     if _judgment_enabled:
+        _stage6_start = time.time()
+        logger.info(f'[batch] stage6 start batch_id={batch_id}')
         try:
             from src.services.judgment_packet_service import (
                 build_judgment_packet, save_packet_file)
@@ -1070,12 +1124,15 @@ def process_batch(processed_data_dir, data, session_data):
             _packet_path = save_packet_file(_packet, _judgment_label, batch_id)
             batch_processing_state['judgment_count'] = len(_packet['items'])
             batch_processing_state['judgment_bands'] = _packet['_margin']['bands']
-            batch_processing_state['judgment_path'] = _packet_path
+            # judgment_path 는 completed 전에 라벨 폴더로 이미 설정됨(파일 경로로 덮지 않음).
             batch_processing_state['status_message'] = (
                 f"판정 패킷 추출 완료: {len(_packet['items'])}건 → {_packet_path}")
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning(f'판정 패킷 추출 실패: {e}')
+        finally:
+            _stage6_dur = time.time() - _stage6_start
+            logger.info(f'[batch] stage6 end batch_id={batch_id} dur={_stage6_dur:.1f}s')
 
     # staging 정리: 메인 스레드 잔여 reader 닫고 staging.db(+wal/shm) 삭제
     batch_staging.close_reader()

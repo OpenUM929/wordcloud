@@ -1,0 +1,19 @@
+{
+ "date": "260624",
+ "total": 2000,
+ "status": {
+  "needs_human": 679,
+  "gold_candidate": 1318,
+  "excluded": 3
+ },
+ "by_group": {
+  "hr_no_weakness_declaration|needs_human": 666,
+  "hr_no_weakness_declaration|gold_candidate": 334,
+  "hr_improvement_request|gold_candidate": 984,
+  "hr_improvement_request|needs_human": 13,
+  "hr_improvement_request|excluded": 3
+ },
+ "gold_candidates": 1318,
+ "needs_human": 679,
+ "excluded_trap": 3
+}

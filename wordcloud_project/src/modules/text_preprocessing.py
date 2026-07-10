@@ -2,11 +2,34 @@
 
 import re
 
+# 깨진 숫자 HTML 엔티티(&#NNNN; / &#xNN;) — CSV 인코딩 손상으로 코드포인트 자체가 어긋나
+#   디코딩하면 엉뚱한 음절(&#48379;→'볻'≠보)이 나온다 → 복원 불가, 제거만 한다.
+_HTML_ENTITY_RE = re.compile(r'&#[xX]?[0-9A-Fa-f]+;')
+# 낱자모(ㅏ·ㅑ·ㄱ…) — 표준 한글은 조합형 음절(가~힣)이라 정상 평가문엔 낱자모가 거의 없다.
+#   (조합형 음절 U+AC00–U+D7A3은 제외.)
+_JAMO_RE = re.compile(r'[ᄀ-ᇿ㄰-㆏ꥠ-꥿ힰ-퟿]')
+
+
+def _is_jamo_noise(s):
+    """자모 난타/키보드 노이즈(예: 'ㅏㅐㅔ;/ㅑㅓ', '가나다라마바사')면 True → 채점 제외.
+
+    보수적 임계(낱자모 비율 ≥ 0.5): 정상 문장은 낱자모 비율이 0에 가까우므로 진짜 평가문을
+    떨어뜨리지 않는다(엔티티 제거로 남은 낱자모 1개 정도는 통과). '가나다라마바사'는 조합형이라
+    비율로 안 잡혀 별도 처리.
+    """
+    nsp = [c for c in s if not c.isspace()]
+    if not nsp:
+        return True
+    j = sum(1 for c in nsp if _JAMO_RE.match(c))
+    return j / len(nsp) >= 0.5 or '가나다라마바사' in s
+
 
 def split_sentences(text):
-    """문서를 문장 단위로 분할. 인사말 제외."""
+    """문서를 문장 단위로 분할. 인사말·깨진 HTML 엔티티·자모 노이즈 제외."""
     if not text:
         return []
+    # 깨진 숫자 HTML 엔티티 제거(복원 불가) — 손상된 한 글자만 버리고 나머지 가독 텍스트는 보존.
+    text = _HTML_ENTITY_RE.sub('', text)
     # 기본 분할: . ! ? \n
     raw = re.split(r'[.!?\n]+', text)
     sentences = [s.strip() for s in raw if s.strip()]
@@ -18,6 +41,8 @@ def split_sentences(text):
         if any(g in s for g in greetings):
             continue
         if len(s) < 5:  # 너무 짧은 문장 제외
+            continue
+        if _is_jamo_noise(s):  # 자모 난타/키보드 노이즈 제외(평가문 아님)
             continue
         filtered.append(s)
     return filtered

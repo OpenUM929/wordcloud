@@ -53,6 +53,21 @@ def test_item_gap_and_band():
     print('[OK] item gap·margin_band 부여(저마진 밴드 분류, 명확분 제외)')
 
 
+def test_item_unified_schema():
+    # 0701_03 v2: item 이 게시판 행 스키마로 통일(rec_id·cur_rule_label·ai_reference·status·human_decision).
+    ev = _fake_ev(42, [('판단이 어려운 경계 문장입니다', 0.50, 0.46, 0.04)])
+    items, _ = select_hard_sentences(ev, 42, existing_corr={}, margin=max(_MARGIN_BANDS))
+    assert items, '저마진 문장은 하드케이스'
+    it = items[0]
+    assert it['rec_id'] == '42_0', it['rec_id']               # db_id_sent_idx
+    assert it['status'] == 1                                   # 추출 직후 AI 판정 대기
+    assert it['human_decision'] is None
+    assert it['ai_reference'] == {'polarity': None, 'confidence': None, 'reason': None}
+    assert 'cur_rule_label' in it and 'field' in it
+    assert 'result' not in it and 'cur_label' not in it       # 구 스키마 제거 확인
+    print('[OK] item 통합 스키마(rec_id·status·ai_reference·human_decision)')
+
+
 def test_band_values_and_flip_invariant():
     # 확실한 저마진(gap 0.04)으로 선택 보장 + 밴드/플립 불변식 검증.
     ev = _fake_ev(11, [('판단이 어려운 경계 문장입니다', 0.50, 0.46, 0.04)])
@@ -94,6 +109,7 @@ def test_save_packet_file_path_safe(tmp_root=None):
 if __name__ == '__main__':
     test_margin_band_classify()
     test_item_gap_and_band()
+    test_item_unified_schema()
     test_band_values_and_flip_invariant()
     test_save_packet_file_path_safe()
     print('\n전체 통과')

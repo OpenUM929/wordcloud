@@ -55,7 +55,7 @@ def build_records_from_metadata(metadata):
     for ev in metadata.get('evaluations', []) or []:
         doc = ev.get('evaluation_document') or ev.get('evaluation_document_original') or ''
         cache = ev.get('sentence_emotion_cache')
-        scores = _get_sentence_level_scores(doc, sentence_cache=cache)
+        scores = _get_sentence_level_scores(doc, sentence_cache=cache, field=ev.get('evaluation_document_field'))
         for i, (sent, score, pos, neg, neutral) in enumerate(scores):
             if not sent:
                 continue

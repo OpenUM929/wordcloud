@@ -61,7 +61,13 @@ def stream_batch_events(global_state):
             'failed_employees': global_state.get('failed_employees', []),
             'completed': global_state.get('completed', False),
             'error': global_state.get('error', ''),
-            'batch_dir': global_state.get('batch_dir', '')
+            'batch_dir': global_state.get('batch_dir', ''),
+            'handoff_path': global_state.get('handoff_path', ''),
+            'judgment_path': global_state.get('judgment_path', ''),
+            'acq_handoff_count': global_state.get('acq_handoff_count', 0),
+            'judgment_count': global_state.get('judgment_count', 0),
+            'judgment_bands': global_state.get('judgment_bands', {}),
+            'started_at': global_state.get('started_at', '')
         }
         
         yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"

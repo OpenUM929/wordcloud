@@ -11,7 +11,8 @@ from src.services.batch_service import (
     get_sample_integrated_data,
     get_failed_list,
     retry_failed_employees,
-    resume_batch_metadata
+    resume_batch_metadata,
+    open_folder
 )
 
 batch_bp = Blueprint('batch', __name__, url_prefix='/api/batch')
@@ -163,5 +164,21 @@ def retry_failed():
         data = request.json
         result, status = retry_failed_employees(data, session)
         return jsonify(result), status
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@batch_bp.route('/open-folder', methods=['POST'])
+def open_folder_route():
+    """탐색기로 산출물 폴더 열기 (화이트리스트 검증)."""
+    try:
+        if not session.get('admin_logged_in', False):
+            return jsonify({'success': False, 'error': '관리자 권한이 필요합니다.'}), 403
+        data = request.json
+        path = data.get('path', '')
+        if not path:
+            return jsonify({'success': False, 'error': '경로가 필요합니다.'}), 400
+        result = open_folder(path)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
