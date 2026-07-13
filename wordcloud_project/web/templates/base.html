@@ -233,7 +233,7 @@
         <div class="version-badge" id="versionBadge" onclick="openVersionModal()" title="버전 상세 정보">
             <span>⚙ v{{ version_info.system_version }}</span>
             <span>·</span>
-            <span>모델 {% if version_info.model_status == 'loaded' %}<span class="status-ok">✓ 로드</span>{% else %}<span class="status-fallback">⚠️ 폴백</span>{% endif %}</span>
+            <span>모델 {% if version_info.restart_required %}<span class="status-fallback">⟳ 재시작 필요</span>{% elif version_info.model_status == 'loaded' %}<span class="status-ok">✓ 로드</span>{% else %}<span class="status-fallback">⚠️ 폴백</span>{% endif %}</span>
         </div>
     </nav>
 
@@ -246,7 +246,8 @@
                 <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">시스템 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_system_version">{{ version_info.system_version }}</td></tr>
                 <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 버전</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_version">{{ version_info.model_version }}</td></tr>
                 <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 학습일</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_trained">{{ version_info.model_trained }}</td></tr>
-                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 SHA256</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;" id="vm_model_sha">{{ version_info.model_sha256 }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 SHA256 (선언)</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;" id="vm_model_sha">{{ version_info.model_sha256 }}</td></tr>
+                <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">로드 모델 SHA256</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;" id="vm_runtime_sha">{% if version_info.runtime_sha256 %}{% if version_info.restart_required %}<span style="color:#dc3545;font-weight:600;">{{ version_info.runtime_sha256 }}<br>⟳ 선언과 불일치 — 서버 재시작 필요 (이전 모델로 추론 중)</span>{% else %}{{ version_info.runtime_sha256 }}{% endif %}{% if version_info.runtime_loaded_at %} <span style="color:#999;font-family:inherit;">({{ version_info.runtime_loaded_at }} 로드)</span>{% endif %}{% else %}<span style="color:#999;">미로드 — 첫 추론 시 디스크 모델 로드</span>{% endif %}</td></tr>
                 <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">커밋</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;" id="vm_source_commit">{{ version_info.source_commit }}</td></tr>
                 <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">빌드 날짜</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_build_date">{{ version_info.build_date }}</td></tr>
                 <tr><td style="padding:6px 8px;font-weight:600;color:#555;border-bottom:1px solid #eee;white-space:nowrap;width:1%;">모델 상태</td><td style="padding:6px 8px;border-bottom:1px solid #eee;" id="vm_model_status">{% if version_info.model_status == 'loaded' %}<span style="color:#28a745;font-weight:600;">✓ 로드됨</span>{% else %}<span style="color:#dc3545;font-weight:600;">⚠️ 규칙 폴백</span>{% endif %}</td></tr>
@@ -445,7 +446,10 @@
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (d.match) {
-                if (vr) vr.innerHTML = '<span style="color:#28a745;font-weight:600;">✓ 무결성 일치</span>';
+                var note = d.note ? ' — ' + d.note : '';
+                if (vr) vr.innerHTML = '<span style="color:#28a745;font-weight:600;">✓ 무결성 일치' + note + '</span>';
+            } else if (d.restart_required) {
+                if (vr) vr.innerHTML = '<span style="color:#e8590c;font-weight:600;">⟳ ' + (d.error || '서버 재시작 필요') + '</span>';
             } else {
                 if (vr) vr.innerHTML = '<span style="color:#dc3545;font-weight:600;">✗ 불일치: ' + (d.error || '') + '</span>';
             }
