@@ -3,6 +3,6 @@
   "model_version": "hr-sentiment-v1.0",
   "model_sha256": "620faad693039d1ee8290b9bd31f53e56e978b91361771997f187069eb00d032",
   "model_trained": "2026-07-08",
-  "source_commit": "a41e5a6",
-  "build_date": "2026-07-10T01:24:48Z"
+  "source_commit": "00d7dfc",
+  "build_date": "2026-07-13T00:23:27Z"
 }
