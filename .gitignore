@@ -91,3 +91,6 @@ wordcloud_project/build/
 # Root output directory (scratch outputs from analysis)
 outputs/
 .opencode/
+
+# Playwright MCP session artifacts
+.playwright-mcp/
