@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Blueprint, request, jsonify, session, Response, send_file
 from src.services.perspective_service import (
     load_all_batches, load_employee_batch, list_all_employee_ids,
+    load_employees_batch, list_employee_roster, list_users_with_batch_counts,
     load_batch_history,
     get_matrix_meta, get_matrix_meta_light,
     generate_perspective_matrix, save_to_deploy,
@@ -89,16 +90,15 @@ def api_csv_parse():
     if not ids:
         return jsonify({'success': False, 'error': 'CSV에서 직원 ID를 찾을 수 없습니다.'}), 400
 
-    unified = load_all_batches()
-    if not unified:
+    # ID 소속 확인만 필요 — 가명 ID 목록만 적재(평가 본문 미적재) 후 원본 매핑(0714).
+    known_pseudo_ids = list_all_employee_ids()
+    if not known_pseudo_ids:
         return jsonify({'success': False, 'error': '배치 데이터가 없습니다.'}), 404
 
     pseudo_mgr = _get_pseudo_mgr()
     pseudo_to_real = {}
     all_known = set()
-    for er in unified.get('employee_results', []):
-        meta = er.get('metadata', {})
-        eid = meta.get('target_employee_id')
+    for eid in known_pseudo_ids:
         if eid:
             all_known.add(eid)
             real_id = pseudo_mgr.get_real_id(eid)
@@ -136,8 +136,9 @@ def api_parse_ids():
     if not ids:
         return jsonify({'success': False, 'error': 'ids가 필요합니다.'}), 400
 
-    unified = load_all_batches()
-    if not unified:
+    # ID 매칭은 명부(id/이름/부서/직급/건수)만 필요 — 평가 본문 미적재 경량 로더(0714).
+    roster = list_employee_roster()
+    if not roster:
         return jsonify({'success': False, 'error': '배치 데이터가 없습니다.'}), 404
 
     ids = list(dict.fromkeys([str(i).strip() for i in ids if str(i).strip()]))
@@ -146,16 +147,15 @@ def api_parse_ids():
     pseudo_mgr = _get_pseudo_mgr()
 
     emp_map = {}
-    for er in unified.get('employee_results', []):
-        meta = er.get('metadata', {})
-        eid = meta.get('target_employee_id')
+    for row in roster:
+        eid = row['employee_id']
         if eid:
             info = {
                 'employee_id': eid,
-                'name': meta.get('target_employee_name', ''),
-                'department': meta.get('target_employee_department', ''),
-                'position': meta.get('target_employee_position', ''),
-                'evaluation_count': len(meta.get('evaluations', [])),
+                'name': row['name'],
+                'department': row['department'],
+                'position': row['position'],
+                'evaluation_count': row['evaluation_count'],
             }
             emp_map[eid] = info
             real_id = pseudo_mgr.get_real_id(eid)
@@ -418,7 +418,14 @@ def api_generate_matrix():
     if err:
         return jsonify({'success': False, 'error': err}), 401
 
-    unified = load_all_batches()
+    # 선택 범위만 적재한다 — 1명·소수 선택 시 전 직원(1.9만) json.loads 낭비 제거(0714).
+    # all_employees(전원)만 전량 적재, employee_ids(소수)/단일은 선택분만.
+    if all_employees:
+        unified = load_all_batches()
+    elif employee_ids:
+        unified = load_employees_batch(employee_ids)
+    else:
+        unified = load_employee_batch(employee_id)
     if not unified:
         return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 404
 
@@ -818,7 +825,8 @@ def api_regenerate_matrix():
         'batch_title': (data.get('batch_title') or '').strip() or None,
     }
 
-    unified = load_all_batches()
+    # 재생성은 항상 단일 직원 대상 — 선택 1명분만 적재(0714).
+    unified = load_employee_batch(employee_id)
     if not unified:
         return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 404
 
@@ -937,45 +945,8 @@ def api_save_deploy_stream():
 def api_get_users():
     if not _is_admin():
         return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
-    unified = load_all_batches()
-    if not unified:
-        return jsonify({'success': False, 'error': '처리된 배치 데이터가 없습니다.'}), 404
-
-    users = {}
-    for er in unified.get('employee_results', []):
-        meta = er.get('metadata', {})
-        emp_id = meta.get('target_employee_id')
-        if not emp_id:
-            continue
-        if emp_id not in users:
-            users[emp_id] = {
-                'employee_id': emp_id,
-                'department': meta.get('target_employee_department', ''),
-                'position': meta.get('target_employee_position', ''),
-                'name': meta.get('target_employee_name', ''),
-                'total_evaluations': 0,
-                'batches': {},
-            }
-        info = users[emp_id]
-        evals = meta.get('evaluations', [])
-        info['total_evaluations'] += len(evals)
-        # Count evaluations per batch (each evaluation has embedded batch_id)
-        for ev in evals:
-            bid = ev.get('batch_id', '')
-            if bid:
-                if bid not in info['batches']:
-                    info['batches'][bid] = 0
-                info['batches'][bid] += 1
-
-    result = []
-    for emp_id in sorted(users):
-        info = users[emp_id]
-        info['batches'] = [
-            {'batch_id': bid, 'evaluation_count': cnt}
-            for bid, cnt in sorted(info['batches'].items())
-        ]
-        result.append(info)
-
+    # 직원 명부 + 배치별 카운트만 필요 — 평가 본문 미적재 SQL 집계(0714).
+    result = list_users_with_batch_counts()
     return jsonify({'success': True, 'users': result, 'total_users': len(result)})
 
 

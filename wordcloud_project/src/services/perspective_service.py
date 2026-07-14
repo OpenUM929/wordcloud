@@ -1812,6 +1812,162 @@ def load_employee_batch(employee_id, request_id=''):
     }
 
 
+def load_employees_batch(employee_ids, request_id=''):
+    """선택한 소수 직원의 평가만 담은 unified 형태 dict 반환(load_employee_batch의 다건판).
+
+    소수 직원 매트릭스 생성(generate_all_employee_matrix)은 employee_ids 필터로
+    선택분만 처리하므로 전 직원(load_all_batches)을 적재할 필요가 없다. 입력 ID는
+    원본/가명 혼재를 허용하며 가명으로 resolve 후 IN 절 단일 쿼리로 조회한다.
+    반환 구조·매칭 키(target_employee_id=가명)는 load_all_batches와 동일하다(0714).
+    """
+    pseudo_mgr = _get_pseudo_mgr()
+    resolved_ids = []
+    seen = set()
+    for eid in employee_ids:
+        rid = _resolve_to_pseudo(eid, pseudo_mgr)
+        if rid and rid not in seen:
+            seen.add(rid)
+            resolved_ids.append(rid)
+    if not resolved_ids:
+        return {'batch_info': {}, 'employee_results': [], 'batches': []}
+
+    placeholders = ','.join('?' for _ in resolved_ids)
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute(f"""
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            WHERE e.employee_id IN ({placeholders})
+            ORDER BY e.employee_id, ev.id
+        """, resolved_ids).fetchall()
+    finally:
+        conn.close()
+
+    emp_evals = defaultdict(list)
+    emp_meta = {}
+    for emp_id, name, dept, pos, data, ev_db_id in rows:
+        if emp_id not in emp_meta:
+            emp_meta[emp_id] = {
+                'target_employee_name': name or '',
+                'target_employee_department': dept or '',
+                'target_employee_position': pos or '',
+            }
+        if data:
+            try:
+                ev_obj = json.loads(data)
+            except json.JSONDecodeError as e:
+                logger.error("json_parse_error row=%s error=%s", ev_db_id, e, extra={'request_id': request_id, 'stage': 'DB_LOAD'})
+                continue
+            # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
+            ev_obj['_db_id'] = ev_db_id
+            emp_evals[emp_id].append(ev_obj)
+
+    employee_results = []
+    total_evals = 0
+    for emp_id, meta in emp_meta.items():
+        evals = emp_evals[emp_id]
+        total_evals += len(evals)
+        employee_results.append({
+            'metadata': {
+                'target_employee_id': emp_id,
+                'target_employee_name': meta['target_employee_name'],
+                'target_employee_department': meta['target_employee_department'],
+                'target_employee_position': meta['target_employee_position'],
+                'evaluations': evals,
+            }
+        })
+
+    logger.info("requested=%s loaded_employees=%s total_evals=%s", len(resolved_ids), len(emp_meta), total_evals, extra={'request_id': request_id, 'stage': 'DB_LOAD'})
+
+    return {
+        'batch_info': {'total_evaluations': total_evals, 'unique_employees': len(emp_meta)},
+        'employee_results': employee_results,
+        'batches': [],
+    }
+
+
+def list_employee_roster():
+    """전 직원 명부(id/이름/부서/직급/평가건수)만 반환 — 평가 본문(data blob) 미적재.
+
+    ID 매칭 경로(/csv-parse·/parse-ids)는 직원 명부와 평가 건수만 사용하므로
+    load_all_batches()의 1.9만건 json.loads가 불필요하다. get_matrix_meta_light의
+    emp_rows 집계와 동일 패턴(0714).
+    """
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute("""
+            SELECT e.employee_id, e.name, e.department, e.position, COUNT(ev.id) AS cnt
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            GROUP BY e.employee_id
+        """).fetchall()
+    finally:
+        conn.close()
+    return [
+        {
+            'employee_id': r[0],
+            'name': r[1] or '',
+            'department': r[2] or '',
+            'position': r[3] or '',
+            'evaluation_count': r[4] or 0,
+        }
+        for r in rows
+    ]
+
+
+def list_users_with_batch_counts():
+    """직원별 평가 총건수 + 배치별 건수를 SQL 집계로 반환 — 평가 본문(data blob) 미적재.
+
+    /users는 직원 명부와 배치별 카운트만 쓴다. batch_id는 evaluations의 인덱스
+    컬럼이므로(get_matrix_meta_light 참조) json.loads 없이 GROUP BY로 동일 결과를
+    산출한다. 반환 구조는 기존 api_get_users 출력과 동일(employee_id/department/
+    position/name/total_evaluations/batches[{batch_id,evaluation_count}]). 정렬도
+    동일(직원=employee_id, batches=batch_id). load_all_batches()의 1.9만건
+    json.loads 제거(0714). total_evaluations는 batch_id가 빈/NULL인 평가도 포함한다.
+    """
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute("""
+            SELECT e.employee_id, e.name, e.department, e.position,
+                   ev.batch_id, COUNT(ev.id) AS cnt
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            GROUP BY e.employee_id, ev.batch_id
+        """).fetchall()
+    finally:
+        conn.close()
+
+    users = {}
+    for emp_id, name, dept, pos, batch_id, cnt in rows:
+        if not emp_id:
+            continue
+        info = users.get(emp_id)
+        if info is None:
+            info = users[emp_id] = {
+                'employee_id': emp_id,
+                'department': dept or '',
+                'position': pos or '',
+                'name': name or '',
+                'total_evaluations': 0,
+                'batches': {},
+            }
+        info['total_evaluations'] += cnt
+        # batch_id가 빈 문자열/NULL인 그룹은 총건수에는 포함하되 배치 목록에서는 제외
+        if batch_id:
+            info['batches'][batch_id] = info['batches'].get(batch_id, 0) + cnt
+
+    result = []
+    for emp_id in sorted(users):
+        info = users[emp_id]
+        info['batches'] = [
+            {'batch_id': bid, 'evaluation_count': cnt}
+            for bid, cnt in sorted(info['batches'].items())
+        ]
+        result.append(info)
+    return result
+
+
 def list_all_employee_ids():
     """전 직원(평가 보유) ID 목록만 반환(평가 데이터 미적재). all_employees 일괄 저장용(0619_02).
 
