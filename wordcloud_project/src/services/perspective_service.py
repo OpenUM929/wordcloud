@@ -1349,6 +1349,33 @@ def sentence_sentiment_override(pos, neg, sentence, is_last, total_sentences,
     return score
 
 
+def apply_model_label_override(model_label, sentence, field=None):
+    """파인튜닝 모델 라벨 위에 얹는 **좁은 고정밀** override (13_03 Track2).
+
+    설계 원칙(핵심가치 불가침): 이 레이어는 **긍↔부를 새로 만들지 않는다**. 그래서 모델
+    라벨 조건부로, 오류를 제거하는 방향으로만 보정한다. 반환: 보정된 라벨 문자열.
+
+    R1 (요청표지 거짓긍정 제거): model=='positive' 인데 요청표지 화행(~해주세요·~바랍니다·
+        희망형, `_has_request_marker` — 트랩가드 내장)이면 → 'neutral'. 긍→중만(긍→부 아님)이라
+        긍↔부 생성 불가. 개선요청=부정 정책([[feedback_improvement_request_is_negative_gold]])의
+        결정론적 안전망. 명시 강긍정·차단반전 있으면 미발동(진짜 칭찬 보호).
+
+    설계·검증 근거(2026-07-13 실증, plans/2026/07/13_03_rule-alignment/):
+      - 필드신호 override(무서술어 단편→필드극성)는 **폐기**: 모델이 필드 프리픽스로 이미
+        필드신호 내장(train/serve 정합) → 재적용 시 이중계산, 4슬라이스 긍↔부 신규 +2·정확도 급락.
+      - '요함' substring core(_has_improvement_request_core)는 '집요함'(끈기=긍정) 트랩 재도입 →
+        제외. `_has_request_marker`만 사용 → 4슬라이스 발동 0·긍↔부 신규 0(청정) 확인.
+      - 부→긍(모델이 명백 긍정을 부정으로) 케이스는 override로 안전 교정 불가 → 재학습(Track1) 몫.
+    """
+    if not sentence or model_label != 'positive':
+        return model_label
+    if (_has_request_marker(sentence)
+            and not _has_improve_blocking_contrast(sentence)
+            and not has_explicit_strong_positive(sentence)):
+        return 'neutral'
+    return model_label
+
+
 _pseudo_mgr_instance = None
 _pseudo_mgr_lock = threading.Lock()
 
@@ -1978,7 +2005,8 @@ def _get_sentence_level_scores(doc, threshold=0.20, weight=2.0, corrections=None
         is_last = (i == total - 1)
         if model_labels is not None:
             # 파인튜닝 모델 극성 → score(강도는 KoTE |pos-neg| 보존, 중립=0)
-            lab = model_labels[i]
+            # 13_03 Track2: 모델 라벨 위 좁은 고정밀 override(요청표지 거짓긍정→중립). 긍↔부 불생성.
+            lab = apply_model_label_override(model_labels[i], sent, field)
             strength = abs(pos - neg) if abs(pos - neg) > 0.01 else 1.0
             original_score = strength if lab == 'positive' else (-strength if lab == 'negative' else 0.0)
         else:
