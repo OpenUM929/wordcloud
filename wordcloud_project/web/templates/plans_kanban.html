@@ -59,6 +59,11 @@ body { background: #f0f2f5 !important; }
 .kanban-card .card-id { font-weight: 700; font-size: 13px; color: #333; }
 .kanban-card .card-slug { font-size: 11px; color: #888; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kanban-card .card-badge { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-top: 5px; font-weight: 600; }
+.kanban-card .card-month-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 600; background: #eef2f7; color: #5b6b7b; border: 1px solid #d4dce5; }
+.kanban-card .chip-work-type { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 700; background: #e8eaf6; color: #283593; border: 1px solid #c5cae9; }
+.kanban-card .chip-count { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 600; }
+.kanban-card .chip-result { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+.kanban-card .chip-test { background: #fce4ec; color: #c62828; border: 1px solid #f8bbd0; }
 .badge-todo { background: var(--todo-bg); color: var(--todo-color); }
 .badge-doing { background: var(--doing-bg); color: var(--doing-color); }
 .badge-predone { background: var(--predone-bg); color: var(--predone-color); }
@@ -191,8 +196,9 @@ body { background: #f0f2f5 !important; }
   </div>
   <div class="folder-select">
     <select id="folderSelect" class="form-select form-select-sm" style="width:auto;display:inline-block;">
-      {% for root in available_roots %}
-      <option value="{{ root }}" {% if root == current_dir %}selected{% endif %}>{{ root }}</option>
+      <option value="">📊 전체(ALL)</option>
+      {% for mm, mpath in month_options %}
+      <option value="{{ mm }}" {% if mm == current_month %}selected{% endif %}>{{ plans_year }}/{{ mm }}</option>
       {% endfor %}
     </select>
   </div>
@@ -299,15 +305,45 @@ body { background: #f0f2f5 !important; }
 var STATUS_LABEL = {{ STATUS_LABEL|tojson }};
 var POLL_INTERVAL = 10000;
 var _lastMtime = {{ mtime }};
-var _currentDir = '{{ current_dir|e }}';
+var _currentMonth = '{{ current_month|e }}';
+var PLANS_BASE = {{ plans_base|tojson }};
 var _pollTimer = null;
 
-function getDirParam() {
+function getMonthParam() {
   var sel = document.getElementById('folderSelect');
-  return sel ? sel.value : _currentDir;
+  return sel ? sel.value : _currentMonth;
+}
+
+function makeCard(p, boardMonth) {
+  var badge = STATUS_LABEL[p.status] || p.status;
+  var card = document.createElement('div');
+  card.className = 'kanban-card';
+  card.dataset.id = p.id;
+  card.dataset.month = p.month || '';
+  card.onclick = function() { openDetail(p.id, p.month); };
+  var chips = '';
+  if (p.month) {
+    chips += '<span class="card-month-badge">' + p.month + '월</span>';
+  }
+  chips += '<span class="card-badge badge-' + p.status + '">' + badge + '</span>';
+  if (p.work_type) {
+    chips += '<span class="chip-work-type">' + esc(p.work_type) + '</span>';
+  }
+  if (p.result_count && p.result_count > 0) {
+    chips += '<span class="chip-count chip-result">📄' + p.result_count + '</span>';
+  }
+  if (p.test_count && p.test_count > 0) {
+    chips += '<span class="chip-count chip-test">🧪' + p.test_count + '</span>';
+  }
+  var html =
+    '<div class="card-id">' + esc(p.id) + '</div>' +
+    '<div class="card-slug">' + esc(p.summary) + '</div>' + chips;
+  card.innerHTML = html;
+  return card;
 }
 
 function renderCards(data) {
+  var boardMonth = data.board_month || null;  // '2026-07' 또는 null(전체)
   ['todo','doing','predone','done','hold','drop'].forEach(function(col) {
     var container = document.getElementById('col_' + col);
     var plans = (data.grouped && data.grouped[col]) || [];
@@ -315,7 +351,7 @@ function renderCards(data) {
     if (countEl) countEl.textContent = plans.length;
     if (!container) return;
     if (col === 'done') {
-      renderDoneColumn(container, plans);
+      renderDoneColumn(container, plans, boardMonth);
       return;
     }
     container.innerHTML = '';
@@ -324,16 +360,7 @@ function renderCards(data) {
       return;
     }
     plans.forEach(function(p) {
-      var badge = STATUS_LABEL[p.status] || p.status;
-      var card = document.createElement('div');
-      card.className = 'kanban-card';
-      card.dataset.id = p.id;
-      card.onclick = function() { openDetail(p.id); };
-      card.innerHTML =
-        '<div class="card-id">' + esc(p.id) + '</div>' +
-        '<div class="card-slug">' + esc(p.summary) + '</div>' +
-        '<span class="card-badge badge-' + p.status + '">' + badge + '</span>';
-      container.appendChild(card);
+      container.appendChild(makeCard(p, boardMonth));
     });
   });
   // update stats
@@ -373,61 +400,47 @@ function getMonthRangeLabel(plans) {
   return months[0] + '~' + months[months.length - 1] + '월';
 }
 
-function renderDoneColumn(container, plans) {
+function renderDoneColumn(container, plans, boardMonth) {
   container.innerHTML = '';
   if (plans.length === 0) {
     container.innerHTML = '<div class="kanban-card empty">비어 있음</div>';
     return;
   }
-  var now = new Date();
-  var curYm = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  var currentPlans = [], pastPlans = [];
+  // 월별 그룹화
+  var byMonth = {};
   plans.forEach(function(p) {
-    if (p.date && p.date.substring(0, 7) === curYm) {
-      currentPlans.push(p);
-    } else {
-      pastPlans.push(p);
-    }
+    var m = p.month || '00';
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(p);
   });
-  // current month items as individual cards
-  currentPlans.forEach(function(p) {
-    var badge = STATUS_LABEL[p.status] || p.status;
-    var card = document.createElement('div');
-    card.className = 'kanban-card';
-    card.dataset.id = p.id;
-    card.onclick = function() { openDetail(p.id); };
-    card.innerHTML =
-      '<div class="card-id">' + esc(p.id) + '</div>' +
-      '<div class="card-slug">' + esc(p.summary) + '</div>' +
-      '<span class="card-badge badge-' + p.status + '">' + badge + '</span>';
-    container.appendChild(card);
-  });
-  // group card for past months
-  if (pastPlans.length > 0) {
-    var label = getMonthRangeLabel(pastPlans);
+  // 월 정렬 (최신월 우선)
+  var sortedMonths = Object.keys(byMonth).sort().reverse();
+  sortedMonths.forEach(function(mm) {
+    var items = byMonth[mm];
     var card = document.createElement('div');
     card.className = 'kanban-card group-card';
-    card.onclick = function() { openGroupList(pastPlans); };
+    card.onclick = function() { openGroupList(items); };
     card.innerHTML =
       '<div class="group-icon">📦</div>' +
-      '<div class="group-title">이전 완료 (' + pastPlans.length + '개)</div>' +
-      '<div class="group-subtitle">' + esc(label) + ' 종료 작업 모음</div>' +
-      '<div class="group-count">✅ Done · ' + pastPlans.length + '개</div>';
+      '<div class="group-title">' + mm + '월 완료 (' + items.length + '건)</div>' +
+      '<div class="group-subtitle">클릭 시 ' + mm + '월 Done 일람</div>' +
+      '<div class="group-count">✅ Done · ' + items.length + '개</div>';
     container.appendChild(card);
-  }
+  });
 }
 
-function openGroupList(pastPlans) {
+function openGroupList(items) {
+  var mm = items[0] ? (items[0].month || '') : '';
   var listModal = new bootstrap.Modal(document.getElementById('groupListModal'));
   var body = document.getElementById('groupListContent');
   var loading = document.getElementById('groupListLoading');
   loading.style.display = 'none';
   body.style.display = '';
-  document.getElementById('groupListTitle').textContent = '📦 이전 완료 (' + pastPlans.length + '개)';
+  document.getElementById('groupListTitle').textContent = '📦 ' + mm + '월 완료 (' + items.length + '건)';
   var html = '';
-  pastPlans.forEach(function(p) {
+  items.forEach(function(p) {
     html +=
-      '<div class="group-list-item" data-id="' + esc(p.id) + '">' +
+      '<div class="group-list-item" data-id="' + esc(p.id) + '" data-month="' + esc(p.month || '') + '">' +
       '<div class="gli-id">' + esc(p.id) + '</div>' +
       '<div class="gli-summary">' + esc(p.summary) + '</div>' +
       '<div class="gli-date">' + esc(p.date) + '</div>' +
@@ -437,15 +450,16 @@ function openGroupList(pastPlans) {
   body.querySelectorAll('.group-list-item').forEach(function(el) {
     el.addEventListener('click', function() {
       var id = this.dataset.id;
+      var m = this.dataset.month;
       listModal.hide();
-      setTimeout(function() { openDetail(id); }, 200);
+      setTimeout(function() { openDetail(id, m); }, 200);
     });
   });
   listModal.show();
 }
 
-function loadPlans(dir, cb) {
-  var url = '/admin/api/plans?dir=' + encodeURIComponent(dir);
+function loadPlans(month, cb) {
+  var url = '/admin/api/plans?month=' + encodeURIComponent(month || '');
   fetch(url + '&_t=' + Date.now())
     .then(function(r) { return r.json(); })
     .then(function(d) {
@@ -460,13 +474,13 @@ function loadPlans(dir, cb) {
 }
 
 function checkUpdate() {
-  var dir = getDirParam();
-  var url = '/admin/api/plans/check?dir=' + encodeURIComponent(dir) + '&_t=' + Date.now();
+  var month = getMonthParam();
+  var url = '/admin/api/plans/check?month=' + encodeURIComponent(month) + '&_t=' + Date.now();
   fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      if (d.success && d.modified_at && d.modified_at !== _lastMtime && d.dir === _currentDir) {
-        loadPlans(dir);
+      if (d.success && d.modified_at && d.modified_at !== _lastMtime) {
+        loadPlans(month);
       }
     })
     .catch(function() {});
@@ -562,8 +576,8 @@ function renderMarkdown(md) {
   return html;
 }
 
-function openDetail(planId) {
-  var dir = getDirParam();
+function openDetail(planId, month) {
+  var dir = (month && PLANS_BASE) ? (PLANS_BASE + '/' + month) : (_currentMonth ? (PLANS_BASE + '/' + _currentMonth) : '');
   var modal = new bootstrap.Modal(document.getElementById('detailModal'));
   document.getElementById('modalTitle').textContent = '📄 ' + planId;
   document.getElementById('modalLoading').style.display = '';
@@ -609,9 +623,9 @@ function openDetail(planId) {
 
 // folder selector change
 document.getElementById('folderSelect').addEventListener('change', function() {
-  _currentDir = this.value;
+  _currentMonth = this.value;
   _lastMtime = 0;
-  loadPlans(_currentDir);
+  loadPlans(_currentMonth);
 });
 
 // start polling
@@ -622,7 +636,7 @@ function startPoll() {
 
 // initial load complete — replace server-rendered content with JS version
 startPoll();
-loadPlans(_currentDir);
+loadPlans(_currentMonth);
 
 // keyboard shortcut: Escape closes modal
 document.addEventListener('keydown', function(e) {
