@@ -25,8 +25,8 @@
 * { box-sizing: border-box; }
 body { background: #f0f2f5 !important; }
 .kanban-header { margin-bottom: 16px; }
-.kanban-header h1 { font-size: 22px; font-weight: 700; display: inline; margin-right: 16px; margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
-.kanban-header .stats { display: inline; font-size: 14px; color: #555; }
+.kanban-header h1 { font-size: 20px; font-weight: 700; display: inline; margin-right: 16px; margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.kanban-header .stats { display: inline; font-size: 13px; color: #555; }
 .kanban-header .stats span { margin-right: 12px; }
 .kanban-header .folder-select { float: right; }
 .kanban-header .last-update { font-size: 12px; color: #999; margin-top: 4px; clear: both; }
@@ -58,30 +58,29 @@ body { background: #f0f2f5 !important; }
 .kanban-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
 .kanban-card .card-id { font-weight: 700; font-size: 13px; color: #333; }
 .kanban-card .card-slug { font-size: 11px; color: #888; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kanban-card .card-badge { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-top: 5px; font-weight: 600; }
 .kanban-card .card-month-badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 600; background: #eef2f7; color: #5b6b7b; border: 1px solid #d4dce5; }
-.kanban-card .chip-work-type { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 700; background: #e8eaf6; color: #283593; border: 1px solid #c5cae9; }
-.kanban-card .chip-count { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 600; }
-.kanban-card .chip-result { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
-.kanban-card .chip-test { background: #fce4ec; color: #c62828; border: 1px solid #f8bbd0; }
-.badge-todo { background: var(--todo-bg); color: var(--todo-color); }
-.badge-doing { background: var(--doing-bg); color: var(--doing-color); }
-.badge-predone { background: var(--predone-bg); color: var(--predone-color); }
-.badge-done { background: var(--done-bg); color: var(--done-color); }
-.badge-hold { background: var(--hold-bg); color: var(--hold-color); }
-.badge-drop { background: var(--drop-bg); color: var(--drop-color); }
+.kanban-card .chip-work-type { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 600; background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+.kanban-card .chip-count { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 5px; margin-left: 4px; font-weight: 600; }
+.kanban-card .chip-result { background: #FFF3E0; color: #E65100; border: 1px solid #FFCC80; }
+.kanban-card .chip-test { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
 .kanban-col[data-col="drop"] .kanban-card:not(.empty) .card-id { text-decoration: line-through; opacity: 0.7; }
 .kanban-card.empty { cursor: default; color: #bbb; font-size: 12px; text-align: center; border: 1px dashed #ddd; background: transparent; }
 .kanban-card.empty:hover { box-shadow: none; transform: none; }
 .kanban-card.group-card {
   cursor: pointer; background: #fff8e1; border: 2px dashed #ffb300;
-  text-align: center; padding: 16px 12px;
+  padding: 10px 14px;
 }
 .kanban-card.group-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
-.kanban-card.group-card .group-icon { font-size: 22px; }
-.kanban-card.group-card .group-title { font-size: 14px; font-weight: 700; color: #e65100; margin-top: 4px; }
-.kanban-card.group-card .group-subtitle { font-size: 11px; color: #bf8f00; margin-top: 2px; }
-.kanban-card.group-card .group-count { font-size: 10px; color: #888; margin-top: 6px; }
+.kanban-card.group-card .group-inner { display: flex; align-items: center; gap: 12px; }
+.kanban-card.group-card .group-icon { font-size: 22px; flex-shrink: 0; }
+.kanban-card.group-card .group-info { flex: 1; min-width: 0; }
+.kanban-card.group-card .group-title { font-size: 14px; font-weight: 700; color: #e65100; margin: 0; }
+.kanban-card.group-card .group-sub { font-size: 11px; color: #bf8f00; margin: 2px 0 0 0; }
+
+/* Sort button in column header */
+.col-header-right { display: flex; align-items: center; gap: 6px; }
+.sort-btn { cursor: pointer; font-size: 14px; color: #999; user-select: none; padding: 0 5px; border-radius: 4px; transition: all 0.12s; line-height: 1; }
+.sort-btn:hover { background: rgba(0,0,0,0.06); color: #333; }
 
 /* View tabs */
 .view-tabs { margin-bottom: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 0; display: flex; gap: 0; }
@@ -129,6 +128,82 @@ body { background: #f0f2f5 !important; }
 .git-table .td-fp { text-align: right; font-family: monospace; font-weight: 600; color: #e67e22; }
 .git-table .td-hours { text-align: right; font-family: monospace; font-weight: 600; color: #2980b9; }
 .git-table .td-fp.none, .git-table .td-hours.none { color: #ccc; font-weight: 400; }
+/* Gantt chart */
+.gantt-container { margin-top: 16px; }
+.gantt-loading { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+.gantt-error { text-align: center; padding: 40px; color: #c0392b; font-size: 14px; }
+.gantt-legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 2px 12px; font-size: 11.5px; color: #555; }
+.gantt-legend .it { display: flex; align-items: center; gap: 6px; }
+.gantt-legend .sw { width: 22px; height: 11px; border-radius: 3px; }
+.gantt-plansum { margin: 0 2px 12px; font-size: 13px; color: #5a6472; font-weight: 600; }
+.gantt-plansum strong { color: #1f2733; }
+.gantt-diamond { width: 11px; height: 11px; transform: rotate(45deg); border-radius: 2px; display: inline-block; }
+.gantt-dep-key { display: inline-block; width: 22px; height: 0; border-top: 2px solid #8a94a6; position: relative; }
+.gantt-dep-key::after { content: '▸'; position: absolute; right: -9px; top: -9px; color: #8a94a6; font-size: 11px; }
+.gantt-cr-key { display: inline-block; width: 22px; height: 0; border-top: 2px dashed #6f42c1; }
+#view-gantt { display: flex; flex-direction: column; height: calc(100vh - 155px); }
+#ganttContent { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.gantt-chart { background: #fff; border: 1px solid #e0e0e0; border-radius: 14px; box-shadow: 0 2px 12px rgba(20,30,50,.05); overflow: hidden; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.gantt-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.gantt-grid { min-width: 250px; }
+.gantt-mrow { position: sticky; top: 0; z-index: 4; background: #fbfcfd; }
+.gantt-lcol { position: sticky; left: 0; z-index: 3; background: #fff; }
+.gantt-mrow > .gantt-lead { position: sticky; left: 0; z-index: 6; background: #fbfcfd; }
+.gantt-mrow { display: flex; height: 26px; border-bottom: 1px solid #e7eaef; background: #fbfcfd; }
+.gantt-mrow .gantt-lead { width: 250px; flex: 0 0 250px; border-right: 1px solid #e7eaef; display: flex; align-items: center; padding: 0 14px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #95a0b0; }
+.gantt-mrow .gantt-months { position: relative; flex: 1; }
+.gantt-mseg { position: absolute; top: 0; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #5a6472; border-right: 1px solid #e7eaef; }
+
+.gantt-body { display: flex; position: relative; }
+.gantt-lcol { width: 250px; flex: 0 0 250px; border-right: 1px solid #e7eaef; }
+.gantt-tcol { position: relative; flex: 1; min-height: 100px; }
+.gantt-ov { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.gantt-grp { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #f7f8fb; border-bottom: 1px solid #e7eaef; font-size: 11px; font-weight: 750; color: #5a6472; }
+.gantt-grp .gantt-ep { font-size: 9.5px; font-weight: 700; color: #6f42c1; background: #efe7fb; padding: 1px 7px; border-radius: 999px; letter-spacing: .02em; }
+.gantt-grp .gantt-ct { color: #95a0b0; font-weight: 600; margin-left: auto; }
+.gantt-rl { height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-bottom: 1px solid #f0f2f6; cursor: pointer; }
+.gantt-rl:hover { background: #f5f8ff; }
+.gantt-rl .gantt-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 8px; }
+.gantt-rl .gantt-pid { font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; color: #1f2733; white-space: nowrap; }
+.gantt-rl .gantt-sum { font-size: 10.5px; color: #95a0b0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.gantt-rl .gantt-crchip { margin-left: auto; flex: 0 0 auto; font-size: 9px; font-weight: 700; color: #6f42c1; background: #efe7fb; padding: 1px 6px; border-radius: 999px; white-space: nowrap; }
+.gantt-tr { height: 38px; position: relative; border-bottom: 1px solid #f0f2f6; }
+.gantt-tr.g { height: 30px; border-bottom: 1px solid #e7eaef; background: #f7f8fb; }
+.gantt-bar { position: absolute; top: 9px; height: 20px; border-radius: 5px; display: flex; align-items: center; padding: 0 8px; font-size: 9.5px; font-weight: 650; white-space: nowrap; overflow: visible; cursor: pointer; box-shadow: 0 1px 2px rgba(20,30,50,.10); transition: transform .1s, box-shadow .12s; }
+.gantt-bar:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(20,30,50,.16); z-index: 6; }
+.gantt-bar::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 5px 0 0 5px; }
+.gantt-bar .gantt-cap { color: #5a6472; margin-left: 6px; font-weight: 600; font-size: 9px; }
+.gantt-bar.gantt-doing { background: var(--doing-bg); } .gantt-bar.gantt-doing::before { background: var(--doing-border); } .gantt-bar.gantt-doing { color: var(--doing-color); }
+.gantt-bar.gantt-done { background: var(--done-bg); } .gantt-bar.gantt-done::before { background: var(--done-border); } .gantt-bar.gantt-done { color: var(--done-color); }
+.gantt-bar.gantt-predone { background: var(--predone-bg); } .gantt-bar.gantt-predone::before { background: var(--predone-border); } .gantt-bar.gantt-predone { color: var(--predone-color); }
+.gantt-bar.gantt-todo { background: var(--todo-bg); } .gantt-bar.gantt-todo::before { background: var(--todo-border); } .gantt-bar.gantt-todo { color: var(--todo-color); }
+.gantt-pt { position: absolute; top: 9px; width: 20px; height: 20px; cursor: pointer; transition: transform .1s; }
+.gantt-pt:hover { transform: scale(1.15); z-index: 6; }
+.gantt-pt i { position: absolute; left: 4px; top: 4px; width: 12px; height: 12px; border-radius: 3px; box-shadow: 0 1px 2px rgba(20,30,50,.18); border: 1.5px solid #fff; }
+.gantt-pt.gantt-done i { background: var(--done-border); }
+.gantt-pt.gantt-todo i { background: var(--todo-border); }
+.gantt-pt .gantt-cap { position: absolute; left: 24px; top: 3px; font-size: 9px; font-weight: 600; color: #95a0b0; white-space: nowrap; }
+.gantt-bar.gantt-planned { background: repeating-linear-gradient(90deg,var(--todo-bg),var(--todo-bg) 6px,#fff 6px,#fff 9px); border: 1px dashed var(--todo-border); box-shadow: none; }
+.gantt-bar.gantt-planned::before { background: var(--todo-border); }
+.gantt-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 2px 2px 10px; font-size: 11.5px; color: #5a6472; }
+.gantt-tb-label { font-weight: 700; color: #95a0b0; margin-right: 2px; }
+.gantt-badge { display: inline-flex; align-items: center; gap: 3px; padding: 3px 9px; border: 1px solid #e0e3ea; border-radius: 999px; background: #fff; color: #5a6472; cursor: pointer; user-select: none; font-weight: 600; transition: .12s; }
+.gantt-badge:hover { border-color: #b9c0cc; }
+.gantt-badge.on { background: #eef4ff; border-color: #9db8ef; color: #1f4fb0; }
+.gantt-badge .arr { font-size: 10px; font-weight: 800; }
+.gantt-badge .ord { font-size: 9px; font-weight: 800; color: #fff; background: #1f4fb0; border-radius: 999px; padding: 0 4px; line-height: 14px; margin-left: 1px; }
+.gantt-tb-sep { width: 1px; height: 16px; background: #e0e3ea; margin: 0 4px; }
+.gantt-tb-year { font-weight: 750; color: #1f2733; }
+.gantt-tb-btn { padding: 3px 10px; border: 1px solid #e0e3ea; border-radius: 8px; background: #fff; color: #5a6472; cursor: pointer; font-weight: 600; font-size: 11px; }
+.gantt-tb-btn:hover { border-color: #b9c0cc; background: #f7f8fb; }
+.gantt-grp { cursor: pointer; }
+.gantt-grp .gantt-ch { margin-left: 6px; font-size: 9px; color: #95a0b0; transition: transform .12s; display: inline-block; }
+.gantt-grp.collapsed .gantt-ch { transform: rotate(-90deg); }
+.gantt-band-row { font-weight: 650; }
+.gantt-bar.gantt-band { background: #efe7fb; border: 1px solid #c9b3ec; color: #6f42c1; font-weight: 700; cursor: pointer; }
+.gantt-bar.gantt-band::before { background: #6f42c1; }
+.gantt-empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+
 .type-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
 .type-feat { background: #d4edda; color: #155724; }
 .type-fix { background: #f8d7da; color: #721c24; }
@@ -174,12 +249,30 @@ body { background: #f0f2f5 !important; }
 .group-list-item .gli-id { font-weight: 700; font-size: 13px; color: #333; min-width: 180px; }
 .group-list-item .gli-summary { font-size: 12px; color: #666; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .group-list-item .gli-date { font-size: 11px; color: #999; white-space: nowrap; }
+
+/* ===== TREND VIEW ===== */
+.trend-header { margin-bottom: 12px; }
+.trend-header h2 { font-size: 20px; margin: 0 0 10px; }
+.trend-controls { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 8px; }
+.trend-controls label { font-size: 13px; color: #555; display: inline-flex; align-items: center; gap: 6px; }
+.trend-metrics { display: inline-flex; gap: 6px; }
+.trend-metric { border: 1px solid #d0d7de; background: #fff; color: #444; padding: 4px 12px; border-radius: 14px; font-size: 12px; cursor: pointer; }
+.trend-metric:hover { background: #f0f4f8; }
+.trend-metric.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+.trend-summary { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: #555; padding: 8px 0; border-bottom: 1px solid #eee; margin-bottom: 8px; }
+.trend-summary strong { color: #222; }
+.trend-up { color: #e0533d; font-weight: 700; }
+.trend-down { color: #2f9e44; font-weight: 700; }
+.trend-flat { color: #999; font-weight: 700; }
+.trend-chart { width: 100%; overflow-x: auto; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
 </style>
 {% endblock %}
 {% block content %}
 <div class="view-tabs">
   <span class="view-tab active" data-view="kanban">📋 칸반보드</span>
   <span class="view-tab" data-view="git">📊 월별 CR 현황</span>
+  <span class="view-tab" data-view="gantt">📈 간트차트</span>
+  <span class="view-tab" data-view="trend">📉 월별 추이</span>
 </div>
 
 <div id="view-kanban" class="view-panel">
@@ -210,14 +303,16 @@ body { background: #f0f2f5 !important; }
   <div class="kanban-col" data-col="{{ col_key }}">
     <div class="col-header {{ col_header_class }}">
       <span>{{ col_label }}</span>
-      <span class="count" id="count_{{ col_key }}">{{ grouped[col_key]|length }}</span>
+      <div class="col-header-right">
+        <span class="count" id="count_{{ col_key }}">{{ grouped[col_key]|length }}</span>
+        <span class="sort-btn" onclick="toggleSort()" title="정렬 전환">↓</span>
+      </div>
     </div>
     <div class="col-body" id="col_{{ col_key }}">
       {% for plan in grouped[col_key] %}
       <div class="kanban-card" data-id="{{ plan.id }}" onclick="openDetail('{{ plan.id }}')">
         <div class="card-id">{{ plan.id }}</div>
         <div class="card-slug">{{ plan.summary }}</div>
-        <span class="card-badge badge-{{ plan.status }}">{{ STATUS_LABEL[plan.status] }}</span>
       </div>
       {% else %}
       <div class="kanban-card empty">비어 있음</div>
@@ -237,9 +332,126 @@ body { background: #f0f2f5 !important; }
   <div id="crLoading" class="git-loading">⏳ CR 데이터를 불러오는 중...</div>
   <div id="crError" class="git-error" style="display:none;"></div>
   <div id="crContent" style="display:none;">
-    <div id="crAccordion" class="month-accordion"></div>
+    <div class="month-accordion" id="crAccordion"></div>
   </div>
 </div>
+
+<div id="view-gantt" class="view-panel" style="display:none;">
+  <div class="git-header">
+    <h2>📈 간트차트</h2>
+    <div class="git-summary" id="ganttSummary"></div>
+    <div class="last-update" id="ganttLastUpdate"></div>
+  </div>
+  <div class="gantt-toolbar" id="ganttToolbar">
+    <span class="gantt-tb-label">정렬</span>
+    <span class="gantt-badge" data-field="date" onclick="ganttToggleSort('date')">작성일</span>
+    <span class="gantt-badge" data-field="status" onclick="ganttToggleSort('status')">상태</span>
+    <span class="gantt-badge" data-field="end_date" onclick="ganttToggleSort('end_date')">완료일</span>
+    <span class="gantt-badge" data-field="epic" onclick="ganttToggleSort('epic')">에픽</span>
+    <span class="gantt-tb-sep"></span>
+    <span class="gantt-tb-year" id="ganttYearLabel">2026</span>
+    <button class="gantt-tb-btn" id="ganttToggleAll" onclick="ganttToggleAllGroups()">전체 접기</button>
+  </div>
+  <div id="ganttLoading" class="gantt-loading">⏳ 간트차트를 불러오는 중...</div>
+  <div id="ganttError" class="gantt-error" style="display:none;"></div>
+  <div id="ganttContent"></div>
+</div>
+
+<div id="view-trend" class="view-panel" style="display:none;">
+  <div class="trend-subtabs">
+    <span class="trend-subtab active" data-sub="monthly">📅 월별 추이</span>
+    <span class="trend-subtab" data-sub="yearly">📆 연별 추이</span>
+  </div>
+  <div id="trendMonthly" class="trend-subpanel">
+    <div class="trend-header">
+      <h2>📊 그래프 분석</h2>
+      <div class="trend-controls">
+        <label>연도
+          <select id="trendYear" class="form-select form-select-sm" style="width:auto;display:inline-block;">
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+          </select>
+        </label>
+        <div class="trend-metrics" id="trendMetrics">
+          <button class="trend-metric active" data-metric="cr_count">CR 건수</button>
+          <button class="trend-metric" data-metric="fp">FP</button>
+          <button class="trend-metric" data-metric="hours">공수(h)</button>
+          <button class="trend-metric" data-metric="plan_count">계획서 건수</button>
+        </div>
+        <div class="trend-metrics" id="trendTypeMetrics" style="display:none;">
+          <button class="trend-metric" data-metric="cr_by_type">CR 유형별</button>
+          <button class="trend-metric" data-metric="plan_by_type">계획서 유형</button>
+        </div>
+        <div class="trend-axis-toggle" id="trendAxisToggle" style="display:none;">
+          <span class="trend-axis active" data-axis="time">시간누적</span>
+          <span class="trend-axis" data-axis="type">유형별</span>
+        </div>
+        <div class="trend-chart-toggle" id="trendChartToggle">
+          <span class="trend-ct active" data-ct="bar">막대</span>
+          <span class="trend-ct" data-ct="line">선</span>
+        </div>
+      </div>
+      <div class="trend-summary" id="trendSummary"></div>
+      <div class="trend-legend" id="trendLegend"></div>
+    </div>
+    <div id="trendLoading" class="git-loading">⏳ 추이 데이터를 불러오는 중...</div>
+    <div id="trendError" class="git-error" style="display:none;"></div>
+    <div id="trendChart" class="trend-chart"></div>
+  </div>
+
+  <div id="trendYearly" class="trend-subpanel" style="display:none;">
+    <div class="trend-controls">
+      <div class="gg-gauge" id="yearGauge">
+        <div class="gg-track" id="ggTrack">
+          <div class="gg-fill" id="ggFill"></div>
+          <div class="gg-handle gg-h-start" id="ggHStart"></div>
+          <div class="gg-handle gg-h-end" id="ggHEnd"></div>
+        </div>
+        <div class="gg-axis" id="ggAxis"></div>
+      </div>
+      <div class="trend-axis-toggle" id="yearAxisToggle">
+        <span class="trend-axis active" data-axis="type">유형별</span>
+        <span class="trend-axis" data-axis="year">연도합산</span>
+      </div>
+      <div class="trend-metrics" id="yearMetrics">
+        <button class="trend-metric" data-metric="cr_count">CR 건수</button>
+        <button class="trend-metric" data-metric="fp">FP</button>
+        <button class="trend-metric" data-metric="hours">공수(h)</button>
+        <button class="trend-metric" data-metric="plan_count">계획서 건수</button>
+        <button class="trend-metric active" data-metric="cr_by_type">CR 유형별</button>
+        <button class="trend-metric" data-metric="plan_by_type">계획서 유형</button>
+      </div>
+      <div class="trend-chart-toggle" id="yearChartToggle">
+        <span class="trend-ct active" data-ct="bar">막대</span>
+        <span class="trend-ct" data-ct="line">선</span>
+      </div>
+    </div>
+    <div class="trend-legend" id="yearLegend"></div>
+    <div class="trend-summary" id="yearSummary"></div>
+    <div id="yearLoading" class="git-loading">⏳ 추이 데이터를 불러오는 중...</div>
+    <div id="yearError" class="git-error" style="display:none;"></div>
+    <div id="yearlyChart" class="trend-chart"></div>
+  </div>
+</div>
+
+<style>
+  .trend-subtabs { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .trend-subtab { padding:6px 12px; border-radius:8px; cursor:pointer; background:#f1f3f7; color:#555; font-size:13px; }
+  .trend-subtab.active { background:#6366f1; color:#fff; }
+  .trend-axis-toggle, .trend-chart-toggle { display:inline-flex; gap:4px; }
+  .trend-axis, .trend-ct { padding:4px 10px; border-radius:6px; cursor:pointer; background:#eef0f4; color:#555; font-size:12px; }
+  .trend-axis.active, .trend-ct.active { background:#6366f1; color:#fff; }
+  .trend-legend { font-size:12px; color:#555; margin:4px 0 8px; display:flex; gap:12px; flex-wrap:wrap; }
+  .trend-legend span b { color:#333; }
+  .gg-gauge { position:relative; width:320px; max-width:100%; }
+  .gg-track { position:relative; height:32px; background:#eef0f4; border-radius:8px; cursor:pointer; }
+  .gg-fill { position:absolute; top:4px; bottom:4px; background:rgba(99,102,241,0.25); border-radius:6px; }
+  .gg-handle { position:absolute; top:50%; transform:translate(-50%,-50%); width:14px; height:24px; background:#6366f1; border-radius:4px; cursor:grab; box-shadow:0 1px 3px rgba(0,0,0,0.25); z-index:2; }
+  .gg-handle:active { cursor:grabbing; }
+  .gg-axis { position:relative; height:16px; margin-top:2px; }
+  .gg-tick { position:absolute; top:0; transform:translateX(-50%); font-size:9px; color:#999; }
+  .trend-controls { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+</style>
 
 <!-- CR Detail Modal -->
 <div class="modal fade" id="crModal" tabindex="-1">
@@ -285,7 +497,7 @@ body { background: #f0f2f5 !important; }
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="groupListTitle">📦 이전 완료 작업</h5>
+        <h5 class="modal-title" id="groupListTitle">📦 월별 완료 목록</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="groupListBody">
@@ -302,12 +514,12 @@ body { background: #f0f2f5 !important; }
 
 {% block scripts %}
 <script>
-var STATUS_LABEL = {{ STATUS_LABEL|tojson }};
 var POLL_INTERVAL = 10000;
 var _lastMtime = {{ mtime }};
 var _currentMonth = '{{ current_month|e }}';
 var PLANS_BASE = {{ plans_base|tojson }};
 var _pollTimer = null;
+var _sortAsc = false; // default: descending (최신순)
 
 function getMonthParam() {
   var sel = document.getElementById('folderSelect');
@@ -315,7 +527,6 @@ function getMonthParam() {
 }
 
 function makeCard(p, boardMonth) {
-  var badge = STATUS_LABEL[p.status] || p.status;
   var card = document.createElement('div');
   card.className = 'kanban-card';
   card.dataset.id = p.id;
@@ -325,7 +536,6 @@ function makeCard(p, boardMonth) {
   if (p.month) {
     chips += '<span class="card-month-badge">' + p.month + '월</span>';
   }
-  chips += '<span class="card-badge badge-' + p.status + '">' + badge + '</span>';
   if (p.work_type) {
     chips += '<span class="chip-work-type">' + esc(p.work_type) + '</span>';
   }
@@ -342,11 +552,31 @@ function makeCard(p, boardMonth) {
   return card;
 }
 
+function sortPlans(plans) {
+  return plans.slice().sort(function(a, b) {
+    var da = a.date || '';
+    var db = b.date || '';
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    if (da < db) return _sortAsc ? -1 : 1;
+    if (da > db) return _sortAsc ? 1 : -1;
+    return 0;
+  });
+}
+
+function toggleSort() {
+  _sortAsc = !_sortAsc;
+  document.querySelectorAll('.sort-btn').forEach(function(b) { b.textContent = _sortAsc ? '↑' : '↓'; });
+  loadPlans(getMonthParam());
+}
+
 function renderCards(data) {
-  var boardMonth = data.board_month || null;  // '2026-07' 또는 null(전체)
+  var boardMonth = data.board_month || null;
   ['todo','doing','predone','done','hold','drop'].forEach(function(col) {
     var container = document.getElementById('col_' + col);
     var plans = (data.grouped && data.grouped[col]) || [];
+    plans = sortPlans(plans);
     var countEl = document.getElementById('count_' + col);
     if (countEl) countEl.textContent = plans.length;
     if (!container) return;
@@ -413,19 +643,32 @@ function renderDoneColumn(container, plans, boardMonth) {
     if (!byMonth[m]) byMonth[m] = [];
     byMonth[m].push(p);
   });
-  // 월 정렬 (최신월 우선)
-  var sortedMonths = Object.keys(byMonth).sort().reverse();
+  // 월 정렬 (정렬 방향에 따라)
+  var sortedMonths = Object.keys(byMonth).sort();
+  if (!_sortAsc) sortedMonths.reverse();
+  // boardMonth='2026-07' → currentMonth='07', 없으면 최신월 (정렬 방향 무관)
+  var currentMonth = boardMonth ? boardMonth.split('-')[1] : (function(ms){ return ms.length ? ms[ms.length-1] : ''; })(Object.keys(byMonth).sort());
   sortedMonths.forEach(function(mm) {
-    var items = byMonth[mm];
-    var card = document.createElement('div');
-    card.className = 'kanban-card group-card';
-    card.onclick = function() { openGroupList(items); };
-    card.innerHTML =
-      '<div class="group-icon">📦</div>' +
-      '<div class="group-title">' + mm + '월 완료 (' + items.length + '건)</div>' +
-      '<div class="group-subtitle">클릭 시 ' + mm + '월 Done 일람</div>' +
-      '<div class="group-count">✅ Done · ' + items.length + '개</div>';
-    container.appendChild(card);
+    var items = sortPlans(byMonth[mm]);
+    if (mm === currentMonth) {
+      // 현재월: 개별카드 (makeCard로 펼침)
+      items.forEach(function(p) {
+        container.appendChild(makeCard(p, boardMonth));
+      });
+    } else {
+      // 과거월: 그룹카드 (가로배치, 높이 축소)
+      var card = document.createElement('div');
+      card.className = 'kanban-card group-card';
+      card.onclick = function() { openGroupList(items); };
+      card.innerHTML =
+        '<div class="group-inner">' +
+        '<div class="group-icon">📦</div>' +
+        '<div class="group-info">' +
+        '<div class="group-title">' + mm + '월 완료 (' + items.length + '건)</div>' +
+        '<div class="group-sub">✅ Done · ' + items.length + '개</div>' +
+        '</div></div>';
+      container.appendChild(card);
+    }
   });
 }
 
@@ -651,6 +894,371 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+// ===== GANTT CHART =====
+
+// ---- gantt state (persists across re-renders) ----
+var ganttCache = null;
+var ganttYear = new Date().getFullYear();
+var ganttSortKeys = [];   // [{field:'date'|'status'|'end_date'|'epic', dir:'asc'|'desc'}]
+var ganttCollapsed = new Set(); // collapsed group keys ('__none__' = 기타)
+var GANTT_LABEL_W = 250;
+
+function ganttEpKey(ep) { return ep ? ep : '__none__'; }
+function ganttEpLabel(key) { return key === '__none__' ? '기타' : key; }
+
+var GANTT_STATUS_ORDER = { todo: 0, doing: 1, 'pre-done': 2, 'predone': 2, done: 3, hold: 4, drop: 5 };
+
+// 계획서 작업유형(A~E) 라벨/분해 — 간트차트 요약용 (백엔드 _normalize_work_type 과 일치)
+var PLAN_TYPE_LABEL = { A: '버그수정', B: '기능개선', C: '설계', D: '리팩토링', E: 'DB마이그레이션', other: '기타' };
+var PLAN_TYPE_ORDER = ['B', 'A', 'C', 'D', 'E', 'other'];
+function planTypeBreakdown(bt) {
+  if (!bt) return '';
+  var parts = [];
+  PLAN_TYPE_ORDER.forEach(function(k) {
+    if (bt[k]) parts.push(PLAN_TYPE_LABEL[k] + ':' + bt[k]);
+  });
+  return parts.join(' ');
+}
+
+function ganttCmpVal(t, field) {
+  if (field === 'date') return t.date || '';
+  if (field === 'end_date') return t.end_date || t.date || '';
+  if (field === 'status') return GANTT_STATUS_ORDER[t.status] != null ? GANTT_STATUS_ORDER[t.status] : 9;
+  return '';
+}
+function ganttCompare(a, b, keys) {
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var av = ganttCmpVal(a, k.field), bv = ganttCmpVal(b, k.field);
+    if (av < bv) return k.dir === 'asc' ? -1 : 1;
+    if (av > bv) return k.dir === 'asc' ? 1 : -1;
+  }
+  return 0;
+}
+
+function ganttAllGroupKeys() {
+  var keys = {};
+  (ganttCache.tasks || []).forEach(function(t) { keys[ganttEpKey(t.epic)] = 1; });
+  (ganttCache.epics || []).forEach(function(e) { keys[ganttEpKey(e.name)] = 1; });
+  return Object.keys(keys);
+}
+
+function ganttToggleSort(field) {
+  var idx = -1;
+  for (var i = 0; i < ganttSortKeys.length; i++) { if (ganttSortKeys[i].field === field) { idx = i; break; } }
+  if (idx === -1) ganttSortKeys.push({ field: field, dir: 'asc' });
+  else if (ganttSortKeys[idx].dir === 'asc') ganttSortKeys[idx].dir = 'desc';
+  else ganttSortKeys.splice(idx, 1);
+  ganttRenderToolbar();
+  if (ganttCache) ganttRender();
+}
+
+function ganttToggleGroup(ep) {
+  if (ganttCollapsed.has(ep)) ganttCollapsed.delete(ep); else ganttCollapsed.add(ep);
+  if (ganttCache) ganttRender();
+}
+
+function ganttToggleAllGroups() {
+  if (!ganttCache) return;
+  var keys = ganttAllGroupKeys();
+  var allCollapsed = keys.length > 0 && keys.every(function(k) { return ganttCollapsed.has(k); });
+  ganttCollapsed = new Set();
+  if (!allCollapsed) keys.forEach(function(k) { ganttCollapsed.add(k); });
+  ganttRender();
+}
+
+function ganttRenderToolbar() {
+  var bar = document.getElementById('ganttToolbar');
+  if (!bar) return;
+  var yl = document.getElementById('ganttYearLabel');
+  if (yl) yl.textContent = ganttYear;
+  var badges = bar.querySelectorAll('.gantt-badge');
+  badges.forEach(function(b) {
+    var f = b.getAttribute('data-field');
+    var idx = -1;
+    for (var i = 0; i < ganttSortKeys.length; i++) { if (ganttSortKeys[i].field === f) { idx = i; break; } }
+    b.classList.remove('on');
+    var arr = b.querySelector('.arr'); if (arr) arr.remove();
+    var ord = b.querySelector('.ord'); if (ord) ord.remove();
+    if (idx !== -1) {
+      b.classList.add('on');
+      var a = document.createElement('span'); a.className = 'arr';
+      a.textContent = ganttSortKeys[idx].dir === 'asc' ? '↑' : '↓';
+      b.appendChild(a);
+      if (ganttSortKeys.length > 1) {
+        var o = document.createElement('span'); o.className = 'ord';
+        o.textContent = (idx + 1);
+        b.appendChild(o);
+      }
+    }
+  });
+  var btn = document.getElementById('ganttToggleAll');
+  if (btn) {
+    var keys = ganttCache ? ganttAllGroupKeys() : [];
+    var allCollapsed = keys.length > 0 && keys.every(function(k) { return ganttCollapsed.has(k); });
+    btn.textContent = allCollapsed ? '전체 펼치기' : '전체 접기';
+  }
+}
+
+function ganttBuildGroups() {
+  var tasks = ganttCache.tasks || [];
+  var epics = ganttCache.epics || [];
+  var epicGroups = {};
+  var epicOrder = [];
+  tasks.forEach(function(t) {
+    var k = ganttEpKey(t.epic);
+    if (!epicGroups[k]) { epicGroups[k] = []; epicOrder.push(k); }
+    epicGroups[k].push(t);
+  });
+  epics.forEach(function(e) {
+    var k = ganttEpKey(e.name);
+    if (!epicGroups[k]) { epicGroups[k] = []; epicOrder.push(k); }
+  });
+  var withinKeys = ganttSortKeys.filter(function(k) { return k.field !== 'epic'; });
+  if (withinKeys.length) {
+    Object.keys(epicGroups).forEach(function(k) { epicGroups[k].sort(function(a, b) { return ganttCompare(a, b, withinKeys); }); });
+  }
+  var epicKey = null;
+  for (var i = 0; i < ganttSortKeys.length; i++) { if (ganttSortKeys[i].field === 'epic') { epicKey = ganttSortKeys[i]; break; } }
+  if (epicKey) {
+    epicOrder.sort(function(a, b) {
+      var av = a === '__none__' ? '' : a, bv = b === '__none__' ? '' : b;
+      if (av < bv) return epicKey.dir === 'asc' ? -1 : 1;
+      if (av > bv) return epicKey.dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  return { epicGroups: epicGroups, epicOrder: epicOrder };
+}
+
+function loadGantt() {
+  var loading = document.getElementById('ganttLoading');
+  var error = document.getElementById('ganttError');
+  var content = document.getElementById('ganttContent');
+  if (!loading || !content) return;
+  loading.style.display = '';
+  error.style.display = 'none';
+  content.innerHTML = '';
+  ganttRenderToolbar();
+
+  fetch('/admin/api/plans/gantt?_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      loading.style.display = 'none';
+      if (!d.success) {
+        error.style.display = '';
+        error.textContent = '❌ ' + (d.error || '데이터 로드 실패');
+        return;
+      }
+      ganttCache = d;
+      ganttCollapsed = new Set(ganttAllGroupKeys()); // 기본: 주제별 전체 접힘
+
+      // crSummary KPI 집계
+      var crs = d.milestones || [];
+      var totalFp = 0, totalHours = 0;
+      crs.forEach(function(c) { if (c.fp) totalFp += c.fp; if (c.hours) totalHours += c.hours; });
+      var sumEl = document.getElementById('ganttSummary');
+      if (sumEl) {
+        var tasksAll = d.tasks || [];
+        var st = { done: 0, doing: 0, predone: 0, todo: 0, hold: 0, drop: 0, total: 0 };
+        tasksAll.forEach(function(t) { var k = t.status; if (st[k] != null) st[k]++; st.total++; });
+        sumEl.innerHTML =
+          '<span>📦 총 <strong>' + crs.length + '</strong>개 CR</span>' +
+          '<span>📊 FP <strong>' + totalFp + '</strong></span>' +
+          '<span>⏱️ 공수 <strong>' + (totalHours ? totalHours.toFixed(1) + 'h' : '-') + '</strong></span>' +
+          '<span class="gs-sep">·</span>' +
+          '<span>✅ <strong>' + st.done + '</strong>완료</span>' +
+          '<span>🔄 <strong>' + st.doing + '</strong>작업중</span>' +
+          '<span>🔶 <strong>' + st.predone + '</strong>Pre-Done</span>' +
+          '<span>📋 <strong>' + st.todo + '</strong>예정</span>' +
+          '<span>📌 <strong>' + st.hold + '</strong>보류</span>' +
+          '<span>🗑️ <strong>' + st.drop + '</strong>Drop</span>' +
+          '<span>· 총 <strong>' + st.total + '</strong></span>';
+      }
+      var updEl = document.getElementById('ganttLastUpdate');
+      if (updEl) {
+        var now = new Date();
+        updEl.textContent = '마지막 갱신: ' + now.toTimeString().slice(0,8);
+      }
+
+      var tasks = d.tasks || [];
+      if (tasks.length === 0) {
+        content.innerHTML = '<div class="gantt-empty">📭 계획 데이터가 없습니다.</div>';
+        return;
+      }
+      ganttRender();
+    })
+    .catch(function(e) {
+      loading.style.display = 'none';
+      error.style.display = '';
+      error.textContent = '❌ 로드 실패: ' + escHtml(e.message);
+    });
+}
+
+function ganttRender() {
+  var d = ganttCache;
+  if (!d) return;
+  var content = document.getElementById('ganttContent');
+  var tasks = d.tasks || [];
+  var crLinks = d.cr_links || [];
+  var today = new Date();
+
+  // ---- year-fixed range (요구 3: 해당 연도 1/1~12/31 고정) ----
+  var startDate = new Date(ganttYear, 0, 1);
+  var endDate = new Date(ganttYear, 11, 31);
+
+  // dynamic DAY_W: 1년 전체를 컨테이너 폭에 fit (가로 스크롤 제거)
+  var avail = (content.clientWidth || (document.getElementById('view-gantt') ? document.getElementById('view-gantt').clientWidth : 1000)) - GANTT_LABEL_W - 2;
+  if (avail < 300) avail = 300;
+  var totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+  var DAY_W = avail / totalDays;
+
+  function daysBetween(a, b) { return Math.round((b.getTime() - a.getTime()) / 86400000); }
+  function dateFromStr(s) { var p = s.split('-'); return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2])); }
+  var chartWidth = totalDays * DAY_W;
+
+  // month segments (12)
+  var months = [];
+  for (var mm = 0; mm < 12; mm++) {
+    var mStart = new Date(ganttYear, mm, 1);
+    var mEnd = new Date(ganttYear, mm + 1, 1);
+    var left = daysBetween(startDate, mStart) * DAY_W;
+    var w = daysBetween(mStart, mEnd) * DAY_W;
+    months.push({ label: ganttYear + '년 ' + (mm + 1) + '월', left: left, width: w });
+  }
+
+  // month-aligned: no sub-month (week) ticks per requirement 1
+
+  function getPlanX(planDate) { return daysBetween(startDate, dateFromStr(planDate)) * DAY_W; }
+  function statusCls(s) {
+    if (s === 'doing') return 'gantt-doing';
+    if (s === 'predone') return 'gantt-predone';
+    if (s === 'done') return 'gantt-done';
+    return 'gantt-todo';
+  }
+  function statusDotColor(s) {
+    if (s === 'doing') return 'var(--doing-border)';
+    if (s === 'predone') return 'var(--predone-border)';
+    if (s === 'done') return 'var(--done-border)';
+    return 'var(--todo-border)';
+  }
+  function getCrChip(planId) {
+    var chips = [];
+    crLinks.forEach(function(cl) { if (cl.plan === planId) chips.push(cl.cr); });
+    return chips.length ? '◆ ' + chips[0] : '';
+  }
+
+  var grp = ganttBuildGroups();
+  var epicGroups = grp.epicGroups;
+  var epicOrder = grp.epicOrder;
+
+  // === RENDER ===
+  var html = '<div class="gantt-legend">' +
+    '<span class="it"><span class="sw" style="background:var(--doing-bg);border-left:3px solid var(--doing-border)"></span>Doing</span>' +
+    '<span class="it"><span class="sw" style="background:var(--done-bg);border-left:3px solid var(--done-border)"></span>Done</span>' +
+    '<span class="it"><span class="sw" style="background:var(--predone-bg);border-left:3px solid var(--predone-border)"></span>Pre-Done</span>' +
+    '<span class="it"><span class="sw" style="background:var(--todo-bg);border-left:3px solid var(--todo-border)"></span>Todo</span>' +
+    '<span class="it"><span class="gantt-diamond" style="background:#6f42c1"></span>CR 요청(◆)</span>' +
+    '<span class="it"><span class="gantt-cr-key"></span>CR 연결</span>' +
+    '<span class="it"><span class="gantt-dep-key"></span>선행 의존</span>' +
+    '</div>';
+
+  html += '<div class="gantt-plansum">📋 계획서 <strong>' + (d.plan_total || 0) + '</strong>건' +
+    (d.plan_by_type ? ' (' + planTypeBreakdown(d.plan_by_type) + ')' : '') + '</div>';
+
+  html += '<div class="gantt-chart"><div class="gantt-scroll"><div class="gantt-grid" style="width:' + (chartWidth + GANTT_LABEL_W) + 'px;min-width:' + (chartWidth + GANTT_LABEL_W) + 'px">';
+
+  html += '<div class="gantt-mrow"><div class="gantt-lead">작업 · 에픽</div><div class="gantt-months" style="height:26px">';
+  months.forEach(function(m) {
+    html += '<div class="gantt-mseg" style="left:' + m.left + 'px;width:' + m.width + 'px">' + esc(m.label) + '</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="gantt-body"><div class="gantt-lcol">';
+  var tcolRowsHtml = '';
+  var rowIndex = 0;
+
+  epicOrder.forEach(function(epKey) {
+    var ep = epKey === '__none__' ? '' : epKey;
+    var plansInEpic = epicGroups[epKey] || [];
+    var epLabel = ganttEpLabel(epKey);
+    var epCount = plansInEpic.length;
+    var collapsed = ganttCollapsed.has(epKey);
+
+    // group header (clickable to toggle collapse)
+    html += '<div class="gantt-grp' + (collapsed ? ' collapsed' : '') + '" onclick="ganttToggleGroup(\'' + esc(epKey) + '\')">' +
+      '<span>' + esc(epLabel) + '</span>' +
+      '<span class="gantt-ep">' + (ep ? esc(ep) : '에픽 없음') + '</span>' +
+      '<span class="gantt-ch">▾</span>' +
+      '<span class="gantt-ct">' + epCount + '</span></div>';
+    tcolRowsHtml += '<div class="gantt-tr g"></div>';
+    rowIndex++;
+
+    if (collapsed) {
+      // integrated band: 1 row spanning the group's whole date range
+      var minDate = null, maxDate = null;
+      plansInEpic.forEach(function(t) {
+        var s = t.date, e = t.end_date || t.date;
+        if (!minDate || s < minDate) minDate = s;
+        if (!maxDate || e > maxDate) maxDate = e;
+      });
+      var bx = minDate ? getPlanX(minDate) : 0;
+      var bw = minDate ? Math.max(DAY_W, (daysBetween(dateFromStr(minDate), dateFromStr(maxDate)) + 1) * DAY_W) : DAY_W;
+      html += '<div class="gantt-rl gantt-band-row" onclick="ganttToggleGroup(\'' + esc(epKey) + '\')">' +
+        '<span class="gantt-dot" style="background:#6f42c1"></span>' +
+        '<span class="gantt-pid">' + esc(epLabel) + '</span>' +
+        '<span class="gantt-sum">' + epCount + '건 통합</span></div>';
+      tcolRowsHtml += '<div class="gantt-tr"><div class="gantt-bar gantt-band" style="left:' + bx + 'px;width:' + bw + 'px" title="' + esc(epLabel) + ': ' + epCount + '건">' +
+        '<span>' + epCount + '건</span></div></div>';
+      rowIndex++;
+    } else {
+      plansInEpic.forEach(function(t) {
+        var x = getPlanX(t.date);
+        var hasEnd = t.end_date !== undefined && t.end_date !== null;
+        var w = DAY_W;
+        if (hasEnd) w = Math.max(DAY_W, daysBetween(dateFromStr(t.date), dateFromStr(t.end_date)) * DAY_W);
+        var isPoint = (!hasEnd || w <= DAY_W) && (t.status === 'todo' || t.status === 'done');
+        var crChip = getCrChip(t.id);
+        html += '<div class="gantt-rl" onclick="openDetail(\'' + esc(t.id) + '\', \'' + esc(t.month) + '\')">' +
+          '<span class="gantt-dot" style="background:' + statusDotColor(t.status) + '"></span>' +
+          '<span class="gantt-pid">' + esc(t.id) + '</span>' +
+          '<span class="gantt-sum">' + esc(t.summary) + '</span>' +
+          (crChip ? '<span class="gantt-crchip">' + esc(crChip) + '</span>' : '') +
+          '</div>';
+        tcolRowsHtml += '<div class="gantt-tr">';
+        if (isPoint) {
+          var cap = t.status === 'done' ? (t.end_date || t.date) + ' 완료' : t.date + ' 대기';
+          tcolRowsHtml += '<div class="gantt-pt ' + statusCls(t.status) + '" style="left:' + x + 'px" title="' + esc(t.id) + ': ' + esc(cap) + '">' +
+            '<i></i><span class="gantt-cap">' + esc(cap) + '</span></div>';
+        } else {
+          var barLabel = t.summary.length > 10 ? t.summary.substring(0, 10) + '…' : t.summary;
+          var capText = t.date ? t.date.substring(5) + '→' : '';
+          tcolRowsHtml += '<div class="gantt-bar ' + statusCls(t.status) + '" style="left:' + x + 'px;width:' + Math.max(w, 20) + 'px" title="' + esc(t.id) + ': ' + esc(t.summary) + '">' +
+            '<span>' + esc(barLabel) + '</span><span class="gantt-cap">' + esc(capText) + '</span></div>';
+        }
+        tcolRowsHtml += '</div>';
+        rowIndex++;
+      });
+    }
+  });
+
+  html += '</div><div class="gantt-tcol">';
+  html += tcolRowsHtml;
+
+  // SVG overlay (today line)
+  var svgHeight = rowIndex * 38 + 30;
+  html += '<svg class="gantt-ov" viewBox="0 0 ' + chartWidth + ' ' + svgHeight + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">';
+  var todayX = daysBetween(startDate, today) * DAY_W;
+  if (todayX > 0 && todayX < chartWidth) {
+    html += '<line x1="' + todayX + '" y1="0" x2="' + todayX + '" y2="' + svgHeight + '" stroke="#e5484d" stroke-width="1.5" stroke-dasharray="3 3"/>';
+    html += '<text x="' + (todayX + 3) + '" y="11" fill="#e5484d" font-size="9" font-weight="700">오늘</text>';
+  }
+  html += '</svg>';
+  html += '</div></div></div></div></div>';
+
+  content.innerHTML = html;
+}
+
 // ===== TAB SWITCHING =====
 function switchView(view) {
   document.querySelectorAll('.view-tab').forEach(function(t) { t.classList.remove('active'); });
@@ -659,7 +1267,13 @@ function switchView(view) {
   if (tab) tab.classList.add('active');
   var panel = document.getElementById('view-' + view);
   if (panel) panel.style.display = '';
-  if (view === 'git') loadCrMonthly();
+  if (view === 'git') {
+    loadCrMonthly();
+  } else if (view === 'gantt') {
+    loadGantt();
+  } else if (view === 'trend') {
+    loadTrend();
+  }
 }
 
 document.querySelectorAll('.view-tab').forEach(function(tab) {
@@ -805,6 +1419,440 @@ function loadCrMonthly() {
       error.innerHTML = '❌ 로드 실패: ' + escHtml(e.message);
     });
 }
+
+// ===== TREND VIEW (월별 추이 / 전년대비) =====
+var TREND_METRIC_LABELS = { cr_count: 'CR 건수', fp: 'FP', hours: '공수(h)', plan_count: '계획서 건수' };
+
+function loadTrend() {
+  var loading = document.getElementById('trendLoading');
+  var error = document.getElementById('trendError');
+  var chart = document.getElementById('trendChart');
+  var summary = document.getElementById('trendSummary');
+  var yearSel = document.getElementById('trendYear');
+  var metric = (document.querySelector('#trendMetrics .trend-metric.active') || {}).dataset;
+  var metricKey = metric ? metric.metric : 'cr_count';
+
+  loading.style.display = '';
+  error.style.display = 'none';
+  chart.innerHTML = '';
+
+  fetch('/admin/api/plans/trend?year=' + encodeURIComponent(yearSel.value) + '&_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      loading.style.display = 'none';
+      if (!d.success) {
+        error.style.display = '';
+        error.textContent = '❌ ' + (d.error || '데이터를 불러올 수 없습니다.');
+        return;
+      }
+      var cur = d.series[metricKey].cur;
+      var prev = d.series[metricKey].prev;
+      renderTrendChart(chart, d.year, d.prev_year, cur, prev, metricKey);
+      var tot = d.totals[metricKey];
+      summary.innerHTML = buildTrendSummary(metricKey, d.year, d.prev_year, tot.cur, tot.prev);
+    })
+    .catch(function(e) {
+      loading.style.display = 'none';
+      error.style.display = '';
+      error.textContent = '❌ 로드 실패: ' + e.message;
+    });
+}
+
+function buildTrendSummary(metricKey, year, prevYear, cur, prev) {
+  var label = TREND_METRIC_LABELS[metricKey];
+  var fmt = function(v) { return metricKey === 'hours' ? Number(v).toFixed(1) : v; };
+  var parts = [];
+  parts.push('<span>📅 ' + year + ' 총 <strong>' + fmt(cur) + '</strong> ' + label + '</span>');
+  parts.push('<span>📅 ' + prevYear + ' 총 <strong>' + fmt(prev) + '</strong> ' + label + '</span>');
+  var delta;
+  if (prev > 0) {
+    var pct = ((cur - prev) / prev) * 100;
+    var cls = pct >= 0 ? 'trend-up' : 'trend-down';
+    var arrow = pct >= 0 ? '▲' : '▼';
+    delta = '<span class="' + cls + '">' + arrow + ' 전년대비 ' + (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%</span>';
+  } else if (cur > 0) {
+    delta = '<span class="trend-up">▲ 전년 무데이터 → 신규 집계</span>';
+  } else {
+    delta = '<span class="trend-flat">— 전년동일 무데이터</span>';
+  }
+  parts.push(delta);
+  return parts.join('');
+}
+
+function renderTrendChart(container, year, prevYear, cur, prev, metricKey) {
+  var labels = [];
+  for (var i = 1; i <= 12; i++) labels.push(i + '월');
+
+  var W = container.clientWidth || 900;
+  var H = 360;
+  var padL = 44, padR = 16, padT = 24, padB = 40;
+  var plotW = W - padL - padR;
+  var plotH = H - padT - padB;
+  var n = 12;
+  var groupW = plotW / n;
+  var barW = Math.min(18, groupW / 2 - 3);
+
+  var maxV = 0;
+  for (var i = 0; i < n; i++) {
+    if (cur[i] > maxV) maxV = cur[i];
+    if (prev[i] > maxV) maxV = prev[i];
+  }
+  if (maxV <= 0) maxV = 1;
+  var niceMax = maxV;
+  // round up to a nice number
+  var mag = Math.pow(10, Math.floor(Math.log10(niceMax)));
+  niceMax = Math.ceil(niceMax / mag) * mag;
+  if (niceMax < maxV) niceMax = maxV;
+
+  var svg = '';
+  svg += '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMinYMin meet" font-family="sans-serif">';
+  svg += '<style>' +
+    '@keyframes trendBarGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }' +
+    '@keyframes trendFadeIn { from { opacity: 0; } to { opacity: 1; } }' +
+    '.trend-bar { transform-box: fill-box; transform-origin: bottom; animation: trendBarGrow 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }' +
+    '.trend-val { animation: trendFadeIn 0.4s ease-out both; }' +
+    '</style>';
+
+  // gridlines + y labels
+  var ticks = 4;
+  for (var t = 0; t <= ticks; t++) {
+    var val = niceMax * t / ticks;
+    var y = padT + plotH - (val / niceMax) * plotH;
+    svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="#eee" stroke-width="1"/>';
+    svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#999">' + Math.round(val) + '</text>';
+  }
+
+  for (var i = 0; i < n; i++) {
+    var gx = padL + groupW * i + groupW / 2;
+    var cx = gx - barW - 1;
+    var px = gx + 1;
+    var curH = (cur[i] / niceMax) * plotH;
+    var prevH = (prev[i] / niceMax) * plotH;
+    var curY = padT + plotH - curH;
+    var prevY = padT + plotH - prevH;
+
+    var delay = (i * 0.05).toFixed(2);
+    // prev bar (muted)
+    svg += '<rect class="trend-bar" style="animation-delay:' + delay + 's" x="' + px + '" y="' + prevY + '" width="' + barW + '" height="' + prevH + '" fill="#c9d6e3" rx="2"><title>' + labels[i] + ' ' + prevYear + ': ' + prev[i] + '</title></rect>';
+    // cur bar (accent)
+    svg += '<rect class="trend-bar" style="animation-delay:' + delay + 's" x="' + cx + '" y="' + curY + '" width="' + barW + '" height="' + curH + '" fill="#3b82f6" rx="2"><title>' + labels[i] + ' ' + year + ': ' + cur[i] + '</title></rect>';
+
+    if (cur[i] > 0) {
+      svg += '<text class="trend-val" style="animation-delay:' + (parseFloat(delay) + 0.25).toFixed(2) + 's" x="' + (cx + barW / 2) + '" y="' + (curY - 3) + '" text-anchor="middle" font-size="9" fill="#3b82f6">' + (metricKey === 'hours' ? cur[i].toFixed(1) : cur[i]) + '</text>';
+    }
+    if (prev[i] > 0) {
+      svg += '<text class="trend-val" style="animation-delay:' + (parseFloat(delay) + 0.25).toFixed(2) + 's" x="' + (px + barW / 2) + '" y="' + (prevY - 3) + '" text-anchor="middle" font-size="9" fill="#9bb0c4">' + (metricKey === 'hours' ? prev[i].toFixed(1) : prev[i]) + '</text>';
+    }
+
+    svg += '<text class="trend-val" style="animation-delay:' + delay + 's" x="' + gx + '" y="' + (H - padB + 16) + '" text-anchor="middle" font-size="10" fill="#666">' + labels[i] + '</text>';
+  }
+
+  // axes
+  svg += '<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '" stroke="#ccc" stroke-width="1"/>';
+  svg += '<line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT + plotH) + '" stroke="#ccc" stroke-width="1"/>';
+
+  // legend
+  var ly = padT - 6;
+  svg += '<rect x="' + (W - padR - 200) + '" y="' + (ly - 9) + '" width="10" height="10" fill="#3b82f6" rx="2"/>';
+  svg += '<text x="' + (W - padR - 184) + '" y="' + (ly + 0) + '" font-size="10" fill="#444">' + year + '</text>';
+  svg += '<rect x="' + (W - padR - 130) + '" y="' + (ly - 9) + '" width="10" height="10" fill="#c9d6e3" rx="2"/>';
+  svg += '<text x="' + (W - padR - 114) + '" y="' + (ly + 0) + '" font-size="10" fill="#444">' + prevYear + '</text>';
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+// trend controls
+document.getElementById('trendYear').addEventListener('change', loadTrend);
+document.querySelectorAll('#trendMetrics .trend-metric').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#trendMetrics .trend-metric').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    loadTrend();
+  });
+});
+
+// ===== GRAPH ANALYSIS (그래프 분석: 월별/연별 추이) — 신규 지표 (기존 loadTrend/renderTrendChart 는 수정 안 함) =====
+var GRAPH_LABELS = { cr_count: 'CR 건수', fp: 'FP', hours: '공수(h)', plan_count: '계획서 건수', cr_by_type: 'CR 유형별', plan_by_type: '계획서 유형' };
+var GRAPH_COLORS = { cur: '#6366f1', prev: '#c9d6e3' };
+var TYPE_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#0ea5e9', '#a855f7', '#64748b', '#14b8a'];
+var GRAPH_STATE = {
+  sub: 'monthly',
+  monthly: { metric: 'cr_count', axis: 'time', ct: 'bar' },
+  yearly: { metric: 'cr_by_type', axis: 'type', mStart: 1, mEnd: (new Date()).getMonth() + 1, ct: 'bar' }
+};
+
+function typeLabel(t, wtl) { if (wtl && wtl[t]) return t + ' ' + wtl[t]; return t; }
+function sumArr(a) { var s = 0; for (var i = 0; i < a.length; i++) s += (a[i] || 0); return s; }
+
+function loadGraph() {
+  if (GRAPH_STATE.sub === 'monthly') {
+    var m = GRAPH_STATE.monthly.metric;
+    if (m === 'cr_by_type' || m === 'plan_by_type') loadMonthlyType();
+    else loadTrend();
+  } else {
+    loadYearly();
+  }
+}
+
+function renderLegend(el, items) {
+  el.innerHTML = items.map(function(it) {
+    return '<span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + it.color + ';margin-right:4px;vertical-align:middle;"></i>' + it.name + '</span>';
+  }).join('');
+}
+
+function renderChart(container, cfg) {
+  var cats = cfg.categories, series = cfg.series, type = cfg.type || 'bar', stacked = !!cfg.stacked;
+  var n = cats.length;
+  var W = container.clientWidth || 900, H = 380;
+  var padL = 44, padR = 16, padT = 28, padB = 46;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  var maxV = 0;
+  series.forEach(function(s) { s.data.forEach(function(v) { if (v > maxV) maxV = v; }); });
+  if (maxV <= 0) maxV = 1;
+  var mag = Math.pow(10, Math.floor(Math.log10(maxV)));
+  var niceMax = Math.ceil(maxV / mag) * mag; if (niceMax < maxV) niceMax = maxV;
+  var svg = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMinYMin meet" font-family="sans-serif">';
+  svg += '<style>@keyframes gGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}@keyframes gFade{from{opacity:0}to{opacity:1}}.g-bar{transform-box:fill-box;transform-origin:bottom;animation:gGrow .5s cubic-bezier(.22,1,.36,1) both}.g-v{animation:gFade .4s ease-out both}</style>';
+  var ticks = 4;
+  for (var t = 0; t <= ticks; t++) {
+    var val = niceMax * t / ticks;
+    var y = padT + plotH - (val / niceMax) * plotH;
+    svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="#eee"/><text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#999">' + Math.round(val) + '</text>';
+  }
+  if (type === 'line') {
+    series.forEach(function(s) {
+      var pts = [];
+      for (var i = 0; i < n; i++) { var x = padL + plotW * (i + 0.5) / n; var y = padT + plotH - (s.data[i] / niceMax) * plotH; pts.push(x + ',' + y); }
+      svg += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + s.color + '" stroke-width="2"/>';
+      for (var i = 0; i < n; i++) { var x = padL + plotW * (i + 0.5) / n; var y = padT + plotH - (s.data[i] / niceMax) * plotH; svg += '<circle class="g-v" cx="' + x + '" cy="' + y + '" r="3" fill="' + s.color + '"><title>' + cats[i] + ' ' + s.name + ': ' + (s.data[i] || 0) + '</title></circle>'; }
+    });
+  } else if (stacked) {
+    var groupW = plotW / n, barW = Math.min(40, groupW * 0.55);
+    for (var i = 0; i < n; i++) {
+      var gx = padL + groupW * i + groupW / 2, acc = 0;
+      for (var k = 0; k < series.length; k++) {
+        var v = series[k].data[i] || 0; if (v <= 0) continue;
+        var bh = (v / niceMax) * plotH, by = padT + plotH - acc - bh, x = gx - barW / 2;
+        svg += '<rect class="g-bar" x="' + x + '" y="' + by + '" width="' + barW + '" height="' + bh + '" fill="' + series[k].color + '" rx="2"><title>' + cats[i] + ' ' + series[k].name + ': ' + v + '</title></rect>';
+        acc += bh;
+      }
+      svg += '<text class="g-v" x="' + gx + '" y="' + (H - padB + 16) + '" text-anchor="middle" font-size="10" fill="#666">' + cats[i] + '</text>';
+    }
+  } else {
+    var groupW = plotW / n, inner = groupW * 0.7, bw = Math.min(40, inner / series.length);
+    for (var i = 0; i < n; i++) {
+      var gx = padL + groupW * i + groupW / 2;
+      for (var k = 0; k < series.length; k++) {
+        var v = series[k].data[i] || 0, bh = (v / niceMax) * plotH, by = padT + plotH - bh, x = gx - inner / 2 + bw * k;
+        svg += '<rect class="g-bar" x="' + x + '" y="' + by + '" width="' + bw + '" height="' + bh + '" fill="' + series[k].color + '" rx="2"><title>' + cats[i] + ' ' + series[k].name + ': ' + v + '</title></rect>';
+        if (v > 0) svg += '<text class="g-v" x="' + (x + bw / 2) + '" y="' + (by - 3) + '" text-anchor="middle" font-size="9" fill="' + series[k].color + '">' + (Number(v).toFixed(1)) + '</text>';
+      }
+      svg += '<text class="g-v" x="' + gx + '" y="' + (H - padB + 16) + '" text-anchor="middle" font-size="10" fill="#666">' + cats[i] + '</text>';
+    }
+  }
+  svg += '<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '" stroke="#ccc"/><line x1="' + padL + '" y1="' + padT + '" x2="' + padL + '" y2="' + (padT + plotH) + '" stroke="#ccc"/>';
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+function loadMonthlyType() {
+  var chart = document.getElementById('trendChart');
+  var loading = document.getElementById('trendLoading');
+  var error = document.getElementById('trendError');
+  var summary = document.getElementById('trendSummary');
+  var legend = document.getElementById('trendLegend');
+  var yearSel = document.getElementById('trendYear');
+  var metric = GRAPH_STATE.monthly.metric, ct = GRAPH_STATE.monthly.ct, axis = GRAPH_STATE.monthly.axis;
+  loading.style.display = ''; error.style.display = 'none'; chart.innerHTML = '';
+  fetch('/admin/api/plans/trend-type?mode=monthly&year=' + encodeURIComponent(yearSel.value) + '&_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      loading.style.display = 'none';
+      if (!d.success) { error.style.display = ''; error.textContent = '❌ ' + (d.error || '오류'); return; }
+      var year = d.year, prevYear = d.prev_year;
+      var labels = []; for (var i = 1; i <= 12; i++) labels.push(i + '월');
+      var bt = d[metric], types = bt.types, colors = TYPE_COLORS, cfg, items;
+      if (axis === 'time') {
+        var series = types.map(function(t, idx) { return { name: typeLabel(t, d.work_type_labels), color: colors[idx % colors.length], data: bt.cur.map(function(mo) { return mo[t] || 0; }) }; });
+        cfg = { categories: labels, series: series, type: ct, stacked: true };
+      } else {
+        var curData = types.map(function(t) { var s = 0; bt.cur.forEach(function(mo) { s += mo[t] || 0; }); return s; });
+        var prevData = types.map(function(t) { var s = 0; bt.prev.forEach(function(mo) { s += mo[t] || 0; }); return s; });
+        cfg = { categories: types, series: [{ name: String(year), color: GRAPH_COLORS.cur, data: curData }, { name: String(prevYear), color: GRAPH_COLORS.prev, data: prevData }], type: ct, stacked: false };
+      }
+      items = types.map(function(t, idx) { return { name: typeLabel(t, d.work_type_labels), color: colors[idx % colors.length] }; });
+      var curTotal = 0, prevTotal = 0;
+      bt.cur.forEach(function(mo) { types.forEach(function(t) { curTotal += mo[t] || 0; }); });
+      bt.prev.forEach(function(mo) { types.forEach(function(t) { prevTotal += mo[t] || 0; }); });
+      renderLegend(legend, items);
+      renderChart(chart, cfg);
+      summary.innerHTML = buildTrendSummary(metric, year, prevYear, curTotal, prevTotal);
+    })
+    .catch(function(e) { loading.style.display = 'none'; error.style.display = ''; error.textContent = '❌ ' + e.message; });
+}
+
+function loadYearly() {
+  var chart = document.getElementById('yearlyChart');
+  var loading = document.getElementById('yearLoading');
+  var error = document.getElementById('yearError');
+  var summary = document.getElementById('yearSummary');
+  var legend = document.getElementById('yearLegend');
+  var s = GRAPH_STATE.yearly, metric = s.metric, ct = s.ct;
+  loading.style.display = ''; error.style.display = 'none'; chart.innerHTML = '';
+  fetch('/admin/api/plans/trend-type?mode=yearly&mStart=' + s.mStart + '&mEnd=' + s.mEnd + '&_t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      loading.style.display = 'none';
+      if (!d.success) { error.style.display = ''; error.textContent = '❌ ' + (d.error || '오류'); return; }
+      GRAPH_STATE.yearly.mEnd = Math.min(s.mEnd, d.cur_month);
+      var years = d.years, items, cfg;
+      if (metric === 'cr_by_type' || metric === 'plan_by_type') {
+        var bt = d.series[metric], types = bt.types, colors = TYPE_COLORS;
+        var series = years.map(function(y, idx) { return { name: String(y), color: colors[idx % colors.length], data: types.map(function(t) { return (bt.data[y] && bt.data[y][t]) ? bt.data[y][t] : 0; }) }; });
+        cfg = { categories: types, series: series, type: ct, stacked: false };
+        items = types.map(function(t, idx) { return { name: typeLabel(t, d.work_type_labels), color: colors[idx % colors.length] }; });
+      } else {
+        items = [{ name: GRAPH_LABELS[metric] || metric, color: GRAPH_COLORS.cur }];
+        cfg = { categories: years.map(String), series: [{ name: GRAPH_LABELS[metric] || metric, color: GRAPH_COLORS.cur, data: years.map(function(y) { return d.series[metric][y] || 0; }) }], type: ct, stacked: false };
+      }
+      renderLegend(legend, items);
+      renderChart(chart, cfg);
+      summary.innerHTML = '집계 범위: ' + s.mStart + '월~' + GRAPH_STATE.yearly.mEnd + '월 · 연도: ' + years.join(', ');
+    })
+    .catch(function(e) { loading.style.display = 'none'; error.style.display = ''; error.textContent = '❌ ' + e.message; });
+}
+
+// ===== 게이지 (월범위 듀얼핸들, 단일 좌표계) =====
+function initGauge() {
+  var track = document.getElementById('ggTrack');
+  var axis = document.getElementById('ggAxis');
+  var fill = document.getElementById('ggFill');
+  var hS = document.getElementById('ggHStart');
+  var hE = document.getElementById('ggHEnd');
+  if (!track) return;
+  axis.innerHTML = '';
+  for (var m = 1; m <= 12; m++) {
+    var tk = document.createElement('div');
+    tk.className = 'gg-tick';
+    tk.style.left = ((m - 1) / 11 * 100) + '%';
+    tk.textContent = m;
+    axis.appendChild(tk);
+  }
+  function pctOf(v) { return ((v - 1) / 11) * 100; }
+  function setFill() {
+    var a = pctOf(GRAPH_STATE.yearly.mStart), b = pctOf(GRAPH_STATE.yearly.mEnd);
+    fill.style.left = a + '%'; fill.style.width = (b - a) + '%';
+    hS.style.left = a + '%'; hE.style.left = b + '%';
+  }
+  setFill();
+  var dragging = null;
+  function posToVal(clientX) {
+    var r = track.getBoundingClientRect();
+    var p = (clientX - r.left) / r.width; p = Math.max(0, Math.min(1, p));
+    return Math.max(1, Math.min(12, Math.round(p * 11) + 1));
+  }
+  function onDown(e, h) { dragging = h; if (e && e.preventDefault) e.preventDefault(); }
+  function onMove(e) {
+    if (!dragging) return;
+    var x = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+    var v = posToVal(x);
+    if (dragging === 'start') { GRAPH_STATE.yearly.mStart = Math.min(v, GRAPH_STATE.yearly.mEnd); }
+    else { GRAPH_STATE.yearly.mEnd = Math.max(v, GRAPH_STATE.yearly.mStart); }
+    setFill();
+  }
+  function onUp() { if (dragging) { dragging = null; loadYearly(); } }
+  hS.addEventListener('mousedown', function(e) { onDown(e, 'start'); });
+  hE.addEventListener('mousedown', function(e) { onDown(e, 'end'); });
+  track.addEventListener('mousedown', function(e) {
+    var v = posToVal(e.clientX);
+    if (Math.abs(v - GRAPH_STATE.yearly.mStart) <= Math.abs(v - GRAPH_STATE.yearly.mEnd)) { GRAPH_STATE.yearly.mStart = Math.min(v, GRAPH_STATE.yearly.mEnd); }
+    else { GRAPH_STATE.yearly.mEnd = Math.max(v, GRAPH_STATE.yearly.mStart); }
+    setFill(); loadYearly();
+  });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  hS.addEventListener('touchstart', function(e) { onDown(e, 'start'); }, { passive: false });
+  hE.addEventListener('touchstart', function(e) { onDown(e, 'end'); }, { passive: false });
+  document.addEventListener('touchmove', function(e) { if (dragging && e.preventDefault) e.preventDefault(); onMove(e); }, { passive: false });
+  document.addEventListener('touchend', onUp);
+}
+
+// ===== 그래프 컨트롤 이벤트 (신규) =====
+document.querySelectorAll('.trend-subtab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.trend-subtab').forEach(function(t) { t.classList.remove('active'); });
+    tab.classList.add('active');
+    GRAPH_STATE.sub = tab.dataset.sub;
+    document.getElementById('trendMonthly').style.display = GRAPH_STATE.sub === 'monthly' ? '' : 'none';
+    document.getElementById('trendYearly').style.display = GRAPH_STATE.sub === 'yearly' ? '' : 'none';
+    loadGraph();
+  });
+});
+document.querySelectorAll('#trendTypeMetrics .trend-metric').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#trendTypeMetrics .trend-metric').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    GRAPH_STATE.monthly.metric = btn.dataset.metric;
+    document.getElementById('trendMetrics').style.display = 'none';
+    document.getElementById('trendTypeMetrics').style.display = '';
+    document.getElementById('trendAxisToggle').style.display = '';
+    loadMonthlyType();
+  });
+});
+// 기존 #trendMetrics 핸들러(loadTrend)에 더해, 유형 컨테이너 숨김만 추가 (기존 로직 수정 안 함)
+document.querySelectorAll('#trendMetrics .trend-metric').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    GRAPH_STATE.monthly.metric = btn.dataset.metric;
+    document.getElementById('trendMetrics').style.display = '';
+    document.getElementById('trendTypeMetrics').style.display = 'none';
+    document.getElementById('trendAxisToggle').style.display = 'none';
+  });
+});
+document.querySelectorAll('#trendAxisToggle .trend-axis').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#trendAxisToggle .trend-axis').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    GRAPH_STATE.monthly.axis = btn.dataset.axis;
+    loadMonthlyType();
+  });
+});
+document.querySelectorAll('#trendChartToggle .trend-ct').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#trendChartToggle .trend-ct').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    GRAPH_STATE.monthly.ct = btn.dataset.ct;
+    loadMonthlyType();
+  });
+});
+document.querySelectorAll('#yearMetrics .trend-metric').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#yearMetrics .trend-metric').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    GRAPH_STATE.yearly.metric = btn.dataset.metric;
+    loadYearly();
+  });
+});
+document.querySelectorAll('#yearAxisToggle .trend-axis').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#yearAxisToggle .trend-axis').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    GRAPH_STATE.yearly.axis = btn.dataset.axis;
+    var def = btn.dataset.axis === 'type' ? 'cr_by_type' : 'cr_count';
+    GRAPH_STATE.yearly.metric = def;
+    document.querySelectorAll('#yearMetrics .trend-metric').forEach(function(b) { b.classList.toggle('active', b.dataset.metric === def); });
+    loadYearly();
+  });
+});
+document.querySelectorAll('#yearChartToggle .trend-ct').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#yearChartToggle .trend-ct').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    GRAPH_STATE.yearly.ct = btn.dataset.ct;
+    loadYearly();
+  });
+});
+initGauge();
 
 // ===== CR DETAIL =====
 function openCrDetail(reqId) {
