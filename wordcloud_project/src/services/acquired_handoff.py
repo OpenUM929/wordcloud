@@ -20,7 +20,8 @@ _DATASET_ROOT = os.path.join(PROJECT_ROOT_DIR, 'plans', '_datasets', 'kote_finet
 _HANDOFF_ROOT = os.path.abspath(os.path.join(_DATASET_ROOT, 'emotion', 'handoff'))
 
 # 레전드(1줄차) — 사이드카 없이 파일만으로 키 의미를 LLM이 인식
-_LEGEND_DESC = "x=문장, y=라벨(p=긍/n=부/u=중), s=[pos,neg,neu], e=top3감정[[명,점],...]"
+_LEGEND_DESC = ("x=문장, y=라벨(p=긍/n=부/u=중), s=[pos,neg,neu], e=top3감정[[명,점],...], "
+                "f=문서필드(장점/단점, 매핑 시)")
 
 
 def _safe_segment(value):
@@ -55,7 +56,8 @@ def build_records_from_metadata(metadata):
     for ev in metadata.get('evaluations', []) or []:
         doc = ev.get('evaluation_document') or ev.get('evaluation_document_original') or ''
         cache = ev.get('sentence_emotion_cache')
-        scores = _get_sentence_level_scores(doc, sentence_cache=cache, field=ev.get('evaluation_document_field'))
+        field = ev.get('evaluation_document_field')
+        scores = _get_sentence_level_scores(doc, sentence_cache=cache, field=field)
         for i, (sent, score, pos, neg, neutral) in enumerate(scores):
             if not sent:
                 continue
@@ -63,7 +65,7 @@ def build_records_from_metadata(metadata):
             top3 = []
             if cache and i < len(cache):
                 top3 = cache[i].get('top3') or []
-            records.append((sent, label, pos, neg, neutral, top3))
+            records.append((sent, label, pos, neg, neutral, top3, field))
     return records
 
 
@@ -82,13 +84,19 @@ def append_handoff_records(dest_label, batch_id, records):
         if new_file:
             f.write(json.dumps({"#": _LEGEND_DESC, "batch": str(batch_id)},
                                ensure_ascii=False) + '\n')
-        for sent, label, pos, neg, neutral, top3 in records:
+        for rec in records:
+            # (sent,label,pos,neg,neutral,top3[,field]) — field는 0714 추가(구 튜플 호환).
+            sent, label, pos, neg, neutral, top3 = rec[:6]
+            field = rec[6] if len(rec) > 6 else None
             line = {
                 "x": sent,
                 "y": label,
                 "s": [round(pos or 0.0, 2), round(neg or 0.0, 2), round(neutral or 0.0, 2)],
                 "e": [[t[0], round(t[1] or 0.0, 2)] for t in (top3 or []) if t],
             }
+            # field 신호 = 파인튜닝 핵심 피처 — 매핑돼 있을 때만 f 기록(무필드 구포맷 호환).
+            if field:
+                line["f"] = str(field)
             f.write(json.dumps(line, ensure_ascii=False) + '\n')
     return len(records)
 

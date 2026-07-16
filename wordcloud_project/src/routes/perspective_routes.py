@@ -1788,6 +1788,8 @@ def api_group_review_load():
                 'decision': r.get('human_decision') if r.get('human_decision') is not None else r.get('gold'),
                 'decision_source': r.get('decision_source'),      # 'human'=사람확정 gold
                 'suggested_source': r.get('suggested_source'),    # 'claude_auto'=제 silver 프리필
+                'memo': r.get('memo'),                            # 사용자 의견/메모(행별, 채팅 대체)
+                'memo_tags': r.get('memo_tags'),                  # 규칙이슈 태그(체크칩) 목록
             })
     return jsonify({'success': True, 'total': total, 'offset': offset, 'items': items})
 
@@ -1807,11 +1809,20 @@ def api_group_review_save():
     if decisions is None:                       # 레거시 단건 호환
         decisions = [{'rec_id': data.get('rec_id'), 'decision': data.get('decision')}]
     valid = ('positive', 'negative', 'neutral', 'not_group', 'skip')
-    dmap = {}
+    dmap, mmap, tmap = {}, {}, {}
     for d in decisions:
-        if d.get('decision') not in valid:
-            return jsonify({'success': False, 'error': '잘못된 decision'}), 400
-        dmap[str(d.get('rec_id'))] = d.get('decision')
+        rid = str(d.get('rec_id'))
+        dec = d.get('decision')
+        if dec is not None:                     # 판정 없이 메모만 저장하는 경우 허용
+            if dec not in valid:
+                return jsonify({'success': False, 'error': '잘못된 decision'}), 400
+            dmap[rid] = dec
+        if 'memo' in d:                          # 사용자 의견/메모(행별) — 판정과 독립 저장
+            mmap[rid] = d.get('memo')
+        if 'memo_tags' in d:                     # 규칙이슈 태그(체크칩) 목록 — 리스트
+            tmap[rid] = d.get('memo_tags')
+    if not dmap and not mmap and not tmap:
+        return jsonify({'success': False, 'error': '저장할 내용 없음'}), 400
     # 판정 패킷(.json): item 의 human_decision 기록·status 전이(위임)
     ppath = _safe_packet_path(fname)
     if ppath:
@@ -1834,12 +1845,27 @@ def api_group_review_save():
             except ValueError:
                 rows.append(line)
                 continue
-            dec = dmap.get(str(r.get('rec_id')))
+            rid = str(r.get('rec_id'))
+            dec = dmap.get(rid)
             if dec is not None:
                 r['human_decision'] = dec
                 r['decision_source'] = 'human'   # 사람 실제 판정 표식(claude_auto 프리필과 구분 → gold 순수성)
                 if is_baseline:
                     r['gold'] = None if dec in ('not_group', 'skip') else dec
+                found += 1
+            if rid in mmap:                      # 의견/메모 기록(빈 값이면 삭제)
+                m = (mmap[rid] or '').strip()
+                if m:
+                    r['memo'] = m
+                else:
+                    r.pop('memo', None)
+                found += 1
+            if rid in tmap:                      # 규칙이슈 태그 기록(빈 리스트면 삭제)
+                tags = tmap[rid] or []
+                if isinstance(tags, list) and tags:
+                    r['memo_tags'] = tags
+                else:
+                    r.pop('memo_tags', None)
                 found += 1
             rows.append(json_lib.dumps(r, ensure_ascii=False))
     with open(path, 'w', encoding='utf-8') as f:

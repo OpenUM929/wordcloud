@@ -780,7 +780,12 @@ _NOWEAK_NOTFOUND = ('찾지 못', '찾지못', '못 찾', '못찾', '찾기 어�
                     #   약점명사 동시 요구라 순수 '확인'문(성과 확인 등)은 미발동.
                     '확인하지 못', '확인하지못', '확인 못', '확인못', '확인되지 않', '확인되지않',
                     # 오타 '없음'(사용자 제보 10~20%) — 표준 '없'으로 안 잡히는 변형만.
-                    '업음', '업슴', '업습니', '업ㅅ', '읎', '엄슴', '엄음')
+                    '업음', '업슴', '업습니', '업ㅅ', '읎', '엄슴', '엄음',
+                    # 0715 확장(사용자 감사 카테고리7): 무결점 선언 변형 — 생각해본 적 없음/두드러진 점
+                    #   없음/특별히 없음/느까지 못함(느끼지 오타)/칮지 못함(찾지 오타). 약점명사 동시
+                    #   요구라 안전(→중립만). '두드러지'는 약점명사 게이트로 "장점 두드러짐"(긍정) 미발동.
+                    '생각해본 적', '생각해본적', '생각해 본 적', '생각 안', '생각나지 않',
+                    '두드러지', '특별히 없', '특별히없', '느까지', '칮지')
 # not-found 전용 약점명사 — '장점/특별한 점/특이점'(무언급) 제외. "느끼지 못함이 장점"(칭찬)이나
 #   "장점 못 찾음"(모호)에 not-found가 걸려 진짜 칭찬을 긍→중 하지 않게, 순수 약점명사만 사용.
 _NOWEAK_NOTFOUND_NOUNS = ('보완', '단점', '개선점', '개선 사항', '개선사항', '보완점', '보완 점',
@@ -927,8 +932,10 @@ def has_explicit_strong_positive(sentence):
 #   이라 긍↔부 무관. 건강 term + 조언/결핍 marker 동시 요구 → "체력이 좋아 업무를 잘함"(건강이
 #   업무역량을 뒷받침하는 칭찬, marker 없음)은 미발동으로 칭찬 보존.
 _HEALTH_TERMS = ('건강관리', '건강 관리', '건강에', '건강을', '건강상', '건강히', '건강관련',
-                 '건강도', '건강까지', '건겅', '건강유지', '체력', '음주', '술을', '술자리',
-                 '과음', '흡연', '담배', '금연', '금주', '지병', '컨디션', '다이어트')
+                 '건강도', '건강까지', '건겅', '건강유지', '몸건강', '몸 건강', '체력', '음주',
+                 '술을', '술자리', '과음', '흡연', '담배', '금연', '금주', '지병', '컨디션',
+                 '다이어트', '운동',  # 0715 확장: 운동/몸건강(사용자 감사 카테고리1)
+                 '과로의', '과로로', '과로가', '과로를', '과로에')  # 과로(성과로/결과로 substring 회피 위해 조사 결합형만)
 _HEALTH_ADVICE = ('필요', '보완', '유의', '좋겠', '조심', '신경', '챙기', '해야', '줄이',
                   '주의', '바랍', '바람', '했으면', '하였으면', '관리가', '관리도')
 
@@ -954,6 +961,9 @@ def is_health_advice(sentence):
 _PERSONAL_DOMAIN_NOUNS = tuple(t for t in _HEALTH_TERMS if t != '술을') + (
     '건강이', '건강과', '스트레스', '상처', '휴식', '쉬어', '쉬엄', '쉬면서', '쉬셨',
     '번아웃', '멘탈', '정신적', '몸이', '몸을', '몸 챙', '몸도',
+    # 0715 확장(사용자 감사 카테고리1·3): 휴가/휴무/휴직/경력단절/시달림/마음아픔 = 개인 안녕
+    '휴가', '휴무', '연차', '휴직', '경력단절', '경력 단절', '가정에', '가정을',
+    '시달', '마음이 아', '마음 아', '마음이아',
 )
 # 칭찬형 마커(관리·해소·받지 않·신경) 제외 — "자기관리로 컨디션 유지"·"스트레스 잘 해소"·"스트레스
 #   받지 않는다"(회복력=긍정)·"멘탈케어 신경 써주심"(칭찬)을 오중립하던 것 차단. '생각하'는 명령형
@@ -965,6 +975,9 @@ _PERSONAL_CONCERN_MARK = (
     '생각하세', '생각하셔', '생각해야', '생각하시',
     '풀었으면', '당부', '기원', '응원', '힘내', '해야', '있어야',
     '았으면', '었으면',   # 위시 어미("쉬었으면", "안받었으면") — 명사 게이트로 오탐 방지
+    # 0715 확장(사용자 감사): 건강/안녕 명사 + 결핍/아쉬움/고통 마커도 중립(업무 아닌 개인 안녕).
+    #   도메인 명사 게이트가 있어 "업무능력 부족"엔 미발동(업무능력=도메인 아님).
+    '부족', '떨어', '아쉽', '아쉬움', '단절', '아프', '아픕', '아팠', '힘들', '힘듬', '힘듦',
 )
 
 
@@ -979,6 +992,48 @@ def is_personal_wellbeing_neutral(sentence):
     if not any(n in sentence for n in _PERSONAL_DOMAIN_NOUNS):
         return False
     return any(m in sentence for m in _PERSONAL_CONCERN_MARK)
+
+
+# ── 비평가 메타 코멘트(0715 사용자 감사 카테고리4) → 중립 ──────────────────────
+#   평가 대상이 '사람 역량'이 아니라 제도/설문/근무일정 자체. "다면평가 없어졌으면", "근무시간
+#   조정해 오전 퇴근했으면", "보완필요성 적는게 힘듬". 방향 →중립뿐이라 긍↔부 안전.
+_META_COMMENT = ('다면평가', '다면 평가', '평가제도', '평가 제도', '설문조사', '평가서 작성',
+                 '평가 항목', '근무시간 조정', '근무 시간 조정', '퇴근했으면', '출근했으면')
+_META_SURVEY_HARD = ('적는게', '적는 게', '적기가', '작성이', '쓰는게', '쓰는 게', '적을게')
+_META_HARD = ('힘', '어렵', '곤란')
+
+
+def is_meta_comment(sentence):
+    """평가 제도/설문/근무일정 등 비역량 메타 코멘트면 True → 중립(사용자 정책 0715)."""
+    if not sentence:
+        return False
+    if any(m in sentence for m in _META_COMMENT):
+        return True
+    return (any(s in sentence for s in _META_SURVEY_HARD)
+            and any(h in sentence for h in _META_HARD))
+
+
+# ── 평가 불가(상호작용/관찰 부재, 카테고리2) → 중립 ─────────────────────────────
+#   평가자가 교류/대면 부재로 판단 불가. ⚠ '업무 불가시성 비판'("무슨 일 하는지 모르겠")과 구분:
+#   여기선 상호작용·관찰 부재 표지만 본다 → 비판(부정)은 보존.
+_CANNOT_ASSESS = ('교류가 없', '교류가 전혀', '교류한 적', '교류할 일이 없', '말도 안해',
+                  '말 한번 안', '말 한마디', '어케 아', '어떻게 아나', '어찌 아',
+                  '평가를 못', '평가하기 어렵', '평가하기 힘', '알 도리가 없',
+                  '함께 일한 적이 없', '같이 일한 적이 없', '함께 근무한 적이 없')
+
+
+def is_cannot_assess(sentence):
+    """평가자의 상호작용/관찰 부재로 평가 불가면 True → 중립(사용자 카테고리2)."""
+    return bool(sentence) and any(p in sentence for p in _CANNOT_ASSESS)
+
+
+def is_mixed_pos_neg(sentence):
+    """긍정 대조술어(뛰어나나·우수하나…) + 부정신호(없음/부족/아쉬움/못/단절) 공존 = 긍부혼재 → 중립.
+    개선요청 짝에 국한하지 않는 광의 혼합(0715 사용자 카테고리3). 방향 →중립뿐 긍↔부 안전."""
+    if not sentence or not _MIXED_POS_CONTRAST.search(sentence):
+        return False
+    return (has_negative_implying_words(sentence)
+            or any(m in sentence for m in ('없', '부족', '아쉽', '단절', '떨어', '시달', '못함', '못하')))
 
 
 def _is_effort_needed(sentence):
@@ -1060,6 +1115,15 @@ _REQ_FINAL_BARE_EXCL = ('통하여', '통해', '통한', '바탕으로',
 # 서술형 칭찬 술어 — 요청표지 *단독* 문장에 동반되면 긍부혼재("업무열의가 매우 좋으며 좀더
 #   노력바랍니다") → 원칙(긍부혼재=중립)대로 부정 대신 중립. 결핍 core 표지가 있으면 부정 유지.
 _PRED_PRAISE = ('좋으며', '좋고', '좋으나', '매우 좋', '아주 좋', '능숙', '잘함', '잘 함')
+
+# 긍부혼재 대조 술어(0715 사용자 규칙 "긍정+부정 공존→중립"): 긍정 용언 + 역접 대조어미
+#   (뛰어나나·우수하나·좋으나). 이게 있으면 core 개선요청("개선 필요")이어도 혼합으로 보고 중립.
+#   ⚠ 병렬어미(고/며)·관형형(뛰어난)은 제외 — "적극적이고 성실함 필요"(순수 개선요청)·
+#     "뛰어난 능력 필요"(관형=결여지적) 오탐 방지. "-나" 역접은 has_contrastive가 누구나/언제나
+#     모호성으로 미인식하므로 여기서 연결어미를 직접 매칭한다. 방향 →중립뿐이라 긍↔부 안전.
+_MIXED_POS_CONTRAST = re.compile(
+    r'(뛰어나|우수하|탁월하|훌륭하|능숙하|좋으|성실하|원활하|풍부하|강하|많으|높으|넓으)'
+    r'(나|지만|으나|은데|는데|나마|음에도|는데도)')
 
 
 def _has_request_marker(sentence):
@@ -1180,6 +1244,21 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
     if is_personal_wellbeing_neutral(sentence):
         return 0.0, 'personal_wellbeing_neutral'
 
+    # 0715(사용자 카테고리6b): '역량명사, 잘 모르겠음'(그 항목 평가불가) → 중립. positive_rescue가
+    #   긍정명사(소통능력)에 끌려 긍정 선점하던 것 차단. '잘 모르겠'만(비판 '무슨일 하는지 모르겠'과
+    #   달리 상호작용/판단불가 표지). 방향 →중립뿐 긍↔부 안전.
+    if ('잘 모르겠' in sentence or '잘모르겠' in sentence) and not has_explicit_strong_positive(sentence):
+        return 0.0, 'no_response_neutral'
+
+    # 0715 사용자 감사 반영 — positive_rescue·excess·개선요청보다 먼저 중립 확정(전부 →중립, 긍↔부
+    #   안전): ② 상호작용/관찰 부재=평가불가 · ③ 긍부혼재(광의) · ④ 비평가 메타(제도/설문/근무일정).
+    if is_cannot_assess(sentence):
+        return 0.0, 'cannot_assess_neutral'
+    if is_mixed_pos_neg(sentence):
+        return 0.0, 'mixed_pos_neg_neutral'
+    if is_meta_comment(sentence) and not has_explicit_strong_positive(sentence):
+        return 0.0, 'meta_comment_neutral'
+
     # 긍정 구제(positive_rescue): 인사평가 긍정 표지가 명확하고 부정 신호가 없으면 긍정 상향.
     # neutral_dominant/rule3/rule4보다 앞서 평가해, 긍정이 중립·부정으로 강등되는 것을 사전 차단.
     # 핵심 가치 보호 게이트: 반전 표지 없음 + 완곡부정 구문/부정 암시어/도메인 부정문맥어 없음 + KoTE neg 낮음.
@@ -1272,9 +1351,14 @@ def _sentence_sentiment_override_explain(pos, neg, sentence, is_last, total_sent
     if (not _has_improve_blocking_contrast(sentence)
             and (_core_improve or _has_request_marker(sentence))):
         # 요청표지 *단독* + 서술형 칭찬 동반은 긍부혼재 → 중립(원칙). core 결핍 표지면 부정 유지.
-        if (not _core_improve
-                and (has_explicit_strong_positive(sentence)
-                     or any(pp in sentence for pp in _PRED_PRAISE))):
+        # 0715 확장(사용자 규칙): 긍정 용언+역접 대조어미(_MIXED_POS_CONTRAST: 뛰어나나·우수하나)로
+        #   긍정 절이 명확히 선행하면 core 개선요청("개선 필요")이어도 혼합→중립. 기존 분기는 그대로
+        #   두고 대조술어 케이스만 추가(strictly additive). 방향 →중립뿐이라 긍↔부 안전
+        #   (40만 표본 flip 3건 전수 혼합 확인). "직원간 의사소통이 뛰어나나 개선 필요" 부정→중립 교정.
+        if (_MIXED_POS_CONTRAST.search(sentence)
+                or (not _core_improve
+                    and (has_explicit_strong_positive(sentence)
+                         or any(pp in sentence for pp in _PRED_PRAISE)))):
             return 0.0, 'improvement_request_neutral'
         # 노력+필요·추측형필요(불요 제외)는 실측 개선요청(반례 0) → pos가드 무시하고 부정 확정.
         if pos >= 0.75 and not _is_effort_needed(sentence) and not _is_speculative_need(sentence):

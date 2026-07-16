@@ -4,6 +4,8 @@
 
 {% block extra_head %}
 <style>
+  /* 게시판 전용: 컨테이너 20% 확대(1600→1920px). 데스크톱 전용이라 안전(이 페이지만). */
+  .container { max-width: 1920px; }
   .gr-intro { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e7eb);
     border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; font-size: 13.5px; color: #444; }
   .gr-intro kbd { background: #eef1f5; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 5px; font-size: 12px; }
@@ -38,6 +40,16 @@
     padding: 1px 5px; border-radius: 6px; vertical-align: middle; }
   .gr-src.human { background: #dcfce7; color: #166534; }
   .gr-src.auto { background: #f1f5f9; color: #64748b; }
+  .gr-memo { width: 100%; box-sizing: border-box; min-height: 30px; resize: vertical;
+    border: 1px solid #d7dee7; border-radius: 6px; padding: 4px 6px; font-size: 12px;
+    font-family: inherit; color: #333; margin-top: 4px; }
+  .gr-memo:focus { outline: 2px solid #93c5fd; border-color: #93c5fd; }
+  .gr-memo.saved { border-color: #86c99a; background: #f6fbf7; }
+  /* 규칙이슈 태그 체크칩 — 반복 이슈를 클릭 한 번으로 태깅(없으면 아래 자유텍스트) */
+  .gr-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+  .gr-tag { font-size: 11px; padding: 2px 6px; border: 1px solid #cbd5e1; border-radius: 999px;
+    background: #fff; color: #556; cursor: pointer; user-select: none; white-space: nowrap; }
+  .gr-tag.on { background: #2563eb; color: #fff; border-color: #2563eb; font-weight: 600; }
   .gr-savebtn { padding: 8px 16px; border: none; border-radius: 8px; background: #2563eb; color: #fff;
     font-size: 14px; font-weight: 700; cursor: pointer; }
   .gr-savebtn:disabled { background: #cbd5e1; cursor: default; }
@@ -49,8 +61,8 @@
     background: #111; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 14px;
     opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 999; }
   .gr-toast.show { opacity: .92; }
-  /* 컬럼 폭: 문장·알고리즘결과·네판정 가변, 현규칙·필드 좁게, 판정 고정 */
-  .col-txt { width: 24%; } .col-cur { width: 56px; } .col-algo { width: 22%; } .col-claude { width: 22%; } .col-pick { width: 200px; } .col-fld { width: 54px; }
+  /* 컬럼 폭: 문장·알고리즘결과·네판정·의견 가변, 현규칙·필드 좁게, 판정 고정 */
+  .col-txt { width: 20%; } .col-cur { width: 52px; } .col-algo { width: 18%; } .col-claude { width: 18%; } .col-pick { width: 190px; } .col-fld { width: 50px; } .col-memo { width: 17%; }
 </style>
 {% endblock %}
 
@@ -60,6 +72,7 @@
   <code>eval/*.jsonl</code>을 불러와 행을 판정하면 <b>자동 저장</b>됩니다(<b>💾</b>는 즉시 저장). 페이지를 넘기거나 파일을 바꿔도 저장분은 유지됩니다.
   키보드: <kbd>↑</kbd><kbd>↓</kbd> 행 이동 · <kbd>1</kbd> 긍정 · <kbd>2</kbd> 부정 · <kbd>3</kbd> 중립 · <kbd>4</kbd> 그룹아님(선택 후 자동으로 다음 행).
   <b>현규칙</b>·<b>알고리즘 결과</b>는 규칙엔진 산출값(참고), <b>네 판정</b>은 Claude가 그룹 기준으로 판단한 결과+근거입니다. 최종 <b>판정</b>은 직접 선택하세요.
+  <b>내 의견</b>: 반복되는 규칙이슈는 <b>태그 칩</b>을 클릭해 표시(건강/안녕·평가불가·긍부공존·비평가메타·무서술어→필드·필드의존·양가태도·무결점·과부정/오판·부정어없음·주제어없음). 해당 없으면 아래 칸에 자유 텍스트. 판정 없이 태그·메모만 남겨도 자동 저장됩니다(채팅 대신 여기에).
 </div>
 
 <div class="gr-bar">
@@ -82,7 +95,7 @@
   <thead><tr>
     <th class="col-txt">문장</th><th class="col-cur">현규칙</th>
     <th class="col-algo">알고리즘 결과</th><th class="col-claude">네 판정(설명)</th>
-    <th class="col-pick">판정</th><th class="col-fld">필드</th>
+    <th class="col-pick">판정</th><th class="col-fld">필드</th><th class="col-memo">내 의견</th>
   </tr></thead>
   <tbody id="grBody"></tbody>
 </table>

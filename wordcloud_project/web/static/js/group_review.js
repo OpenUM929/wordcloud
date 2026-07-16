@@ -16,6 +16,10 @@
     }
     var API = '/api/perspective/group-review';
     var PAGE = 100;
+    // 규칙이슈 태그(반복 유형) — 클릭 한 번으로 태깅. 각 태그가 규칙 카테고리에 매핑돼 일괄 처리 가능.
+    var MEMO_TAGS = ['건강/안녕', '평가불가', '긍부공존', '비평가메타', '무서술어→필드',
+                     '필드의존', '양가태도', '무결점', '과부정/오판',
+                     '부정어없음', '주제어없음'];   // 부정어없음=부정어 없는데 부정판정 / 주제어없음=평가할 주제 부재
     var state = { file: '', all: [], view: [], page: 0, total: 0, undecidedOnly: true, cursor: 0 };
 
     function toast(msg) {
@@ -228,7 +232,11 @@
                 + '<td>' + algoRef(it.ai_reference) + '</td>'
                 + '<td>' + claudeJudge(it.claude_judgment) + '</td>'
                 + '<td>' + pickButtons(it) + srcBadge(it) + '</td>'
-                + '<td class="sub">' + esc(it.field || '') + '</td></tr>';
+                + '<td class="sub">' + esc(it.field || '') + '</td>'
+                + '<td>' + memoTags(it)
+                + '<textarea class="gr-memo' + (it.memo ? ' saved' : '') + '" rows="1"'
+                + ' data-rec="' + esc(it.rec_id) + '" placeholder="기타 의견(태그 없을 때)">'
+                + esc(it.memo || '') + '</textarea></td></tr>';
         }).join('');
         var pages = Math.ceil(state.view.length / PAGE);
         $('grPageInfo').textContent = (state.page + 1) + ' / ' + pages;
@@ -292,6 +300,27 @@
 
     function saveAll() { flush(); }   // 💾 = 즉시 저장(자동저장과 동일 경로·충돌안전)
 
+    // 규칙이슈 태그 칩 렌더(선택 상태 반영)
+    function memoTags(it) {
+        var on = it.memo_tags || [];
+        return '<div class="gr-tags" data-rec="' + esc(it.rec_id) + '">' + MEMO_TAGS.map(function (t) {
+            var sel = on.indexOf(t) >= 0 ? ' on' : '';
+            return '<span class="gr-tag' + sel + '" data-tag="' + esc(t) + '">' + esc(t) + '</span>';
+        }).join('') + '</div>';
+    }
+
+    // ── 의견/메모 저장: 판정과 독립(디바운스, 재렌더 없이). 태그(체크칩)+자유텍스트 함께 전송 ──
+    var memoTimers = {};
+    function saveMemo(rec, memo, tags, ta) {
+        fetch(API + '/save', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: state.file,
+                decisions: [{ rec_id: rec, memo: memo, memo_tags: tags || [] }] })
+        }).then(function (r) { return r.json(); }).then(function (j) {
+            if (j && j.success && ta) { ta.classList.add('saved'); }
+        }).catch(function () {});
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         loadFiles(autoSelectPresetFile);   // 목록 로드 후 ?file=/sessionStorage 프리셋 자동선택
         $('grFile').addEventListener('change', function (e) {
@@ -317,9 +346,38 @@
                 if (it) { setDecision(it, b.getAttribute('data-d')); render(); }
                 return;
             }
+            var chip = e.target.closest('.gr-tag');   // 규칙이슈 태그 토글(재렌더 없이 즉시)
+            if (chip) {
+                var trec = chip.closest('.gr-tags').getAttribute('data-rec');
+                var tit = state.all.filter(function (x) { return String(x.rec_id) === trec; })[0];
+                if (tit) {
+                    var tags = tit.memo_tags ? tit.memo_tags.slice() : [];
+                    var tag = chip.getAttribute('data-tag');
+                    var idx = tags.indexOf(tag);
+                    if (idx >= 0) { tags.splice(idx, 1); chip.classList.remove('on'); }
+                    else { tags.push(tag); chip.classList.add('on'); }
+                    tit.memo_tags = tags;
+                    saveMemo(trec, tit.memo || '', tags, null);
+                }
+                return;
+            }
+            if (e.target.closest('.gr-memo')) { return; }   // 메모 클릭은 커서이동/재렌더 안 함(포커스 유지)
             // 행 아무 곳이나 클릭 → 그 행으로 커서 이동(키보드 없이도 항 선택)
             var row = e.target.closest('tr[data-gi]');
             if (row) { state.cursor = parseInt(row.getAttribute('data-gi'), 10); render(); }
+        });
+        // 의견 메모 입력 → state 즉시 반영(재렌더 유지) + 0.6초 디바운스 저장
+        $('grBody').addEventListener('input', function (e) {
+            var ta = e.target.closest('.gr-memo');
+            if (!ta) { return; }
+            var rec = ta.getAttribute('data-rec');
+            var it = state.all.filter(function (x) { return String(x.rec_id) === rec; })[0];
+            if (it) { it.memo = ta.value; }
+            ta.classList.remove('saved');
+            clearTimeout(memoTimers[rec]);
+            memoTimers[rec] = setTimeout(function () {
+                saveMemo(rec, ta.value, (it && it.memo_tags) || [], ta);
+            }, 600);
         });
         document.addEventListener('keydown', function (e) {
             if (!state.view.length || /^(INPUT|SELECT|TEXTAREA)$/.test((e.target.tagName || ''))) { return; }
