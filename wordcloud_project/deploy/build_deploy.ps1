@@ -34,7 +34,9 @@ $FullOutputDir = Join-Path $DefaultOutput "wordcloud-internal"
 $ExcludeDirs = @("venv", "__pycache__", ".git", ".sessions", "doc",
                  "vendor_python_pkgs", "logs", "temp", "node_modules", "deploy",
                  ".pytest_cache", "inputs", "scripts", ".opencode", ".clinerules", "failed",
-                 "plans", "default", "outputs", "processed_data")
+                 "plans", "default", "outputs", "processed_data",
+                 # setup.py 빌드 잔재(옛 소스 사본 반입 방지 — 잔재 소스 트랩)
+                 "build", "*.egg-info")
 $ExcludeFiles = @("*.pyc", ".gitignore", "CACHEDIR.TAG", "README.md", "mermaid.min.js",
                   ".env", "*.jsonl", "*.zip", "flask_err.txt", "flask_out.txt")
 
