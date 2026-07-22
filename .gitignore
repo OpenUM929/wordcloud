@@ -94,3 +94,6 @@ outputs/
 
 # Playwright MCP session artifacts
 .playwright-mcp/
+
+# Claude Code: 공유(agents 정의)는 추적, 로컬 개인 설정은 제외
+.claude/settings.local.json
