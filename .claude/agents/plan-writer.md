@@ -19,6 +19,8 @@ tools: Read, Glob, Grep, Bash, Write
 
 **0단계**: [`.clinerules/common/core/28-agent-bootstrap.md`](../../.clinerules/common/core/28-agent-bootstrap.md) BOOT-1~6 수행. 계획서 저장 위치는 `{{paths.plans_root}}` 아래이며, 이 파일에 경로를 하드코딩하지 않는다.
 
+**기존 계획서를 고치는 작업이면** [`00-core/03-plan-mode/11-status-and-index.md`](../../.clinerules/common/core/00-core/03-plan-mode/11-status-and-index.md)(수정 이력 인라인 표 + 해당 월 `_index.md` 동시 갱신)와 [`22-doc-numbering.md`](../../.clinerules/common/core/22-doc-numbering.md) **NUM-9(RV-1~RV-5)** 를 함께 읽는다. 이력 없이 내용만 갈아끼우지 않는다.
+
 - 위치·파일명 규약 정본: [`.clinerules/common/core/00-core/03-plan-mode/10-storage-naming.md`](../../.clinerules/common/core/00-core/03-plan-mode/10-storage-naming.md)
 - 상태·인덱스 규약 정본: [`.clinerules/common/core/00-core/03-plan-mode/11-status-and-index.md`](../../.clinerules/common/core/00-core/03-plan-mode/11-status-and-index.md)
 - 해당 기간 `_index.md` 를 **반드시 동시 갱신**한다
