@@ -300,7 +300,6 @@
     }
     .source-badge--deploy { background: #ede9fe; color: #6b21a8; }
     .source-badge--matrix { background: #fce8b2; color: #6d4c0a; }
-    .source-badge--graph { background: #d1fae5; color: #065f46; }
 
     /* 칩 필터 */
     .chip {
@@ -859,7 +858,6 @@
         <div class="modal-tab-bar" id="modalTabs">
             <button class="modal-tab" data-tab="deploy" onclick="switchTab('deploy')">제출용 저장</button>
             <button class="modal-tab" data-tab="matrix" onclick="switchTab('matrix')">매트릭스</button>
-            <button class="modal-tab" data-tab="graph" onclick="switchTab('graph')">그래프</button>
         </div>
         <!-- 본문 -->
         <div class="modal-body" id="modalBody">
@@ -877,7 +875,6 @@
                             <button id="chipCombined" class="chip chip--active" onclick="toggleTypeChip('combined')">통합</button>
                             <button id="chipPositive" class="chip" onclick="toggleTypeChip('positive')">긍정</button>
                             <button id="chipNegative" class="chip" onclick="toggleTypeChip('negative')">부정</button>
-                            <button id="chipGraph" class="chip" onclick="toggleTypeChip('graph')">그래프</button>
                         </div>
                     </div>
                     <div class="filter-row" id="yearChipsRow">
@@ -1197,7 +1194,7 @@ function buildGalleryCard(item) {
             </div>
             ${thumbHtml}
             <div class="source-badge source-badge--${escapeHtml(src)}">
-                ${src === 'matrix' ? '매트릭스' : (src === 'graph' ? '그래프' : '제출용')}
+                ${src === 'matrix' ? '매트릭스' : '제출용'}
             </div>
         </div>
         <div class="card-body">
@@ -1239,7 +1236,7 @@ function buildSelectRow(item) {
         ? `${item.timestamp.slice(0,4)}-${item.timestamp.slice(4,6)}-${item.timestamp.slice(6,8)} ${item.timestamp.slice(9,11)}:${item.timestamp.slice(11,13)}`
         : '-';
     const src = item.source || 'deploy';
-    const srcLabel = src === 'matrix' ? '매트릭스' : (src === 'graph' ? '그래프' : '제출용');
+    const srcLabel = src === 'matrix' ? '매트릭스' : '제출용';
     const idLabel = (item.deploy_name && item.deploy_name !== item.employee_id)
         ? `${item.deploy_name} (${item.employee_id})`
         : (item.employee_id || item.deploy_name || '-');
@@ -1428,14 +1425,12 @@ function updateDeleteCount() {
     const selected = allCtx.filter(e => selectedEntryIds.has(e.id));
     const deployCount = selected.filter(e => (e.source || 'deploy') === 'deploy').length;
     const matrixCount = selected.filter(e => e.source === 'matrix').length;
-    const graphCount = selected.filter(e => e.source === 'graph').length;
 
     let countText = `${count}개 선택됨`;
     if (count > 0) {
         const parts = [];
         if (deployCount > 0) parts.push(`배포용 ${deployCount}개`);
         if (matrixCount > 0) parts.push(`매트릭스 ${matrixCount}개`);
-        if (graphCount > 0) parts.push(`그래프 ${graphCount}개`);
         if (parts.length > 0) countText += ` (${parts.join(' · ')})`;
     }
 
@@ -1466,14 +1461,12 @@ function updateDownloadCount() {
     const selected = allCtx.filter(e => selectedDownloadEntryIds.has(e.id));
     const deployCount = selected.filter(e => (e.source || 'deploy') === 'deploy').length;
     const matrixCount = selected.filter(e => e.source === 'matrix').length;
-    const graphCount = selected.filter(e => e.source === 'graph').length;
 
     let countText = `${count}개 선택됨`;
     if (count > 0) {
         const parts = [];
         if (deployCount > 0) parts.push(`배포용 ${deployCount}개`);
         if (matrixCount > 0) parts.push(`매트릭스 ${matrixCount}개`);
-        if (graphCount > 0) parts.push(`그래프 ${graphCount}개`);
         if (parts.length > 0) countText += ` (${parts.join(' · ')})`;
     }
 
@@ -1544,7 +1537,7 @@ function renderDownloadPanel() {
     const allSources = new Set(allDownloadEntries.map(e => e.source || 'deploy'));
     const srcContainer = document.getElementById('downloadSourceChips');
     srcContainer.innerHTML = '';
-    [['deploy', '배포용'], ['matrix', '매트릭스'], ['graph', '그래프']].forEach(([src, label]) => {
+    [['deploy', '배포용'], ['matrix', '매트릭스']].forEach(([src, label]) => {
         if (!allSources.has(src)) return;
         const chip = document.createElement('button');
         chip.className = 'download-chip' + (downloadFilterSource.has(src) ? ' download-chip--active' : '');
@@ -1784,7 +1777,7 @@ function renderDeletePanel() {
     const allSources = new Set(allDeleteEntries.map(e => e.source || 'deploy'));
     const srcContainer = document.getElementById('deleteSourceChips');
     srcContainer.innerHTML = '';
-    [['deploy', '배포용'], ['matrix', '매트릭스'], ['graph', '그래프']].forEach(([src, label]) => {
+    [['deploy', '배포용'], ['matrix', '매트릭스']].forEach(([src, label]) => {
         if (!allSources.has(src)) return;
         const chip = document.createElement('button');
         chip.className = 'delete-chip' + (deleteFilterSource.has(src) ? ' delete-chip--active' : '');
@@ -1911,7 +1904,6 @@ function _buildDeleteSummaryHtml(ids) {
     const total = ids.length;
     const deployCount = entries.filter(e => (e.source || 'deploy') === 'deploy').length;
     const matrixCount = entries.filter(e => e.source === 'matrix').length;
-    const graphCount = entries.filter(e => e.source === 'graph').length;
 
     const byDate = {};
     const byBatch = {};
@@ -1927,7 +1919,6 @@ function _buildDeleteSummaryHtml(ids) {
     const sourceRows = [];
     if (deployCount > 0) sourceRows.push(`<li>배포용: ${deployCount}개</li>`);
     if (matrixCount > 0) sourceRows.push(`<li>매트릭스: ${matrixCount}개</li>`);
-    if (graphCount > 0) sourceRows.push(`<li>그래프: ${graphCount}개</li>`);
 
     const dateKeys = Object.keys(byDate);
     const dateSection = dateKeys.length > 1
@@ -2051,14 +2042,9 @@ function renderPagination(total, page, perPage) {
 }
 
 // ── 모달 상태 ──────────────────────────────────────────────────
-let currentEntries = { deploy: null, matrix: null, graph: null };
+let currentEntries = { deploy: null, matrix: null };
 let currentTab     = 'deploy';
 let selectedTypes  = new Set(['combined']);
-
-// 탭(source)별 기본 선택 종류 — 그래프 탭은 'graph' 만 있으므로 기본값을 달리한다
-function _defaultTypesFor(source) {
-    return new Set(source === 'graph' ? ['graph'] : ['combined']);
-}
 let selectedYears  = new Set();
 
 // ── 모달 진입 ──────────────────────────────────────────────────
@@ -2093,11 +2079,10 @@ async function openDetail(entryId, employeeId) {
 
         currentEntries.deploy = employeeData.deploy || null;
         currentEntries.matrix = employeeData.matrix || null;
-        currentEntries.graph  = employeeData.graph  || null;
         currentEntries[clickedSource] = clickedEntry;   // 클릭 entry는 detail 버전 우선
 
         currentTab    = clickedSource;
-        selectedTypes = _defaultTypesFor(clickedSource);
+        selectedTypes = new Set(['combined']);
         selectedYears = new Set();
 
         document.getElementById('modalTitle').textContent =
@@ -2138,13 +2123,13 @@ function renderModal() {
 // ── 탭 전환 ───────────────────────────────────────────────────
 function switchTab(tabName) {
     currentTab    = tabName;
-    selectedTypes = _defaultTypesFor(tabName);
+    selectedTypes = new Set(['combined']);
     selectedYears = new Set();
     renderModal();
 }
 
 function renderTabs() {
-    ['deploy', 'matrix', 'graph'].forEach(src => {
+    ['deploy', 'matrix'].forEach(src => {
         const btn = document.querySelector(`[data-tab="${src}"]`);
         if (!btn) return;
         btn.classList.toggle('active', src === currentTab);
@@ -2155,27 +2140,15 @@ function renderTabs() {
 function updateChipAvailability(source) {
     const posChip  = document.getElementById('chipPositive');
     const negChip  = document.getElementById('chipNegative');
-    const comChip  = document.getElementById('chipCombined');
-    const grpChip  = document.getElementById('chipGraph');
     const isMatrix = source === 'matrix';
-    const isGraph  = source === 'graph';
-    // 그래프 entry 는 images.graph 하나뿐이므로 워드클라우드 3종 칩을 잠근다(반대도 동일)
-    [[posChip, isMatrix || isGraph], [negChip, isMatrix || isGraph],
-     [comChip, isGraph], [grpChip, !isGraph]].forEach(([chip, off]) => {
-        if (!chip) return;
-        chip.disabled = off;
-        chip.classList.toggle('chip--disabled', off);
-    });
+    posChip.disabled = isMatrix;
+    negChip.disabled = isMatrix;
+    posChip.classList.toggle('chip--disabled', isMatrix);
+    negChip.classList.toggle('chip--disabled', isMatrix);
     if (isMatrix) selectedTypes = new Set(['combined']);
-    if (isGraph) selectedTypes = new Set(['graph']);
     // DOM active 상태 동기화
-    _syncTypeChips();
-}
-
-function _syncTypeChips() {
-    ['combined', 'positive', 'negative', 'graph'].forEach(t => {
-        const id = { combined: 'chipCombined', positive: 'chipPositive',
-                     negative: 'chipNegative', graph: 'chipGraph' }[t];
+    ['combined', 'positive', 'negative'].forEach(t => {
+        const id = { combined: 'chipCombined', positive: 'chipPositive', negative: 'chipNegative' }[t];
         document.getElementById(id)?.classList.toggle('chip--active', selectedTypes.has(t));
     });
 }
@@ -2187,7 +2160,10 @@ function toggleTypeChip(type) {
         selectedTypes.add(type);
     }
     renderFilteredImages(currentEntries[currentTab]);
-    _syncTypeChips();
+    ['combined', 'positive', 'negative'].forEach(t => {
+        const id = { combined: 'chipCombined', positive: 'chipPositive', negative: 'chipNegative' }[t];
+        document.getElementById(id)?.classList.toggle('chip--active', selectedTypes.has(t));
+    });
 }
 
 // ── 연도 칩 ───────────────────────────────────────────────────
@@ -2223,12 +2199,12 @@ function toggleYearChip(value) {
 // ── 이미지 필터링 + 정렬 ──────────────────────────────────────
 function filterImages(entry, selTypes, selYears) {
     const images    = [];
-    const typeOrder = { combined: 0, positive: 1, negative: 2, graph: 3 };
+    const typeOrder = { combined: 0, positive: 1, negative: 2 };
     const allYears  = selYears.size === 0 || selYears.has('all');
 
     // 최상위 images (연도 없음) — 연도 전체 선택 시만 포함
     if (allYears) {
-        ['combined', 'positive', 'negative', 'graph'].forEach(type => {
+        ['combined', 'positive', 'negative'].forEach(type => {
             if (selTypes.has(type) && entry.images?.[type])
                 images.push({ year: null, type, url: entry.images[type] });
         });
@@ -2255,7 +2231,7 @@ function filterImages(entry, selTypes, selYears) {
 
 function renderFilteredImages(entry) {
     const grid     = document.getElementById('imageGrid');
-    const labelMap = { combined: '통합', positive: '긍정', negative: '부정', graph: '긍부정 추이 그래프' };
+    const labelMap = { combined: '통합', positive: '긍정', negative: '부정' };
     const filtered = filterImages(entry, selectedTypes, selectedYears);
 
     if (!filtered.length) {

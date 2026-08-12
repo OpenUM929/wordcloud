@@ -1,6 +1,7 @@
 # 계획서 — 연도별 긍정/부정 추이 라인 그래프 이미지 생성 및 「그래프 저장」 버튼 추가
 
-> 상태: Todo | 작성일: 2026-08-12
+> 상태: Pre-Done | 작성일: 2026-08-12 | 관련 CR: REQ-2608-003, REQ-2608-004
+> 최초 작성 2026-08-12 · 최종 개정 2026-08-12 (당일 제1차) — rev-260812-01
 > 작업 유형: B (기능 개선/신규 기능)
 > 선행: 없음
 
@@ -11,6 +12,7 @@
 | 날짜 | 변경 섹션 | 변경 요약 |
 |------|-----------|-----------|
 | 2026-08-12 | 전체 | 최초 작성 |
+| 2026-08-12 | 요구사항 원자화 · §9 신설 | 구현 완료(§4 1~11단계 중 10단계 P2 포함 전부 수행). 원자화 표 `작업 후 답` 을 실측 근거로 채움. 결측 연도 점선 보조선·정수 눈금 2건은 렌더 확인 후 계획서에 없던 보완으로 추가(§9-2). 상태 `Todo` → `Pre-Done` (실화면 검증 T1~T11 대기) |
 
 ---
 
@@ -26,23 +28,24 @@
 
 | # | 원자 질문 | 기대 (사용자 확인) | 작업 후 답 (근거) |
 |---|-----------|--------------------|-------------------|
-| 1.1 | 새로 만드는 그래프는 막대가 아니라 **선(line)** 으로 그리는가? | Y | 미검증(미착수) |
-| 1.2 | 선은 **긍정 1개 + 부정 1개, 총 2개**인가? | Y | 미검증(미착수) |
-| 1.3 | X축은 **평가 연도**이고, 사용자가 화면에서 체크한 연도만 표시되는가? (예: 2024·2026만 체크하면 점 2개) | Y | 미검증(미착수) |
-| 1.4 | 그래프 대상은 **선택한 직원 1명 기준**인가? | Y | 미검증(미착수) |
-| 2.1 | 그래프를 만들 때 **비율 산출 지표를 사용자가 선택**할 수 있는가? (긍/부정 단어 수, 긍/부정 문장 수 등) | Y | 미검증(미착수) |
-| 2.2 | 그래프를 만들 때 **표시 단위(백분율 % / 수량)** 를 사용자가 선택할 수 있는가? | Y | 미검증(미착수) |
-| 2.3 | 백분율 모드의 분모는 **긍정+부정**(중립 제외)인가? | Y | 미검증(미착수) |
-| 3.1 | 그래프는 화면에만 뜨는 게 아니라 **PNG 파일로 저장**되는가? | Y | 미검증(미착수) |
-| 3.2 | 저장 위치는 제출용 저장과 같은 `outputs/배포/` 아래의 **별도 폴더**인가? | Y | 미검증(미착수) |
-| 3.3 | 파일명은 **직원 사번(또는 이름_사번)** 으로 시작하는가? | Y | 미검증(미착수) |
-| 3.4 | 제출용 저장처럼 **직원 여러 명(CSV·전체)** 도 일괄 생성 가능한가? | Y | 미검증(미착수) |
-| 3.5 | 생성된 그래프가 **결과물 ZIP 다운로드에 포함**되는가? | Y | 미검증(미착수) |
-| 4.1 | 「그래프 저장」 버튼은 **「제출용 저장」 버튼의 바로 우측**에 있는가? | Y | 미검증(미착수) |
-| 4.2 | 기존 「제출용 저장」 동작은 **변경되지 않는가**? | Y | 미검증(미착수) |
-| 5.1 | 이 작업으로 긍정/부정 **판정 로직(문장·단어 점수)** 이 바뀌는가? | N (집계·표시만) | 미검증(미착수) |
+| 1.1 | 새로 만드는 그래프는 막대가 아니라 **선(line)** 으로 그리는가? | Y | **Y** — `ax.plot(...)` 만 사용(막대 API 없음): `perspective_service.py:3609, 3614` |
+| 1.2 | 선은 **긍정 1개 + 부정 1개, 총 2개**인가? | Y | **Y** — `_plot_series` 를 긍정(`#28a745`)·부정(`#dc3545`) 2회 호출: `perspective_service.py:3617-3618` |
+| 1.3 | X축은 **평가 연도**이고, 사용자가 화면에서 체크한 연도만 표시되는가? (예: 2024·2026만 체크하면 점 2개) | Y | **Y** — 화면의 `getSelectedRowValues()`(`perspective_test.html:626-629`) → `row_values` → `aggregate_sentiment_trend` 가 그 값만 순회(`perspective_service.py:3516-3540`). 테스트 `test_sentiment_trend.py` [A] `rows=['2024','2025','2026']` 그대로 반영 확인 |
+| 1.4 | 그래프 대상은 **선택한 직원 1명 기준**인가? | Y | **Y** — 직원 1명 단위 호출(`save_trend_graph_to_deploy`, `perspective_service.py:3671`), 데이터는 `_get_evaluations_for_employee(unified_data, resolved_id)`(`:3706`) |
+| 2.1 | 그래프를 만들 때 **비율 산출 지표를 사용자가 선택**할 수 있는가? (긍/부정 단어 수, 긍/부정 문장 수 등) | Y | **Y** — 5종 셀렉트 `#graphMetric`(`perspective_test.html:334-340`) → `TREND_METRICS`(`perspective_service.py:3407-3413`). 라우트에서 미등록 값은 400(`perspective_routes.py:577-578`) |
+| 2.2 | 그래프를 만들 때 **표시 단위(백분율 % / 수량)** 를 사용자가 선택할 수 있는가? | Y | **Y** — `#graphUnit`(`perspective_test.html:343-346`) → `_trend_series(trend, unit)`(`perspective_service.py:3553`). 테스트 [E]/[E-2] 로 % ↔ 수량 전환 확인 |
+| 2.3 | 백분율 모드의 분모는 **긍정+부정**(중립 제외)인가? | Y | **Y** — `total = p + n` 만 사용(`perspective_service.py:3565-3572`), 중립은 애초에 계열에 들어가지 않음(`:3446-3451`). 테스트 [E] `연도별 합 = 100` 통과 |
+| 3.1 | 그래프는 화면에만 뜨는 게 아니라 **PNG 파일로 저장**되는가? | Y | **Y** — `fig.savefig(output_path, dpi=100)`(`perspective_service.py:3661`). 테스트 `test_trend_save_path.py` [A] 파일 존재 True, 렌더 산출물 27~39KB |
+| 3.2 | 저장 위치는 제출용 저장과 같은 `outputs/배포/` 아래의 **별도 폴더**인가? | Y | **Y** — `DEPLOY_OUTPUT_DIR/그래프/`(`perspective_service.py:3728-3730`, `DEPLOY_OUTPUT_DIR` 은 `:72` = `outputs/배포`). 기존 `통합`/`긍정`/`부정` 폴더와 병렬 |
+| 3.3 | 파일명은 **직원 사번(또는 이름_사번)** 으로 시작하는가? | Y | **Y** — `save_to_deploy` 와 동일한 `safe_name` 규칙 재사용(`perspective_service.py:3727`, 기존 `save_to_deploy` 는 `:3275`) 후 `_긍부정그래프.png` 접미. 테스트 [A] `홍길동_110110_긍부정그래프.png` 확인 |
+| 3.4 | 제출용 저장처럼 **직원 여러 명(CSV·전체)** 도 일괄 생성 가능한가? | Y | **Y** — 라우트가 `employee_ids`/`all_employees` 처리(`perspective_routes.py:603-628`), 화면은 제출용 저장과 같은 세션·청크·4워커 루프(`perspective_test.html:1987-2043`) |
+| 3.5 | 생성된 그래프가 **결과물 ZIP 다운로드에 포함**되는가? | Y | **Y** — ZIP 수집부에 `graph` 키 추가(`perspective_routes.py:352-353`). 그래프 저장도 같은 deploy 세션을 쓰므로 `_lastDeploySessionId` 로 동일 경로 다운로드(`perspective_test.html:2044` → `downloadDeployZip()` `:1824`) |
+| 4.1 | 「그래프 저장」 버튼은 **「제출용 저장」 버튼의 바로 우측**에 있는가? | Y | **Y** — `btnSaveDeploy`(`perspective_test.html:325`) 바로 다음, `zipDownloadBtn`(`:350`) 앞에 삽입(`:326-348` 래퍼, 버튼 자체는 `:327`) |
+| 4.2 | 기존 「제출용 저장」 동작은 **변경되지 않는가**? | Y | **Y** — `save_to_deploy`·`api_save_deploy` 무수정. `git diff` 상 `perspective_service.py` 는 **삭제 0줄·추가 402줄**(순수 추가). 기존 파일에서 바뀐 것은 버튼 비활성화 목록에 `btnSaveGraph` 를 더한 3곳뿐 |
+| 5.1 | 이 작업으로 긍정/부정 **판정 로직(문장·단어 점수)** 이 바뀌는가? | N (집계·표시만) | **N** — `_get_sentence_level_scores`·`calculate_word_scores` 무수정, 단어 극성 경계도 기존과 동일한 `score >= 0`/`< 0` 을 그대로 재현(`perspective_service.py:3475-3481`, 기존 `save_to_deploy` 는 `:3312-3313`). 테스트 [F] 로 경계 동일성 확인 |
 
 > 작업 후 각 행의 `작업 후 답` 을 실측 근거(`파일:라인`, 테스트명, 로그)로 채운다. 기대와 답이 불일치하면 Done 불가.
+> 위 근거의 `파일:라인` 은 2026-08-12 구현 반영 후 워킹트리 기준이다. 라인 번호는 §2(현재 시스템 분석)의 구현 **전** 번호와 다르다.
 
 ---
 
@@ -356,3 +359,82 @@ POST /api/perspective/matrix/save-graph
 - 연도 외 다른 X축(부서·직급 등) — `rowFieldSelect`(`:281`)에 옵션이 하나뿐이라 현행 데이터로 불가
 - 그래프의 화면 미리보기(저장 전) — 요구에 없으므로 제외. 저장 후 결과 영역에서 이미지로 확인한다
 - 모바일/반응형 대응 — 내부망 데스크톱 전용
+
+---
+
+## 9. 구현 결과 (2026-08-12)
+
+### 9-1. 백업 위치 (지침 `18-backup-before-modify.md` §A)
+
+수정 전 원본은 아래에 보관했다. 원본이 `wordcloud_project/` 아래에 있으므로 그 상대경로를 그대로 재현했다.
+
+```
+WP/plans/2026/08/12_01_sentiment-trend/backup/
+  src/services/perspective_service.py
+  src/services/gallery_db_service.py
+  src/routes/perspective_routes.py
+  web/templates/perspective_test.html
+  web/templates/deploy_gallery.html
+```
+
+### 9-2. 변경 파일
+
+| 파일 | 변경 | 내용 |
+|------|------|------|
+| `WP/src/services/perspective_service.py` | **+402 / -0** (순수 추가) | `TREND_METRICS`(`:3407`) · `_trend_sentence_counts`(`:3419`) · `_trend_word_counts`(`:3455`) · `aggregate_sentiment_trend`(`:3490`) · `_trend_series`(`:3553`) · `_save_trend_chart_to_path`(`:3579`) · `save_trend_graph_to_deploy`(`:3671`) · `_append_trend_graph_to_manifest`(`:3767`) |
+| `WP/src/routes/perspective_routes.py` | +106 / -2 | `POST /api/perspective/matrix/save-graph`(`:560`) · ZIP 수집에 `graph` 키(`:352-353`) · `employee-entries` 에 `graph` 소스 추가(`:1329-1330`, `:1342`, `:1349`) |
+| `WP/src/services/gallery_db_service.py` | +2 / -1 | 썸네일 폴백 `images.combined or images.graph`(`:252`) — 그래프 entry 는 `combined` 가 없어 카드 썸네일이 비는 문제 방지 |
+| `WP/web/templates/perspective_test.html` | +314 / -0 | 「📈 그래프 저장」 버튼(`:327`)·옵션 패널(`:328-348`)·`toggleGraphOptions`(`:1844`)·`saveGraph`(`:1872`)·`renderGraphComplete`(`:2049`), 버튼 비활성화 목록 3곳에 `btnSaveGraph` 추가 |
+| `WP/web/templates/deploy_gallery.html` | +45 / -21 | (§4 순서 10, P2) 그래프 탭·`그래프` 종류 칩·`source-badge--graph`·`filterImages`/`labelMap` 에 `graph` 타입·선택 개수/삭제 확인 breakdown 에 그래프 건수 |
+
+**계획서에 없던 보완 2건** (렌더 결과 확인 후 추가):
+
+1. **결측 연도 점선 보조선** — 중간 연도에 데이터가 없으면 실선이 양쪽 모두 끊겨 "선 그래프"가 성립하지 않았다. 실선은 계획대로 끊되(값 없음을 숨기지 않음), 존재하는 점만 이은 **점선 보조선**을 겹쳐 그린다(`perspective_service.py:3606-3615`).
+2. **정수 눈금** — 수량 모드에서 문장 수 1·2 가 `0.25` 단위 눈금으로 표시돼 `MaxNLocator(integer=True)` 적용(`perspective_service.py:3637-3640`).
+
+### 9-3. 착수 전 결정 4건 — 채택안대로 진행
+
+§7 의 D-1~D-4 는 「반대 의견이 없으면 채택안대로 진행」 규정에 따라 채택안으로 구현했다.
+
+| # | 결정 | 구현된 값 |
+|---|------|-----------|
+| D-1 | 파일명 규칙 | 신규 그래프만 `<이름_사번>_긍부정그래프.png`. 기존 워드클라우드 파일명(`<이름_사번>_통합.png` + 폴더로 극성 구분)은 **손대지 않음** |
+| D-2 | 저장 폴더명 | `outputs/배포/그래프/` (`TREND_GRAPH_DIR_NAME`, `perspective_service.py:3402`) |
+| D-3 | 기본 옵션 | 지표 = 문장 수(`sentence_cnt`), 단위 = `%`(`pct`) — 셀렉트 첫 옵션이자 서버 기본값(`perspective_routes.py:570-571`) |
+| D-4 | 제출용 저장과의 결합 | 독립 버튼. 제출용 저장 코드 경로 무변경 |
+
+> 되돌려야 할 결정이 있으면 위 4개 값만 바꾸면 되며, 판정 로직에는 영향이 없다.
+
+### 9-4. 검증 결과 (서버 미기동 — 사용자 허가 없이 실행하지 않음)
+
+| 항목 | 결과 |
+|------|------|
+| `python -m py_compile` (수정 3개 .py) | 통과 |
+| 인라인 JS 문법 (`node --check`, 템플릿 2종에서 script 추출) | 통과 |
+| Flask 앱 빌드 + URL map 확인 (`create_app()` 호출, 서버 미기동) | `/api/perspective/matrix/save-graph` 등록 확인 |
+| `test/test_sentiment_trend.py` — 집계 A~G 19항목 | 전 항목 통과 |
+| `test/test_trend_save_path.py` — 저장 경로·파일명·갤러리 등록 A~E 15항목 | 전 항목 통과 |
+| 차트 렌더 육안 확인 | 한글 정상, 긍(초록 ●)·부(빨강 ▲) 2계열, 값 라벨, 결측 연도 점선 처리 확인 |
+
+> 두 테스트는 **합성 데이터 + 문장점수 스텁** 기반이다. dev 환경에는 실배치 데이터가 없기 때문이며(원데이터 내부망 전용), 따라서 **실데이터 정합(T3·T7·T11)은 검증되지 않았다.**
+
+### 9-5. 남은 일 — `Done` 승격 조건
+
+§6 의 T1~T11 을 **실제 화면에서** 수행해야 `Done` 이다. 현재는 `Pre-Done`.
+
+- [ ] T1·T2 단건 생성(문장 수 × %/수량)
+- [ ] T3 단어 지표 전환 후 워드클라우드와 방향 일치
+- [ ] T4 연도 1개 · T5 결측 연도 · T6 중립만 있는 연도
+- [ ] T7 CSV 다건 일괄
+- [ ] T8 ZIP 에 `배포/그래프/*.png` 포함
+- [ ] T9 제출용 저장 회귀(기존 3종 파일·갤러리 등록 동일)
+- [ ] T10 배포 대상 환경에서 한글 렌더
+- [ ] T11 문장 수 지표 == `positive_sentence_details` 길이 교차검증
+
+서버 실행 명령(사용자가 직접 실행):
+
+```
+cd D:/dev/wordcloud/wordcloud_project && python web/app.py
+```
+
+---

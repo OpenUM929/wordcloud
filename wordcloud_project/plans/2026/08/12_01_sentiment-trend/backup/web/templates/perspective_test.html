@@ -323,30 +323,6 @@ body {
         </div>
         <button id="btnGenerateMatrix" class="btn-primary" onclick="generateMatrix()" disabled>매트릭스 저장</button>
         <button id="btnSaveDeploy" class="btn-success" onclick="saveDeploy()" disabled>제출용 저장</button>
-        <span style="position:relative;display:inline-block;">
-            <button id="btnSaveGraph" class="btn-primary" onclick="toggleGraphOptions()" disabled>📈 그래프 저장</button>
-            <div id="graphOptionsPanel" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);margin-top:4px;padding:10px;width:320px;text-align:left;">
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;margin-bottom:8px;">
-                    <span>연도별 긍정/부정 추이 그래프</span>
-                    <span style="cursor:pointer;color:#999;" onclick="closeGraphOptions()">✕</span>
-                </div>
-                <label style="display:block;font-size:11px;color:#666;margin-bottom:2px;">비율 산출 지표</label>
-                <select id="graphMetric" style="width:100%;padding:4px;font-size:12px;margin-bottom:8px;">
-                    <option value="sentence_cnt">긍정/부정 문장 수</option>
-                    <option value="word_freq">긍정/부정 단어 수(빈도)</option>
-                    <option value="word_uniq">긍정/부정 단어 종류 수</option>
-                    <option value="word_weighted">감정 가중 단어량 (빈도 × 감정 강도)</option>
-                    <option value="sentence_power">감정 강도 합</option>
-                </select>
-                <label style="display:block;font-size:11px;color:#666;margin-bottom:2px;">표시 단위</label>
-                <select id="graphUnit" style="width:100%;padding:4px;font-size:12px;margin-bottom:8px;">
-                    <option value="pct">백분율 (%)</option>
-                    <option value="count">수량</option>
-                </select>
-                <div id="graphRowsSummary" style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.5;"></div>
-                <button class="btn-primary" style="width:100%;padding:5px;font-size:12px;" onclick="saveGraph()">그래프 생성</button>
-            </div>
-        </span>
         <button id="zipDownloadBtn" class="btn-secondary" style="display:none;margin-left:8px;" onclick="downloadDeployZip()">⬇️ 결과물 ZIP</button>
         <span id="statusMsg"></span>
         <span id="batchTitleStatus" style="font-size:12px;margin-left:8px;white-space:nowrap;"></span>
@@ -996,13 +972,11 @@ function _doBatchTitleCheck() {
         const status = document.getElementById('batchTitleStatus');
         const btnGen = document.getElementById('btnGenerateMatrix');
         const btnSave = document.getElementById('btnSaveDeploy');
-        const btnGraph = document.getElementById('btnSaveGraph');
         if (!val) {
             status.textContent = '배치 명칭을 입력해주세요';
             status.style.color = '#dc3545';
             if (btnGen) btnGen.disabled = true;
             if (btnSave) btnSave.disabled = true;
-            if (btnGraph) btnGraph.disabled = true;
             return;
         }
         try {
@@ -1021,19 +995,16 @@ function _doBatchTitleCheck() {
                 status.textContent = `이미 존재하는 명칭 [${label}] (${d.count}개)`;
                 if (btnGen) btnGen.disabled = true;
                 if (btnSave) btnSave.disabled = true;
-                if (btnGraph) btnGraph.disabled = true;
             } else {
                 status.textContent = '';
                 status.style.color = '';
                 if (btnGen) btnGen.disabled = false;
                 if (btnSave) btnSave.disabled = false;
-                if (btnGraph) btnGraph.disabled = false;
             }
         } catch (e) {
             status.textContent = '';
             if (btnGen) btnGen.disabled = false;
             if (btnSave) btnSave.disabled = false;
-            if (btnGraph) btnGraph.disabled = false;
         }
     }, 300);
 }
@@ -1094,10 +1065,8 @@ async function generateMatrix() {
 
     const _btnGen = document.getElementById('btnGenerateMatrix');
     const _btnSave = document.getElementById('btnSaveDeploy');
-    const _btnGraph = document.getElementById('btnSaveGraph');
     if (_btnGen) _btnGen.disabled = true;
     if (_btnSave) _btnSave.disabled = true;
-    if (_btnGraph) _btnGraph.disabled = true;
 
     function renderProgress(current) {
         const pct = total > 0 ? current / total * 100 : 0;
@@ -1623,10 +1592,8 @@ async function saveDeploy(resumeSessionId = null) {
 
     const _btnGenS = document.getElementById('btnGenerateMatrix');
     const _btnSaveS = document.getElementById('btnSaveDeploy');
-    const _btnGraphS = document.getElementById('btnSaveGraph');
     if (_btnGenS) _btnGenS.disabled = true;
     if (_btnSaveS) _btnSaveS.disabled = true;
-    if (_btnGraphS) _btnGraphS.disabled = true;
 
     // 0619_03: 제출용 저장 중 전면 차단(완료/실패 무관 finally에서 해제)
     if (window.showBusyOverlay) showBusyOverlay('제출용 저장 중… 완료까지 페이지를 벗어나지 마세요');
@@ -1825,287 +1792,6 @@ function downloadDeployZip() {
     const sid = window._lastDeploySessionId;
     if (!sid) return;
     window.location.href = `/api/perspective/deploy-session/download?session_id=${sid}`;
-}
-
-// ── 연도별 긍정/부정 추이 그래프 (계획서 plans/2026/08/12_01_sentiment-trend) ──
-const GRAPH_METRIC_LABELS = {
-    sentence_cnt: '긍정/부정 문장 수',
-    word_freq: '긍정/부정 단어 수(빈도)',
-    word_uniq: '긍정/부정 단어 종류 수',
-    word_weighted: '감정 가중 단어량',
-    sentence_power: '감정 강도 합',
-};
-
-function closeGraphOptions() {
-    const panel = document.getElementById('graphOptionsPanel');
-    if (panel) panel.style.display = 'none';
-}
-
-function toggleGraphOptions() {
-    const panel = document.getElementById('graphOptionsPanel');
-    if (!panel) return;
-    if (panel.style.display === 'block') { closeGraphOptions(); return; }
-    const savedMetric = localStorage.getItem('graph_metric');
-    const savedUnit = localStorage.getItem('graph_unit');
-    const selMetric = document.getElementById('graphMetric');
-    const selUnit = document.getElementById('graphUnit');
-    if (savedMetric && selMetric) selMetric.value = savedMetric;
-    if (savedUnit && selUnit) selUnit.value = savedUnit;
-    _renderGraphRowsSummary();
-    panel.style.display = 'block';
-}
-
-function _renderGraphRowsSummary() {
-    const el = document.getElementById('graphRowsSummary');
-    if (!el) return;
-    const rows = getSelectedRowValues();
-    if (!rows || rows.length === 0) {
-        el.innerHTML = '대상 연도: <strong>전체</strong> (연도 체크 없음 — 데이터에 존재하는 연도를 모두 사용)';
-    } else if (rows.length === 1) {
-        el.innerHTML = '대상 연도: <strong>' + rows.join(', ') + '</strong>'
-                     + '<br><span style="color:#dc3545;">연도를 2개 이상 선택해야 선으로 이어집니다.</span>';
-    } else {
-        el.innerHTML = '대상 연도: <strong>' + rows.join(', ') + '</strong> (' + rows.length + '개)';
-    }
-}
-
-async function saveGraph() {
-    const csvIds = _csvEmployeeIds;
-    const allEmp = document.getElementById('allEmployeesCheck').checked;
-    const empId = document.getElementById('employeeSelect').value;
-    const rowField = document.getElementById('rowFieldSelect').value;
-
-    if (!allEmp && !empId && !csvIds) { setStatus('직원을 선택하세요.', true); return; }
-
-    const metric = document.getElementById('graphMetric').value;
-    const unit = document.getElementById('graphUnit').value;
-    localStorage.setItem('graph_metric', metric);
-    localStorage.setItem('graph_unit', unit);
-    closeGraphOptions();
-
-    wcPresetLoad();
-    const rowValues = getSelectedRowValues();
-    const includeName = document.getElementById('includeNameInFilename')?.checked ?? true;
-    const includeId   = document.getElementById('includeIdInFilename')?.checked ?? true;
-    const _wco = getWcOptions();
-    const batchTitleGraph = (document.getElementById('batchTitleInput')?.value || '').trim();
-
-    const options = {
-        row_field: rowField,
-        row_values: rowValues,
-        metric: metric,
-        unit: unit,
-        output_mode: getOutputMode(),
-        include_name: includeName,
-        include_id: includeId,
-        width: _wco.width,
-        height: _wco.height,
-        wordcloud_pos: _wco.wordcloud_pos,
-        remove_profanity: _wco.remove_profanity,
-        batch_title: batchTitleGraph || null,
-    };
-
-    const resultArea = document.getElementById('resultArea');
-    let statusLines = [];
-    let doneCount = 0;
-    let failCount = 0;
-    let successData = [];
-    let failData = [];
-    let total = 0;
-
-    function addLine(msg, cls) {
-        statusLines.push({msg, cls});
-        if (statusLines.length > 50) statusLines = statusLines.slice(-50);
-    }
-
-    function renderProgress(current) {
-        const pct = total > 0 ? current / total * 100 : 0;
-        const barColor = pct >= 100 ? '#00b894' : '#6366f1';
-        let h = '<div class="summary-bar"><span><strong>그래프 저장 중...</strong></span>';
-        h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
-        h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div>`;
-        h += `<div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
-        if (window._graphStartTime) {
-            h += '<div style="margin:6px 0;font-size:13px;color:var(--text-muted);">경과: <strong>'
-               + formatElapsed(window._graphStartTime) + '</strong></div>';
-        }
-        h += '<div class="deploy-status">';
-        statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
-        h += '</div>';
-        resultArea.innerHTML = h;
-    }
-
-    // 0619_03 교훈: 전면 차단 오버레이는 쓰지 않는다. 버튼만 비활성화하고 진행률은 노출한다.
-    const _btnGenG = document.getElementById('btnGenerateMatrix');
-    const _btnSaveG = document.getElementById('btnSaveDeploy');
-    const _btnGraphG = document.getElementById('btnSaveGraph');
-    if (_btnGenG) _btnGenG.disabled = true;
-    if (_btnSaveG) _btnSaveG.disabled = true;
-    if (_btnGraphG) _btnGraphG.disabled = true;
-
-    setStatus('');
-    window._graphStartTime = new Date().toISOString();
-    renderProgress(0);
-
-    let sessionId = null;
-    try {
-        let employeeIds = [];
-        if (csvIds) employeeIds = csvIds;
-        else if (allEmp) {
-            const _m = _meta || await loadMeta().then(() => _meta);
-            employeeIds = (_m.employees || []).map(e => e.employee_id);
-        } else if (empId) employeeIds = [empId];
-
-        if (employeeIds.length === 0) {
-            setStatus('처리할 직원이 없습니다.', true);
-            return;
-        }
-        total = employeeIds.length;
-
-        const startRes = await fetch('/api/perspective/deploy-session/start', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({options, employee_ids: employeeIds})
-        });
-        const startData = await startRes.json();
-        if (!startData.success) {
-            setStatus('세션 생성 실패: ' + (startData.error || ''), true);
-            resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">' + (startData.error || '세션 생성 실패') + '</p>';
-            return;
-        }
-        sessionId = startData.session_id;
-        total = startData.total;
-
-        while (true) {
-            const chunkRes = await fetch(`/api/perspective/deploy-session/chunk?session_id=${sessionId}&count=50`);
-            const chunk = await chunkRes.json();
-            if (!chunk.success) { addLine(`❌ Chunk 할당 실패: ${chunk.error}`, 'fail'); break; }
-            if (chunk.employee_ids.length === 0) break;
-
-            const completedIds = [];
-            const failedItems = [];
-            const WORKER_COUNT = 4;
-            const yieldToRenderer = () => new Promise(r => setTimeout(r, 0));
-
-            const processOne = async (eid) => {
-                addLine(`⏳ ${eid} 처리 중...`, 'processing');
-                renderProgress(doneCount + failCount);
-                await yieldToRenderer();
-                try {
-                    const res = await fetch('/api/perspective/matrix/save-graph', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({...options, employee_id: eid})
-                    });
-                    const d = await res.json();
-                    if (d.success) {
-                        completedIds.push({employee_id: eid, result_data: d});
-                        successData.push({...d, employee_id: eid});
-                        doneCount++;
-                        addLine(`✅ ${d.name || eid} 완료`, 'done');
-                    } else {
-                        failedItems.push({employee_id: eid, error: d.error || '처리 실패'});
-                        failData.push({employee_id: eid, error: d.error || '처리 실패'});
-                        failCount++;
-                        addLine(`❌ ${eid} 실패 - ${d.error || '처리 실패'}`, 'fail');
-                    }
-                } catch(_e) {
-                    failedItems.push({employee_id: eid, error: '네트워크 오류'});
-                    failData.push({employee_id: eid, error: '네트워크 오류'});
-                    failCount++;
-                    addLine(`❌ ${eid} 실패 - 네트워크 오류`, 'fail');
-                }
-                renderProgress(doneCount + failCount);
-                await yieldToRenderer();
-            };
-
-            const processSubset = async (subset) => { for (const eid of subset) await processOne(eid); };
-            const workerPromises = [];
-            for (let w = 0; w < WORKER_COUNT; w++) {
-                const subset = chunk.employee_ids.filter((_, i) => i % WORKER_COUNT === w);
-                if (subset.length > 0) workerPromises.push(processSubset(subset));
-            }
-            await Promise.all(workerPromises);
-
-            await fetch('/api/perspective/deploy-session/complete', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({session_id: sessionId, completed_items: completedIds, failed_items: failedItems})
-            });
-            renderProgress(doneCount + failCount);
-        }
-    } catch(e) {
-        _origError('Graph save error:', e);
-        setStatus('그래프 저장 중 오류', true);
-        addLine('❌ 네트워크 오류', 'fail');
-        renderProgress(doneCount + failCount);
-    }
-
-    window._lastDeploySessionId = sessionId;
-    renderGraphComplete({success: successData, fail: failData, total, metric, unit});
-    _doBatchTitleCheck();
-}
-
-function renderGraphComplete(data) {
-    const resultArea = document.getElementById('resultArea');
-    const successList = data.success || [];
-    const failList = data.fail || [];
-    const metricLabel = GRAPH_METRIC_LABELS[data.metric] || data.metric;
-    const unitLabel = data.unit === 'pct' ? '백분율(%)' : '수량';
-
-    let h = '<div class="summary-bar"><span><strong>그래프 저장 완료</strong> — 지표: ' + metricLabel
-          + ' · 단위: ' + unitLabel + '</span>';
-    h += '<span>성공 ' + successList.length + ' / 실패 ' + failList.length + '</span></div>';
-
-    if (successList.length > 0) {
-        h += '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:10px 0;">';
-        successList.forEach(function(r) {
-            const rowsTxt = (r.rows || []).join(', ');
-            h += '<div style="border:1px solid #ddd;border-radius:6px;padding:8px;width:340px;">';
-            h += '<div style="font-size:12px;font-weight:600;margin-bottom:4px;">' + (r.name || r.employee_id) + '</div>';
-            h += '<a href="' + r.graph + '" target="_blank"><img src="' + r.graph + '" style="width:100%;border:1px solid #eee;border-radius:4px;"></a>';
-            h += '<div style="font-size:11px;color:#666;margin-top:4px;">연도: ' + rowsTxt + '</div>';
-            if (r.skipped_rows && r.skipped_rows.length > 0) {
-                const sk = r.skipped_rows.map(function(s) { return s.row + '(' + s.reason + ')'; }).join(', ');
-                h += '<div style="font-size:11px;color:#dc3545;">값 없음: ' + sk + '</div>';
-            }
-            h += '</div>';
-        });
-        h += '</div>';
-    }
-
-    if (failList.length > 0) {
-        h += '<div class="deploy-status">';
-        failList.forEach(function(f) {
-            h += '<div class="fail">❌ ' + f.employee_id + ' - ' + (f.error || '실패') + '</div>';
-        });
-        h += '</div>';
-    }
-
-    if (successList.length === 0 && failList.length === 0) {
-        h += '<p style="padding:20px;color:#888;">생성된 그래프가 없습니다.</p>';
-    }
-
-    resultArea.innerHTML = h;
-    setStatus('그래프 저장 완료 (' + successList.length + '/' + (data.total || successList.length) + ')');
-
-    document.body.style.height = 'auto';
-    document.body.style.overflow = 'auto';
-    resultArea.style.flex = 'none';
-    resultArea.style.overflow = 'visible';
-
-    const zipBtn = document.getElementById('zipDownloadBtn');
-    if (zipBtn) {
-        if (successList.length > 0 && window._lastDeploySessionId) {
-            zipBtn.style.display = 'inline-block';
-            zipBtn.disabled = false;
-            zipBtn.textContent = '⬇️ 결과물 ZIP';
-            zipBtn.style.opacity = '1';
-            zipBtn.style.cursor = 'pointer';
-        } else {
-            zipBtn.style.display = 'none';
-        }
-    }
 }
 
 function showDeployToast(message, linkUrl) {

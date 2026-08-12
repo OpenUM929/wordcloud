@@ -14,7 +14,6 @@ from src.services.perspective_service import (
     load_batch_history,
     get_matrix_meta, get_matrix_meta_light,
     generate_perspective_matrix, save_to_deploy,
-    save_trend_graph_to_deploy, TREND_METRICS,
     generate_all_employee_matrix, parse_csv_employee_ids,
     build_profanity_summary, _get_pseudo_mgr,
     TEST_SENTENCES_100, split_sentences, has_contrastive,
@@ -349,8 +348,6 @@ def api_deploy_session_download():
             urls.append(result['positive'])
         if 'negative' in result:
             urls.append(result['negative'])
-        if 'graph' in result:
-            urls.append(result['graph'])
         for row_data in result.get('row_results', {}).values():
             if isinstance(row_data, dict):
                 urls.extend([row_data.get('combined'), row_data.get('positive'), row_data.get('negative')])
@@ -555,105 +552,6 @@ def api_save_deploy():
 
     pipeline_logger.info("response success=True status=200", extra={'request_id': request_id, 'stage': 'API_ENTRY'})
     return jsonify({'success': True, **results})
-
-
-@perspective_bp.route('/matrix/save-graph', methods=['POST'])
-def api_save_trend_graph():
-    """연도별 긍정/부정 추이 라인 그래프 PNG 생성 (계획서 12_01_sentiment-trend)."""
-    request_id = _gen_request_id()
-    data = request.get_json(silent=True) or {}
-    employee_id = data.get('employee_id')
-    employee_ids = data.get('employee_ids')
-    all_employees = data.get('all_employees', False)
-    row_field = data.get('row_field', 'evaluation_date__year')
-    row_values = data.get('row_values')
-    metric = data.get('metric', 'sentence_cnt')
-    unit = data.get('unit', 'pct')
-
-    if not employee_id and not employee_ids and not all_employees:
-        return jsonify({'success': False, 'error': 'employee_id 또는 employee_ids가 필요합니다.'}), 400
-    if not _is_admin():
-        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
-    if metric not in TREND_METRICS:
-        return jsonify({'success': False, 'error': f"알 수 없는 지표입니다: {metric}"}), 400
-    if unit not in ('pct', 'count'):
-        return jsonify({'success': False, 'error': f"알 수 없는 단위입니다: {unit}"}), 400
-
-    output_mode = data.get('output_mode', 'pseudonym')
-    pipeline_logger.info("employee_id=%s metric=%s unit=%s",
-                         _mask_real_id(str(employee_id)) if employee_id else '', metric, unit,
-                         extra={'request_id': request_id, 'stage': 'API_ENTRY'})
-
-    options = {
-        'wordcloud_pos': data.get('wordcloud_pos', ['Noun']),
-        'remove_profanity': data.get('remove_profanity', False),
-        'width': data.get('width', 800),
-        'height': data.get('height', 600),
-        'output_mode': output_mode,
-        'include_name': data.get('include_name', True),
-        'include_id': data.get('include_id', True),
-        'batch_title': (data.get('batch_title') or '').strip() or None,
-    }
-
-    _setup_korean_font()  # 배치/단일 분기 진입 전 1회 호출
-
-    if all_employees and not employee_ids:
-        employee_ids = list_all_employee_ids()
-
-    if employee_ids:
-        results_list = []
-        for eid in employee_ids:
-            emp_unified = load_employee_batch(eid)
-            result = save_trend_graph_to_deploy(emp_unified, eid, row_field, row_values,
-                                                metric=metric, unit=unit, options=options,
-                                                request_id=request_id)
-            if result:
-                results_list.append(result)
-
-        if not results_list:
-            return jsonify({'success': False, 'error': '매칭되는 직원의 평가 데이터가 없습니다.'}), 400
-
-        log_action('batch_save_trend_graph', {
-            'count': len(results_list),
-            'employee_ids': employee_ids,
-            'row_field': row_field,
-            'row_values': row_values,
-            'metric': metric,
-            'unit': unit,
-        }, request)
-
-        return jsonify({
-            'success': True,
-            'results': results_list,
-            'total': len(results_list),
-            'batch': True,
-        })
-
-    emp_unified = load_employee_batch(employee_id)
-    result = save_trend_graph_to_deploy(emp_unified, employee_id, row_field, row_values,
-                                        metric=metric, unit=unit, options=options,
-                                        request_id=request_id)
-    if not result:
-        pipeline_logger.warning("trend_graph_failed employee_id=%s",
-                                _mask_real_id(str(employee_id)) if employee_id else '',
-                                extra={'request_id': request_id, 'stage': 'API_ENTRY'})
-        return jsonify({
-            'success': False,
-            'error': f"'{employee_id}' 직원의 선택 연도({', '.join(map(str, row_values or [])) or '전체'})에 맞는 평가가 없습니다."
-        }), 400
-
-    log_action('matrix_save_trend_graph', {
-        'employee_id': employee_id,
-        'row_field': row_field,
-        'row_values': row_values,
-        'metric': metric,
-        'unit': unit,
-        'graph': result.get('graph'),
-        'name': result.get('name'),
-    }, request)
-
-    pipeline_logger.info("response success=True status=200", extra={'request_id': request_id, 'stage': 'API_ENTRY'})
-    return jsonify({'success': True, **result})
 
 
 @perspective_bp.route('/sentence-corrections/by-employee/<employee_id>', methods=['GET'])
@@ -1326,8 +1224,8 @@ def api_employee_entries(employee_id):
         per_page=1000, employee_id=employee_id, is_admin=is_admin
     )
 
-    latest_id = {'deploy': None, 'matrix': None, 'graph': None}
-    latest_ts = {'deploy': '', 'matrix': '', 'graph': ''}
+    latest_id = {'deploy': None, 'matrix': None}
+    latest_ts = {'deploy': '', 'matrix': ''}
     for e in result['entries']:
         src = e.get('source', 'deploy')
         if src not in latest_id:
@@ -1339,14 +1237,12 @@ def api_employee_entries(employee_id):
 
     deploy = gallery_db_service.get_entry(latest_id['deploy']) if latest_id['deploy'] else None
     matrix = gallery_db_service.get_entry(latest_id['matrix']) if latest_id['matrix'] else None
-    graph = gallery_db_service.get_entry(latest_id['graph']) if latest_id['graph'] else None
 
     return jsonify({
         'success': True,
         'employee_id': employee_id,
         'deploy': deploy,
         'matrix': matrix,
-        'graph': graph,
     })
 
 

@@ -248,8 +248,7 @@ def list_entries(
                 'output_mode': e.get('output_mode'),
                 'source': e.get('source', 'deploy'),
                 'image_count': top_count + row_count,
-                # 추이 그래프 entry(source='graph')는 combined 가 없고 graph 만 있다
-                'thumbnail_url': images.get('combined') or images.get('graph'),
+                'thumbnail_url': images.get('combined'),
             })
 
         return {'total': total, 'entries': entries}
