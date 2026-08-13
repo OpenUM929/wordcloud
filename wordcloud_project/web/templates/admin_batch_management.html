@@ -6,6 +6,8 @@
 
 <div style="margin-bottom: 15px;">
   <button class="btn btn-secondary" onclick="loadBatches()">새로고침</button>
+  <button id="mergeBatchBtn" class="btn btn-primary" onclick="mergeSelectedBatches()" disabled style="margin-left: 10px;">선택 배치 병합</button>
+  <span id="mergeStatusText" style="margin-left: 10px; color: #666; font-size: 13px;"></span>
   <span id="batchCount" style="margin-left: 10px; color: #666; font-size: 13px;"></span>
 </div>
 
@@ -14,6 +16,8 @@
 </div>
 
 <script>
+var lastBatches = [];
+
 function loadBatches() {
   var container = document.getElementById('batchListContainer');
   container.innerHTML = '<p>로드 중...</p>';
@@ -28,7 +32,9 @@ function loadBatches() {
     var batches = d.batches || [];
     var info = d.batch_info || {};
     document.getElementById('batchCount').textContent = '총 ' + info.batch_count + '개 배치, ' + info.unique_employees + '명, ' + info.total_evaluations + '건 평가';
+    lastBatches = batches;
     renderBatches(batches);
+    updateMergeButtonState();
   })
   .catch(function(e) {
     container.innerHTML = '<p style="color: red;">로드 중 오류: ' + e.message + '</p>';
@@ -44,6 +50,7 @@ function renderBatches(batches) {
 
   var html = '<table style="width:100%;border-collapse:collapse;">';
   html += '<thead><tr style="background:#f8f9fa;">';
+  html += '<th style="padding:10px;border:1px solid #ddd;width:32px;"><input type="checkbox" id="batchSelectAll" onchange="toggleSelectAllBatches(this)"></th>';
   html += '<th style="padding:10px;border:1px solid #ddd;">배치 ID</th>';
   html += '<th style="padding:10px;border:1px solid #ddd;">생성일</th>';
   html += '<th style="padding:10px;border:1px solid #ddd;">직원수</th>';
@@ -53,6 +60,7 @@ function renderBatches(batches) {
 
   batches.forEach(function(b) {
     html += '<tr>';
+    html += '<td style="padding:8px;border:1px solid #ddd;text-align:center;"><input type="checkbox" class="batchRowCheckbox" value="' + b.batch_id + '" onchange="updateMergeButtonState()"></td>';
     html += '<td style="padding:8px;border:1px solid #ddd;font-weight:bold;">' + b.batch_id + '</td>';
     html += '<td style="padding:8px;border:1px solid #ddd;font-size:13px;">' + (b.created_at || '-') + '</td>';
     html += '<td style="padding:8px;border:1px solid #ddd;text-align:center;">' + (b.employee_count || 0) + '</td>';
@@ -65,6 +73,96 @@ function renderBatches(batches) {
 
   html += '</tbody></table>';
   container.innerHTML = html;
+}
+
+function getSelectedBatchIds() {
+  var boxes = document.querySelectorAll('.batchRowCheckbox:checked');
+  var ids = [];
+  boxes.forEach(function(cb) { ids.push(cb.value); });
+  return ids;
+}
+
+function toggleSelectAllBatches(checkbox) {
+  var boxes = document.querySelectorAll('.batchRowCheckbox');
+  boxes.forEach(function(cb) { cb.checked = checkbox.checked; });
+  updateMergeButtonState();
+}
+
+function updateMergeButtonState() {
+  var selected = getSelectedBatchIds();
+  var btn = document.getElementById('mergeBatchBtn');
+  if (btn) { btn.disabled = selected.length < 2; }
+  var selectAll = document.getElementById('batchSelectAll');
+  if (selectAll) {
+    var boxes = document.querySelectorAll('.batchRowCheckbox');
+    selectAll.checked = boxes.length > 0 && selected.length === boxes.length;
+  }
+}
+
+function extractYearPart(batchOrDate) {
+  // 배치 ID(batch_YYYYMMDD_NN) 또는 생성일 문자열에서 연도부만 추출 (evaluation_date 아님 — DL-6)
+  if (!batchOrDate) return '';
+  var m = String(batchOrDate).match(/(\d{4})/);
+  return m ? m[1] : '';
+}
+
+function mergeSelectedBatches() {
+  var selectedIds = getSelectedBatchIds();
+  if (selectedIds.length < 2) {
+    alert('병합하려면 배치를 2개 이상 선택하세요.');
+    return;
+  }
+
+  var selectedBatches = lastBatches.filter(function(b) { return selectedIds.indexOf(b.batch_id) !== -1; });
+  var totalEvaluations = selectedBatches.reduce(function(sum, b) { return sum + (b.total_evaluations || 0); }, 0);
+
+  var displayName = prompt('통합 배치 이름을 입력하세요. (예: 23년 통합)');
+  if (!displayName || !displayName.trim()) { return; }
+  displayName = displayName.trim();
+
+  var years = {};
+  selectedBatches.forEach(function(b) {
+    var y = extractYearPart(b.batch_id) || extractYearPart(b.created_at);
+    if (y) { years[y] = true; }
+  });
+  var yearMixed = Object.keys(years).length > 1;
+
+  var msg = '아래 ' + selectedBatches.length + '개 배치를 "' + displayName + '"(으)로 병합합니다.\n\n';
+  msg += '대상 배치: ' + selectedIds.join(', ') + '\n';
+  msg += '총 평가 건수: ' + totalEvaluations + '건\n\n';
+  msg += '평가 데이터는 삭제되지 않고 소속만 바뀝니다.';
+  if (yearMixed) {
+    msg += '\n\n⚠️ 서로 다른 연도가 섞여 있습니다.';
+  }
+  if (!confirm(msg)) { return; }
+
+  var btn = document.getElementById('mergeBatchBtn');
+  var statusText = document.getElementById('mergeStatusText');
+  if (btn) { btn.disabled = true; }
+  if (statusText) { statusText.textContent = '병합 중...'; }
+
+  fetch('/api/perspective/batches/merge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_batch_ids: selectedIds, display_name: displayName })
+  })
+  .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+  .then(function(res) {
+    var d = res.body;
+    if (res.ok && d.success) {
+      alert('병합 완료: ' + d.batch_id + '\n이동된 평가: ' + d.moved + '건\n직원수: ' + d.employee_count + '명\n총 평가: ' + d.total_evaluations + '건');
+      loadBatches();
+    } else {
+      alert('오류: ' + (d.error || '알 수 없음'));
+    }
+  })
+  .catch(function(e) {
+    alert('오류: ' + e.message);
+  })
+  .finally(function() {
+    if (statusText) { statusText.textContent = ''; }
+    updateMergeButtonState();
+  });
 }
 
 function deleteBatch(batchId) {

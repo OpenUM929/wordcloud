@@ -26,6 +26,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const demoFiltered = document.getElementById('demo-filtered');
     const demoStats = document.getElementById('demo-stats');
 
+    // 파일 일괄 등록 (이름 업로드 / 일반 업로드) — target 파라미터로 로직 공유
+    const importConfig = {
+        names: {
+            fileInput: document.getElementById('import-names-file'),
+            previewBtn: document.getElementById('import-names-preview-btn'),
+            commitBtn: document.getElementById('import-names-commit-btn'),
+            cancelBtn: document.getElementById('import-names-cancel-btn'),
+            statusEl: document.getElementById('import-names-status'),
+            resultEl: document.getElementById('import-names-result'),
+            summaryEl: document.getElementById('import-names-summary'),
+            sampleBody: document.getElementById('import-names-sample-body'),
+            categorySelect: null // 이름 업로드는 카테고리 선택 UI 없음(서버가 항상 '인명'으로 고정)
+        },
+        general: {
+            fileInput: document.getElementById('import-general-file'),
+            previewBtn: document.getElementById('import-general-preview-btn'),
+            commitBtn: document.getElementById('import-general-commit-btn'),
+            cancelBtn: document.getElementById('import-general-cancel-btn'),
+            statusEl: document.getElementById('import-general-status'),
+            resultEl: document.getElementById('import-general-result'),
+            summaryEl: document.getElementById('import-general-summary'),
+            sampleBody: document.getElementById('import-general-sample-body'),
+            categorySelect: document.getElementById('import-general-category-select')
+        }
+    };
+
     // State
     let allStopwords = [];
     let allCategories = []; // 전체 카테고리 목록
@@ -101,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 allCategories = data.categories; // 전체 카테고리 목록 저장
                 updateCategoryList(data.categories);
                 updateCategorySelect(data.categories);
+                updateGeneralImportCategorySelect(data.categories);
             } else {
                 throw new Error(data.error);
             }
@@ -144,13 +171,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateCategorySelect(categories) {
         categorySelect.innerHTML = '';
-        
+
         categories.forEach(category => {
             const option = document.createElement('option');
             option.value = category;
             option.textContent = category;
             categorySelect.appendChild(option);
         });
+    }
+
+    function updateGeneralImportCategorySelect(categories) {
+        // 「일반 업로드」 카테고리 선택지 — '인명'은 이름 업로드 전용이므로 제외한다.
+        const select = importConfig.general.categorySelect;
+        if (!select) {
+            return;
+        }
+        const previousValue = select.value;
+        select.innerHTML = '';
+
+        categories
+            .filter(category => category !== '인명')
+            .forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                select.appendChild(option);
+            });
+
+        if (previousValue && Array.from(select.options).some(opt => opt.value === previousValue)) {
+            select.value = previousValue;
+        }
     }
 
     function updateUI() {
@@ -572,6 +622,149 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function resetImportUI(target) {
+        const cfg = importConfig[target];
+        cfg.commitBtn.disabled = true;
+        cfg.cancelBtn.style.display = 'none';
+        cfg.resultEl.style.display = 'none';
+        cfg.statusEl.textContent = '';
+    }
+
+    async function importPreview(target) {
+        const cfg = importConfig[target];
+        const file = cfg.fileInput.files[0];
+
+        if (!file) {
+            showToast('warning', '경고', '업로드할 파일을 선택하세요.');
+            return;
+        }
+
+        cfg.previewBtn.disabled = true;
+        cfg.commitBtn.disabled = true;
+        cfg.cancelBtn.style.display = 'none';
+        cfg.statusEl.textContent = '미리보기를 불러오는 중입니다...';
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('target', target);
+        formData.append('mode', 'preview');
+        if (target === 'general' && cfg.categorySelect) {
+            formData.append('category', cfg.categorySelect.value);
+        }
+
+        try {
+            const response = await fetch('/api/stopwords/import', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || '미리보기에 실패했습니다.');
+            }
+
+            cfg.summaryEl.innerHTML =
+                `총 <strong>${data.total}</strong>건 · 신규 <strong>${data.new}</strong>건 · ` +
+                `중복 <strong>${data.duplicated}</strong>건 · 무효 <strong>${data.invalid}</strong>건`;
+
+            const statusLabelMap = {
+                added: ['badge-success', '신규'],
+                duplicated: ['badge-warning', '중복'],
+                invalid: ['badge-danger', '무효']
+            };
+
+            cfg.sampleBody.innerHTML = '';
+            data.sample.forEach(item => {
+                const row = document.createElement('tr');
+
+                const wordCell = document.createElement('td');
+                wordCell.textContent = item.word;
+
+                const statusCell = document.createElement('td');
+                const badge = document.createElement('span');
+                const [badgeClass, label] = statusLabelMap[item.status] || ['badge-info', item.status];
+                badge.className = 'badge ' + badgeClass;
+                badge.textContent = label;
+                statusCell.appendChild(badge);
+
+                row.appendChild(wordCell);
+                row.appendChild(statusCell);
+                cfg.sampleBody.appendChild(row);
+            });
+
+            cfg.resultEl.style.display = 'block';
+            cfg.cancelBtn.style.display = 'inline-block';
+            cfg.commitBtn.disabled = data.new === 0;
+            cfg.statusEl.textContent = data.new > 0
+                ? '내용을 확인한 뒤 [등록] 버튼을 누르세요.'
+                : '등록할 신규 단어가 없습니다.';
+        } catch (error) {
+            cfg.statusEl.textContent = '';
+            showToast('error', '오류', error.message);
+        } finally {
+            cfg.previewBtn.disabled = false;
+        }
+    }
+
+    async function importCommit(target) {
+        const cfg = importConfig[target];
+        const file = cfg.fileInput.files[0];
+
+        if (!file) {
+            showToast('warning', '경고', '업로드할 파일을 선택하세요.');
+            return;
+        }
+
+        cfg.previewBtn.disabled = true;
+        cfg.commitBtn.disabled = true;
+        cfg.statusEl.textContent = '등록 중입니다...';
+
+        // preview 에서 사용한 File 객체를 그대로 재사용해 같은 파일을 다시 업로드한다
+        // (서버가 임시 파일을 남기지 않으므로 commit 은 파일을 다시 받아야 한다).
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('target', target);
+        formData.append('mode', 'commit');
+        if (target === 'general' && cfg.categorySelect) {
+            formData.append('category', cfg.categorySelect.value);
+        }
+
+        try {
+            const response = await fetch('/api/stopwords/import', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || '등록에 실패했습니다.');
+            }
+
+            showToast(
+                'success',
+                '성공',
+                `${data.added}건 등록되었습니다. (중복 ${data.duplicated}건, 무효 ${data.invalid}건 제외)`
+            );
+
+            await Promise.all([loadStopwords(), loadCategories()]);
+            updateUI();
+            updateStatistics();
+
+            resetImportUI(target);
+            cfg.fileInput.value = '';
+        } catch (error) {
+            showToast('error', '오류', error.message);
+        } finally {
+            cfg.previewBtn.disabled = false;
+        }
+    }
+
+    function cancelImport(target) {
+        const cfg = importConfig[target];
+        resetImportUI(target);
+        cfg.fileInput.value = '';
+    }
+
     function showToast(type, title, message) {
         const icon = document.getElementById('toast-icon');
         const titleEl = document.getElementById('toast-title');
@@ -621,7 +814,16 @@ document.addEventListener('DOMContentLoaded', function() {
     addBtn.addEventListener('click', addStopword);
     searchBtn.addEventListener('click', searchStopwords);
     demoFilterBtn.addEventListener('click', filterDemoText);
-    
+
+    // 파일 일괄 등록 이벤트 (이름 업로드 / 일반 업로드)
+    ['names', 'general'].forEach(target => {
+        const cfg = importConfig[target];
+        cfg.previewBtn.addEventListener('click', () => importPreview(target));
+        cfg.commitBtn.addEventListener('click', () => importCommit(target));
+        cfg.cancelBtn.addEventListener('click', () => cancelImport(target));
+        cfg.fileInput.addEventListener('change', () => resetImportUI(target));
+    });
+
     // 자동 분류 버튼 이벤트
     autoClassifyBtn.addEventListener('click', function() {
         const isCurrentlyDisabled = categorySelect.disabled;
