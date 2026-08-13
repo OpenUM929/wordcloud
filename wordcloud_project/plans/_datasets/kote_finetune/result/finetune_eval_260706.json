@@ -1,80 +1,80 @@
 {
- "n_train": 3979,
+ "n_train": 4014,
  "results": {
   "baseline399": [
    {
     "name": "before(알고리즘)",
-    "acc": 0.6508,
-    "pos_neg_err": 10,
+    "acc": 0.6633,
+    "pos_neg_err": 8,
     "gp_to_neg": 0,
-    "neg_to_pos": 10,
+    "neg_to_pos": 8,
     "recall": {
      "pos": 0.764,
-     "neg": 0.443,
-     "neu": 0.559
+     "neg": 0.505,
+     "neu": 0.544
     }
    },
    {
     "name": "after(파인튜닝)",
-    "acc": 0.9045,
-    "pos_neg_err": 1,
-    "gp_to_neg": 1,
+    "acc": 0.9121,
+    "pos_neg_err": 0,
+    "gp_to_neg": 0,
     "neg_to_pos": 0,
     "recall": {
-     "pos": 0.979,
-     "neg": 0.959,
-     "neu": 0.574
+     "pos": 0.983,
+     "neg": 0.969,
+     "neu": 0.588
     }
    }
   ],
   "8c_hard": [
    {
     "name": "before(알고리즘)",
-    "acc": 0.45,
+    "acc": 0.4714,
     "pos_neg_err": 0,
     "gp_to_neg": 0,
     "neg_to_pos": 0,
     "recall": {
      "pos": 0.0,
-     "neg": 0.0,
-     "neu": 1.0
+     "neg": 0.146,
+     "neu": 0.952
     }
    },
    {
     "name": "after(파인튜닝)",
-    "acc": 0.8643,
-    "pos_neg_err": 1,
-    "gp_to_neg": 1,
+    "acc": 0.8286,
+    "pos_neg_err": 0,
+    "gp_to_neg": 0,
     "neg_to_pos": 0,
     "recall": {
      "pos": 0.944,
-     "neg": 0.927,
-     "neu": 0.778
+     "neg": 0.902,
+     "neu": 0.714
     }
    }
   ],
   "c3_neu149": [
    {
     "name": "before(알고리즘)",
-    "acc": 0.5369,
-    "pos_neg_err": 2,
-    "gp_to_neg": 1,
-    "neg_to_pos": 1,
-    "recall": {
-     "pos": 0.648,
-     "neg": 0.208,
-     "neu": 0.745
-    }
-   },
-   {
-    "name": "after(파인튜닝)",
-    "acc": 0.7181,
+    "acc": 0.557,
     "pos_neg_err": 1,
     "gp_to_neg": 1,
     "neg_to_pos": 0,
     "recall": {
-     "pos": 0.833,
-     "neg": 0.688,
+     "pos": 0.648,
+     "neg": 0.312,
+     "neu": 0.702
+    }
+   },
+   {
+    "name": "after(파인튜닝)",
+    "acc": 0.7047,
+    "pos_neg_err": 4,
+    "gp_to_neg": 1,
+    "neg_to_pos": 3,
+    "recall": {
+     "pos": 0.87,
+     "neg": 0.604,
      "neu": 0.617
     }
    }
@@ -82,26 +82,26 @@
   "sa_speech74": [
    {
     "name": "before(알고리즘)",
-    "acc": 0.2027,
+    "acc": 0.2432,
     "pos_neg_err": 0,
     "gp_to_neg": 0,
     "neg_to_pos": 0,
     "recall": {
      "pos": 0.0,
-     "neg": 0.0,
+     "neg": 0.068,
      "neu": 1.0
     }
    },
    {
     "name": "after(파인튜닝)",
-    "acc": 0.7568,
+    "acc": 0.7703,
     "pos_neg_err": 0,
     "gp_to_neg": 0,
     "neg_to_pos": 0,
     "recall": {
      "pos": 1.0,
-     "neg": 0.727,
-     "neu": 0.6
+     "neg": 0.773,
+     "neu": 0.533
     }
    }
   ]

@@ -1,0 +1,41 @@
+{
+  "year": 2023,
+  "model": "D:/dev/wordcloud/model/hr_sentiment_finetuned",
+  "device": "cuda",
+  "purity_threshold": 0.95,
+  "method": "칸 확정본(2024·2025 161만)에서 동일 문장의 칸을 이관, 확정분만 실측",
+  "n_sentences": 1023402,
+  "n_clause_excluded": 20269,
+  "n_field_resolved": 286062,
+  "n_field_unresolved": 737340,
+  "resolved_pct": 27.95,
+  "n_unique": 26891,
+  "infer_sec": 71.5,
+  "fields": {
+    "장점": {
+      "n": 82996,
+      "match": 79774,
+      "match_pct": 96.12,
+      "to_neutral": 2871,
+      "to_neutral_pct": 3.46,
+      "to_flip": 351,
+      "to_flip_pct": 0.42
+    },
+    "단점": {
+      "n": 203066,
+      "match": 29039,
+      "match_pct": 14.3,
+      "to_neutral": 166358,
+      "to_neutral_pct": 81.92,
+      "to_flip": 7669,
+      "to_flip_pct": 3.78
+    }
+  },
+  "overall": {
+    "n": 286062,
+    "mismatch": 177249,
+    "mismatch_pct": 61.96,
+    "flip": 8020,
+    "flip_pct": 2.8
+  }
+}

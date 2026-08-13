@@ -1,0 +1,26 @@
+{
+ "REVIEW_flip": {
+  "unique": 6923,
+  "items": 10881
+ },
+ "REVIEW_lowconf": {
+  "unique": 1669,
+  "items": 2938
+ },
+ "REVIEW_neuboundary": {
+  "unique": 1500,
+  "items": 2914
+ },
+ "T0_STRUCT": {
+  "unique": 2169,
+  "items": 5314
+ },
+ "T3_CONFIRM": {
+  "unique": 37559,
+  "items": 133496
+ },
+ "T3_MODEL": {
+  "unique": 10004,
+  "items": 16329
+ }
+}

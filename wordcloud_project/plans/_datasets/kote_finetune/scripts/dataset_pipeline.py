@@ -40,7 +40,8 @@ import build_validation_set as bv                                  # noqa: E402
 from export_jsonl import audit_pii, src_hash                       # noqa: E402 (비식별화 재사용)
 
 # 회귀 스위트(긍↔부 0 게이트) — 변경 전후 반드시 통과.
-TEST_DIR = os.path.join(PROJECT_ROOT, 'plans', '2026', '0617_01_emotion-rule-mining', 'test')
+# 10_01 폴더 개편(YYYY/MM/DD_NN)으로 경로 이동 — 구경로면 회귀가 전부 '없음' FAIL 남.
+TEST_DIR = os.path.join(PROJECT_ROOT, 'plans', '2026', '06', '17_01_emotion-rule-mining', 'test')
 REGRESSION = [
     'test_positive_rescue.py', 'test_no_response.py', 'test_leadership_polarity.py',
     'run_negation_praise_regression.py', 'run_no_response_regression.py',
@@ -206,7 +207,9 @@ def run_regression():
         if not os.path.exists(p):
             failed.append(f'{os.path.basename(p)} (없음)')
             continue
-        env = dict(os.environ, PYTHONIOENCODING='utf-8')
+        # 10_01 폴더 개편으로 테스트 파일 내부 sys.path 계산(깊이 상대)이 어긋남 —
+        # PYTHONPATH로 프로젝트 루트를 주입해 테스트 무수정으로 import 보장.
+        env = dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONPATH=PROJECT_ROOT)
         r = subprocess.run([sys.executable, p], capture_output=True, text=True,
                            cwd=PROJECT_ROOT, env=env, encoding='utf-8', errors='replace')
         if r.returncode != 0:

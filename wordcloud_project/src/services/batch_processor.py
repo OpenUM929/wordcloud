@@ -1002,7 +1002,6 @@ def process_batch(processed_data_dir, data, session_data):
 
     # 실패 데이터 저장
     if failed_employees:
-        from datetime import datetime
         failed_dir_base = os.path.abspath(os.path.join(os.path.dirname(processed_data_dir), 'failed', datetime.now().strftime('%Y%m%d')))
         os.makedirs(failed_dir_base, exist_ok=True)
 
@@ -1069,16 +1068,20 @@ def process_batch(processed_data_dir, data, session_data):
     if _acq_handoff_enabled and _acq_handoff_count > 0:
         try:
             from src.services.acquired_handoff import resolve_handoff_path
-            batch_processing_state['handoff_path'] = _os.path.dirname(
-                resolve_handoff_path(_acq_handoff_label, batch_id))
+            handoff_file = resolve_handoff_path(_acq_handoff_label, batch_id)
+            handoff_dir = _os.path.dirname(handoff_file)
+            _os.makedirs(handoff_dir, exist_ok=True)
+            batch_processing_state['handoff_path'] = handoff_dir
         except Exception:
             pass
     if _judgment_enabled:
         try:
             from src.services.judgment_packet_service import (
                 _judgment_root, _safe_segment)
-            batch_processing_state['judgment_path'] = _os.path.join(
+            judgment_dir = _os.path.join(
                 _judgment_root(), _safe_segment(_judgment_label) or 'default')
+            _os.makedirs(judgment_dir, exist_ok=True)
+            batch_processing_state['judgment_path'] = judgment_dir
         except Exception:
             pass
 
@@ -1116,7 +1119,7 @@ def process_batch(processed_data_dir, data, session_data):
     # 마진 3단(0.05/0.10/0.15) 동시 태깅. 실패해도 배치 본류 불방해(핸드오프와 동일 보호).
     if _judgment_enabled:
         _stage6_start = time.time()
-        logger.info(f'[batch] stage6 start batch_id={batch_id}')
+        logger.info(f'[batch] stage6 start batch_id={batch_id}', extra={'request_id': '', 'stage': 'BATCH'})
         try:
             from src.services.judgment_packet_service import (
                 build_judgment_packet, save_packet_file)
@@ -1132,7 +1135,7 @@ def process_batch(processed_data_dir, data, session_data):
             logging.getLogger(__name__).warning(f'판정 패킷 추출 실패: {e}')
         finally:
             _stage6_dur = time.time() - _stage6_start
-            logger.info(f'[batch] stage6 end batch_id={batch_id} dur={_stage6_dur:.1f}s')
+            logger.info(f'[batch] stage6 end batch_id={batch_id} dur={_stage6_dur:.1f}s', extra={'request_id': '', 'stage': 'BATCH'})
 
     # staging 정리: 메인 스레드 잔여 reader 닫고 staging.db(+wal/shm) 삭제
     batch_staging.close_reader()

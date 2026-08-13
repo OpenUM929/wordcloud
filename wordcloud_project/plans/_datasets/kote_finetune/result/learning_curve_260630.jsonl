@@ -22,3 +22,4 @@
 {"tag": "8c_c6r_r2", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4053, "field_token": "on", "acc": 0.8286, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
 {"tag": "8c_post_c6rollback", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3979, "field_token": "on", "acc": 0.8357, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
 {"tag": "8c_sa_baseline", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 3979, "field_token": "on", "acc": 0.8643, "pos_neg_err": 1, "gp_to_neg": 1, "neg_to_pos": 0}
+{"tag": "hardsample_260713", "testset": "8c_hard", "frac": 1.0, "silver": 0, "n_train": 4014, "field_token": "on", "acc": 0.8286, "pos_neg_err": 0, "gp_to_neg": 0, "neg_to_pos": 0}

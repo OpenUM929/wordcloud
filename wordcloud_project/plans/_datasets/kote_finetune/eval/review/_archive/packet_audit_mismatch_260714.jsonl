@@ -1,0 +1,21 @@
+{"idx": 0, "tier": "REVIEW_lowconf", "field": "단점", "tier_label": "positive", "cj": "negative", "text": "업무에 대한 관심을 표면적으로 표현"}
+{"idx": 4, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "neutral", "text": "과감한 도전과 가능한 자원을 최대한 동원하여 업무 피로도가 누적될수 있음"}
+{"idx": 8, "tier": "T0_STRUCT", "field": "단점", "tier_label": "neutral", "cj": "negative", "text": "꾸준한 체력관리와 팀원과 조화로운 소통능력 확보 필요"}
+{"idx": 10, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "positive", "text": "책임감이 강하여 주어진 지나치게 완벽함을 추구합니다"}
+{"idx": 16, "tier": "T3_MODEL", "field": "단점", "tier_label": "positive", "cj": "neutral", "text": "다양한 문제 해결방법 구사"}
+{"idx": 29, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "positive", "text": "열정적으로 업무하는 법을 가르쳐주시면 감사하겠습니다"}
+{"idx": 32, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "neutral", "text": "다른 업무를 맡아야할 시기"}
+{"idx": 44, "tier": "T3_MODEL", "field": "단점", "tier_label": "negative", "cj": "neutral", "text": "보수적인 성향 종교적인 성향"}
+{"idx": 46, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "neutral", "text": "업무에 대한 열정 및 전문성"}
+{"idx": 48, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "neutral", "text": "단기적으로는 위험을 감수하는 경향이 있으며 장기적 관점에서 고객에 접근하면 과감한 도전으로 고부가가치를 창출함"}
+{"idx": 60, "tier": "REVIEW_lowconf", "field": "단점", "tier_label": "positive", "cj": "neutral", "text": "60명 직원들의 부서장으로 수평적 사고방식"}
+{"idx": 67, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "positive", "text": "경험이 쌓인다면, 회사의 재목을 성장할 것입니다"}
+{"idx": 70, "tier": "REVIEW_lowconf", "field": "단점", "tier_label": "negative", "cj": "neutral", "text": "몸이 허약하여 자주 아파 건강해졌으면 합니다"}
+{"idx": 82, "tier": "REVIEW_flip", "field": "단점", "tier_label": "negative", "cj": "positive", "text": "너무 기본에 충실함고 타협하지 않는 모습"}
+{"idx": 88, "tier": "T0_STRUCT", "field": "단점", "tier_label": "neutral", "cj": "negative", "text": "업무태만 무슨일 하는지 모르겠음"}
+{"idx": 94, "tier": "REVIEW_lowconf", "field": "단점", "tier_label": "negative", "cj": "positive", "text": "앞으로도 성실한 모습으로 임해주시면 좋을 것 같습니다"}
+{"idx": 102, "tier": "REVIEW_lowconf", "field": "단점", "tier_label": "neutral", "cj": "negative", "text": "너무 걱정이 많으심"}
+{"idx": 103, "tier": "T3_CONFIRM", "field": "단점", "tier_label": "negative", "cj": "positive", "text": "지나치게 고객에게 친절함"}
+{"idx": 104, "tier": "T3_MODEL", "field": "단점", "tier_label": "neutral", "cj": "negative", "text": "성실한 업무자세, 근무중 과다한 핸드폰사용 자제"}
+{"idx": 116, "tier": "REVIEW_lowconf", "field": "장점", "tier_label": "neutral", "cj": "positive", "text": "부서원과의 소통 원할"}
+{"idx": 117, "tier": "T3_MODEL", "field": "단점", "tier_label": "negative", "cj": "neutral", "text": "업무에 대한 인과관계 파악"}

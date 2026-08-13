@@ -1,0 +1,3200 @@
+{
+ "scanned": 150,
+ "root": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune",
+ "files": [
+  {
+   "path": "emotion/emotion.jsonl",
+   "bytes": 1885692,
+   "rows": 4392,
+   "rows_exact": true,
+   "keys": [
+    "annotator",
+    "applied_rule",
+    "emotions_gold",
+    "field",
+    "id",
+    "label_source",
+    "prev_gold",
+    "promoted_at",
+    "rev",
+    "review_status",
+    "sentiment_gold",
+    "source_file",
+    "src_hash",
+    "text",
+    "weak_sentiment"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "emotions_gold",
+    "prev_gold"
+   ]
+  },
+  {
+   "path": "emotion/group_weak_260624.jsonl",
+   "bytes": 45777183,
+   "rows": 176287,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "group_weak",
+    "label_source",
+    "polarity_weak",
+    "rec_id",
+    "review_status",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/group_weak_g4_260624.jsonl",
+   "bytes": 4255407,
+   "rows": 14020,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "group_weak",
+    "label_source",
+    "polarity_weak",
+    "rec_id",
+    "review_status",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/handoff/default/batch_20260625_1.jsonl",
+   "bytes": 54668,
+   "rows": 331,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "e",
+    "s",
+    "x",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/handoff/default/batch_20260625_2.jsonl",
+   "bytes": 10260,
+   "rows": 66,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "e",
+    "s",
+    "x",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/handoff/default/batch_20260701_0.jsonl",
+   "bytes": 10257,
+   "rows": 66,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "e",
+    "s",
+    "x",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/handoff/default/batch_20260701_1.jsonl",
+   "bytes": 10192,
+   "rows": 66,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "e",
+    "s",
+    "x",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/handoff/default/batch_20260716_0.jsonl",
+   "bytes": 10371,
+   "rows": 66,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "e",
+    "s",
+    "x",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/handoff/default/batch_20260716_1.jsonl",
+   "bytes": 10371,
+   "rows": 66,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "e",
+    "s",
+    "x",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/handoff/test/batch_20260709_0.jsonl",
+   "bytes": 10328,
+   "rows": 66,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "e",
+    "s",
+    "x",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/silver_consensus_260630.jsonl",
+   "bytes": 10304380,
+   "rows": 30000,
+   "rows_exact": true,
+   "keys": [
+    "built_at",
+    "field",
+    "id",
+    "label_source",
+    "review_status",
+    "sentiment_silver",
+    "signals",
+    "src_hash",
+    "text",
+    "tier"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/silver_v2_260714.jsonl",
+   "bytes": 18317237,
+   "rows": 60000,
+   "rows_exact": true,
+   "keys": [
+    "batch",
+    "dup_n",
+    "field",
+    "kote",
+    "label_source",
+    "rule_id",
+    "sentiment_silver",
+    "text",
+    "tier"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/silver_v3_260715.jsonl",
+   "bytes": 18490780,
+   "rows": 60000,
+   "rows_exact": true,
+   "keys": [
+    "batch",
+    "dup_n",
+    "field",
+    "kote",
+    "label_source",
+    "rule_id",
+    "sentiment_silver",
+    "text",
+    "tier"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "emotion/weak_export_260617.jsonl",
+   "bytes": 368575,
+   "rows": 713,
+   "rows_exact": true,
+   "keys": [
+    "annot_confidence",
+    "annotator",
+    "applied_rule",
+    "emotions_gold",
+    "id",
+    "is_last",
+    "label_source",
+    "override_score",
+    "override_sentiment",
+    "review_status",
+    "sentence_index",
+    "sentiment_gold",
+    "split",
+    "src_hash",
+    "text",
+    "total_sentences",
+    "weak_kote",
+    "weak_sentiment"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "emotions_gold"
+   ]
+  },
+  {
+   "path": "emotion/weak_export_260617.split.jsonl",
+   "bytes": 370485,
+   "rows": 713,
+   "rows_exact": true,
+   "keys": [
+    "annot_confidence",
+    "annotator",
+    "applied_rule",
+    "emotions_gold",
+    "id",
+    "is_last",
+    "label_source",
+    "override_score",
+    "override_sentiment",
+    "review_status",
+    "sentence_index",
+    "sentiment_gold",
+    "split",
+    "src_hash",
+    "text",
+    "total_sentences",
+    "weak_kote",
+    "weak_sentiment"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "emotions_gold"
+   ]
+  },
+  {
+   "path": "emotion/weak_export_260623.jsonl",
+   "bytes": 647639948,
+   "rows": 200,
+   "rows_exact": false,
+   "keys": [
+    "annotator",
+    "applied_rule",
+    "emotions_topk",
+    "id",
+    "is_clause",
+    "is_last",
+    "kote",
+    "kote_inherited",
+    "label_source",
+    "leadership_gold",
+    "override_score",
+    "parent_id",
+    "review_status",
+    "sentence_index",
+    "sentiment",
+    "sentiment_gold",
+    "src_hash",
+    "text",
+    "total_sentences",
+    "weak_kote",
+    "weak_leadership"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "leadership_gold"
+   ]
+  },
+  {
+   "path": "emotion/weak_export_260624.jsonl",
+   "bytes": 762576407,
+   "rows": 200,
+   "rows_exact": false,
+   "keys": [
+    "annotator",
+    "applied_rule",
+    "emotions_topk",
+    "id",
+    "is_clause",
+    "is_last",
+    "kote",
+    "kote_inherited",
+    "label_source",
+    "leadership_gold",
+    "override_score",
+    "parent_id",
+    "review_status",
+    "sentence_index",
+    "sentiment",
+    "sentiment_gold",
+    "src_hash",
+    "text",
+    "total_sentences",
+    "weak_kote",
+    "weak_leadership"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "leadership_gold"
+   ]
+  },
+  {
+   "path": "emotion/weak_export_260708.jsonl",
+   "bytes": 762075166,
+   "rows": 200,
+   "rows_exact": false,
+   "keys": [
+    "annotator",
+    "applied_rule",
+    "emotions_topk",
+    "id",
+    "is_clause",
+    "is_last",
+    "kote",
+    "kote_inherited",
+    "label_source",
+    "leadership_gold",
+    "override_score",
+    "parent_id",
+    "review_status",
+    "sentence_index",
+    "sentiment",
+    "sentiment_gold",
+    "src_hash",
+    "text",
+    "total_sentences",
+    "weak_kote",
+    "weak_leadership"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "leadership_gold"
+   ]
+  },
+  {
+   "path": "emotion/weak_export_260714.jsonl",
+   "bytes": 2322240001,
+   "rows": 200,
+   "rows_exact": false,
+   "keys": [
+    "annotator",
+    "applied_rule",
+    "emotions_topk",
+    "id",
+    "is_clause",
+    "is_last",
+    "kote",
+    "kote_inherited",
+    "label_source",
+    "leadership_gold",
+    "override_score",
+    "parent_id",
+    "review_status",
+    "sentence_index",
+    "sentiment",
+    "sentiment_gold",
+    "src_hash",
+    "text",
+    "total_sentences",
+    "weak_kote",
+    "weak_leadership"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "leadership_gold"
+   ]
+  },
+  {
+   "path": "eval/accuracy_benchmark_260623.jsonl",
+   "bytes": 26514,
+   "rows": 93,
+   "rows_exact": true,
+   "keys": [
+    "gold",
+    "gold_source",
+    "id",
+    "kote",
+    "note",
+    "purpose",
+    "stratum",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold",
+    "gold_source"
+   ]
+  },
+  {
+   "path": "eval/accuracy_benchmark_random_260623.jsonl",
+   "bytes": 17579,
+   "rows": 70,
+   "rows_exact": true,
+   "keys": [
+    "gold",
+    "gold_source",
+    "id",
+    "kote",
+    "new",
+    "old",
+    "purpose",
+    "rule",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold",
+    "gold_source"
+   ]
+  },
+  {
+   "path": "eval/baseline_eval_260624.jsonl",
+   "bytes": 117645,
+   "rows": 399,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "field",
+    "gold",
+    "human_decision",
+    "label_rev",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/exclude_field_dependent_260715.jsonl",
+   "bytes": 2160,
+   "rows": 13,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "memo",
+    "reason",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/field_conflict_review_260624.jsonl",
+   "bytes": 291561,
+   "rows": 800,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "corrected_at",
+    "corrected_by",
+    "correction_source",
+    "cur_rule_label",
+    "field",
+    "human_decision",
+    "label_rev",
+    "prev_human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "prev_human_decision"
+   ]
+  },
+  {
+   "path": "eval/gen_holdout_260701.jsonl",
+   "bytes": 40567,
+   "rows": 127,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "human_decision",
+    "note",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_8c_test_260706.jsonl",
+   "bytes": 37007,
+   "rows": 140,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "label_rev",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_8c_test_c3neu_260707.jsonl",
+   "bytes": 37047,
+   "rows": 149,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "label_rev",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_8c_train_260706.jsonl",
+   "bytes": 308669,
+   "rows": 1206,
+   "rows_exact": true,
+   "keys": [
+    "corrected_at",
+    "corrected_by",
+    "correction_source",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "label_rev",
+    "prev_human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "prev_human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_active_260707.jsonl",
+   "bytes": 26908,
+   "rows": 115,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_active_260707_c2.jsonl",
+   "bytes": 1921,
+   "rows": 8,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_active_260707_c4.jsonl",
+   "bytes": 788,
+   "rows": 3,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_active_260707_c5.jsonl",
+   "bytes": 785,
+   "rows": 3,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_active_260707_c6.jsonl",
+   "bytes": 27256,
+   "rows": 74,
+   "rows_exact": true,
+   "keys": [
+    "bucket",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_audit_suspects_260630.jsonl",
+   "bytes": 76632,
+   "rows": 157,
+   "rows_exact": true,
+   "keys": [
+    "_signal",
+    "annotator",
+    "applied_rule",
+    "emotions_gold",
+    "field",
+    "id",
+    "label_source",
+    "promoted_at",
+    "review_status",
+    "sentiment_gold",
+    "source_file",
+    "src_hash",
+    "text",
+    "weak_sentiment"
+   ],
+   "human_like_keys": [
+    "sentiment_gold",
+    "emotions_gold"
+   ]
+  },
+  {
+   "path": "eval/gold_corrected_260715.jsonl",
+   "bytes": 341360,
+   "rows": 2024,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "field",
+    "human_decision",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_corrected_t1_260715.jsonl",
+   "bytes": 43685,
+   "rows": 312,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "field",
+    "human_decision",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_corrections_260630.jsonl",
+   "bytes": 4625,
+   "rows": 18,
+   "rows_exact": true,
+   "keys": [
+    "id",
+    "new",
+    "old",
+    "reason",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/gold_crossing_corrections_260713.jsonl",
+   "bytes": 2368,
+   "rows": 11,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "file",
+    "new",
+    "old",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/gold_hardsample_neutral_260713.jsonl",
+   "bytes": 13592,
+   "rows": 35,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "field",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_hardsample_pn_260713.jsonl",
+   "bytes": 1122,
+   "rows": 3,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "field",
+    "human_decision",
+    "note",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_packet23_G1_positive_260714.jsonl",
+   "bytes": 74516,
+   "rows": 239,
+   "rows_exact": true,
+   "keys": [
+    "dup_n",
+    "field",
+    "label",
+    "model_was",
+    "reason",
+    "route",
+    "source",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/gold_packet23_G2_neutral_260714.jsonl",
+   "bytes": 511899,
+   "rows": 1709,
+   "rows_exact": true,
+   "keys": [
+    "dup_n",
+    "field",
+    "label",
+    "model_was",
+    "reason",
+    "route",
+    "source",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/gold_packet23_G3_negative_260714.jsonl",
+   "bytes": 2213764,
+   "rows": 7099,
+   "rows_exact": true,
+   "keys": [
+    "dup_n",
+    "field",
+    "label",
+    "model_was",
+    "reason",
+    "route",
+    "source",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/gold_packet23_train_260714.jsonl",
+   "bytes": 1031960,
+   "rows": 2942,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "dup_n",
+    "field",
+    "human_decision",
+    "note",
+    "route",
+    "src",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_packet23_train_260714b.jsonl",
+   "bytes": 224330,
+   "rows": 1034,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "dup_n",
+    "field",
+    "human_decision",
+    "route",
+    "src",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_packet23_train_260714c.jsonl",
+   "bytes": 242490,
+   "rows": 1105,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "dup_n",
+    "field",
+    "human_decision",
+    "route",
+    "src",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_pattern_260715.jsonl",
+   "bytes": 369867,
+   "rows": 1713,
+   "rows_exact": true,
+   "keys": [
+    "decision_source",
+    "dup_n",
+    "field",
+    "human_decision",
+    "pattern",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/gold_reconcile_review_260701.jsonl",
+   "bytes": 154433,
+   "rows": 456,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "human_decision",
+    "note",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/gold_speechact_test_260707.jsonl",
+   "bytes": 29744,
+   "rows": 74,
+   "rows_exact": true,
+   "keys": [
+    "bucket",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "label_rev",
+    "note",
+    "rec_id",
+    "role",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/group_gold_candidates_260624.jsonl",
+   "bytes": 303408,
+   "rows": 1318,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "note",
+    "polarity",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/group_gold_candidates_g4_260624.jsonl",
+   "bytes": 48930,
+   "rows": 200,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "group",
+    "note",
+    "polarity",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/group_gold_review_260630.jsonl",
+   "bytes": 588843,
+   "rows": 1518,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cluster_polarity",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/group_needs_human_260624.jsonl",
+   "bytes": 332501,
+   "rows": 679,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "label_rev",
+    "note",
+    "polarity",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/group_needs_human_g4_260624.jsonl",
+   "bytes": 36457,
+   "rows": 100,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "field",
+    "group",
+    "human_decision",
+    "label_rev",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/hard_failure_review_260630.jsonl",
+   "bytes": 209733,
+   "rows": 550,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "corrected_at",
+    "corrected_by",
+    "correction_source",
+    "cur_rule_label",
+    "field",
+    "human_decision",
+    "label_rev",
+    "note",
+    "prev_human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "prev_human_decision"
+   ]
+  },
+  {
+   "path": "eval/holdout_prod_260713.jsonl",
+   "bytes": 20907,
+   "rows": 150,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "s",
+    "source",
+    "text",
+    "y"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/label_audit_corrections_260714.jsonl",
+   "bytes": 24020,
+   "rows": 144,
+   "rows_exact": true,
+   "keys": [
+    "action",
+    "file",
+    "from",
+    "label",
+    "pn",
+    "slice",
+    "text",
+    "to"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/neutral_gold_review_260701.jsonl",
+   "bytes": 173134,
+   "rows": 520,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "human_decision",
+    "note",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/rescue_adv_drift_260709.jsonl",
+   "bytes": 1807124,
+   "rows": 12936,
+   "rows_exact": true,
+   "keys": [
+    "pat",
+    "rule",
+    "s",
+    "x"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/review/8a_other_pos__care_260703.jsonl",
+   "bytes": 64153,
+   "rows": 187,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/8a_other_pos__comm_260703.jsonl",
+   "bytes": 356861,
+   "rows": 1037,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/8a_other_pos__degree_260703.jsonl",
+   "bytes": 228736,
+   "rows": 636,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8a_other_pos__drive_260703.jsonl",
+   "bytes": 555421,
+   "rows": 1588,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8a_other_pos__etc_260703.jsonl",
+   "bytes": 453459,
+   "rows": 1308,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/8a_other_pos__expert_260703.jsonl",
+   "bytes": 175670,
+   "rows": 515,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8a_other_pos__leader_260703.jsonl",
+   "bytes": 39150,
+   "rows": 112,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8a_other_pos__trait_260703.jsonl",
+   "bytes": 24141,
+   "rows": 66,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/8b_other_neg__degree_260703.jsonl",
+   "bytes": 38407,
+   "rows": 109,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8b_other_neg__etc_260703.jsonl",
+   "bytes": 317480,
+   "rows": 917,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8b_other_neg__trait_260703.jsonl",
+   "bytes": 20841,
+   "rows": 60,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__경직_소극_회피_비협조_260706.jsonl",
+   "bytes": 14308,
+   "rows": 25,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__근태_이석_음주_소음_260706.jsonl",
+   "bytes": 18908,
+   "rows": 34,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__기타_긍_260706.jsonl",
+   "bytes": 90568,
+   "rows": 161,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__기타_부_260706.jsonl",
+   "bytes": 35154,
+   "rows": 62,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__기타_중_260706.jsonl",
+   "bytes": 70930,
+   "rows": 129,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__대인_협업_분위기_260706.jsonl",
+   "bytes": 24911,
+   "rows": 44,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__무결점_평가불가_260706.jsonl",
+   "bytes": 79440,
+   "rows": 146,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__무난_평범_260706.jsonl",
+   "bytes": 33454,
+   "rows": 61,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__문제해결_판단_분석_260706.jsonl",
+   "bytes": 44585,
+   "rows": 78,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__신체_사생활_260706.jsonl",
+   "bytes": 6738,
+   "rows": 12,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__역량_능력_260706.jsonl",
+   "bytes": 35625,
+   "rows": 63,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__역할_담당_사실_260706.jsonl",
+   "bytes": 41285,
+   "rows": 73,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__원칙_규정_준법_260706.jsonl",
+   "bytes": 28899,
+   "rows": 51,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__자기주장_고집_권위_260706.jsonl",
+   "bytes": 15867,
+   "rows": 28,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__청렴_미덕_260706.jsonl",
+   "bytes": 11198,
+   "rows": 20,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_auto__호기심_탐구_학습_260706.jsonl",
+   "bytes": 32146,
+   "rows": 57,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__accuracy_260703.jsonl",
+   "bytes": 17562,
+   "rows": 47,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__comm_260703.jsonl",
+   "bytes": 156572,
+   "rows": 356,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__degree_260703.jsonl",
+   "bytes": 20468,
+   "rows": 53,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__drive_260703.jsonl",
+   "bytes": 47610,
+   "rows": 116,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__etc_260703.jsonl",
+   "bytes": 747490,
+   "rows": 1659,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__expert_260703.jsonl",
+   "bytes": 47484,
+   "rows": 108,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__it_260703.jsonl",
+   "bytes": 18958,
+   "rows": 43,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/8c_other_neu__trait_260703.jsonl",
+   "bytes": 74879,
+   "rows": 186,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/active_r2_escalation_260706.jsonl",
+   "bytes": 39389,
+   "rows": 74,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/active_r2_nojudge_260706.jsonl",
+   "bytes": 47034,
+   "rows": 95,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/active_r2_silver_260706.jsonl",
+   "bytes": 93667,
+   "rows": 181,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/active_r3_escalation_260706.jsonl",
+   "bytes": 18251,
+   "rows": 34,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/active_r3_silver_260706.jsonl",
+   "bytes": 180267,
+   "rows": 349,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/active_r4_escalation_260707.jsonl",
+   "bytes": 13412,
+   "rows": 25,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/active_r4_silver_260707.jsonl",
+   "bytes": 95604,
+   "rows": 174,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/bareNP_r4_260707.jsonl",
+   "bytes": 104907,
+   "rows": 240,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/bareNP_r5_260707.jsonl",
+   "bytes": 105617,
+   "rows": 240,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/error_8c_relabel_260706.jsonl",
+   "bytes": 11987,
+   "rows": 27,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/error_8c_relabel_260707.jsonl",
+   "bytes": 14549,
+   "rows": 29,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/gold_crossing_review_260713.jsonl",
+   "bytes": 10871,
+   "rows": 11,
+   "rows_exact": true,
+   "keys": [
+    "_audit_proposal",
+    "_src_file",
+    "_src_line",
+    "_stream_gold",
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "status",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision",
+    "_stream_gold",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/grp1_no_response_260703.jsonl",
+   "bytes": 24970,
+   "rows": 50,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp2_no_weakness_260703.jsonl",
+   "bytes": 69546,
+   "rows": 125,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp3_health_260703.jsonl",
+   "bytes": 13838,
+   "rows": 27,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp4_excess_260703.jsonl",
+   "bytes": 12263,
+   "rows": 22,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp5_effort_need_260703.jsonl",
+   "bytes": 50562,
+   "rows": 99,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp6_spec_need_260703.jsonl",
+   "bytes": 14571,
+   "rows": 28,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp7_improvement__comm_260703.jsonl",
+   "bytes": 141752,
+   "rows": 244,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp7_improvement__drive_260703.jsonl",
+   "bytes": 99494,
+   "rows": 171,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp7_improvement__etc_260703.jsonl",
+   "bytes": 289671,
+   "rows": 501,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/grp7_improvement__expert_260703.jsonl",
+   "bytes": 72972,
+   "rows": 126,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/hard_escalate_260707.jsonl",
+   "bytes": 62749,
+   "rows": 115,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_escalate_260707_c2.jsonl",
+   "bytes": 4755,
+   "rows": 8,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "escalate_reason",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_labeling_260715.jsonl",
+   "bytes": 53439,
+   "rows": 75,
+   "rows_exact": true,
+   "keys": [
+    "_conf",
+    "_disagree",
+    "_rule_stub",
+    "_tier",
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/hard_labeling_260715.silver_260715.jsonl",
+   "bytes": 151001,
+   "rows": 225,
+   "rows_exact": true,
+   "keys": [
+    "_conf",
+    "_disagree",
+    "_tier",
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "rule_resolved",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_prefilled_260707_c2.jsonl",
+   "bytes": 138427,
+   "rows": 300,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "escalate_reason",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_prefilled_260707_c3.jsonl",
+   "bytes": 183140,
+   "rows": 400,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_queue_260707.jsonl",
+   "bytes": 180238,
+   "rows": 400,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_queue_260713.jsonl",
+   "bytes": 149237,
+   "rows": 300,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "escalate",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_queue_260715.jsonl",
+   "bytes": 135291,
+   "rows": 300,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/hard_silver_260707.jsonl",
+   "bytes": 99581,
+   "rows": 185,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "status",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/hardsample_pn_review_260713.jsonl",
+   "bytes": 4515,
+   "rows": 5,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "resolution",
+    "resolution_reason",
+    "status",
+    "text",
+    "why_you_decide"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/label_audit_escalation_260715.jsonl",
+   "bytes": 42379,
+   "rows": 55,
+   "rows_exact": true,
+   "keys": [
+    "_audit",
+    "_pn",
+    "_prop",
+    "_rule_stub",
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "memo",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/label_audit_escalation_260715.silver_260715.jsonl",
+   "bytes": 28631,
+   "rows": 39,
+   "rows_exact": true,
+   "keys": [
+    "_audit",
+    "_pn",
+    "_prop",
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "rule_resolved",
+    "source_file",
+    "suggested",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/label_audit_prefill_260708.jsonl",
+   "bytes": 251534,
+   "rows": 644,
+   "rows_exact": true,
+   "keys": [
+    "claude_confidence",
+    "claude_judgment",
+    "claude_reason",
+    "conf",
+    "conflict_group",
+    "conflict_labels",
+    "escalate",
+    "field",
+    "file",
+    "fold",
+    "gold",
+    "group",
+    "kind",
+    "line",
+    "oof_pred",
+    "pn_direction",
+    "proposal",
+    "rank",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold",
+    "claude_judgment"
+   ]
+  },
+  {
+   "path": "eval/review/label_audit_queue_260708.jsonl",
+   "bytes": 194209,
+   "rows": 644,
+   "rows_exact": true,
+   "keys": [
+    "conf",
+    "conflict_group",
+    "conflict_labels",
+    "field",
+    "file",
+    "fold",
+    "gold",
+    "group",
+    "kind",
+    "line",
+    "oof_pred",
+    "pn_direction",
+    "rank",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/review/packet_audit_mismatch_260714.jsonl",
+   "bytes": 3556,
+   "rows": 21,
+   "rows_exact": true,
+   "keys": [
+    "cj",
+    "field",
+    "idx",
+    "text",
+    "tier",
+    "tier_label"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/review/packet_audit_sample_260714.jsonl",
+   "bytes": 20919,
+   "rows": 120,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "idx",
+    "note",
+    "text",
+    "tier"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/review/packet_b346_pool_260714.jsonl",
+   "bytes": 77441,
+   "rows": 326,
+   "rows_exact": true,
+   "keys": [
+    "bucket",
+    "conf",
+    "dup_n",
+    "field",
+    "i",
+    "kote",
+    "model",
+    "stack",
+    "text",
+    "tier"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/review/packet_review_pool_260714.jsonl",
+   "bytes": 2180093,
+   "rows": 10092,
+   "rows_exact": true,
+   "keys": [
+    "conf",
+    "dup_n",
+    "field",
+    "kote",
+    "model",
+    "stack",
+    "text",
+    "tier"
+   ],
+   "human_like_keys": []
+  },
+  {
+   "path": "eval/review/pattern_D_traitpos_review_260715.jsonl",
+   "bytes": 66201,
+   "rows": 129,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "claude_judgment",
+    "cur_rule_label",
+    "dup_n",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "claude_judgment",
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/review/prod25_audit_queue_260716.jsonl",
+   "bytes": 1714574,
+   "rows": 5597,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "confidence",
+    "date",
+    "decision_source",
+    "error_type",
+    "freq",
+    "human_decision",
+    "kote_y",
+    "model_y",
+    "rule_y",
+    "s",
+    "src",
+    "suggested",
+    "x"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/review/speechact_r6_260707.jsonl",
+   "bytes": 34107,
+   "rows": 74,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "decision_source",
+    "field",
+    "group",
+    "human_decision",
+    "note",
+    "rec_id",
+    "source_file",
+    "suggested_source",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision",
+    "decision_source"
+   ]
+  },
+  {
+   "path": "eval/silver_active_260707_c2.jsonl",
+   "bytes": 69362,
+   "rows": 292,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/silver_active_260707_c4.jsonl",
+   "bytes": 59528,
+   "rows": 230,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/silver_active_260707_c5.jsonl",
+   "bytes": 59729,
+   "rows": 230,
+   "rows_exact": true,
+   "keys": [
+    "cur_rule_label",
+    "field",
+    "group",
+    "human_decision",
+    "rec_id",
+    "source_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/stranded_candidates_260713.jsonl",
+   "bytes": 537940,
+   "rows": 1942,
+   "rows_exact": true,
+   "keys": [
+    "field",
+    "human_decision",
+    "n_rows",
+    "pattern",
+    "rec_id",
+    "source",
+    "src_file",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "eval/validation_candidates_260623.jsonl",
+   "bytes": 16967234,
+   "rows": 46791,
+   "rows_exact": true,
+   "keys": [
+    "applied_rule",
+    "batch",
+    "disagreement",
+    "gold",
+    "id",
+    "kote",
+    "kote_label",
+    "override_label",
+    "purpose",
+    "review_status",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/validation_candidates_260624.jsonl",
+   "bytes": 18692352,
+   "rows": 51724,
+   "rows_exact": true,
+   "keys": [
+    "applied_rule",
+    "batch",
+    "disagreement",
+    "gold",
+    "id",
+    "kote",
+    "kote_label",
+    "override_label",
+    "purpose",
+    "review_status",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/validation_candidates_260708.jsonl",
+   "bytes": 27517978,
+   "rows": 74894,
+   "rows_exact": true,
+   "keys": [
+    "applied_rule",
+    "batch",
+    "disagreement",
+    "gold",
+    "id",
+    "kote",
+    "kote_label",
+    "override_label",
+    "purpose",
+    "review_status",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/validation_candidates_260714.jsonl",
+   "bytes": 79272537,
+   "rows": 200,
+   "rows_exact": false,
+   "keys": [
+    "applied_rule",
+    "batch",
+    "disagreement",
+    "gold",
+    "id",
+    "kote",
+    "kote_label",
+    "override_label",
+    "purpose",
+    "review_status",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/validation_cons_rule3_260624.jsonl",
+   "bytes": 928211,
+   "rows": 2132,
+   "rows_exact": true,
+   "keys": [
+    "#",
+    "batch",
+    "created",
+    "fixed",
+    "gold",
+    "guard",
+    "id",
+    "kote",
+    "note",
+    "pattern",
+    "post_guard_label",
+    "pre_guard_label",
+    "purpose",
+    "review_status",
+    "source",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/validation_rule3_rescue_260623.jsonl",
+   "bytes": 240466,
+   "rows": 734,
+   "rows_exact": true,
+   "keys": [
+    "after_label",
+    "batch",
+    "before_label",
+    "gold",
+    "id",
+    "kote",
+    "pattern",
+    "purpose",
+    "review_status",
+    "src_hash",
+    "text"
+   ],
+   "human_like_keys": [
+    "gold"
+   ]
+  },
+  {
+   "path": "eval/weak_positive_review_260630.jsonl",
+   "bytes": 336394,
+   "rows": 899,
+   "rows_exact": true,
+   "keys": [
+    "ai_reference",
+    "cur_rule_label",
+    "field",
+    "human_decision",
+    "note",
+    "rec_id",
+    "text"
+   ],
+   "human_like_keys": [
+    "human_decision"
+   ]
+  },
+  {
+   "path": "leadership/leadership.jsonl",
+   "bytes": 0,
+   "rows": 0,
+   "rows_exact": true,
+   "keys": [],
+   "human_like_keys": []
+  }
+ ]
+}

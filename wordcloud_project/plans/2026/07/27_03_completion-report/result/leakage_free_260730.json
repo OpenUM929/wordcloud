@@ -1,0 +1,126 @@
+{
+  "n_all": 400,
+  "n_leaked": 8,
+  "n_clean": 392,
+  "leaked_rows": [
+    {
+      "no": 37,
+      "field": "단점",
+      "text": "비전과 정책을 명확히 제시",
+      "ref": "positive",
+      "model": "positive"
+    },
+    {
+      "no": 38,
+      "field": "단점",
+      "text": "항상 열정적인 자세로 업무에 임하시다 보니 건강이 걱정될 때가 있습니다",
+      "ref": "neutral",
+      "model": "neutral"
+    },
+    {
+      "no": 71,
+      "field": "단점",
+      "text": "지금도 잘하고 계셔서 보완필요점이 없다",
+      "ref": "positive",
+      "model": "neutral"
+    },
+    {
+      "no": 168,
+      "field": "단점",
+      "text": "소프트웨어 활용능력",
+      "ref": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 220,
+      "field": "단점",
+      "text": "다년간 업무 수행으로 다져진 업무 노하우를 후배들에게 공유 필요",
+      "ref": "negative",
+      "model": "negative"
+    },
+    {
+      "no": 225,
+      "field": "단점",
+      "text": "업무에 대한 열의로 다양한 업무 추진, 불필요한일 버리기 등으로 경감 필요",
+      "ref": "negative",
+      "model": "negative"
+    },
+    {
+      "no": 240,
+      "field": "단점",
+      "text": "수평적 의사소통과 부드러운 리더십",
+      "ref": "positive",
+      "model": "positive"
+    },
+    {
+      "no": 283,
+      "field": "단점",
+      "text": "단점은 없습니다",
+      "ref": "neutral",
+      "model": "neutral"
+    }
+  ],
+  "model_all": {
+    "n": 400,
+    "correct": 374,
+    "acc": 93.5,
+    "acc_wilson": [
+      90.65,
+      95.53
+    ],
+    "posneg": 4,
+    "posneg_pct": 1.0,
+    "posneg_wilson": [
+      0.39,
+      2.54
+    ]
+  },
+  "model_clean": {
+    "n": 392,
+    "correct": 368,
+    "acc": 93.88,
+    "acc_wilson": [
+      91.05,
+      95.85
+    ],
+    "posneg": 4,
+    "posneg_pct": 1.02,
+    "posneg_wilson": [
+      0.4,
+      2.59
+    ]
+  },
+  "cell_all": {
+    "n": 400,
+    "correct": 253,
+    "acc": 63.25,
+    "acc_wilson": [
+      58.42,
+      67.83
+    ],
+    "posneg": 31,
+    "posneg_pct": 7.75,
+    "posneg_wilson": [
+      5.51,
+      10.79
+    ]
+  },
+  "cell_clean": {
+    "n": 392,
+    "correct": 251,
+    "acc": 64.03,
+    "acc_wilson": [
+      59.16,
+      68.62
+    ],
+    "posneg": 28,
+    "posneg_pct": 7.14,
+    "posneg_wilson": [
+      4.99,
+      10.13
+    ]
+  },
+  "gain_all": 30.25,
+  "gain_clean": 29.85,
+  "leaked_model_correct": 6
+}

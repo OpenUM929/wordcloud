@@ -1,0 +1,36 @@
+{
+  "n_rows_23csv": 1025634,
+  "n_compared": 769406,
+  "n_excluded_both_fields": 256228,
+  "vs_model_prefix": {
+    "agree": 769406,
+    "agree_pct": 100.0,
+    "confusion": {
+      "negative->negative": 171115,
+      "neutral->neutral": 176500,
+      "positive->positive": 421791
+    }
+  },
+  "vs_engine_prefix": {
+    "agree": 769224,
+    "agree_pct": 99.9763,
+    "confusion": {
+      "negative->negative": 171115,
+      "neutral->neutral": 176500,
+      "positive->neutral": 182,
+      "positive->positive": 421609
+    }
+  },
+  "per_field_agreement": {
+    "장점": {
+      "agree": 397487,
+      "disagree": 0,
+      "agree_pct": 100.0
+    },
+    "단점": {
+      "agree": 371919,
+      "disagree": 0,
+      "agree_pct": 100.0
+    }
+  }
+}

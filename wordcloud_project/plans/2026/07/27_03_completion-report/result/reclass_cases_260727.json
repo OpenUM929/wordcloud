@@ -1,0 +1,2162 @@
+[
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보다 적극적인 업무수행",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.675,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보안해야하 점은 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.953,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완필요점안적어도되게해주세요",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.924,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완이 필요한 사항이 없는 것 같습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "회사생활기간동안 보완필요점이 딱히 느껴지지않았습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.953,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "자녀가 아파서 걱정이 많으심",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.491,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "현재 생각나는 보완점 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.952,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "타 부서와의 이해와 협력",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.723,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "일을 실수없이 처리하시는 완벽주의 스타일",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.921,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "특별한 보안 필요사항은 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.956,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완할 점이 없이 완벽한 지도자상의 표본임",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.923,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "자주 못봐서 아쉬움",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.891,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "장점으로 꼽을만한 부분이 보이지 않음",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.865,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "특별히 보완점을 발견할수없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.956,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "지나칠 정도로 성과 기여도가 높음",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.745,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "창의적 도전 격려, 목표 구체적 제싣",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.765,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "조금 더 잘되었으면 좋겠다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.555,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "단점이 없다는 것이 보완점이다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.951,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "상대방이 이해할수 있도록 업무를 진행함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.771,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "표현이 조금 오해를 불러일으킬수 있으나",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.889,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "음주를 하지 않아 건강관리는 잘하나",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.925,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "열정적이어서 가끔 지치는 것 같음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.628,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완이 필요없는 이상적인 간부라고 생각함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.804,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "해박한 설비 지식을 습득함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.917,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "업무관심없음",
+    "before": "positive",
+    "after": "negative",
+    "gold": "negative",
+    "conf": 0.88,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "항상 열정적이며 문제해결 능력이 탁월함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.924,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "회사의 어려운 상황속에서도 많이 수고하고 있습니다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.718,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "소통을 좋아 하지만",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.865,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "업무처리가 조용합니다",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.938,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "타부서와 많은 협력관계",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.807,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "불만고객 응대 역량",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.839,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "업무에 관심이 많고 적그적",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.746,
+    "verdict": "악화"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "어떠한 업무를 하는지 잘 모르겠음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.697,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "필요업무 외 대인관계 다양한 시각",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.63,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "하지만 너무 성급하게 욕심을 냅니다",
+    "before": "positive",
+    "after": "negative",
+    "gold": "negative",
+    "conf": 0.866,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완해야 될 사항이 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.947,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "너무 좋아서 딱히 떠오르지 않습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.833,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "너무 밝은 모습으로 분위기를 너무 좋게 만들어줌",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.697,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "업무적으로 필요한 부분까지만",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.736,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "신입직원으로서 업무가 벅찰것임에도 불구하고",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.458,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보왕할 점 이 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.935,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "꼼꼼함을 토대로 업무에 열정적으로 참여하시어, 부족한 사항이 없으십니다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.915,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "고객중심의 서비스를 제공",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.759,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완해야 할 만한 점이 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.949,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "핵심내용을 정확히 파악하는 능력이 뛰어납니다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.92,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "어려운 여건을 극복할 창의적인 의견 개진",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.915,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "전문적인 역량이 우수하고 업무에 대한 열정은 높지만",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.669,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "모든면이 너무 적절해서 보완점이 생각나지 않음",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.729,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완사항은 해당없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.956,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "특별하게 모르겟다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.952,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완필요점에 대해서는 특별히 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.958,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완필요점에 대해 느끼짐 못 함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.958,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "필요보완점 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.958,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "변전건설분야에서 보완 필요점 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.938,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "열정이 넘치고 의욕적임",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.909,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "직원에 대한 존칭어 사용",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.544,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "업무 하나가 들어오면 빨리 쳐냄",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.718,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "업무 무관심, 의전특화형",
+    "before": "positive",
+    "after": "negative",
+    "gold": "negative",
+    "conf": 0.929,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "연결점이 없어서 평가 불가",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "너무 고생이 많으심",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.785,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "업무를 지침대로 잘 처리함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.896,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "자기개발의 노력및 성취",
+    "before": "negative",
+    "after": "positive",
+    "gold": "neutral",
+    "conf": 0.663,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "보완필요점은 딱히 없다고 생각함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.956,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "장점",
+    "text": "특별한 접점이 없어서 잘 모르겠음",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.952,
+    "verdict": "교정"
+  },
+  {
+    "slice": "baseline399",
+    "field": "단점",
+    "text": "업무숙지가 빠르며 모든업무에 적극적이며 동료들과 화합을 잘함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.923,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "장점",
+    "text": "자기 업무만 수행합니다",
+    "before": "positive",
+    "after": "negative",
+    "gold": "negative",
+    "conf": 0.905,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "장점",
+    "text": "주어진 업무에 반론을 제기하지 않음",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.617,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "완벽성 및 무결점 지향 등",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.6,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "장점",
+    "text": "인사이동후 첫해임",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.921,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "조직문화 활성화 기여",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.875,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "업무 프로세스 새로운 진행을 수행합니다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.899,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "업무 지시 또는 방향 제시의 과정에서 눈높이와 이해도를 고려하여 소통하도록 다소간 노력의 여지가 있음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.627,
+    "verdict": "악화"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "갈등조정, 정보수집, 판단력",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.738,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "경영환경 변화에 대한 탄력적 대응력",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.61,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "고객 관정에서 조언",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.848,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "고집 부리지 않음 / 호기심이 많음",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.813,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "관련 규정을 잘 정리 하여 알려줌",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.914,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "구성원에게 지시 또는 보완점 제시",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.777,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "구체적인 업무계획을 수립함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.917,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "구체적인 총무업무의 진행상황 공유",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.874,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "근무중 특별히 느낀 사항은 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "금연권장, 생리현상",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.902,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "기술 파트에 대해 본인이 처리하려함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.651,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "기존과 다른 접근시도 방식",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.762,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "노사 행사시 참여 제고",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.935,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "논리적으로 설명하거나 설득한다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.899,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "다른 부분에 대해서 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.95,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "다양한 아이디어 및 변화관리 능력 개발",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.821,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "다양한 의견제시",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.724,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "다양한 의사결정 방법",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.9,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "단계적 업무 수행 처리",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.887,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "담당업무 관련자료 수집",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.902,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "딱지 존재하지 않음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.892,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "딱히 단점은 &#47690;습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "리드보다는 따라주는 타입",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.905,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "맡겨진일에만 최선",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.771,
+    "verdict": "악화"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "매사 업무적으로 구체적인 지시",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.784,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "문제발생시 다각도 해결방안을 모색하여 보완하고 이를 해결함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.916,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "문제점이나 개선방향에 대해 코칭해줌",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.894,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "미래 전력산업 변화에 대한 융복합 사고",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.836,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "미래 전력산업 변화에 따른 융복합 사고",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.761,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "미비한점이 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.949,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "배전분야 기술적 측면 배양",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.904,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "벨트, 구두, 셔츠색상",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.651,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "변화감지 및 거시적 관점",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.833,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "별다른 문제사항은 발견하지못함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "별도로 기재할 내용 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.952,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "별도의 보&#50757;범 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "별도 필요사항 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.955,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "보롼필요성이 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.957,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "보안사항 불필요 합",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.95,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "보완사항은 특별히",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.955,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "보완점은 잘 모릅니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.956,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "보직유지시 운영업무 스킬 향상",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.921,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "복잡한 문제를 세부요소로 분해함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.751,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "본부 전체의 업무를 파악하려고 집중함",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.868,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "본완할 사항 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.955,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "본인업무범위의 정확한 파악 및 숙지",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.738,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "본인의 뚜렷한 생각을 전달하는 편입니다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.744,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "부서 구성원과 네트워킹",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.839,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "부서내 직원간 업무형평성을 고려한다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.888,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "부하직원 발달과 변화에 지원",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.624,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "부하직원의 업무조정 역할 피요",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.499,
+    "verdict": "악화"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "빅데이터 정보순석시행",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.845,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "사고발생시 대응능력을배양",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.828,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "사무실에 사적공부 자제",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.906,
+    "verdict": "악화"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "상대방 입장에서 상황파악 및 전체적 안목 의사결정",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.637,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "상황에 따라 문제점을 해결하는 능력이 있다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.908,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "소리를 지르지 않는다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.747,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "아직까진 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "업무상으로는 크게 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.954,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "업무욕심이 많아 성취욕이 강합니다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.81,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "업무의 세부사항까지 챙기는 부분",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.59,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "업무적으로 연관이 적습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.947,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "업무적, 인간적 필요사항 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.903,
+    "verdict": "교정"
+  },
+  {
+    "slice": "8c_hard",
+    "field": "단점",
+    "text": "필요한 외부 네크워클 형성",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.912,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "타 부서와 갈등 자제",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.705,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "교류가 전혀없어 평가를 못함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.674,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "다소 필요함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.865,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "좀 더 차장님과 같이 일하고 싶은데 시간이 얼마 안남아 아쉽습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.719,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "과로 걱정으로 건강도 살피면 좋을듯하다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.476,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "업무에 대한 열의와 전문성",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.602,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "차분하고 조용하여 자칫 오해살 수도 있습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.541,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "집이 멀어 피곤해보임 집 근처로 갔으면 좋겠음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.712,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "주중에 한번 집에 다녀오셔서 회식일을 잡기가 곤란할 때가 있었음(딱히 단점이라고 하긴 어려움)",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.782,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "개인 휴가를 챙기면 좋겠습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.597,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "근무시간 조정하여 하루정도만 오전퇴근했으면 함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.543,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "사업소 장으로 기술전문지식은 조금아쉽다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.577,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "팀장 주관 회식이 자주 없어 업무 종료 후 친목도모 기회가 없어 아쉬움",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.856,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "업무열의가 높아 몸을 사리지 않은 모습이 아쉽습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.682,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "생각하지 않은 방법으로 시행하려고함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.541,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "보완필요점이 없는 간부의 자질을 가지고 있음",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.706,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "다양한 아이더와 혁신적 사고가 돋보이나 조직내 모든 구성원이 그 변화를 수용하기에는 시간이 필요할 &#46468;가 있음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.735,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "하루종일 일없어도 방송실에서 무슨일을 하는줄 모르겠다고 다수의견",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.832,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "싫은소리를 잘 안 함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.719,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "업무 프로세스를 개선하고자 노력하고 보완점은 없음",
+    "before": "negative",
+    "after": "positive",
+    "gold": "positive",
+    "conf": 0.716,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "지사에 온지 얼마되지않아 적응에 시간이 필요",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.602,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "근무한 경력 없어 아쉬움",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.823,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "금융 리스크 담당 금융",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.518,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "타 회사 이직에 따른 평가불가",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.827,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "너무 조용한 성격 및 업무 적극적인 자세",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.818,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "MZ세대의 특징이 있음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.582,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "좋아요 좋아요 좋아요",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.603,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "짬에서 나오는 바이브가 있음",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.5,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "건강에 유의가 필요",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.601,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "근무에 임하고 있습니다",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.891,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "보호의 새싹으로 술을 못마심",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.714,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "세심한 업무처리로 역량부족한 구성원들에 부담",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.702,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "- 인재개발원 직급전환반 직무교육 강의 중",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.746,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "크게 보완할 점이 없으나, 직원들에게 편하게 대해주시다보니 가끔 의도와 다르게 말씀을 많이하시는 경우가 있음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.729,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "연구 말고 지원업무 수행해주세요",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.52,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "매사 완벽을 추구하는 성품으로 &#46468;론 업무상 과도하게 완벽을 추구",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.515,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "배치된지 오래되지 않아 업무 전문성에 있어서는 약간의 아쉬운 부분이 있음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.664,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "--------------------------------",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.736,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.779,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "너무 완벽한 업무처리 추구",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.497,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "잘 모르겠음 여러모로 좋으신분",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.571,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "타 부서원과의 관계유지",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.797,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "많은 일을 하시면서 격이 없으시고 못하는게 없는게 단점이심",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.492,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "---------------------------",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.719,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "업무관련 모튼게 높은 편임",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.787,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "-----------------------------",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.726,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "수금업무에 전문가 되기",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.582,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "격무에 노고가 많으십니다",
+    "before": "negative",
+    "after": "positive",
+    "gold": "neutral",
+    "conf": 0.536,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "----------------------------",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.733,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "고집 부리지 않음 보안점 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "positive",
+    "conf": 0.929,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.771,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "프로그래밍, 코딩 등 AI분야 교육이수",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.85,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "-----------------------",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.741,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "업무를제대로하는지잘모르겠음",
+    "before": "positive",
+    "after": "negative",
+    "gold": "neutral",
+    "conf": 0.555,
+    "verdict": "둘다오답"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "우선 순위를 정해 업무 처리",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.8,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "장점",
+    "text": "-------------------------------",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.737,
+    "verdict": "교정"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "문서작성, 핵심내용 파악",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.536,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "세부적인 사항에 대한 경중을 두어 업무추진",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.763,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "정확한 업무를 모르겠음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.811,
+    "verdict": "악화"
+  },
+  {
+    "slice": "c3_neu149",
+    "field": "단점",
+    "text": "- 원칙적인 치중한 업무처리",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.852,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "출근 후 불 필요한 이석 금지",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.928,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "특별히 보완할 사항이 &#50518;습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.955,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "위원장 및 운영 업무를 함께 수행하니 다른 인원이 업무를 챙기는 경우가 있음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.823,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "업무적 실수 줄이기",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.873,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "과한 열의가 필요없는 강압적인(고함 등) 의사소통 방식으로 표출됨",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.858,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "대외적인 업무 진행에 있어서 수동적인 경향이 있으나 이는 과도한 행사성 업무를 자제하려는 것으로 보여짐",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.879,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "추진력을 보완하여 실행력 제고",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.869,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "업무 중간점검을 통해 보완",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.499,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "이어폰착용자제",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.653,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "문서 작성 등 보완피요",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "negative",
+    "conf": 0.693,
+    "verdict": "악화"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "장점",
+    "text": "전자제어차장과는 업무적으로 연관이 거의 없음",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.945,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "장점",
+    "text": "개인적 감정에 치우침 /",
+    "before": "positive",
+    "after": "negative",
+    "gold": "negative",
+    "conf": 0.931,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "장점",
+    "text": "차분하고 개인주의적 성향(회식 지양)",
+    "before": "positive",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.669,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "특별한 보완점은 알지못함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.957,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "특별한 보완필&#50858;엄 엇ㅂ음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.949,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "조완성이 필요없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.955,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "크게 필요한 점은 없습니다",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.955,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "특벼한 보완점은 발견할지 못함",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.952,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "특별한 보와 필요사항 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.957,
+    "verdict": "교정"
+  },
+  {
+    "slice": "sa_speech74",
+    "field": "단점",
+    "text": "합당한 내용을 너무 강하게 이야기 할 필요가 없음",
+    "before": "negative",
+    "after": "neutral",
+    "gold": "neutral",
+    "conf": 0.911,
+    "verdict": "교정"
+  }
+]

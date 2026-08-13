@@ -1,0 +1,86 @@
+{
+ "_doc": "감정 판정 작업 패킷. 각 items[] 는 status 로 진행된다 (1=AI판정대기, 2=사람판정대기, 3=AI작업완료, 4=Human작업완료, 10=AI DB반영완료, 11=Human DB반영완료). 받은 AI(judge)는 각 item 의 text 를 읽고 ai_reference 를 채운 뒤, 긍↔부 확신 시 status=3, 애매하면 status=2 로 둔다. status=2 는 사람 게시판(그룹검토)이 판정해 status=4 로 올린다. 작업 완료(3·4)는 운영자가 \"DB에 반영\" 버튼을 누를 때 각각 10·11 로 전이되며 그때 DB 에 기록된다.",
+ "schema_version": "1.0",
+ "packet_id": "judge_batch_20260716_1_260716_1302",
+ "created_at": "2026-07-16T04:02:13.838671+00:00",
+ "_privacy": "가명 텍스트 + PII 게이트 통과분만 포함. 실명·원본 ID 없음. 키(db_id+sent_idx)는 내부 정수라 식별정보 아님. 삽입은 같은 레코드 in-place 수정.",
+ "source": {
+  "batch_id": "batch_20260716_1",
+  "margin": 0.15
+ },
+ "_key_fields": [
+  "rec_id",
+  "db_id",
+  "sent_idx"
+ ],
+ "_status": {
+  "current_stage": "judge",
+  "counts": {
+   "extracted": 0,
+   "judged": 0,
+   "inserted": 0,
+   "quarantined": 0
+  },
+  "history": [
+   {
+    "stage": "extract",
+    "by": "system",
+    "at": "2026-07-16T04:02:13.842892+00:00",
+    "n": 0,
+    "quarantined": 0
+   }
+  ]
+ },
+ "_status_codes": {
+  "1": "AI 판정 대기",
+  "2": "사람 판정 대기",
+  "3": "AI 작업 완료(DB 반영 대기)",
+  "4": "Human 작업 완료(DB 반영 대기)",
+  "10": "AI DB 반영 완료",
+  "11": "Human DB 반영 완료"
+ },
+ "_stages": {
+  "extract": {
+   "by": "system",
+   "done": true,
+   "instruction": "가명 평가에서 하드케이스(긍↔부 불일치·저마진)와 키를 뽑아 items 에 적재(status=1)."
+  },
+  "judge": {
+   "by": "AI(Claude)",
+   "done": false,
+   "instruction": "각 items[] 의 text 를 읽고 ai_reference 에 {polarity, confidence, reason} 를 채워라. 긍↔부 확신 시 status=3, 애매하면 status=2(사람 게시판으로 감). status=1 은 남기지 말 것.",
+   "rules": [
+    "긍↔부(긍정↔부정) 오분류 0 이 최우선 — 확신 없으면 status=2.",
+    "중립↔긍정은 허용(과하게 부정으로 내리지 말 것).",
+    "\"보완점 없음/단점 없습니다\" 등 약점없음 선언은 neutral.",
+    "\"~필요/요구/했으면 좋겠\" 등 건설적 비판은 negative.",
+    "cur_rule_label 은 현재 시스템 추정치(참고용) — 맹신 말고 문장으로 판정.",
+    "model_ref 는 파인튜닝 모델의 캘리브레이션(T scaling) 신뢰도(참고용, 없을 수 있음) — confidence 가 낮은 item 은 status=2(사람) 쪽으로 보수적으로."
+   ],
+   "output_schema": {
+    "ai_reference": {
+     "polarity": "positive|negative|neutral",
+     "confidence": "high|medium|low",
+     "reason": "짧은 근거(선택)"
+    },
+    "status": "3=확신(AI 작업완료, 이후 버튼으로 DB 반영) | 2=애매(사람 게시판)"
+   }
+  },
+  "insert": {
+   "by": "system",
+   "done": false,
+   "instruction": "운영자가 \"DB에 반영\" 버튼을 누르면 작업완료 item(3=AI, 4=Human)을 key(db_id+sent_idx)로 evaluations.sentiment_corrections 에 in-place 반영하고 status 를 10/11 로 전이한다. 최종 라벨은 human_decision 우선, 없으면 ai_reference.polarity. status==2 는 게시판(그룹검토)으로."
+  }
+ },
+ "items": [],
+ "_margin": {
+  "default": 0.05,
+  "extracted_at": 0.15,
+  "bands": {
+   "0.05": 0,
+   "0.10": 0,
+   "0.15": 0,
+   "flip": 0
+  }
+ }
+}

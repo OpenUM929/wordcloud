@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 770" width="1160" height="770" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+  <defs>
+    <marker id="a3" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5b6b7f"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1160" height="770" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="700" fill="#1f2937">[그림 3] 자기설명 판정 데이터 구조의 구성 — 봉투(지시·상태) + 항목(입력 템플릿 · 출력 자리)</text>
+
+  <!-- ===== root ===== -->
+  <rect x="24" y="56" width="336" height="42" rx="8" fill="#dfe8f2" stroke="#5a7fa6" stroke-width="1.6"/>
+  <text x="40" y="74" font-size="13.5" font-weight="700" fill="#2c4661">판정 데이터 구조 (Judgment Data Structure)</text>
+  <text x="40" y="91" font-size="11.5" fill="#4a6182">추출 → 판정 → 반영 왕복 단위 (단일 JSON 객체)</text>
+
+  <!-- ===== envelope spine ===== -->
+  <path d="M44,98 L44,596" fill="none" stroke="#8fa3bb" stroke-width="1.4"/>
+
+  <g font-size="12.5" fill="#3b4756">
+    <path d="M44,124 L66,124" stroke="#8fa3bb" stroke-width="1.4"/>
+    <text x="72" y="128"><tspan font-weight="700" fill="#2c4661">_doc</tspan>  판정 데이터 구조 사용법 · 상태 코드 의미(자연어)</text>
+
+    <path d="M44,154 L66,154" stroke="#8fa3bb" stroke-width="1.4"/>
+    <text x="72" y="158"><tspan font-weight="700" fill="#2c4661">schema_version / packet_id / created_at</tspan></text>
+
+    <path d="M44,184 L66,184" stroke="#8fa3bb" stroke-width="1.4"/>
+    <text x="72" y="188"><tspan font-weight="700" fill="#2c4661">_privacy</tspan>  비식별 고지(가명 · PII 게이트 · 내부 키)</text>
+
+    <path d="M44,214 L66,214" stroke="#8fa3bb" stroke-width="1.4"/>
+    <text x="72" y="218"><tspan font-weight="700" fill="#2c4661">source</tspan>  { batch_id, margin } — 추출 조건</text>
+
+    <path d="M44,244 L66,244" stroke="#8fa3bb" stroke-width="1.4"/>
+    <text x="72" y="248"><tspan font-weight="700" fill="#2c4661">_key_fields</tspan>  [ rec_id, db_id, sent_idx ] — 반영 키</text>
+
+    <path d="M44,274 L66,274" stroke="#8fa3bb" stroke-width="1.4"/>
+    <text x="72" y="278"><tspan font-weight="700" fill="#2c4661">_status</tspan>  current_stage / counts / history[ ]</text>
+
+    <path d="M44,304 L66,304" stroke="#8fa3bb" stroke-width="1.4"/>
+    <text x="72" y="308"><tspan font-weight="700" fill="#2c4661">_status_codes</tspan>  1 · 2 · 3 · 4 · 10 · 11 → 의미 매핑</text>
+  </g>
+
+  <!-- _stages block -->
+  <path d="M44,344 L66,344" stroke="#8fa3bb" stroke-width="1.4"/>
+  <rect x="66" y="326" width="470" height="200" rx="8" fill="#fdf6ea" stroke="#c98a2e" stroke-width="1.4"/>
+  <text x="80" y="348" font-size="12.5" font-weight="700" fill="#a8761f">_stages — 단계 정의 = 프롬프트 본체</text>
+
+  <path d="M92,356 L92,502" fill="none" stroke="#d8b98a" stroke-width="1.3"/>
+  <path d="M92,374 L112,374" stroke="#d8b98a" stroke-width="1.3"/>
+  <text x="118" y="378" font-size="12" fill="#3b4756"><tspan font-weight="700" fill="#2c4661">extract</tspan>  { by: system, done: true, instruction }</text>
+
+  <path d="M92,404 L112,404" stroke="#d8b98a" stroke-width="1.3"/>
+  <text x="118" y="408" font-size="12" fill="#3b4756"><tspan font-weight="700" fill="#a8761f">judge</tspan>  { by: AI, done: false, … }</text>
+
+  <path d="M140,412 L140,478" fill="none" stroke="#d8b98a" stroke-width="1.3"/>
+  <path d="M140,432 L160,432" stroke="#d8b98a" stroke-width="1.3"/>
+  <text x="166" y="436" font-size="11.8" fill="#3b4756"><tspan font-weight="700" fill="#2c4661">instruction</tspan>  각 item의 text를 읽고 ai_reference를 채울 것</text>
+
+  <path d="M140,456 L160,456" stroke="#d8b98a" stroke-width="1.3"/>
+  <text x="166" y="460" font-size="11.8" fill="#3b4756"><tspan font-weight="700" fill="#2c4661">rules[6]</tspan>  긍↔부 오분류 0 최우선 · 확신 없으면 status=2 …</text>
+
+  <path d="M140,478 L160,478" stroke="#d8b98a" stroke-width="1.3"/>
+  <text x="166" y="482" font-size="11.8" fill="#c07a1f"><tspan font-weight="700">output_schema</tspan>  출력 항목명 · 유효값 열거(형식 강제)</text>
+
+  <path d="M92,502 L112,502" stroke="#d8b98a" stroke-width="1.3"/>
+  <text x="118" y="506" font-size="12" fill="#3b4756"><tspan font-weight="700" fill="#2c4661">insert</tspan>  { by: system, done: false, instruction }</text>
+
+  <!-- _margin -->
+  <path d="M44,556 L66,556" stroke="#8fa3bb" stroke-width="1.4"/>
+  <text x="72" y="552" font-size="12.5" fill="#3b4756"><tspan font-weight="700" fill="#2c4661">_margin</tspan>  { default: 0.05, extracted_at, bands }</text>
+  <text x="72" y="570" font-size="11.5" fill="#7b8ba1">bands : '0.05' · '0.10' · '0.15' · 'flip' 별 건수(마진 사다리)</text>
+
+  <!-- items[] -->
+  <path d="M44,596 L66,596" stroke="#8fa3bb" stroke-width="1.4"/>
+  <rect x="66" y="576" width="288" height="40" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="82" y="601" font-size="13" font-weight="700" fill="#2c4661">items[ ] — 판정 대상 문장 항목 배열</text>
+  <line x1="354" y1="596" x2="590" y2="596" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#a3)"/>
+  <text x="472" y="588" font-size="11.5" fill="#7b8ba1" text-anchor="middle">배열 원소 1개 =</text>
+
+  <!-- ===== item subtree ===== -->
+  <rect x="600" y="56" width="300" height="42" rx="8" fill="#dfe8f2" stroke="#5a7fa6" stroke-width="1.6"/>
+  <text x="616" y="74" font-size="13.5" font-weight="700" fill="#2c4661">item — 위임 대상 최소 단위</text>
+  <text x="616" y="91" font-size="11.5" fill="#4a6182">입력 템플릿 + 출력 자리 + 상태</text>
+
+  <path d="M620,98 L620,672" fill="none" stroke="#8fa3bb" stroke-width="1.4"/>
+
+  <!-- G1 input template -->
+  <path d="M620,144 L644,144" stroke="#8fa3bb" stroke-width="1.4"/>
+  <rect x="644" y="120" width="492" height="298" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.4"/>
+  <text x="660" y="142" font-size="12.5" font-weight="700" fill="#2c4661">입력 템플릿 — 시스템이 채움 / 판정 수단은 읽기만</text>
+  <g font-size="12" fill="#3b4756">
+    <text x="668" y="170"><tspan font-weight="700" fill="#2c4661">rec_id</tspan></text><text x="810" y="170">"레코드번호_문장순번" — 게시판 매칭 키</text>
+    <text x="668" y="194"><tspan font-weight="700" fill="#2c4661">key</tspan></text><text x="810" y="194">{ db_id, sent_idx } — DB 반영 키(내부 정수)</text>
+    <text x="668" y="218"><tspan font-weight="700" fill="#2c4661">text</tspan></text><text x="810" y="218">평가 문서에서 분리한 문장 원문</text>
+    <text x="668" y="242"><tspan font-weight="700" fill="#2c4661">field</tspan></text><text x="810" y="242">장점 / 단점 (문서 단위 상속)</text>
+    <text x="668" y="266"><tspan font-weight="700" fill="#2c4661">cur_rule_label</tspan></text><text x="810" y="266">본 시스템의 제1 극성 판정값(참고용)</text>
+    <text x="668" y="290"><tspan font-weight="700" fill="#2c4661">kote</tspan></text><text x="810" y="290">[ pos, neg, neu ] 확률(소수 3자리)</text>
+    <text x="668" y="314"><tspan font-weight="700" fill="#2c4661">gap</tspan></text><text x="810" y="314">| pos − neg | (소수 4자리)</text>
+    <text x="668" y="338"><tspan font-weight="700" fill="#2c4661">hard</tspan></text><text x="810" y="338">'pol_flip'(극성 불일치) | 'low_margin'(저마진)</text>
+    <text x="668" y="362"><tspan font-weight="700" fill="#2c4661">margin_band</tspan></text><text x="810" y="362">'flip' | '0.05' | '0.10' | '0.15'</text>
+    <text x="668" y="386"><tspan font-weight="700" fill="#2c4661">model_ref</tspan></text><text x="810" y="386">{ label, confidence } — 선택(모델 활성 시)</text>
+  </g>
+  <text x="660" y="408" font-size="11.5" fill="#7b8ba1">※ 식별자 필드 없음. 반영 키는 내부 정수. 정형 개인정보 패턴은 게이트에서 격리.</text>
+
+  <!-- G2 AI output slot -->
+  <path d="M620,458 L644,458" stroke="#8fa3bb" stroke-width="1.4"/>
+  <rect x="644" y="434" width="492" height="122" rx="8" fill="#fdf3e3" stroke="#c98a2e" stroke-width="1.4"/>
+  <text x="660" y="456" font-size="12.5" font-weight="700" fill="#a8761f">★ 출력 자리 ① — 외부 판정 수단이 채움</text>
+  <g font-size="12" fill="#3b4756">
+    <text x="668" y="484"><tspan font-weight="700" fill="#2c4661">ai_reference.polarity</tspan></text><text x="860" y="484">positive | negative | neutral</text>
+    <text x="668" y="508"><tspan font-weight="700" fill="#2c4661">ai_reference.confidence</tspan></text><text x="860" y="508">high | medium | low</text>
+    <text x="668" y="532"><tspan font-weight="700" fill="#2c4661">ai_reference.reason</tspan></text><text x="860" y="532">짧은 근거(선택)</text>
+  </g>
+  <text x="660" y="550" font-size="11.5" fill="#c07a1f">유효값이 판정 데이터 구조 안에 열거되어 있어 자유 형식 응답이 발생하지 않는다.</text>
+
+  <!-- G3 human output slot -->
+  <path d="M620,596 L644,596" stroke="#8fa3bb" stroke-width="1.4"/>
+  <rect x="644" y="572" width="492" height="66" rx="8" fill="#eef7ef" stroke="#4c8c5a" stroke-width="1.4"/>
+  <text x="660" y="594" font-size="12.5" font-weight="700" fill="#3f7a4f">★ 출력 자리 ② — 웹 검토 인터페이스가 채움</text>
+  <text x="668" y="622" font-size="12" font-weight="700" fill="#2c4661">human_decision</text>
+  <text x="860" y="622" font-size="12" fill="#3b4756">positive | negative | neutral | not_group | skip</text>
+
+  <!-- G4 status -->
+  <path d="M620,678 L644,678" stroke="#8fa3bb" stroke-width="1.4"/>
+  <rect x="644" y="654" width="492" height="62" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.4"/>
+  <text x="660" y="676" font-size="12.5" font-weight="700" fill="#6b4f96">상태 코드</text>
+  <text x="668" y="702" font-size="12" font-weight="700" fill="#2c4661">status</text>
+  <text x="860" y="702" font-size="12" fill="#3b4756">1 → 2 / 3 → 4 → 10 / 11 (그림 4)</text>
+
+  <!-- footer -->
+  <text x="24" y="748" font-size="12" fill="#7b8ba1">봉투부는 "무엇을 어떻게 판정해 어디에 기입할지"를, 항목부는 "판정 대상과 그 결과가 들어갈 빈칸"을 담는다 — 수신 주체는 이 파일 하나만으로 작업을 완결한다.</text>
+</svg>

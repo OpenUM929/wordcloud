@@ -1,0 +1,20 @@
+{"field": "단점", "text": "개인 및 부서간 이기주의 방지", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "사람들과 소통하며 일하는 것에 부족함이 있음", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "혼인 이후에 운동시간이 부족해짐", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "같이 말도 한번 안해본 간부의 보완필요점을 제가 어케 아나요", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "다면평가가 없어졌으면 좋겠다", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "업무 외 친목도모 활동으로 프렌드십 제고", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "너무 직원을 편안하게 대해 주는 경향이 있음", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "맡은 바 업우에 완벽을 기하려고 함", "label": "positive", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "업무 이외의 친목도모 활동으로 프렌드십 제고", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "뭔가 다른 생각이 많으신 듯", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "업무처리 우선순위 결정시 명확하지 않을수있음", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "보직이 바뀐지 얼마 안되서인지 업무누적이 조금 있으며, 아직은 다양한 케이스를 접해보지 못해 일을 더 많이 해봐야 함", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "깜빡하고 설명이 너무 길음", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "독립적이며, 팀직원들과 협업하지 않음", "label": "negative", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "보완 필요성을 느까지 못함", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "보완필요성을 느까지 못함", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "보완필요점이 두드러지게 나타는점 없음", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "항상 느끼는점은 보완필요점을 &#52846;지못하였습니다", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "단점", "text": "보완점을 발견 하질 못함", "label": "neutral", "label_field": "human_decision", "decision_source": "human", "src_file": "eval/review/hard_labeling_260715.jsonl"}
+{"field": "장점", "text": "분석 및 계획에 근거한 적기 필요한 조치 요구", "label": "positive", "label_field": "claude_judgment", "decision_source": "human", "src_file": "eval/review/hardsample_pn_review_260713.jsonl"}

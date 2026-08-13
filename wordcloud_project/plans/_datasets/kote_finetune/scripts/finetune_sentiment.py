@@ -32,14 +32,25 @@ TRAIN_FILES = ['group_needs_human_260624.jsonl', 'group_needs_human_g4_260624.js
                'silver_active_260707_c2.jsonl',       # 능동학습 2차 교정 silver(292, field 100%: 긍92 장점역량·중172 비평가화행·부28)
                'gold_active_260707_c4.jsonl',         # 능동학습 4차 gold(사람확정 3: 자체부정표지 일방향/수직적 장점란부정·세세 단점부정)
                'silver_active_260707_c4.jsonl',       # 능동학습 4차 bare NP 양필드페어 silver(230, field 100%: 단점부정105/장점긍정87 대칭·중립38)
-               'gold_active_260707_c5.jsonl']         # 능동학습 5차 gold(자체부정표지 3: 권한/지위/관계우위 이용 장점란부정)
+               'gold_active_260707_c5.jsonl',         # 능동학습 5차 gold(자체부정표지 3: 권한/지위/관계우위 이용 장점란부정)
+               'gold_hardsample_neutral_260713.jsonl',  # 13_03 큐레이션 하드샘플(35, 전부 중립): 모델이 개인안녕·건강·피로·스트레스를 과부정화한 것을 규칙확증으로 중립 교정. 긍↔부 불생성(중립방향)·하드중립클래스 강화
+               'gold_hardsample_pn_260713.jsonl',  # 13_03 긍↔부 하드샘플(3, positive): 모델이 명백 긍정(장점+전문성·부정어의부정)을 부정 오판한 것 교정(사용자 그룹검토 확정 260713). 보드 5건 중 not_group 2(무서술어·필드의존)는 학습 제외
+               # 'gold_corrected_t1_260715.jsonl'  ← 회수(2026-07-15): 260715 교정 gold. A/B(seed45) + 4seed 앙상블 대 배포본(무T1) 앙상블 대조 결과 재학습 기각.
+               #   · full(+A~D패턴 2024): baseline399 긍↔부9(전부 긍→부)·8c 긍↔부1 — 게이트 실격(패턴이 부정1238 과주입, packet23 재현).
+               #   · T1(검증분 312, 중립218/부72/긍22): 목표 c3_neu149 이득 0(74.0 vs 배포 74.09±2.06)·8c_hard −2.1pp·baseline399 seed43서 긍↔부2 유입(배포본 5seed 전부 0). 단일 seed45 c3 80.5는 상단 아웃라이어.
+               #   → 천장 재확증([[project_finetune_data_ceiling]]·[[project_label_consistency_next_gain]]). 배포본 7/8(seed45) 유지. 파일(eval/gold_corrected_t1_260715.jsonl)은 보존, TRAIN 제외.
+               ]
+               # 'gold_packet23_train_260714b.jsonl' ← 최종 회수(2026-07-14): 라벨정합(L1 94+TEST 45 정정) 후 재 A/B(v4)도 FAIL — 배포본(정합gold) 97.7/90.7/76.5/83.8·긍↔부0 vs v4 95.5/83.6/75.2/82.4·긍↔부4. 패킷 요청표면 긍정(존경/유지/양가)은 소량 대조로는 sa/c3 경계를 해침 — 24/25년 패킷 대량 대조 확보 전 재투입 금지.
+               # (구기록) 'gold_packet23_train_260714{,c}.jsonl' ← 회수(2026-07-14): 23년 판정패킷 gold 3구성 모두 seed45 A/B 게이트 FAIL(v1 전슬라이스↓·긍↔부5 / v2 c3 74.5↑였으나 긍↔부6(부→긍5) / v3 반례추가에도 긍↔부4·sa 71.6↓). 원인: ①양가태도=긍정(사용자 재정)이 c3 gold 2행(완벽추구=부정)과 정책충돌 ②요청표면 긍정(존경/유지)이 sa 화행경계와 상충 — 라벨 정합 선결. 파일 3종 보존(append-only), TRAIN 제외. 재개 조건: 테스트 gold 정합(사용자 확정) 후 v2 구성부터.  # 23년 판정패킷 judge gold v2(v1 2,942는 A/B FAIL로 스왑아웃·파일 보존. v2=긍238+중(건강/안녕만)≤500+부 요청형 평형추 300 = 긍238 유지칭찬/존경/양가 교정 + 중1,704 구조중립 교정 + 부1,000 요청형 평형추). 모델 오답 자리만(합의 대량 배제 — 천장 실증). field 100%. 빌더 build_packet23_train_260714.py
                # 'silver_active_260707_c5.jsonl'      # ← 회수(2026-07-07): c5 재현런 2회 모두 c3_neu149 부recall 0.688→0.625/0.562 하락·8c_hard 긍→부 1 재현. 미확정 중립 silver 95(41%)가 c4 극성이득 희석. 파일은 보존(append-only), TRAIN에서만 제외.
                # 'gold_active_260707_c6.jsonl'        # ← 회수(2026-07-07): c6 화행광맥(개선요청·완곡부정 74 gold, 재정렬본 부44/긍15/중15). 4런 집계 결과 타깃 c3_neu149 부recall 0.667→평균0.59 하락·긍↔부 1→2·3·4 재현악화(inviolable). 8c_hard 부recall은 0.854→0.927 상승하나 핵심가치(긍↔부 우선)로 실격. c4가 마지막 깨끗이득·neu경계는 소량gold로 부recall↔긍↔부 맞바꿈만. 파일 보존, TRAIN 제외.
 # held-out 테스트셋 — 쉬운 baseline(회귀가드) + 8c 하드클래스(이번 작업 검증).
 TEST_SETS = {'baseline399': 'baseline_eval_260624.jsonl',
              '8c_hard': 'gold_8c_test_260706.jsonl',
              'c3_neu149': 'gold_8c_test_c3neu_260707.jsonl',  # 능동학습 c3 하드경계(neu_boundary143+bareNP6·field100%·부분해능확보용)
-             'sa_speech74': 'gold_speechact_test_260707.jsonl'}  # c6 화행경계(개선요청·완곡부정 74·부44/긍15/중15·claude위임판정) — 화행경계 분해능 측정도구. TRAIN 미포함(c6 gold는 회수됨)
+             'sa_speech74': 'gold_speechact_test_260707.jsonl',  # c6 화행경계(개선요청·완곡부정 74·부44/긍15/중15·claude위임판정) — 화행경계 분해능 측정도구. TRAIN 미포함(c6 gold는 회수됨)
+             # 'holdout_prod': 'gold_holdout_prod_260713.jsonl',  # P3 — PROD 홀드아웃(260713, 150행·극성층화). 사용자 라벨 확정 후 주석해제
+             }
 TEST_FILE = TEST_SETS['baseline399']   # 하위호환(누수제외 기준셋)
 
 

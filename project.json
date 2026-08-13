@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "project_id": "wordcloud",
+  "project_name": "워드클라우드 인사평가 분석 시스템",
+  "aliases": ["wc", "워드클라우드"],
+  "guideline": {
+    "root": ".clinerules",
+    "common_dir": "common",
+    "project_dir": "projects/wordcloud"
+  },
+  "paths": {
+    "app_root": "wordcloud_project",
+    "plans_root": "wordcloud_project/plans",
+    "report_root": "wordcloud_project/report",
+    "scripts_root": "wordcloud_project/scripts",
+    "deploy_script": "wordcloud_project/deploy/build_deploy.ps1",
+    "deploy_artifact": "wordcloud-project.zip",
+    "venv": "wordcloud_project/venv"
+  },
+  "entrypoint": "wordcloud_project/web/app.py"
+}

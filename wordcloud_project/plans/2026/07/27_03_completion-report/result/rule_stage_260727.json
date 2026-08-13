@@ -1,0 +1,109 @@
+{
+  "KoTE 원점수(규칙 없음)": {
+    "overall": {
+      "n": 761,
+      "acc": 59.92,
+      "posneg": 55,
+      "dist": {
+        "positive": 339,
+        "neutral": 252,
+        "negative": 170
+      }
+    },
+    "slices": {
+      "baseline399": {
+        "n": 398,
+        "acc": 78.39,
+        "posneg": 36,
+        "dist": {
+          "positive": 284,
+          "neutral": 21,
+          "negative": 93
+        }
+      },
+      "8c_hard": {
+        "n": 140,
+        "acc": 42.86,
+        "posneg": 3,
+        "dist": {
+          "neutral": 126,
+          "negative": 12,
+          "positive": 2
+        }
+      },
+      "c3_neu149": {
+        "n": 149,
+        "acc": 43.62,
+        "posneg": 15,
+        "dist": {
+          "negative": 57,
+          "positive": 52,
+          "neutral": 40
+        }
+      },
+      "sa_speech74": {
+        "n": 74,
+        "acc": 25.68,
+        "posneg": 1,
+        "dist": {
+          "neutral": 65,
+          "negative": 8,
+          "positive": 1
+        }
+      }
+    }
+  },
+  "KoTE + 규칙 엔진": {
+    "overall": {
+      "n": 761,
+      "acc": 69.12,
+      "posneg": 13,
+      "dist": {
+        "positive": 306,
+        "neutral": 288,
+        "negative": 167
+      }
+    },
+    "slices": {
+      "baseline399": {
+        "n": 398,
+        "acc": 88.44,
+        "posneg": 7,
+        "dist": {
+          "positive": 263,
+          "neutral": 30,
+          "negative": 105
+        }
+      },
+      "8c_hard": {
+        "n": 140,
+        "acc": 47.14,
+        "posneg": 1,
+        "dist": {
+          "neutral": 124,
+          "negative": 15,
+          "positive": 1
+        }
+      },
+      "c3_neu149": {
+        "n": 149,
+        "acc": 59.73,
+        "posneg": 5,
+        "dist": {
+          "negative": 41,
+          "neutral": 66,
+          "positive": 42
+        }
+      },
+      "sa_speech74": {
+        "n": 74,
+        "acc": 25.68,
+        "posneg": 0,
+        "dist": {
+          "neutral": 68,
+          "negative": 6
+        }
+      }
+    }
+  }
+}

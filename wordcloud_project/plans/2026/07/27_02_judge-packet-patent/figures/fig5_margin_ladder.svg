@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 430" width="1100" height="430" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+  <defs>
+    <marker id="a6" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5b6b7f"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1100" height="430" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="700" fill="#1f2937">[그림 5] 마진 사다리 — 최광폭 임계값 1회 추출 + 항목별 구간 태깅으로 재추출 없는 임계값 탐색</text>
+
+  <!-- extraction bracket -->
+  <path d="M120,92 L120,80 L720,80 L720,92" fill="none" stroke="#5a7fa6" stroke-width="1.6"/>
+  <text x="420" y="70" font-size="12.5" font-weight="700" fill="#2c4661" text-anchor="middle">최광폭 임계값(0.15)으로 단 1회 추출</text>
+
+  <!-- bands -->
+  <rect x="120" y="104" width="200" height="66" fill="#cfe0f0" stroke="#5a7fa6"/>
+  <rect x="320" y="104" width="200" height="66" fill="#e0ebf6" stroke="#5a7fa6"/>
+  <rect x="520" y="104" width="200" height="66" fill="#eef4fa" stroke="#5a7fa6"/>
+  <rect x="720" y="104" width="200" height="66" fill="#f2f3f5" stroke="#b9c2cd" stroke-dasharray="5 3"/>
+
+  <text x="220" y="132" font-size="13" font-weight="700" fill="#2c4661" text-anchor="middle">margin_band = '0.05'</text>
+  <text x="220" y="154" font-size="11.8" fill="#3b4756" text-anchor="middle">가장 좁은 경계(가장 어려움)</text>
+  <text x="420" y="132" font-size="13" font-weight="700" fill="#2c4661" text-anchor="middle">'0.10'</text>
+  <text x="420" y="154" font-size="11.8" fill="#3b4756" text-anchor="middle">0.05 이상 0.10 미만</text>
+  <text x="620" y="132" font-size="13" font-weight="700" fill="#2c4661" text-anchor="middle">'0.15'</text>
+  <text x="620" y="154" font-size="11.8" fill="#3b4756" text-anchor="middle">0.10 이상 0.15 미만</text>
+  <text x="820" y="132" font-size="13" font-weight="700" fill="#8a94a6" text-anchor="middle">추출 대상 아님</text>
+  <text x="820" y="154" font-size="11.8" fill="#8a94a6" text-anchor="middle">판정이 충분히 명확한 문장</text>
+
+  <!-- axis -->
+  <line x1="110" y1="188" x2="960" y2="188" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#a6)"/>
+  <line x1="120" y1="182" x2="120" y2="194" stroke="#5b6b7f"/>
+  <line x1="320" y1="182" x2="320" y2="194" stroke="#5b6b7f"/>
+  <line x1="520" y1="182" x2="520" y2="194" stroke="#5b6b7f"/>
+  <line x1="720" y1="182" x2="720" y2="194" stroke="#5b6b7f"/>
+  <text x="120" y="210" font-size="12" fill="#3b4756" text-anchor="middle">0</text>
+  <text x="320" y="210" font-size="12" fill="#3b4756" text-anchor="middle">0.05</text>
+  <text x="520" y="210" font-size="12" fill="#3b4756" text-anchor="middle">0.10</text>
+  <text x="720" y="210" font-size="12" fill="#3b4756" text-anchor="middle">0.15</text>
+  <text x="968" y="192" font-size="12" fill="#3b4756">gap = | pos − neg |</text>
+
+  <!-- flip set -->
+  <rect x="120" y="240" width="380" height="72" rx="8" fill="#fdf3e3" stroke="#c98a2e" stroke-width="1.5"/>
+  <text x="140" y="264" font-size="13" font-weight="700" fill="#a8761f">극성 불일치(pol_flip) — gap과 무관하게 항상 위임</text>
+  <text x="140" y="286" font-size="12" fill="#3b4756">제1 판정값과 제2 판정값이 { 긍정, 부정 } 으로 정반대인 문장</text>
+  <text x="140" y="306" font-size="12" fill="#3b4756">margin_band = 'flip' 으로 별도 표지</text>
+
+  <!-- bands summary -->
+  <rect x="540" y="240" width="380" height="150" rx="8" fill="#f7f9fc" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="560" y="264" font-size="13" font-weight="700" fill="#2c4661">패킷 봉투의 _margin.bands (구간별 건수 동시 집계)</text>
+  <text x="560" y="292" font-size="12.5" fill="#3b4756">'flip'  : n₀ 건</text>
+  <text x="560" y="314" font-size="12.5" fill="#3b4756">'0.05' : n₁ 건</text>
+  <text x="560" y="336" font-size="12.5" fill="#3b4756">'0.10' : n₂ 건</text>
+  <text x="560" y="358" font-size="12.5" fill="#3b4756">'0.15' : n₃ 건</text>
+  <text x="560" y="380" font-size="11.8" fill="#7b8ba1">→ 운영자는 재추출 없이 임계값별 건수를 비교해 사후 선택</text>
+
+  <path d="M500,276 L534,276" fill="none" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#a6)"/>
+
+  <!-- note -->
+  <rect x="120" y="330" width="380" height="60" rx="8" fill="#fdf4f4" stroke="#d59896"/>
+  <text x="140" y="354" font-size="12.5" fill="#a2504d">종래: 임계값을 바꿀 때마다 전체 평가 데이터를</text>
+  <text x="140" y="376" font-size="12.5" fill="#a2504d">다시 스캔 · 추출해야 했다(탐색 비용 반복).</text>
+</svg>

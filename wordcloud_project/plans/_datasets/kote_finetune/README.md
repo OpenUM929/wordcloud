@@ -14,6 +14,7 @@
 | `../../../../CLAUDE.md` | 프로젝트 나침반 → `.clinerules` 분류표로 보냄 | 모든 작업 착수 시 | 정적 |
 | **`RUNBOOK.md`** | **상시 운영 절차**(데이터 도착 시 반복 체크리스트 §2 + 누적 로그) + 🧭 **복원 앵커** | 데이터 도착·감정/리더십 작업 시 | 상시(완료 없음) |
 | **`ROADMAP.md`** | **상시 현황·로드맵**(전체 그림: 어디까지·다음 무엇·어떻게 구현 P0~P7) | 방향/진행 파악, 상사 설명 | 상시(현황 갱신) |
+| **`AUDIT_STANDARD.md`** | **실배치 감사·오류후보 추출 표준 절차**(재현 가능: 4단계·시드·스크립트·택소노미·보고서 규정) | 배포 결과 검증·감사 보고, 인사처 타당성 근거 | 정적(절차 정본) |
 | `README.md` (본 문서) | **폴더·데이터 규약** + 본 문서 지도 | 폴더 구조·파일 의미 확인 | 정적 |
 | `leadership/TRAIT_TREE.md` | 리더십 택소노미 **스펙 정본**(20-trait 트리·rollup) | trait 구조 확인·갱신 | 군집 근거 시 |
 | `leadership/trait_library_ref.md` | 외부 레포(`OpenUM929`) **활용 전략 §0** + micro 검증본 §3 | 외부 골격 대조·군집 | 정적(스냅샷) |
@@ -24,8 +25,10 @@
 | `result/worklog_260703.md` | **세션 작업 정리**(엔진 교정 9건·그룹재편·검증) — 보고서 재료 | 보고서 작성·진척 요약 | 스냅샷 |
 | `result/review_todo_260703.md` | **사람 검토 To-Do**(그룹별 우선순위·미판정 수) | 다음 뭘 검토할지 | 현황(재생성) |
 | `result/group_audit_260703.md`·`scripts/group_audit_260703.py` | **그룹단위 분류 감사**(그룹별 일치율·누수원인) | 규칙 수정 후 검증 | 재실행 |
-| `result/group_files_index_260703.md` | **게시판 파일 지도**(29 그룹파일 위치·검토법) | 게시판 파일 의미 | 재생성 |
+| **`result/review_queue_index_260806.md`** | **검토큐 지도·근거 대장**(우선순위 P1~P3 정의 · 파일별 출처·산출 스크립트·미판정 수 · 큐 제외 사유별 집계 · 인용 규약). 행 단위 근거는 `eval/review/_archive/_ledger_260806.jsonl` | 무엇을 먼저 판정할지 · 판정 결과를 문서/모델에 인용할 때 | 재생성(멱등, `scripts/build_review_index_260806.py`) |
+| ~~`result/group_files_index_260703.md`~~ | **게시판 파일 지도**(29 그룹파일 위치·검토법) | 게시판 파일 의미 | 재생성 |
 | `emotion/emotion.jsonl`·`leadership/leadership.jsonl` | **정식 gold 스트림**(confirmed만, append-only, 학습 대상) | gold append | append-only |
+| **`eval/label_master_260804.jsonl`**·`result/label_master_260804.md` | **라벨 마스터**(흩어진 라벨을 고유 (칸,문장) 1행으로 통합 + 출처 티어·학습/테스트 포함 여부·라벨 충돌 표시). 🔴 **출처 판별은 필드명이 아니라 `decision_source` 로만 한다** — `human_decision` 필드에 Claude·규칙 산출이 섞여 있음 | "사람 라벨이 무엇인가"·홀드아웃·충돌 검토 | 재생성(멱등, `scripts/build_label_master_260804.py`) |
 | `../../2026/0617_05_kote-finetune-data/` | 데이터셋 **설계 정본**(스키마·보안) — *일회성* | 스키마 근거 확인 | 보류(고정) |
 | `../../2026/0617_01_emotion-rule-mining/` | 규칙 마이닝 + 회귀 테스트 — *일회성* | 규칙·테스트 근거 | DN(고정) |
 

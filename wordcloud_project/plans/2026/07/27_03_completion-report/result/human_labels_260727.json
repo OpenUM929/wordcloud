@@ -1,0 +1,196 @@
+{
+  "test_sets": {
+    "baseline399": {
+      "file": "baseline_eval_260624.jsonl",
+      "rows": 399,
+      "labeled": 398,
+      "dist": {
+        "positive": 251,
+        "negative": 100,
+        "neutral": 47
+      }
+    },
+    "8c_hard": {
+      "file": "gold_8c_test_260706.jsonl",
+      "rows": 140,
+      "labeled": 140,
+      "dist": {
+        "negative": 47,
+        "positive": 36,
+        "neutral": 57
+      }
+    },
+    "c3_neu149": {
+      "file": "gold_8c_test_c3neu_260707.jsonl",
+      "rows": 149,
+      "labeled": 149,
+      "dist": {
+        "negative": 50,
+        "neutral": 43,
+        "positive": 56
+      }
+    },
+    "sa_speech74": {
+      "file": "gold_speechact_test_260707.jsonl",
+      "rows": 74,
+      "labeled": 74,
+      "dist": {
+        "negative": 44,
+        "neutral": 15,
+        "positive": 15
+      }
+    }
+  },
+  "train_files": {
+    "group_needs_human_260624.jsonl": {
+      "rows": 679,
+      "labeled": 679,
+      "dist": {
+        "positive": 308,
+        "neutral": 361,
+        "negative": 10
+      }
+    },
+    "group_needs_human_g4_260624.jsonl": {
+      "rows": 100,
+      "labeled": 100,
+      "dist": {
+        "positive": 65,
+        "negative": 17,
+        "neutral": 18
+      }
+    },
+    "field_conflict_review_260624.jsonl": {
+      "rows": 800,
+      "labeled": 799,
+      "dist": {
+        "negative": 282,
+        "positive": 246,
+        "neutral": 271
+      }
+    },
+    "hard_failure_review_260630.jsonl": {
+      "rows": 550,
+      "labeled": 543,
+      "dist": {
+        "positive": 146,
+        "neutral": 88,
+        "negative": 309
+      }
+    },
+    "gold_8c_train_260706.jsonl": {
+      "rows": 1206,
+      "labeled": 1206,
+      "dist": {
+        "negative": 364,
+        "positive": 363,
+        "neutral": 479
+      }
+    },
+    "gold_active_260707.jsonl": {
+      "rows": 115,
+      "labeled": 115,
+      "dist": {
+        "neutral": 57,
+        "negative": 58
+      }
+    },
+    "gold_active_260707_c2.jsonl": {
+      "rows": 8,
+      "labeled": 8,
+      "dist": {
+        "negative": 4,
+        "neutral": 2,
+        "positive": 2
+      }
+    },
+    "silver_active_260707_c2.jsonl": {
+      "rows": 292,
+      "labeled": 292,
+      "dist": {
+        "neutral": 171,
+        "positive": 92,
+        "negative": 29
+      }
+    },
+    "gold_active_260707_c4.jsonl": {
+      "rows": 3,
+      "labeled": 3,
+      "dist": {
+        "negative": 3
+      }
+    },
+    "silver_active_260707_c4.jsonl": {
+      "rows": 230,
+      "labeled": 230,
+      "dist": {
+        "neutral": 38,
+        "negative": 105,
+        "positive": 87
+      }
+    },
+    "gold_active_260707_c5.jsonl": {
+      "rows": 3,
+      "labeled": 3,
+      "dist": {
+        "negative": 3
+      }
+    },
+    "gold_hardsample_neutral_260713.jsonl": {
+      "rows": 35,
+      "labeled": 35,
+      "dist": {
+        "neutral": 35
+      }
+    },
+    "gold_hardsample_pn_260713.jsonl": {
+      "rows": 3,
+      "labeled": 3,
+      "dist": {
+        "positive": 3
+      }
+    }
+  },
+  "union": {
+    "eval_direct": 12156,
+    "review_board": 4355,
+    "total": 12924,
+    "label_dist": {
+      "positive": 3000,
+      "negative": 5479,
+      "neutral": 4445
+    },
+    "field_dist": {
+      "장점": 3398,
+      "단점": 9363,
+      "?": 22,
+      "(미상)": 141
+    }
+  },
+  "adversarial_s0": {
+    "장점": {
+      "n": 3398,
+      "match": 1975,
+      "acc": 58.12,
+      "posneg": 610,
+      "posneg_pct": 17.95
+    },
+    "단점": {
+      "n": 9363,
+      "match": 4799,
+      "acc": 51.25,
+      "posneg": 999,
+      "posneg_pct": 10.67
+    },
+    "overall": {
+      "n": 12761,
+      "acc": 53.08
+    }
+  },
+  "summary": {
+    "train": 4016,
+    "test": 761,
+    "other": 8147,
+    "union": 12924
+  }
+}

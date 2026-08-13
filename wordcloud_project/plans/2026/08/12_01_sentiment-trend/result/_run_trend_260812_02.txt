@@ -1,0 +1,56 @@
+[A~D] metric=sentence_cnt, rows=2024/2025/2026
+  OK  rows 정렬 — 실제=['2024', '2025', '2026'] 기대=['2024', '2025', '2026']
+  OK  긍정 계열(2024/2025/2026) — 실제=[2, None, 1] 기대=[2, None, 1]
+  OK  부정 계열(2024/2025/2026) — 실제=[1, None, 2] 기대=[1, None, 2]
+  OK  결측 연도 기록 — 실제=['2025'] 기대=['2025']
+[E] unit=pct — 분모 = 긍정+부정 (중립 제외)
+  OK  긍정 % — 실제=[66.7, None, 33.3] 기대=[66.7, None, 33.3]
+  OK  부정 % — 실제=[33.3, None, 66.7] 기대=[33.3, None, 66.7]
+  OK  연도별 합 = 100 — 실제=[100, 100] 기대=[100, 100]
+[E-2] unit=count — 원값 유지
+  OK  긍정 수량 — 실제=[2, None, 1] 기대=[2, None, 1]
+  OK  부정 수량 — 실제=[1, None, 2] 기대=[1, None, 2]
+[E-3] metric=sentence_power
+  OK  긍정 강도 합 — 실제=[2.0, 1.0] 기대=[2.0, 1.0]
+  OK  부정 강도 합 — 실제=[1.0, 2.0] 기대=[1.0, 2.0]
+[F] metric=word_uniq / word_freq — 경계 score >= 0 이 긍정
+  OK  긍정 단어 종류 — 실제=[2, 1] 기대=[2, 1]
+  OK  부정 단어 종류 — 실제=[1, 2] 기대=[1, 2]
+  OK  긍정 단어 빈도 — 실제=[3, 1] 기대=[3, 1]
+  OK  부정 단어 빈도 — 실제=[1, 2] 기대=[1, 2]
+[A-2] row_values 미지정 — 데이터에 존재하는 연도만
+  OK  자동 수집 연도 — 실제=['2024', '2026'] 기대=['2024', '2026']
+[G] 차트 PNG 렌더
+  OK   unit=pct 생성=True 크기=39815B path=C:\Users\ADMINI~1\AppData\Local\Temp\trend_chart__v7pste5\chart_pct.png
+  OK   unit=count 생성=True 크기=30053B path=C:\Users\ADMINI~1\AppData\Local\Temp\trend_chart__v7pste5\chart_count.png
+  OK  빈 rows 는 False 반환 — 실제=False 기대=False
+
+전 항목 통과
+2026-08-12 17:09:37 - pipeline - INFO - [] [STAGE:TREND_GRAPH] - employee_id=11**** metric=sentence_cnt unit=pct
+2026-08-12 17:09:37 - pipeline - INFO - [] [STAGE:TREND_GRAPH] - done graph=/outputs/배포/그래프/홍길동_110110_긍부정그래프.png?v=20260812_170937 rows=['2024', '2026']
+2026-08-12 17:09:37 - pipeline - INFO - [] [STAGE:TREND_GRAPH] - employee_id=11**** metric=sentence_cnt unit=pct
+2026-08-12 17:09:37 - pipeline - WARNING - [] [STAGE:TREND_GRAPH] - no_evaluations_for_employee
+2026-08-12 17:09:37 - pipeline - INFO - [] [STAGE:TREND_GRAPH] - employee_id=11**** metric=sentence_cnt unit=pct
+2026-08-12 17:09:37 - pipeline - WARNING - [] [STAGE:TREND_GRAPH] - trend_all_empty row_values=['2019']
+[A~D] 단건 저장 — output_mode=real
+  OK  저장 파일 존재 — 실제=True 기대=True
+  OK  반환 name(제출용 저장과 동일 규칙) — 실제=홍길동_110110 기대=홍길동_110110
+  OK  URL 경로 — 실제=/outputs/배포/그래프/홍길동_110110_긍부정그래프.png 기대=/outputs/배포/그래프/홍길동_110110_긍부정그래프.png
+  OK  URL 캐시버스터 — 실제=20260812_170937 기대=20260812_170937
+  OK  연도 — 실제=['2024', '2026'] 기대=['2024', '2026']
+  OK  긍정 % — 실제=[66.7, 33.3] 기대=[66.7, 33.3]
+  OK  부정 % — 실제=[33.3, 66.7] 기대=[33.3, 66.7]
+  OK  원값(수량) 보존 — 실제=[[2, 1], [1, 2]] 기대=[[2, 1], [1, 2]]
+[D] 갤러리 등록 entry
+  OK  source — 실제=graph 기대=graph
+  OK  images 키 — 실제=['graph'] 기대=['graph']
+  OK  images.graph == 반환 URL — 실제=/outputs/배포/그래프/홍길동_110110_긍부정그래프.png?v=20260812_170937 기대=/outputs/배포/그래프/홍길동_110110_긍부정그래프.png?v=20260812_170937
+  OK  batch_title 승계 — 실제=테스트배치 기대=테스트배치
+  OK  analysis_type — 실제=trend 기대=trend
+[E] 평가 0건 방어
+  OK  평가 없으면 None — 실제=None 기대=None
+[E-2] 선택 연도에 데이터가 전혀 없을 때
+  OK  해당 연도 없으면 None — 실제=None 기대=None
+
+출력 폴더: C:\Users\ADMINI~1\AppData\Local\Temp\trend_out_zsc_e14z
+전 항목 통과

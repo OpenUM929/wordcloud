@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" font-family="Malgun Gothic, 맑은 고딕, sans-serif">
+  <defs>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b929c"/>
+    </marker>
+  </defs>
+  <rect width="900" height="470" fill="#ffffff"/>
+
+  <text x="24" y="34" font-size="16" font-weight="bold" fill="#20262e">여섯 개의 눈금 — 어떤 자료로 무엇을 확인했는가</text>
+  <text x="24" y="55" font-size="12.5" fill="#5a6472">눈금마다 재는 대상과 정답을 정한 주체가 다릅니다. 서로 바꿔 쓰거나 같은 축에 놓고 비교하시면 안 됩니다.</text>
+
+  <text x="34" y="88" font-size="12" font-weight="bold" fill="#6b7482">자료</text>
+  <text x="330" y="88" font-size="12" font-weight="bold" fill="#6b7482">눈금</text>
+  <text x="574" y="88" font-size="12" font-weight="bold" fill="#6b7482">이 눈금이 답하는 질문</text>
+  <line x1="24" y1="96" x2="876" y2="96" stroke="#c2c8d0"/>
+
+  <!-- ① -->
+  <rect x="24" y="106" width="286" height="44" rx="4" fill="#eef0f3" stroke="#c2c8d0"/>
+  <text x="38" y="124" font-size="12.5" fill="#3c4652">운영 배치가 실제로 출력한 판정값</text>
+  <text x="38" y="141" font-size="12.5" font-weight="bold" fill="#20262e">2,653,403문장 (3개 연도 전수)</text>
+  <line x1="310" y1="128" x2="336" y2="128" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="340" y="106" width="216" height="44" rx="4" fill="#e8edf4" stroke="#9fb0c8"/>
+  <text x="352" y="133" font-size="12.5" fill="#2b3a4d">① 전수 실태</text>
+  <line x1="556" y1="128" x2="582" y2="128" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <text x="588" y="133" font-size="12.5" fill="#3c4652">지금 자료가 어떻게 분류되어 있는가</text>
+
+  <!-- ①-라마바 -->
+  <rect x="24" y="158" width="286" height="44" rx="4" fill="#eef0f3" stroke="#c2c8d0"/>
+  <text x="38" y="176" font-size="12.5" fill="#3c4652">기입 칸이 보존된 사본을 같은 규약으로 재판정</text>
+  <text x="38" y="193" font-size="12.5" font-weight="bold" fill="#20262e">2,635,919문장 (전수)</text>
+  <line x1="310" y1="180" x2="336" y2="180" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="340" y="158" width="216" height="44" rx="4" fill="#e8edf4" stroke="#9fb0c8"/>
+  <text x="352" y="185" font-size="12.5" fill="#2b3a4d">①-라·마·바 종전 대비 개선폭</text>
+  <line x1="556" y1="180" x2="582" y2="180" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <text x="588" y="185" font-size="12.5" fill="#3c4652">종전 방식보다 얼마나 나아졌는가</text>
+
+  <!-- ② -->
+  <rect x="24" y="210" width="286" height="44" rx="4" fill="#e6f0e8" stroke="#8fb79b"/>
+  <text x="38" y="228" font-size="12.5" fill="#2c4a34">무작위로 뽑아 판정 결과를 보지 않고 채점</text>
+  <text x="38" y="245" font-size="12.5" font-weight="bold" fill="#20262e">400문장</text>
+  <line x1="310" y1="232" x2="336" y2="232" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="340" y="210" width="216" height="44" rx="4" fill="#e6f0e8" stroke="#8fb79b"/>
+  <text x="352" y="237" font-size="12.5" font-weight="bold" fill="#2c4a34">② 정확도 — 대표 수치의 근거</text>
+  <line x1="556" y1="232" x2="582" y2="232" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <text x="588" y="237" font-size="12.5" fill="#3c4652">판정이 실제로 맞는가</text>
+
+  <!-- ③ -->
+  <rect x="24" y="262" width="286" height="44" rx="4" fill="#eef0f3" stroke="#c2c8d0"/>
+  <text x="38" y="280" font-size="12.5" fill="#3c4652">개발 중 별도로 선별한 시험지 (고난도 포함)</text>
+  <text x="38" y="297" font-size="12.5" font-weight="bold" fill="#20262e">761문장</text>
+  <line x1="310" y1="284" x2="336" y2="284" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="340" y="262" width="216" height="44" rx="4" fill="#e8edf4" stroke="#9fb0c8"/>
+  <text x="352" y="289" font-size="12.5" fill="#2b3a4d">③ 개발 단계별 비교</text>
+  <line x1="556" y1="284" x2="582" y2="284" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <text x="588" y="284" font-size="12.5" fill="#3c4652">개발하면서 단계마다 좋아졌는가</text>
+  <text x="588" y="300" font-size="11" fill="#8b929c">전체가 이렇다는 근거는 아님</text>
+
+  <!-- ④ -->
+  <rect x="24" y="314" width="286" height="44" rx="4" fill="#eef0f3" stroke="#c2c8d0"/>
+  <text x="38" y="332" font-size="12.5" fill="#3c4652">2025년 운영 배치 감사 (표본 295 포함)</text>
+  <text x="38" y="349" font-size="12.5" font-weight="bold" fill="#20262e">758,880문장</text>
+  <line x1="310" y1="336" x2="336" y2="336" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="340" y="314" width="216" height="44" rx="4" fill="#f3f0e4" stroke="#c6bb92"/>
+  <text x="352" y="335" font-size="12.5" fill="#4d4526">④ 선별 장치</text>
+  <text x="352" y="351" font-size="11" fill="#7a6f42">정확도가 아님</text>
+  <line x1="556" y1="336" x2="582" y2="336" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <text x="588" y="336" font-size="12.5" fill="#3c4652">어느 건을 집중 검토 대상으로 뺄 것인가</text>
+
+  <!-- ⑥ -->
+  <rect x="24" y="366" width="286" height="44" rx="4" fill="#eef0f3" stroke="#c2c8d0"/>
+  <text x="38" y="384" font-size="12.5" fill="#3c4652">운영 산출물 vs 선언한 모델로 다시 추론</text>
+  <text x="38" y="401" font-size="12.5" font-weight="bold" fill="#20262e">2023년 769,406 · 2024년 표본 2,674</text>
+  <line x1="310" y1="388" x2="336" y2="388" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="340" y="366" width="216" height="44" rx="4" fill="#e8edf4" stroke="#9fb0c8"/>
+  <text x="352" y="393" font-size="12.5" fill="#2b3a4d">⑥ 동일성 검정 (100%)</text>
+  <line x1="556" y1="388" x2="582" y2="388" stroke="#8b929c" stroke-width="1.5" marker-end="url(#a3)"/>
+  <text x="588" y="388" font-size="12.5" fill="#3c4652">265만 건을 낸 모델이 채점받은 그 모델인가</text>
+
+  <!-- ⑤ 철회 -->
+  <rect x="24" y="418" width="532" height="30" rx="4" fill="#f7f8f9" stroke="#d5d9de" stroke-dasharray="4 3"/>
+  <text x="38" y="438" font-size="12" fill="#a0a6b0">⑤ 규칙 ↔ 모델 교차 대조 — 철회되었습니다. 어떤 문서에서도 인용하지 마십시오.</text>
+
+  <text x="24" y="464" font-size="11.5" fill="#8b929c">근거: Ⅴ장 측정 체계 (제1부)</text>
+</svg>

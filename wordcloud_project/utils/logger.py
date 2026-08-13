@@ -65,6 +65,22 @@ def _mask_real_id(val: str) -> str:
     return v[:2] + '*' * (len(v) - 2)
 
 
+class _PipelineRecordDefaults(logging.Filter):
+    """파이프라인 포맷(request_id/stage) 필수 속성 기본값 주입 필터.
+
+    포맷 문자열이 %(request_id)s/%(stage)s를 요구하지만, 호출부가 extra로
+    넘기지 않은 레코드에서 KeyError가 발생해 '--- Logging error ---'가
+    반복되는 회귀(260625.txt)를 막기 위해, 누락 시 기본값을 주입한다.
+    """
+
+    def filter(self, record):
+        if not hasattr(record, 'request_id'):
+            record.request_id = ''
+        if not hasattr(record, 'stage'):
+            record.stage = '-'
+        return True
+
+
 def get_pipeline_logger() -> logging.Logger:
     """
     파이프라인 전용 로거 반환.
@@ -83,10 +99,14 @@ def get_pipeline_logger() -> logging.Logger:
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 
+    # 누락 속성 기본값 주입 필터 (extra 미전달 호출도 안전하게 포맷되도록)
+    default_filter = _PipelineRecordDefaults()
+
     # 콘솔 핸들러
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
+    console_handler.addFilter(default_filter)
     logger.addHandler(console_handler)
 
     # 파일 핸들러: logs/pipeline/pipeline_{timestamp}.log
@@ -98,6 +118,7 @@ def get_pipeline_logger() -> logging.Logger:
     file_handler = logging.FileHandler(log_file, encoding='utf-8')
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
+    file_handler.addFilter(default_filter)
     logger.addHandler(file_handler)
 
     return logger

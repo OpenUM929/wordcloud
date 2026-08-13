@@ -1,0 +1,141 @@
+{
+  "slices": [
+    {
+      "name": "baseline399",
+      "n": 398,
+      "pre_acc": 364,
+      "post_acc": 364,
+      "pre_pn": 0,
+      "post_pn": 0,
+      "fired": 0,
+      "flips": {}
+    },
+    {
+      "name": "8c_hard",
+      "n": 140,
+      "pre_acc": 118,
+      "post_acc": 118,
+      "pre_pn": 1,
+      "post_pn": 1,
+      "fired": 0,
+      "flips": {}
+    },
+    {
+      "name": "c3_neu149",
+      "n": 149,
+      "pre_acc": 110,
+      "post_acc": 110,
+      "pre_pn": 0,
+      "post_pn": 0,
+      "fired": 0,
+      "flips": {}
+    },
+    {
+      "name": "sa_speech74",
+      "n": 74,
+      "pre_acc": 60,
+      "post_acc": 60,
+      "pre_pn": 0,
+      "post_pn": 0,
+      "fired": 0,
+      "flips": {}
+    }
+  ],
+  "case11": {
+    "pre_v": 5,
+    "post_v": 5,
+    "pre_pn": 4,
+    "post_pn": 3
+  },
+  "case11_rows": [
+    {
+      "gold": "positive",
+      "model": "neutral",
+      "final": "neutral",
+      "rule": null,
+      "fixed": false,
+      "text": "관리감독없이업무수행"
+    },
+    {
+      "gold": "negative",
+      "model": "negative",
+      "final": "negative",
+      "rule": null,
+      "fixed": false,
+      "text": "다년간 업무 수행으로 다져진 업무 노하우를 후배들에게 "
+    },
+    {
+      "gold": "neutral",
+      "model": "neutral",
+      "final": "neutral",
+      "rule": null,
+      "fixed": false,
+      "text": "직원간 의사소통이 뛰어나나 개선필요"
+    },
+    {
+      "gold": "positive",
+      "model": "negative",
+      "final": "negative",
+      "rule": null,
+      "fixed": false,
+      "text": "주변 환경이나 상황 변화를 예측한 후, 조직에 필요한 "
+    },
+    {
+      "gold": "positive",
+      "model": "negative",
+      "final": "negative",
+      "rule": null,
+      "fixed": false,
+      "text": "직원들과 의사소통이 원화합니다"
+    },
+    {
+      "gold": "positive",
+      "model": "positive",
+      "final": "positive",
+      "rule": null,
+      "fixed": false,
+      "text": "타부서 입장에서 업무를 수행하고 진행합니다"
+    },
+    {
+      "gold": "positive",
+      "model": "positive",
+      "final": "positive",
+      "rule": null,
+      "fixed": false,
+      "text": "빠른 문제해결과 여러측면으로 접근해주셔서 좋습니다"
+    },
+    {
+      "gold": "positive",
+      "model": "positive",
+      "final": "positive",
+      "rule": null,
+      "fixed": false,
+      "text": "업무 전문성을 향상하기 위해 노력"
+    },
+    {
+      "gold": "negative",
+      "model": "negative",
+      "final": "negative",
+      "rule": null,
+      "fixed": false,
+      "text": "본사의 의견에 의존함"
+    },
+    {
+      "gold": "positive",
+      "model": "negative",
+      "final": "negative",
+      "rule": null,
+      "fixed": false,
+      "text": "조직이 원하는 방향으로 주변의 행동을 유발한다"
+    },
+    {
+      "gold": "negative",
+      "model": "positive",
+      "final": "neutral",
+      "rule": "R1_request_falsepos_to_neutral",
+      "fixed": false,
+      "text": "갈등발생시 다향한 소통채널을 통하여 다각적이고 적극적인"
+    }
+  ],
+  "all_slices_pn_safe": true
+}

@@ -1,0 +1,115 @@
+{
+  "measured_at": "2026-08-05",
+  "recoverable_single": 6,
+  "D9_fieldless_26": {
+    "① 칸 없음(현행 채점)": {
+      "n": 26,
+      "correct": 17,
+      "acc": 65.38,
+      "posneg_flip": 0,
+      "pred_dist": {
+        "positive": 17,
+        "neutral": 9
+      },
+      "n_field_applied": 0
+    },
+    "② 복원된 칸 적용": {
+      "n": 26,
+      "correct": 17,
+      "acc": 65.38,
+      "posneg_flip": 0,
+      "pred_dist": {
+        "positive": 17,
+        "neutral": 9
+      },
+      "n_field_applied": 6
+    },
+    "③ 전량 장점 가정": {
+      "n": 26,
+      "correct": 26,
+      "acc": 100.0,
+      "posneg_flip": 0,
+      "pred_dist": {
+        "positive": 26
+      },
+      "n_field_applied": 26
+    }
+  },
+  "D8_withdrawn_62": {
+    "n": 62,
+    "human_matches_field": 40,
+    "human_contradicts_field": 11,
+    "human_neutral": 11,
+    "posneg_flip": 13,
+    "flip_in_contradiction": 8,
+    "flip_model_matches_field": 8,
+    "contradiction_rows": [
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "창구에서 고생 많으시다"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "지회위원장임"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "폭언을 하지 않음"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "negative",
+        "text": "재미가없음"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "업무를 수행합니다"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "비리에 연루되지 않음"
+      },
+      {
+        "field": "단점",
+        "human": "positive",
+        "model": "positive",
+        "text": "맡은 바 업우에 완벽을 기하려고 함"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "일반적인 업무파악을 함"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "감정적인 기복이 크지 않습니다"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "positive",
+        "text": "원하는 방향으로 상대방 행동을 유발하고 정보를 수집함"
+      },
+      {
+        "field": "장점",
+        "human": "negative",
+        "model": "negative",
+        "text": "몸집이 큽니다"
+      }
+    ]
+  }
+}

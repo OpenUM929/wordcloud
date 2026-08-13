@@ -1,0 +1,117 @@
+{
+  "measured_at": "2026-08-05",
+  "targets": 26,
+  "files_scanned": 153,
+  "found_anywhere": 26,
+  "recoverable": 7,
+  "ambiguous": 1,
+  "detail": {
+    "다방면에 뛰어난 인재로 보완이 필요한 사항은 없습니다": {
+      "fields": {
+        "단점": 2
+      },
+      "files": [
+        "emotion/group_weak_260624.jsonl",
+        "emotion/weak_export_260624.jsonl",
+        "emotion/weak_export_260708.jsonl",
+        "emotion/weak_export_260714.jsonl",
+        "eval/review/8b_other_neg__etc_260703.jsonl",
+        "eval/review/hard_silver_260707.jsonl",
+        "eval/validation_candidates_260624.jsonl",
+        "eval/validation_candidates_260708.jsonl",
+        "eval/validation_candidates_260714.jsonl"
+      ]
+    },
+    "회사를 먼저 생각하여 업무에 대한 욕심이 많음": {
+      "fields": {
+        "단점": 3,
+        "장점": 1
+      },
+      "files": [
+        "emotion/silver_v2_260714.jsonl",
+        "emotion/silver_v3_260715.jsonl",
+        "emotion/weak_export_260617.jsonl",
+        "emotion/weak_export_260617.split.jsonl",
+        "emotion/weak_export_260623.jsonl",
+        "emotion/weak_export_260624.jsonl",
+        "emotion/weak_export_260708.jsonl",
+        "emotion/weak_export_260714.jsonl",
+        "eval/review/hard_silver_260707.jsonl",
+        "eval/review/packet_review_pool_260714.jsonl",
+        "eval/validation_candidates_260714.jsonl"
+      ]
+    },
+    "업무에 대한열의가 강하다": {
+      "fields": {
+        "장점": 2
+      },
+      "files": [
+        "emotion/silver_v2_260714.jsonl",
+        "emotion/silver_v3_260715.jsonl",
+        "emotion/weak_export_260623.jsonl",
+        "emotion/weak_export_260624.jsonl",
+        "emotion/weak_export_260708.jsonl",
+        "emotion/weak_export_260714.jsonl",
+        "eval/review/hard_silver_260707.jsonl"
+      ]
+    },
+    "관리자로써 자질이 우수해 보입니다": {
+      "fields": {
+        "장점": 2
+      },
+      "files": [
+        "emotion/silver_v2_260714.jsonl",
+        "emotion/silver_v3_260715.jsonl",
+        "emotion/weak_export_260624.jsonl",
+        "emotion/weak_export_260708.jsonl",
+        "emotion/weak_export_260714.jsonl",
+        "eval/review/hard_silver_260707.jsonl"
+      ]
+    },
+    "업무를 완벽하게 하려고함": {
+      "fields": {
+        "단점": 1
+      },
+      "files": [
+        "emotion/weak_export_260624.jsonl",
+        "emotion/weak_export_260708.jsonl",
+        "emotion/weak_export_260714.jsonl",
+        "eval/review/8b_other_neg__etc_260703.jsonl",
+        "eval/review/hard_silver_260707.jsonl",
+        "eval/validation_candidates_260624.jsonl",
+        "eval/validation_candidates_260708.jsonl",
+        "eval/validation_candidates_260714.jsonl"
+      ]
+    },
+    "타직원들의 업무도 도우려함": {
+      "fields": {
+        "장점": 1
+      },
+      "files": [
+        "emotion/weak_export_260624.jsonl",
+        "emotion/weak_export_260708.jsonl",
+        "emotion/weak_export_260714.jsonl",
+        "eval/review/8b_other_neg__etc_260703.jsonl",
+        "eval/review/hard_silver_260707.jsonl",
+        "eval/validation_candidates_260624.jsonl",
+        "eval/validation_candidates_260708.jsonl",
+        "eval/validation_candidates_260714.jsonl"
+      ]
+    },
+    "회사 노조위원장으로 직원들 복지에 신경을 다함": {
+      "fields": {
+        "장점": 1
+      },
+      "files": [
+        "emotion/weak_export_260624.jsonl",
+        "emotion/weak_export_260708.jsonl",
+        "emotion/weak_export_260714.jsonl",
+        "eval/review/8b_other_neg__etc_260703.jsonl",
+        "eval/review/hard_silver_260707.jsonl",
+        "eval/validation_candidates_260624.jsonl",
+        "eval/validation_candidates_260708.jsonl",
+        "eval/validation_candidates_260714.jsonl"
+      ]
+    }
+  }
+}

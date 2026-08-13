@@ -106,9 +106,35 @@ def _load_pool(exclude):
     return rows
 
 
+def _load_batch(path, n=None):
+    """Read batch JSONL format: {x, y, s, e}. Skip header line. Returns (pool, probs)."""
+    pool, probs = [], []
+    for line in open(path, encoding='utf-8'):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith('{"#'):
+            continue  # header
+        r = json.loads(stripped)
+        text = (r.get('x') or '').strip()
+        if not text:
+            continue
+        y_lab = {'p': 'positive', 'n': 'negative', 'u': 'neutral'}.get(r.get('y', ''))
+        if y_lab is None:
+            continue
+        s = r.get('s', [0.0, 0.0, 0.0])
+        field = (r.get('field') or '').strip()
+        pool.append((text, field, LAB2ID[y_lab]))
+        probs.append(s)
+        if n and len(pool) >= n:
+            break
+    return pool, probs
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--model', required=True, help='파인튜닝 모델 디렉터리(예: model_out_ft_on)')
+    ap.add_argument('--model', default='', help='파인튜닝 모델 디렉터리(예: model_out_ft_on). --from-batch 사용 시 생략')
+    ap.add_argument('--from-batch', default='', help='대체 입력: batch JSONL 경로(x/y/s/e). GPU 불필요, pre-scored s 사용')
     ap.add_argument('--field-token', choices=['on', 'off'], default='off',
                     help='모델 학습 규약과 동일하게(on이면 장점/단점 프리픽스). train/serve 정합 필수')
     ap.add_argument('--margin', type=float, default=0.15, help='low_margin 임계 |p_pos-p_neg|')
@@ -118,7 +144,7 @@ def main():
                     help='tier 라운드로빈 혼합(한 tier 독식 방지). 미지정 시 tier 강경 우선순위')
     ap.add_argument('--require-field', action='store_true',
                     help='장점/단점 field 있는 문장만 채굴(field 없으면 장점·단점 협의 해석 불가→중립도장 방지). '
-                         'silver_consensus만 field 보유. 2차 필수.')
+                         'silver_consensus만 field 보유. 2차 필수. --from-batch와 양립 불가(batch에 field 없음)')
     ap.add_argument('--n', type=int, default=300, help='큐 최대 후보 수')
     ap.add_argument('--max-pool', type=int, default=0,
                     help='채점할 풀 상한(0=전체). 빠른 1차 마이닝 시 예: 100000(무작위 표본)')
@@ -126,100 +152,110 @@ def main():
     ap.add_argument('--ckpt', default='', help='체크포인트 경로(기본 eval/review/.mine_ckpt_*.jsonl)')
     ap.add_argument('--no-resume', action='store_true', help='체크포인트 무시하고 처음부터 채점')
     args = ap.parse_args()
+    is_batch = bool(args.from_batch)
+    if not is_batch and not args.model:
+        ap.error('--model 또는 --from-batch 중 하나를 지정하세요')
+    if is_batch and args.require_field:
+        ap.error('--from-batch와 --require-field는 양립 불가(batch JSONL에 field 없음)')
 
     def apply_field(text, field):
         if args.field_token == 'on' and field:
             return f'{field} 평가: {text}'
         return text
 
-    import torch
-    import torch.nn.functional as F
-    from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    # ── 입력 경로 분기: batch(사전채점 JSONL) vs model(GPU 스코어링) ──
+    if is_batch:
+        pool, probs = _load_batch(args.from_batch, args.max_pool or None)
+        print(f'배치 로드: {len(pool)}행 · 출처={args.from_batch}', flush=True)
+        if not pool:
+            print('배치가 비었습니다. 종료.')
+            return
+    else:
+        import torch
+        import torch.nn.functional as F
+        from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-    model_dir = args.model if os.path.isabs(args.model) else os.path.join(DATASET_DIR, args.model)
-    tok = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
-    model = AutoModelForSequenceClassification.from_pretrained(model_dir, local_files_only=True)
-    model.eval()
-    dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(dev)  # ★ CUDA 있으면 GPU로 — 없으면 스크립트가 CPU에 남아 수십 배 느려짐
-    print(f'채점 디바이스: {dev}'
-          + (f' ({torch.cuda.get_device_name(0)})' if dev.type == 'cuda' else ' — GPU 미탐지, CPU'),
-          flush=True)
+        model_dir = args.model if os.path.isabs(args.model) else os.path.join(DATASET_DIR, args.model)
+        tok = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
+        model = AutoModelForSequenceClassification.from_pretrained(model_dir, local_files_only=True)
+        model.eval()
+        dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model.to(dev)
+        print(f'채점 디바이스: {dev}'
+              + (f' ({torch.cuda.get_device_name(0)})' if dev.type == 'cuda' else ' — GPU 미탐지, CPU'),
+              flush=True)
 
-    ex = _gold_texts()
-    pool = _load_pool(ex)
-    if args.require_field:
-        before = len(pool)
-        pool = [row for row in pool if row[1]]  # row=(text, field, label); field 있어야 협의 해석 가능
-        print(f'  --require-field: field 있는 문장만 → {before}→{len(pool)}건(장점/단점 보유)', flush=True)
-    print(f'gold 제외 {len(ex)}건 · 마이닝 풀 {len(pool)}건 · field-token={args.field_token}',
-          flush=True)
-    if args.max_pool and len(pool) > args.max_pool:
-        import random as _r
-        pool = _r.Random(42).sample(pool, args.max_pool)
-        print(f'  풀 상한 적용 → 무작위 {len(pool)}건만 채점', flush=True)
-    if not pool:
-        print('풀이 비었습니다. 종료.')
-        return
+        ex = _gold_texts()
+        pool = _load_pool(ex)
+        if args.require_field:
+            before = len(pool)
+            pool = [row for row in pool if row[1]]
+            print(f'  --require-field: field 있는 문장만 → {before}→{len(pool)}건(장점/단점 보유)', flush=True)
+        print(f'gold 제외 {len(ex)}건 · 마이닝 풀 {len(pool)}건 · field-token={args.field_token}',
+              flush=True)
+        if args.max_pool and len(pool) > args.max_pool:
+            import random as _r
+            pool = _r.Random(42).sample(pool, args.max_pool)
+            print(f'  풀 상한 적용 → 무작위 {len(pool)}건만 채점', flush=True)
+        if not pool:
+            print('풀이 비었습니다. 종료.')
+            return
 
-    import time
-    texts = [apply_field(t, f) for t, f, _ in pool]
-    BATCH = 128
-    n_batches = (len(texts) + BATCH - 1) // BATCH
+        import time
+        texts = [apply_field(t, f) for t, f, _ in pool]
+        BATCH = 128
+        n_batches = (len(texts) + BATCH - 1) // BATCH
 
-    # ── 체크포인트: 죽였다 다시 켜도 이어서 채점(대량 풀 재채점 방지) ──
-    # 배치 단위로 확률을 append 저장. 재실행 시 설정(풀크기·필드토큰·모델)이 같으면 재사용.
-    # 풀 순서는 결정적(파일순 dedup·seed42 표본)이라 배치 인덱스 정합이 유지된다.
-    ckpt = args.ckpt or os.path.join(
-        DATASET_DIR, 'eval', 'review',
-        f'.mine_ckpt_{args.field_token}_{len(pool)}.jsonl')
-    os.makedirs(os.path.dirname(ckpt), exist_ok=True)
-    meta = {'pool_size': len(pool), 'field_token': args.field_token,
-            'model': os.path.basename(model_dir.rstrip('/\\')), 'n_batches': n_batches}
-    probs_by_b = {}
-    if os.path.exists(ckpt) and not args.no_resume:
-        try:
-            lines = open(ckpt, encoding='utf-8').read().splitlines()
-            if lines and json.loads(lines[0]).get('meta') == meta:
-                for ln in lines[1:]:
-                    if ln.strip():
-                        rec = json.loads(ln)
-                        probs_by_b[rec['b']] = rec['probs']
-                print(f'체크포인트 발견 → {len(probs_by_b)}/{n_batches} 배치 재사용, 이어서 채점',
-                      flush=True)
-            else:
-                print('체크포인트 설정 불일치(풀/모델/토큰 변경) → 처음부터', flush=True)
-                os.remove(ckpt)
-        except (ValueError, OSError, KeyError, IndexError):
-            print('체크포인트 손상 → 처음부터', flush=True)
-            probs_by_b = {}
-    if not probs_by_b:  # 새 시작이면 meta 헤더 기록
-        with open(ckpt, 'w', encoding='utf-8') as cf:
-            cf.write(json.dumps({'meta': meta}, ensure_ascii=False) + '\n')
+        ckpt = args.ckpt or os.path.join(
+            DATASET_DIR, 'eval', 'review',
+            f'.mine_ckpt_{args.field_token}_{len(pool)}.jsonl')
+        os.makedirs(os.path.dirname(ckpt), exist_ok=True)
+        meta = {'pool_size': len(pool), 'field_token': args.field_token,
+                'model': os.path.basename(model_dir.rstrip('/\\')), 'n_batches': n_batches}
+        probs_by_b = {}
+        if os.path.exists(ckpt) and not args.no_resume:
+            try:
+                lines = open(ckpt, encoding='utf-8').read().splitlines()
+                if lines and json.loads(lines[0]).get('meta') == meta:
+                    for ln in lines[1:]:
+                        if ln.strip():
+                            rec = json.loads(ln)
+                            probs_by_b[rec['b']] = rec['probs']
+                    print(f'체크포인트 발견 → {len(probs_by_b)}/{n_batches} 배치 재사용, 이어서 채점',
+                          flush=True)
+                else:
+                    print('체크포인트 설정 불일치(풀/모델/토큰 변경) → 처음부터', flush=True)
+                    os.remove(ckpt)
+            except (ValueError, OSError, KeyError, IndexError):
+                print('체크포인트 손상 → 처음부터', flush=True)
+                probs_by_b = {}
+        if not probs_by_b:
+            with open(ckpt, 'w', encoding='utf-8') as cf:
+                cf.write(json.dumps({'meta': meta}, ensure_ascii=False) + '\n')
 
-    print(f'채점 시작: {len(texts)}문장 / {n_batches}배치(dev={dev}) · 이미완료 {len(probs_by_b)}',
-          flush=True)
-    remaining0 = n_batches - len(probs_by_b)
-    scored, t0 = 0, time.time()
-    with torch.no_grad(), open(ckpt, 'a', encoding='utf-8') as cf:
-        for bi, i in enumerate(range(0, len(texts), BATCH)):
-            if bi in probs_by_b:
-                continue
-            enc = tok(texts[i:i + BATCH], truncation=True, padding=True, max_length=64,
-                      return_tensors='pt').to(dev)
-            pr = F.softmax(model(**enc).logits, dim=-1).cpu().tolist()
-            probs_by_b[bi] = pr
-            cf.write(json.dumps({'b': bi, 'probs': pr}, ensure_ascii=False) + '\n')
-            cf.flush()
-            scored += 1
-            total = len(probs_by_b)
-            if scored == 1 or scored % 50 == 0 or total == n_batches:
-                el = time.time() - t0
-                rate = scored / el if el > 0 else 0
-                eta = (remaining0 - scored) / rate / 60 if rate > 0 else 0
-                print(f'  채점 {total}/{n_batches} ({100*total/n_batches:.0f}%) · '
-                      f'{rate:.1f}배치/s · ETA {eta:.1f}분', flush=True)
-    probs = [p for bi in range(n_batches) for p in probs_by_b[bi]]
+        print(f'채점 시작: {len(texts)}문장 / {n_batches}배치(dev={dev}) · 이미완료 {len(probs_by_b)}',
+              flush=True)
+        remaining0 = n_batches - len(probs_by_b)
+        scored, t0 = 0, time.time()
+        with torch.no_grad(), open(ckpt, 'a', encoding='utf-8') as cf:
+            for bi, i in enumerate(range(0, len(texts), BATCH)):
+                if bi in probs_by_b:
+                    continue
+                enc = tok(texts[i:i + BATCH], truncation=True, padding=True, max_length=64,
+                          return_tensors='pt').to(dev)
+                pr = F.softmax(model(**enc).logits, dim=-1).cpu().tolist()
+                probs_by_b[bi] = pr
+                cf.write(json.dumps({'b': bi, 'probs': pr}, ensure_ascii=False) + '\n')
+                cf.flush()
+                scored += 1
+                total = len(probs_by_b)
+                if scored == 1 or scored % 50 == 0 or total == n_batches:
+                    el = time.time() - t0
+                    rate = scored / el if el > 0 else 0
+                    eta = (remaining0 - scored) / rate / 60 if rate > 0 else 0
+                    print(f'  채점 {total}/{n_batches} ({100*total/n_batches:.0f}%) · '
+                          f'{rate:.1f}배치/s · ETA {eta:.1f}분', flush=True)
+        probs = [p for bi in range(n_batches) for p in probs_by_b[bi]]
 
     inc = {s.strip() for s in args.tiers.split(',') if s.strip()}
     bad = inc - {'flip_pn', 'low_margin', 'neu_boundary'}
@@ -229,8 +265,15 @@ def main():
     print(f'포함 tier={sorted(inc)} · 혼합={args.mix}', flush=True)
 
     cands = []
+    n_unscored = 0
     for (t, field, pool_lab), pr in zip(pool, probs):
         p_pos, p_neg, p_neu = pr[0], pr[1], pr[2]
+        # 미채점 가드: s=[0,0,0](KoTE 캐시미스, --from-batch에서 유입)은 확률분포가 아니라
+        # margin=|pos-neg|=0·conf=0이 되어 low_margin 티어를 독식하고 neu_boundary도 오염시킨다
+        # (진짜 저마진 불확실이 아니라 "점수 없음"). tier 판정이 무의미하므로 제외한다.
+        if (p_pos + p_neg + p_neu) < 1e-6:
+            n_unscored += 1
+            continue
         pred = int(max(range(3), key=lambda c: pr[c]))
         conf = float(pr[pred])
         margin_pn = abs(p_pos - p_neg)
@@ -280,8 +323,16 @@ def main():
     from collections import Counter
     dist = Counter(c['hard'] for c in picked)
     n_field = sum(1 for c in picked if c['field'])
+    if n_unscored:
+        print(f'미채점(s=[0,0,0]) 제외: {n_unscored}건', flush=True)
     print(f'하드 후보 {len(cands)}건 중 상위 {len(picked)}건 선정 · 유형 {dict(dist)} · '
           f'필드보유 {n_field}/{len(picked)}')
+
+    # ── 자기검산(규칙 #17): 선정분에 미채점(합≈0) 행이 새지 않았는지 스크립트가 검증 ──
+    n_zero_picked = sum(1 for c in picked
+                        if (c['probs']['pos'] + c['probs']['neg'] + c['probs']['neu']) < 1e-6)
+    print(f'── 자기검산 ── 선정분 미채점 잔존: {n_zero_picked} {"OK" if n_zero_picked == 0 else "FAIL"}')
+    assert n_zero_picked == 0, '미채점 행이 큐에 유입됨 — low_margin 티어 오염'
 
     out = args.out or os.path.join(
         DATASET_DIR, 'eval', 'review',
@@ -307,10 +358,11 @@ def main():
                 'note': f'hard_queue_{datetime.date.today().strftime("%y%m%d")}',
             }, ensure_ascii=False) + '\n')
     print(f'큐 저장 → {os.path.relpath(out, PROJECT_ROOT)} ({len(picked)}행)')
-    try:  # 정상 완료 시 체크포인트 정리
-        os.remove(ckpt)
-    except OSError:
-        pass
+    if not is_batch:
+        try:  # 정상 완료 시 체크포인트 정리
+            os.remove(ckpt)
+        except OSError:
+            pass
 
 
 if __name__ == '__main__':

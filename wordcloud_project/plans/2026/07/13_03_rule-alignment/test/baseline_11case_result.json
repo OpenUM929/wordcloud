@@ -1,0 +1,106 @@
+{
+  "n": 11,
+  "n_viol": 5,
+  "n_pn": 4,
+  "rows": [
+    {
+      "rec_id": "batch_20260624_1-137694",
+      "field": "장점",
+      "text": "관리감독없이업무수행",
+      "rule_gold": "positive",
+      "model": "neutral",
+      "viol": true,
+      "pn": false
+    },
+    {
+      "rec_id": "batch_20260624_0-377567",
+      "field": "단점",
+      "text": "다년간 업무 수행으로 다져진 업무 노하우를 후배들에게 공유 필",
+      "rule_gold": "negative",
+      "model": "negative",
+      "viol": false,
+      "pn": false
+    },
+    {
+      "rec_id": "batch_20260624_0-426407",
+      "field": "단점",
+      "text": "직원간 의사소통이 뛰어나나 개선필요",
+      "rule_gold": "neutral",
+      "model": "neutral",
+      "viol": false,
+      "pn": false
+    },
+    {
+      "rec_id": "val-batch_20260624_0-154306",
+      "field": "단점",
+      "text": "주변 환경이나 상황 변화를 예측한 후, 조직에 필요한 행동을 ",
+      "rule_gold": "positive",
+      "model": "negative",
+      "viol": true,
+      "pn": true
+    },
+    {
+      "rec_id": "batch_20260624_1-94956",
+      "field": "장점",
+      "text": "직원들과 의사소통이 원화합니다",
+      "rule_gold": "positive",
+      "model": "negative",
+      "viol": true,
+      "pn": true
+    },
+    {
+      "rec_id": "val-batch_20260624_1-332958",
+      "field": "장점",
+      "text": "타부서 입장에서 업무를 수행하고 진행합니다",
+      "rule_gold": "positive",
+      "model": "positive",
+      "viol": false,
+      "pn": false
+    },
+    {
+      "rec_id": "batch_20260624_0-293159",
+      "field": "단점",
+      "text": "빠른 문제해결과 여러측면으로 접근해주셔서 좋습니다",
+      "rule_gold": "positive",
+      "model": "positive",
+      "viol": false,
+      "pn": false
+    },
+    {
+      "rec_id": "batch_20260624_1-148381",
+      "field": "장점",
+      "text": "업무 전문성을 향상하기 위해 노력",
+      "rule_gold": "positive",
+      "model": "positive",
+      "viol": false,
+      "pn": false
+    },
+    {
+      "rec_id": "val-batch_20260624_0-71779",
+      "field": "단점",
+      "text": "본사의 의견에 의존함",
+      "rule_gold": "negative",
+      "model": "negative",
+      "viol": false,
+      "pn": false
+    },
+    {
+      "rec_id": "val-batch_20260624_1-6960",
+      "field": "장점",
+      "text": "조직이 원하는 방향으로 주변의 행동을 유발한다",
+      "rule_gold": "positive",
+      "model": "negative",
+      "viol": true,
+      "pn": true
+    },
+    {
+      "rec_id": "batch_20260624_0-372103",
+      "field": "단점",
+      "text": "갈등발생시 다향한 소통채널을 통하여 다각적이고 적극적인 의견수",
+      "rule_gold": "negative",
+      "model": "positive",
+      "viol": true,
+      "pn": true
+    }
+  ]
+}

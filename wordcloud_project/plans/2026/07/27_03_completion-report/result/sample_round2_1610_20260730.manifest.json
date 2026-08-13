@@ -1,0 +1,46 @@
+{
+  "tool": "sample_frame_260730.py",
+  "created": "2026-07-30 20:51:13",
+  "params": {
+    "n": 1610,
+    "seed": 20260730,
+    "weight": "occurrence",
+    "tag": "round2"
+  },
+  "population": {
+    "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/emotion/weak_export_260624.jsonl",
+    "sha256": "9a81983471ab5c34056e2abf91ed560aaa5d1e264d21ccd07172347e2aff11a5",
+    "bytes": 762576407,
+    "raw_rows": 889465,
+    "clause_excluded": 19098,
+    "skipped": 0,
+    "sentences": 870367,
+    "unique_keys": 388794
+  },
+  "output": {
+    "file": "sample_round2_1610_20260730.jsonl",
+    "n": 1610,
+    "columns": [
+      "no",
+      "rec_id",
+      "field",
+      "text"
+    ],
+    "blinding": "정답·모델 예측 칸 없음 — 판독 시 모델 출력 열람 불가"
+  },
+  "field_check": [
+    {
+      "field": "단점",
+      "observed": 750,
+      "expected": 789.4,
+      "z": -1.96
+    },
+    {
+      "field": "장점",
+      "observed": 860,
+      "expected": 820.6,
+      "z": 1.96
+    }
+  ],
+  "elapsed_sec": 9.1
+}

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>계획서 간트차트 — 월 단위 · 에픽 · CR 연계 (Mockup)</title>
+<style>
+  :root{
+    /* 칸반 상태 팔레트 — plans_kanban.html:6-23 실측 그대로 (border/color/bg 3종) */
+    --todo:#ffc107;  --todo-dk:#856404;  --todo-bg:#fff3cd;
+    --doing:#17a2b8; --doing-dk:#4338ca; --doing-bg:#e9d5ff;
+    --predone:#ff9800; --predone-dk:#e65100; --predone-bg:#fff3e0;
+    --done:#28a745;  --done-dk:#155724;  --done-bg:#d4edda;
+    --hold:#7e57c2;  --hold-dk:#4a3b6b;  --hold-bg:#e7e0f5;
+    --drop:#adb5bd;  --drop-dk:#6c757d;  --drop-bg:#e9ecef;
+    --cr:#6f42c1;    --cr-bg:#efe7fb;
+    /* ink & surface */
+    --ink:#1f2733; --ink-2:#5a6472; --ink-3:#95a0b0;
+    --line:#e7eaef; --line-2:#f0f2f6; --surface:#ffffff; --bg:#f5f6f9;
+    --dep:#8a94a6; /* 선행 화살표 */
+    /* geometry — SVG 좌표와 1:1 (변경 시 JS 재계산 아님, 정적) */
+    --labelw:250px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',Roboto,sans-serif;
+    font-size:13px;line-height:1.45;padding:28px 32px 48px;-webkit-font-smoothing:antialiased;}
+
+  /* ===== Tabs ===== */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px;}
+  .tab{padding:9px 18px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px;user-select:none;transition:.15s;}
+  .tab:hover{color:var(--ink-2);}
+  .tab.on{color:var(--ink);border-bottom-color:var(--doing);}
+
+  /* ===== Header ===== */
+  .head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;}
+  .head h1{font-size:19px;font-weight:750;letter-spacing:-.01em;margin:0;}
+  .head .sub{font-size:12px;color:var(--ink-3);margin-top:3px;}
+  .upd{font-size:11px;color:var(--ink-3);}
+
+  /* ===== KPI tiles ===== */
+  .kpis{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:12px 16px;min-width:96px;box-shadow:0 1px 2px rgba(20,30,50,.04);}
+  .kpi .n{font-size:22px;font-weight:750;letter-spacing:-.02em;line-height:1;}
+  .kpi .k{font-size:11px;color:var(--ink-3);margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .kpi.accent .n{color:var(--doing-dk);}
+  .kpi.cr{border-color:#e3d7f7;background:linear-gradient(180deg,#fbf9ff,#fff);}
+  .kpi.cr .n{color:var(--cr);}
+  .kpi .n small{font-size:12px;font-weight:600;color:var(--ink-3);}
+
+  /* ===== Legend ===== */
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 2px 12px;font-size:11.5px;color:var(--ink-2);}
+  .legend .it{display:flex;align-items:center;gap:6px;}
+  .legend .sw{width:22px;height:11px;border-radius:3px;}
+  .diamond{width:11px;height:11px;transform:rotate(45deg);border-radius:2px;display:inline-block;}
+  .dep-key{display:inline-block;width:22px;height:0;border-top:2px solid var(--dep);position:relative;}
+  .dep-key::after{content:'▸';position:absolute;right:-9px;top:-9px;color:var(--dep);font-size:11px;}
+  .cr-key{display:inline-block;width:22px;height:0;border-top:2px dashed var(--cr);}
+
+  /* ===== Chart shell ===== */
+  .chart{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 2px 12px rgba(20,30,50,.05);overflow:hidden;}
+  .scroll{overflow-x:auto;}
+  .grid{min-width:calc(var(--labelw) + 854px);}
+
+  /* month header */
+  .mrow{display:flex;height:26px;border-bottom:1px solid var(--line);background:#fbfcfd;}
+  .mrow .lead{width:var(--labelw);flex:0 0 var(--labelw);border-right:1px solid var(--line);
+    display:flex;align-items:center;padding:0 14px;font-size:10.5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);}
+  .mrow .months{position:relative;width:854px;flex:0 0 854px;}
+  .mseg{position:absolute;top:0;height:26px;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:var(--ink-2);border-right:1px solid var(--line);}
+  .wrow{display:flex;height:18px;border-bottom:1px solid var(--line);background:#fbfcfd;}
+  .wrow .lead{width:var(--labelw);flex:0 0 var(--labelw);border-right:1px solid var(--line);}
+  .wrow .wticks{position:relative;width:854px;flex:0 0 854px;}
+  .wtick{position:absolute;top:0;height:18px;font-size:9px;color:var(--ink-3);padding-left:4px;
+    border-left:1px solid var(--line-2);line-height:18px;}
+
+  /* body = label column + timeline, with SVG overlay */
+  .body{display:flex;position:relative;}
+  .lcol{width:var(--labelw);flex:0 0 var(--labelw);border-right:1px solid var(--line);}
+  .tcol{position:relative;width:854px;flex:0 0 854px;}
+  .ov{position:absolute;inset:0;pointer-events:none;z-index:5;}
+
+  /* rows */
+  .grp{height:30px;display:flex;align-items:center;gap:8px;padding:0 14px;
+    background:#f7f8fb;border-bottom:1px solid var(--line);font-size:11px;font-weight:750;color:var(--ink-2);}
+  .grp .ep{font-size:9.5px;font-weight:700;color:var(--cr);background:var(--cr-bg);
+    padding:1px 7px;border-radius:999px;letter-spacing:.02em;}
+  .grp .ct{color:var(--ink-3);font-weight:600;margin-left:auto;}
+  .grp.tl{height:30px;border-bottom:1px solid var(--line);background:#f7f8fb;}
+
+  .rl{height:38px;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line-2);}
+  .rl .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;}
+  .rl .pid{font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .rl .sum{font-size:10.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .rl .crchip{margin-left:auto;flex:0 0 auto;font-size:9px;font-weight:700;color:var(--cr);
+    background:var(--cr-bg);padding:1px 6px;border-radius:999px;white-space:nowrap;}
+
+  .tr{height:38px;position:relative;border-bottom:1px solid var(--line-2);}
+  .tr.g{height:30px;border-bottom:1px solid var(--line);background:#f7f8fb;}
+
+  /* bars */
+  .bar{position:absolute;top:9px;height:20px;border-radius:5px;display:flex;align-items:center;
+    padding:0 8px;font-size:9.5px;font-weight:650;white-space:nowrap;overflow:visible;cursor:pointer;
+    box-shadow:0 1px 2px rgba(20,30,50,.10);transition:transform .1s,box-shadow .12s;}
+  .bar:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,30,50,.16);z-index:6;}
+  .bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:5px 0 0 5px;}
+  .bar .cap{color:var(--ink-2);margin-left:6px;font-weight:600;font-size:9px;}
+  .s-doing{background:var(--doing-bg);} .s-doing::before{background:var(--doing);} .s-doing{color:var(--doing-dk);}
+  .s-done{background:var(--done-bg);} .s-done::before{background:var(--done);} .s-done{color:var(--done-dk);}
+  .s-predone{background:var(--predone-bg);} .s-predone::before{background:var(--predone);} .s-predone{color:var(--predone-dk);}
+  .s-todo{background:var(--todo-bg);} .s-todo::before{background:var(--todo);} .s-todo{color:var(--todo-dk);}
+  /* point marker (single-day) */
+  .pt{position:absolute;top:9px;width:20px;height:20px;cursor:pointer;transition:transform .1s;}
+  .pt:hover{transform:scale(1.15);z-index:6;}
+  .pt i{position:absolute;left:4px;top:4px;width:12px;height:12px;border-radius:3px;
+    box-shadow:0 1px 2px rgba(20,30,50,.18);border:1.5px solid #fff;}
+  .pt.s-done i{background:var(--done);}
+  .pt.s-todo i{background:var(--todo);}
+  .pt .cap{position:absolute;left:24px;top:3px;font-size:9px;font-weight:600;color:var(--ink-3);white-space:nowrap;}
+  /* planned (todo) forward bar = dashed */
+  .bar.planned{background:repeating-linear-gradient(90deg,var(--todo-bg),var(--todo-bg) 6px,#fff 6px,#fff 9px);
+    border:1px dashed var(--todo);box-shadow:none;}
+  .bar.planned::before{background:var(--todo);}
+</style>
+</head>
+<body data-palette="#17a2b8,#28a745,#ff9800,#ffc107,#7e57c2,#6f42c1">
+
+<div class="tabs">
+  <span class="tab">📋 칸반보드</span>
+  <span class="tab on">📈 간트차트</span>
+</div>
+
+<div class="head">
+  <div>
+    <h1>📈 계획서 간트차트</h1>
+    <div class="sub">월 단위 · 에픽 스윔레인 · 선행 의존 · CR 구현 연계 &nbsp;—&nbsp; <b>계획서 + _index.md + CR</b> 3자 조합 뷰</div>
+  </div>
+  <div class="upd">기준일 2026-07-14 · 범위 2026-06 ~ 2026-07</div>
+</div>
+
+<div class="kpis">
+  <div class="kpi accent"><div class="n">15</div><div class="k">총 계획</div></div>
+  <div class="kpi"><div class="n" style="color:var(--done-dk)">5</div><div class="k">완료 Done</div></div>
+  <div class="kpi"><div class="n" style="color:var(--doing-dk)">7</div><div class="k">진행 Doing·Pre</div></div>
+  <div class="kpi"><div class="n" style="color:var(--todo-dk)">3</div><div class="k">대기 Todo</div></div>
+  <div class="kpi cr"><div class="n">4</div><div class="k">관련 CR</div></div>
+  <div class="kpi cr"><div class="n">2<small> 개월</small></div><div class="k">에픽 스윔레인 4</div></div>
+</div>
+
+<div class="legend">
+  <span class="it"><span class="sw" style="background:var(--doing-bg);border-left:3px solid var(--doing)"></span>Doing</span>
+  <span class="it"><span class="sw" style="background:var(--done-bg);border-left:3px solid var(--done)"></span>Done</span>
+  <span class="it"><span class="sw" style="background:var(--predone-bg);border-left:3px solid var(--predone)"></span>Pre-Done</span>
+  <span class="it"><span class="sw" style="background:var(--todo-bg);border-left:3px solid var(--todo)"></span>Todo</span>
+  <span class="it"><span class="diamond" style="background:var(--cr)"></span>CR 요청(◆)</span>
+  <span class="it"><span class="cr-key"></span>구현 CR 연결</span>
+  <span class="it"><span class="dep-key"></span>선행 의존</span>
+  <span class="it"><span style="color:#e5484d;font-weight:800">┃</span>오늘</span>
+</div>
+
+<div class="chart"><div class="scroll"><div class="grid">
+
+  <!-- month header -->
+  <div class="mrow">
+    <div class="lead">작업 · 에픽</div>
+    <div class="months">
+      <div class="mseg" style="left:0;width:420px">2026년 6월</div>
+      <div class="mseg" style="left:420px;width:434px;border-right:none">2026년 7월</div>
+    </div>
+  </div>
+  <div class="wrow">
+    <div class="lead"></div>
+    <div class="wticks">
+      <div class="wtick" style="left:0">06-01</div>
+      <div class="wtick" style="left:98px">06-08</div>
+      <div class="wtick" style="left:196px">06-15</div>
+      <div class="wtick" style="left:294px">06-22</div>
+      <div class="wtick" style="left:392px">06-29</div>
+      <div class="wtick" style="left:490px">07-06</div>
+      <div class="wtick" style="left:588px">07-13</div>
+      <div class="wtick" style="left:686px">07-20</div>
+      <div class="wtick" style="left:784px">07-27</div>
+    </div>
+  </div>
+
+  <!-- body: label col + timeline col + SVG overlay -->
+  <div class="body">
+    <div class="lcol">
+      <!-- epic: model-quality -->
+      <div class="grp"><span>🎯 감정모델 품질</span><span class="ep">epic: model-quality</span><span class="ct">5</span></div>
+      <div class="rl"><span class="dot" style="background:var(--doing)"></span><span class="pid">07_01</span><span class="sum">필드 토큰 신호 주입</span></div>
+      <div class="rl"><span class="dot" style="background:var(--doing)"></span><span class="pid">08_01</span><span class="sum">추론경로 절 분리</span></div>
+      <div class="rl"><span class="dot" style="background:var(--doing)"></span><span class="pid">08_02</span><span class="sum">천장 이후 레버</span><span class="crchip">◆ REQ-2607-002</span></div>
+      <div class="rl"><span class="dot" style="background:var(--predone)"></span><span class="pid">13_02</span><span class="sum">모델 잔여 개선</span><span class="crchip">◆ REQ-2607-001</span></div>
+      <div class="rl"><span class="dot" style="background:var(--predone)"></span><span class="pid">13_03</span><span class="sum">규칙 정렬</span></div>
+      <!-- epic: metadata-terminology -->
+      <div class="grp"><span>🔤 메타 용어 통일</span><span class="ep">epic: metadata-terminology</span><span class="ct">3</span></div>
+      <div class="rl"><span class="dot" style="background:var(--doing)"></span><span class="pid">09_01</span><span class="sum">용어 통일 리팩토링</span></div>
+      <div class="rl"><span class="dot" style="background:var(--doing)"></span><span class="pid">09_02</span><span class="sum">Playwright 회귀검증</span></div>
+      <div class="rl"><span class="dot" style="background:var(--done)"></span><span class="pid">09_03</span><span class="sum">단계 파일정보 표시</span></div>
+      <!-- epic: kanban-linkage -->
+      <div class="grp"><span>📋 칸반·간트</span><span class="ep">epic: kanban-linkage</span><span class="ct">3</span></div>
+      <div class="rl"><span class="dot" style="background:var(--done)"></span><span class="pid">14_01</span><span class="sum">카드 칩·그룹카드</span></div>
+      <div class="rl"><span class="dot" style="background:var(--done)"></span><span class="pid">14_03</span><span class="sum">칸반 표준 지침화</span></div>
+      <div class="rl"><span class="dot" style="background:var(--todo)"></span><span class="pid">14_04</span><span class="sum">간트차트(본 작업)</span></div>
+      <!-- no epic -->
+      <div class="grp"><span>🗂 기타</span><span class="ep" style="background:#eef0f4;color:var(--ink-3)">에픽 없음</span><span class="ct">4</span></div>
+      <div class="rl"><span class="dot" style="background:var(--done)"></span><span class="pid">15_06</span><span class="sum">사번 매칭 수정</span><span class="crchip">◆ REQ-2606-030</span></div>
+      <div class="rl"><span class="dot" style="background:var(--done)"></span><span class="pid">19_02</span><span class="sum">배포 메모리 스트림</span><span class="crchip">◆ REQ-2606-032</span></div>
+      <div class="rl"><span class="dot" style="background:var(--todo)"></span><span class="pid">01_01</span><span class="sum">Nav 허브·버전 배지</span></div>
+      <div class="rl"><span class="dot" style="background:var(--todo)"></span><span class="pid">13_01</span><span class="sum">3자 무결성 검증</span></div>
+    </div>
+
+    <div class="tcol">
+      <!-- rows (heights must mirror label col: grp=30, data=38) -->
+      <div class="tr g"></div>
+      <div class="tr"><div class="bar s-doing" style="left:504px;width:98px"><span>필드토큰</span><span class="cap">07-07 →</span></div></div>
+      <div class="tr"><div class="bar s-doing" style="left:518px;width:84px"><span>절분리</span></div></div>
+      <div class="tr"><div class="bar s-doing" style="left:518px;width:84px"><span>레버</span></div></div>
+      <div class="tr"><div class="bar s-predone" style="left:588px;width:24px"><span>잔여</span></div></div>
+      <div class="tr"><div class="bar s-predone" style="left:588px;width:24px"><span>규칙</span></div></div>
+      <div class="tr g"></div>
+      <div class="tr"><div class="bar s-doing" style="left:532px;width:70px"><span>용어</span></div></div>
+      <div class="tr"><div class="bar s-doing" style="left:532px;width:70px"><span>회귀</span></div></div>
+      <div class="tr"><div class="pt s-done" style="left:522px"><i></i><span class="cap">07-09 완료</span></div></div>
+      <div class="tr g"></div>
+      <div class="tr"><div class="pt s-done" style="left:592px"><i></i><span class="cap">07-14 완료</span></div></div>
+      <div class="tr"><div class="pt s-done" style="left:592px"><i></i><span class="cap">07-14 완료</span></div></div>
+      <div class="tr"><div class="bar planned" style="left:602px;width:84px"><span>간트</span><span class="cap">계획 07-14~20</span></div></div>
+      <div class="tr g"></div>
+      <div class="tr"><div class="pt s-done" style="left:186px"><i></i><span class="cap">06-15 완료</span></div></div>
+      <div class="tr"><div class="pt s-done" style="left:242px"><i></i><span class="cap">06-19 완료</span></div></div>
+      <div class="tr"><div class="pt s-todo" style="left:410px"><i></i><span class="cap">07-01 대기</span></div></div>
+      <div class="tr"><div class="pt s-todo" style="left:578px"><i></i><span class="cap">07-13 대기</span></div></div>
+
+      <!-- SVG overlay: gridlines, today, CR diamonds+leaders, 선행 arrows -->
+      <svg class="ov" viewBox="0 0 854 690" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="dep" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#8a94a6"/>
+          </marker>
+          <marker id="crm" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#6f42c1"/>
+          </marker>
+        </defs>
+
+        <!-- week gridlines -->
+        <g stroke="#eef0f4" stroke-width="1">
+          <line x1="98" y1="0" x2="98" y2="690"/><line x1="196" y1="0" x2="196" y2="690"/>
+          <line x1="294" y1="0" x2="294" y2="690"/><line x1="392" y1="0" x2="392" y2="690"/>
+          <line x1="490" y1="0" x2="490" y2="690"/><line x1="588" y1="0" x2="588" y2="690"/>
+          <line x1="686" y1="0" x2="686" y2="690"/><line x1="784" y1="0" x2="784" y2="690"/>
+        </g>
+        <!-- month divider (Jul 1 @ x=420) -->
+        <line x1="420" y1="0" x2="420" y2="690" stroke="#dfe3ea" stroke-width="1"/>
+        <!-- today @ 07-14 x=602 -->
+        <line x1="602" y1="0" x2="602" y2="690" stroke="#e5484d" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <text x="605" y="11" fill="#e5484d" font-size="9" font-weight="700" font-family="sans-serif">오늘</text>
+
+        <!-- 선행 의존 (solid, gray) -->
+        <path d="M602,87 C616,112 604,140 589,161" fill="none" stroke="#8a94a6" stroke-width="1.6" marker-end="url(#dep)"/>
+        <path d="M602,269 C630,286 566,300 536,306" fill="none" stroke="#8a94a6" stroke-width="1.6" marker-end="url(#dep)"/>
+        <path d="M602,451 C616,464 616,476 603,487" fill="none" stroke="#8a94a6" stroke-width="1.6" marker-end="url(#dep)"/>
+
+        <!-- CR 구현 연계 (dashed violet) + ◆ diamonds -->
+        <!-- REQ-2607-002 → 08_02 (07-14) -->
+        <g><rect x="609" y="120" width="10" height="10" rx="2" transform="rotate(45 614 125)" fill="#6f42c1"/>
+           <path d="M608,125 L604,125" fill="none" stroke="#6f42c1" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#crm)"/></g>
+        <!-- REQ-2607-001 → 13_02 (07-13) -->
+        <g><rect x="569" y="158" width="10" height="10" rx="2" transform="rotate(45 574 163)" fill="#6f42c1"/>
+           <path d="M580,163 L586,163" fill="none" stroke="#6f42c1" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#crm)"/></g>
+        <!-- REQ-2606-030 → 15_06 (06-15) -->
+        <g><rect x="175" y="552" width="10" height="10" rx="2" transform="rotate(45 180 557)" fill="#6f42c1"/>
+           <path d="M187,557 L194,557" fill="none" stroke="#6f42c1" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#crm)"/></g>
+        <!-- REQ-2606-032 (06-15) → 19_02 (06-19) : 교차 날짜 시각화 -->
+        <g><rect x="191" y="590" width="10" height="10" rx="2" transform="rotate(45 196 595)" fill="#6f42c1"/>
+           <path d="M204,595 L248,595" fill="none" stroke="#6f42c1" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#crm)"/></g>
+      </svg>
+    </div>
+  </div>
+
+</div></div></div>
+
+<!-- design note -->
+<div style="margin-top:20px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:12px;color:var(--ink-2);max-width:900px;">
+  <div style="font-weight:750;color:var(--ink);margin-bottom:8px;">🧩 이 뷰는 데이터를 갖지 않는다 — 3자 조합</div>
+  <table style="border-collapse:collapse;font-size:11.5px;width:100%;">
+    <tr style="color:var(--ink-3);text-align:left;">
+      <th style="padding:4px 8px;border-bottom:1px solid var(--line)">정보원</th>
+      <th style="padding:4px 8px;border-bottom:1px solid var(--line)">간트에 기여</th>
+      <th style="padding:4px 8px;border-bottom:1px solid var(--line)">추가되는 것</th>
+    </tr>
+    <tr><td style="padding:5px 8px"><code>_index.md</code>(월별)</td><td style="padding:5px 8px">막대 뼈대 · 상태색 · 작성/완료일</td><td style="padding:5px 8px;color:var(--cr)"><b>컬럼 3종: 관련 CR · 선행 · 에픽</b></td></tr>
+    <tr><td style="padding:5px 8px">계획서 메타블록</td><td style="padding:5px 8px">자기완결 미러 · 복합 <code>## 관계</code></td><td style="padding:5px 8px">링크 3개↑ 예외만</td></tr>
+    <tr><td style="padding:5px 8px">CR 문서</td><td style="padding:5px 8px">◆ 마일스톤 · 요청일 · FP/공수</td><td style="padding:5px 8px">손대지 않음(역인덱스 생성)</td></tr>
+  </table>
+  <div style="margin-top:10px;line-height:1.6;">
+    · <b style="color:var(--cr)">◆ 점선</b> = <code>관련 CR</code> 컬럼의 구현 연계(CR 요청 → 이행 계획). REQ-2606-032(06-15)→19_02(06-19)처럼 <b>월 넘는 연계</b>도 한 화면에.<br>
+    · <b style="color:var(--dep)">▸ 실선</b> = <code>선행</code> 컬럼(계획→계획 의존). 14_03→14_04, 09_01→09_02, 08_01→13_02.<br>
+    · <b>에픽 스윔레인</b> = <code>에픽</code> 컬럼 동일값 묶음. "함께 작업한 계획"을 파생 트리 강요 없이 표현.<br>
+    · 막대 클릭 → 기존 상세 모달(<code>openDetail</code>) / ◆ 클릭 → CR 모달(<code>openCrDetail</code>). · 파서는 <code>parse_all_months</code> 확장(신규 파서 없음).
+  </div>
+</div>
+
+</body>
+</html>

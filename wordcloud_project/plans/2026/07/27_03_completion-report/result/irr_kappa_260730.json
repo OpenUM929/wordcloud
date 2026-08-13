@@ -1,0 +1,46 @@
+{
+  "n": 100,
+  "agree": 98,
+  "po": 0.98,
+  "pe": 0.3926,
+  "kappa": 0.967,
+  "kappa_ci95": [
+    0.922,
+    1.012
+  ],
+  "band": "almost perfect (0.81~1.00)",
+  "agree_pct": 98.0,
+  "agree_wilson": [
+    93.0,
+    99.45
+  ],
+  "posneg_reversal": 0,
+  "confusion": {
+    "positive->positive": 51,
+    "positive->negative": 0,
+    "positive->neutral": 0,
+    "negative->positive": 0,
+    "negative->negative": 18,
+    "negative->neutral": 0,
+    "neutral->positive": 2,
+    "neutral->negative": 0,
+    "neutral->neutral": 29
+  },
+  "disagreements": [
+    {
+      "no": 126,
+      "field": "단점",
+      "text": "타부서를 아우르는 협업",
+      "reader1": "neutral",
+      "reader2": "positive"
+    },
+    {
+      "no": 178,
+      "field": "단점",
+      "text": "경영 목표를 명확하게 전달하고 각인",
+      "reader1": "neutral",
+      "reader2": "positive"
+    }
+  ],
+  "caveat": "두 판독자는 동일 계열 모델이므로 독립이 아님 — κ 는 상한 추정치"
+}

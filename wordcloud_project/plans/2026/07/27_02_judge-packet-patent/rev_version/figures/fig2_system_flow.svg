@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 660" width="1160" height="660" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+  <defs>
+    <marker id="a2" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5b6b7f"/>
+    </marker>
+    <marker id="a2f" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#c98a2e"/>
+    </marker>
+    <marker id="a2g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#4c8c5a"/>
+    </marker>
+    <marker id="a2p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#7a5aa6"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1160" height="660" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="700" fill="#1f2937">[그림 2] 본 발명의 전체 구성 및 동작 — 추출 → 판정 → 반영의 자기설명 판정 데이터 구조 왕복</text>
+
+  <!-- lanes -->
+  <rect x="24" y="60" width="1112" height="176" fill="#f7f9fc" stroke="#d3dbe6"/>
+  <rect x="24" y="240" width="1112" height="100" fill="#fffaf1" stroke="#e6d3b4"/>
+  <rect x="24" y="344" width="1112" height="104" fill="#f4faf5" stroke="#c9e0cd"/>
+  <rect x="24" y="452" width="1112" height="100" fill="#f9f6fc" stroke="#ddd0ea"/>
+  <text x="34" y="80" font-size="12.5" font-weight="700" fill="#4a6182">웹 시스템(서버)</text>
+  <text x="34" y="260" font-size="12.5" font-weight="700" fill="#a8761f">외부 판정 수단(고성능 AI)</text>
+  <text x="34" y="364" font-size="12.5" font-weight="700" fill="#3f7a4f">웹 검토 인터페이스(그룹검토 게시판)</text>
+  <text x="34" y="472" font-size="12.5" font-weight="700" fill="#6b4f96">평가 데이터베이스</text>
+
+  <!-- batch trigger -->
+  <rect x="34" y="104" width="146" height="84" rx="8" fill="#ffffff" stroke="#8fa3bb" stroke-dasharray="5 3"/>
+  <text x="107" y="130" font-size="12" fill="#4a6182" text-anchor="middle">배치 처리 마지막 단계</text>
+  <text x="107" y="150" font-size="11.5" fill="#7b8ba1" text-anchor="middle">(배치 종료 후 자동 추출)</text>
+  <text x="107" y="168" font-size="11.5" fill="#7b8ba1" text-anchor="middle">또는 관리자 화면 수동 추출</text>
+
+  <!-- (1) extract -->
+  <rect x="222" y="90" width="186" height="112" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="315" y="113" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="middle">① 판정 곤란 문장 추출</text>
+  <text x="315" y="134" font-size="11.8" fill="#3b4756" text-anchor="middle">가명 평가 원복 없이 로드</text>
+  <text x="315" y="152" font-size="11.8" fill="#3b4756" text-anchor="middle">극성 불일치 / 저마진만 선별</text>
+  <text x="315" y="170" font-size="11.8" fill="#3b4756" text-anchor="middle">기존 보정 문장 제외</text>
+  <text x="315" y="188" font-size="11.8" fill="#a2504d" text-anchor="middle">PII 정규식 게이트 → 격리</text>
+
+  <!-- (2) packet build -->
+  <rect x="450" y="90" width="196" height="112" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="548" y="113" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="middle">② 판정 데이터 구조 생성</text>
+  <text x="548" y="134" font-size="11.8" fill="#3b4756" text-anchor="middle">봉투 = 단계 정의 · 상태 코드</text>
+  <text x="548" y="152" font-size="11.8" fill="#3b4756" text-anchor="middle">지시문 · 판정 규칙 6개</text>
+  <text x="548" y="170" font-size="11.8" fill="#c07a1f" text-anchor="middle">출력 형식(output_schema) 강제</text>
+  <text x="548" y="188" font-size="11.8" fill="#3b4756" text-anchor="middle">items[] + 반영 키</text>
+
+  <!-- (4) upload/aggregate -->
+  <rect x="688" y="90" width="186" height="112" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="781" y="113" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="middle">④ 업로드 · 보관 · 집계</text>
+  <text x="781" y="134" font-size="11.8" fill="#3b4756" text-anchor="middle">고정 경로 저장(경로 이탈 차단)</text>
+  <text x="781" y="152" font-size="11.8" fill="#3b4756" text-anchor="middle">상태별 건수 집계</text>
+  <text x="781" y="176" font-size="11.8" fill="#a2504d" text-anchor="middle">작업 완료(3·4)는 기록하지 않음</text>
+  <text x="781" y="192" font-size="11.8" fill="#a2504d" text-anchor="middle">= 반영 지연</text>
+
+  <!-- (6) commit button -->
+  <rect x="916" y="90" width="196" height="112" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="1014" y="113" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="middle">⑥ "DB에 반영" 확정 조작</text>
+  <text x="1014" y="134" font-size="11.8" fill="#3b4756" text-anchor="middle">대상 선택: AI분(3) / 사람분(4)</text>
+  <text x="1014" y="152" font-size="11.8" fill="#3b4756" text-anchor="middle">최종 라벨 = 사람 → AI 우선순위</text>
+  <text x="1014" y="170" font-size="11.8" fill="#3b4756" text-anchor="middle">상태 전이 3→10, 4→11</text>
+  <text x="1014" y="188" font-size="11.8" fill="#4a6182" text-anchor="middle">※ 출처 분기 없는 단일 경로</text>
+
+  <!-- (3) external AI -->
+  <rect x="414" y="256" width="240" height="70" rx="8" fill="#fdf3e3" stroke="#c98a2e" stroke-width="1.5"/>
+  <text x="534" y="278" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="middle">③ 외부 AI 판정</text>
+  <text x="534" y="298" font-size="11.8" fill="#3b4756" text-anchor="middle">ai_reference{polarity, confidence, reason}</text>
+  <text x="534" y="316" font-size="11.8" fill="#3b4756" text-anchor="middle">확신 → status 3 / 애매 → status 2</text>
+
+  <!-- (5) human review -->
+  <rect x="700" y="358" width="240" height="76" rx="8" fill="#eef7ef" stroke="#4c8c5a" stroke-width="1.5"/>
+  <text x="820" y="380" font-size="13.5" font-weight="700" fill="#1f2937" text-anchor="middle">⑤ 사람 보완 판정</text>
+  <text x="820" y="400" font-size="11.8" fill="#3b4756" text-anchor="middle">status=2 항목만 선별 조회</text>
+  <text x="820" y="418" font-size="11.8" fill="#3b4756" text-anchor="middle">사전 정의 결정값 → human_decision, status 4</text>
+
+  <!-- DB -->
+  <rect x="916" y="466" width="196" height="72" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.5"/>
+  <text x="1014" y="490" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">문장별 보정값 필드</text>
+  <text x="1014" y="510" font-size="11.8" fill="#3b4756" text-anchor="middle">in-place 병합(신규 우선·기존 보존)</text>
+  <text x="1014" y="528" font-size="11.8" fill="#3b4756" text-anchor="middle">신규 테이블·컬럼 없음 · 멱등</text>
+
+  <!-- arrows: batch → (1) → (2) -->
+  <line x1="180" y1="146" x2="216" y2="146" stroke="#5b6b7f" stroke-width="1.8" marker-end="url(#a2)"/>
+  <line x1="408" y1="146" x2="444" y2="146" stroke="#5b6b7f" stroke-width="1.8" marker-end="url(#a2)"/>
+
+  <!-- (2) → (3) download -->
+  <path d="M520,202 L520,250" fill="none" stroke="#c98a2e" stroke-width="1.8" marker-end="url(#a2f)"/>
+  <text x="512" y="228" font-size="11.5" fill="#a8761f" text-anchor="end">판정 데이터 구조 파일 다운로드</text>
+
+  <!-- (3) → (4) upload -->
+  <path d="M654,291 L676,291 L676,232 L740,232 L740,208" fill="none" stroke="#c98a2e" stroke-width="1.8" marker-end="url(#a2f)"/>
+  <text x="686" y="262" font-size="11.5" fill="#a8761f">판정 완료 파일 업로드</text>
+
+  <!-- (4) → (5) escalation -->
+  <path d="M830,202 L830,352" fill="none" stroke="#4c8c5a" stroke-width="1.8" marker-end="url(#a2g)"/>
+  <text x="840" y="300" font-size="11.5" fill="#3f7a4f">status=2 이관</text>
+
+  <!-- (5) → (6) -->
+  <path d="M940,396 L970,396 L970,208" fill="none" stroke="#4c8c5a" stroke-width="1.8" marker-end="url(#a2g)"/>
+  <text x="946" y="386" font-size="11.5" fill="#3f7a4f">status=4</text>
+
+  <!-- (4) → (6) -->
+  <line x1="874" y1="146" x2="910" y2="146" stroke="#5b6b7f" stroke-width="1.8" marker-end="url(#a2)"/>
+
+  <!-- (6) → DB -->
+  <line x1="1050" y1="202" x2="1050" y2="460" stroke="#7a5aa6" stroke-width="1.8" marker-end="url(#a2p)"/>
+  <text x="1060" y="330" font-size="11.5" fill="#6b4f96">확정 시점에만 기록</text>
+
+  <!-- footer note -->
+  <rect x="24" y="572" width="1112" height="66" rx="8" fill="#f7f9fc" stroke="#c3cfdd"/>
+  <text x="44" y="596" font-size="12.5" fill="#3b4756">· 판정 데이터 구조 파일 1개가 단계 정의 · 진행 상태 · 지시문(프롬프트) · 판정 규칙 · 출력 형식 · 데이터 · 반영 키를 모두 품는다 → 서버 연동 · API · 별도 절차 문서 불요.</text>
+  <text x="44" y="620" font-size="12.5" fill="#3b4756">· ③ 외부 AI가 채운 결과와 ⑤ 사람이 채운 결과는 <tspan font-weight="700">동일한 출력 형식</tspan>이므로, ⑥ 반영은 출처를 판별하는 분기 없이 같은 함수 경로 하나로 처리된다(무수정 통합).</text>
+</svg>

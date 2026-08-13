@@ -22,6 +22,8 @@
 """
 import argparse
 import glob
+# 260806 검토큐 재편으로 파일명에 우선순위 접두어(P1_/P2_/P3_)가 붙었다.
+# glob 은 실패해도 빈 목록을 돌려 **조용히 0건**이 되므로 접두 허용 패턴으로 고친다.
 import json
 import os
 import re
@@ -91,8 +93,8 @@ def main():
 
     rows = []
     seen = set()
-    for f in sorted(glob.glob(os.path.join(REVIEW, '8c_auto__*.jsonl'))
-                    + glob.glob(os.path.join(REVIEW, '8c_other_neu__*.jsonl'))):
+    for f in sorted(glob.glob(os.path.join(REVIEW, '*8c_auto__*.jsonl'))
+                    + glob.glob(os.path.join(REVIEW, '*8c_other_neu__*.jsonl'))):
         for l in open(f, encoding='utf-8'):
             if not l.strip():
                 continue

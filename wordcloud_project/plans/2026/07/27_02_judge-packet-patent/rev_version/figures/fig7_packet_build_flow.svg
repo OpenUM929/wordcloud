@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 420" width="1220" height="420" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+  <defs>
+    <marker id="m7a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5b6b7f"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1220" height="420" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="700" fill="#1f2937">[그림 7] 판정 데이터 구조 생성 단계 흐름도 — 봉투 6단계 조립(핵심 1의 구체화)</text>
+
+  <!-- 6 boxes in a row -->
+  <rect x="24" y="80" width="176" height="120" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="112" y="102" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="middle">① 봉투 생성</text>
+  <text x="112" y="122" font-size="10.8" fill="#3b4756" text-anchor="middle">안내문·스키마버전</text>
+  <text x="112" y="138" font-size="10.8" fill="#3b4756" text-anchor="middle">구조ID·생성시각</text>
+  <text x="112" y="154" font-size="10.8" fill="#3b4756" text-anchor="middle">추출조건·반영키필드</text>
+  <text x="112" y="170" font-size="10.8" fill="#3b4756" text-anchor="middle">진행상태·이력</text>
+
+  <rect x="222" y="80" width="176" height="120" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="310" y="102" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="middle">② 단계 정의·지시문</text>
+  <text x="310" y="122" font-size="10.8" fill="#3b4756" text-anchor="middle">extract/judge/insert</text>
+  <text x="310" y="138" font-size="10.8" fill="#3b4756" text-anchor="middle">수행주체·완료여부</text>
+  <text x="310" y="154" font-size="10.8" fill="#3b4756" text-anchor="middle">판정 단계 지시문 삽입</text>
+  <text x="310" y="170" font-size="10.8" fill="#8a94a6" text-anchor="middle">(확신→3 / 애매→2)</text>
+
+  <rect x="420" y="80" width="176" height="120" rx="8" fill="#fdf3e3" stroke="#c98a2e" stroke-width="1.5"/>
+  <text x="508" y="102" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="middle">③ 판정 규칙 삽입</text>
+  <text x="508" y="122" font-size="10.8" fill="#3b4756" text-anchor="middle">①오분류0 최우선</text>
+  <text x="508" y="138" font-size="10.8" fill="#3b4756" text-anchor="middle">②중립·긍정 허용</text>
+  <text x="508" y="154" font-size="10.8" fill="#3b4756" text-anchor="middle">③~⑥ 등 총 6개 규칙</text>
+  <text x="508" y="170" font-size="10.8" fill="#a8761f" text-anchor="middle">위해성 비대칭 반영</text>
+
+  <rect x="618" y="80" width="176" height="120" rx="8" fill="#fdf3e3" stroke="#c98a2e" stroke-width="1.5"/>
+  <text x="706" y="102" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="middle">④ 출력 형식 삽입</text>
+  <text x="706" y="122" font-size="10.8" fill="#3b4756" text-anchor="middle">polarity/confidence</text>
+  <text x="706" y="138" font-size="10.8" fill="#3b4756" text-anchor="middle">/reason 필드 명시</text>
+  <text x="706" y="154" font-size="10.8" fill="#a8761f" text-anchor="middle">status 3=확신·2=애매</text>
+  <text x="706" y="170" font-size="10.8" fill="#a8761f" text-anchor="middle">= 자유형식 응답 원천 차단</text>
+
+  <rect x="816" y="80" width="176" height="120" rx="8" fill="#eef7ef" stroke="#4c8c5a" stroke-width="1.5"/>
+  <text x="904" y="102" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="middle">⑤ 마진 사다리 집계</text>
+  <text x="904" y="122" font-size="10.8" fill="#3b4756" text-anchor="middle">임계값 0.05·0.10·0.15</text>
+  <text x="904" y="138" font-size="10.8" fill="#3b4756" text-anchor="middle">최광폭 1회 추출</text>
+  <text x="904" y="154" font-size="10.8" fill="#3b4756" text-anchor="middle">항목별 구간 표지 부여</text>
+  <text x="904" y="170" font-size="10.8" fill="#3f7a4f" text-anchor="middle">(상세 = 그림 8)</text>
+
+  <rect x="1014" y="80" width="182" height="120" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.5"/>
+  <text x="1105" y="102" font-size="12.5" font-weight="700" fill="#1f2937" text-anchor="middle">⑥ 파일화</text>
+  <text x="1105" y="122" font-size="10.8" fill="#3b4756" text-anchor="middle">고정 루트 하위 경로</text>
+  <text x="1105" y="138" font-size="10.8" fill="#3b4756" text-anchor="middle">구분자·특수문자 치환</text>
+  <text x="1105" y="154" font-size="10.8" fill="#3b4756" text-anchor="middle">이탈 시 예외로 저장 거부</text>
+  <text x="1105" y="170" font-size="10.8" fill="#6b5a8a" text-anchor="middle">동일 라벨·배치 = 덮어쓰기</text>
+
+  <!-- arrows -->
+  <line x1="200" y1="140" x2="218" y2="140" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m7a)"/>
+  <line x1="398" y1="140" x2="416" y2="140" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m7a)"/>
+  <line x1="596" y1="140" x2="614" y2="140" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m7a)"/>
+  <line x1="794" y1="140" x2="812" y2="140" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m7a)"/>
+  <line x1="992" y1="140" x2="1010" y2="140" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m7a)"/>
+
+  <!-- footer -->
+  <rect x="24" y="240" width="1172" height="86" rx="8" fill="#f7f9fc" stroke="#c3cfdd" stroke-width="1.2"/>
+  <text x="44" y="264" font-size="12.5" font-weight="700" fill="#1f2937">본 발명 핵심 1과의 대응 — 출력 형식 강제</text>
+  <text x="44" y="286" font-size="12" fill="#3b4756">①②는 봉투(envelope)의 메타·진행 정보를, ③④는 판정 수단이 지켜야 할 규칙과 출력 형식을 같은 파일 안에 결합한다. 그 결과 외부 판정 수단은</text>
+  <text x="44" y="304" font-size="12" fill="#3b4756">자유 형식으로 응답할 수 없고, 전달받은 판정 데이터 구조의 지정된 자리에 지정된 값만 채워 반환한다(자기설명 왕복 데이터 단위, 그림 3).</text>
+  <text x="44" y="320" font-size="11.3" fill="#8a94a6">⑤ 마진 사다리 집계의 세부 산식·비교 방식은 [그림 8]을, 완성된 판정 데이터 구조의 전체 필드 구조는 [그림 3]을 함께 참조.</text>
+</svg>

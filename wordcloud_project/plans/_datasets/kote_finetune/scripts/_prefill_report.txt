@@ -1,0 +1,58 @@
+모드: APPLY(적용)
+
+규칙별 발동
+  규칙 미발동(사용자 판정)                      18946
+  escalation(모델과 불일치)                  1599
+  R4 양가 업무태도(기업 관점)→긍정                  851
+  silver(모델과 합의)                        621
+  R3 개선요청 화행→부정                         516
+  R2 건강·개인안녕·평가유보→중립                    451
+  R1 무결점·약점부재 선언→중립                     393
+  R1b 무결점+명시강긍정→긍정                        9
+
+규칙별 표본 (문장 / 현재 모델 판정)
+
+[R2 건강·개인안녕·평가유보→중립]
+   과한 업무열의로 건강유의                                               모델=negative
+   건강관리에 힘써야 한다                                                모델=negative
+   일과 건강관리의 리벨런싱이 중요함                                          모델=negative
+   본인의 건강을 위해 조금더 노력                                           모델=negative
+
+[R4 양가 업무태도(기업 관점)→긍정]
+   업무에 대한 책임감이 너무 강함                                           모델=negative
+   매우열정적이며추진력이너무강함                                             모델=negative
+   과도할 만큼 책임감이 넘침                                              모델=negative
+   업무에 대한 열정이 너무 뛰어남                                           모델=negative
+
+[R3 개선요청 화행→부정]
+   전문성을 길러야 한다                                                 모델=negative
+   업무 전문성을 더 길러야합니다                                            모델=negative
+   업무전문성을 키워야 합니다                                              모델=negative
+   책임감을 길러야할 것 같습니다                                            모델=negative
+
+[R1 무결점·약점부재 선언→중립]
+   개선할 부분이 없습니다                                                모델=positive
+   개선할 점이 없습니다                                                 모델=positive
+   기타 별도 개선할 사항 없음                                             모델=positive
+   단점과 고쳐야할점이 별루 없음                                            모델=negative
+
+[R1b 무결점+명시강긍정→긍정]
+   다방면에 뛰어난 인재로 보완이 필요한 사항은 없습니다                               모델=negative
+   보완이 필요없습니다 완벽합니다                                            모델=positive
+   보완할 점이 없이 완벽합니다                                             모델=positive
+   보완할 점이 없을 정도로 완벽합니다                                         모델=positive
+
+silver 이동 파일별
+  P2_8a_other_pos__degree_260703.jsonl                       163
+  P2_hard_prefilled_260707_c3.jsonl                          134
+  P2_hard_queue_260715.jsonl                                  91
+  P2_hard_prefilled_260707_c2.jsonl                           79
+  P3_packet_review_pool_260714.jsonl                          57
+  P2_hard_queue_260713.jsonl                                  30
+  P2_8a_other_pos__drive_260703.jsonl                         29
+  P2_pattern_D_traitpos_review_260715.jsonl                   15
+  P2_8b_other_neg__etc_260703.jsonl                           12
+  P2_8a_other_pos__etc_260703.jsonl                            4
+  P2_8a_other_pos__leader_260703.jsonl                         3
+  P2_8a_other_pos__expert_260703.jsonl                         2
+  P3_packet_b346_pool_260714.jsonl                             2

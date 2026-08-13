@@ -1,0 +1,217 @@
+{
+  "source": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/emotion/weak_export_260714.jsonl",
+  "batch": "batch_20260714_0",
+  "year": 2025,
+  "model": "D:/dev/wordcloud/model/hr_sentiment_finetuned",
+  "device": "cuda",
+  "field_available": false,
+  "n_rows_raw": 774805,
+  "n_clause_excluded": 17246,
+  "n_sentences": 757559,
+  "n_unique": 324715,
+  "infer_sec": 912.9,
+  "rule_engine_dist": {
+    "positive": 454212,
+    "neutral": 182480,
+    "negative": 120867
+  },
+  "model_dist": {
+    "positive": 397755,
+    "neutral": 236935,
+    "negative": 122869
+  },
+  "model_pct": {
+    "positive": 52.5,
+    "neutral": 31.28,
+    "negative": 16.22
+  },
+  "no_weakness": {
+    "n": 143608,
+    "pct": 18.96,
+    "unique": 13188,
+    "model_label": {
+      "neutral": 138728,
+      "negative": 2051,
+      "positive": 2829
+    }
+  },
+  "rule_vs_model": {
+    "agree": 660093,
+    "agree_pct": 87.13,
+    "posneg": 10232,
+    "posneg_pct": 1.35,
+    "matrix": {
+      "negative->negative": 102350,
+      "negative->neutral": 18271,
+      "negative->positive": 422,
+      "neutral->negative": 10709,
+      "neutral->neutral": 166146,
+      "neutral->positive": 5736,
+      "positive->negative": 9810,
+      "positive->neutral": 52518,
+      "positive->positive": 391597
+    }
+  },
+  "top_repeated": [
+    {
+      "n": 13622,
+      "pct": 1.798,
+      "text": "보완필요점 없습니다",
+      "model": "neutral",
+      "conf": 0.9946,
+      "rule": "neutral"
+    },
+    {
+      "n": 10073,
+      "pct": 1.33,
+      "text": "보완필요점이 없습니다",
+      "model": "neutral",
+      "conf": 0.9948,
+      "rule": "neutral"
+    },
+    {
+      "n": 5768,
+      "pct": 0.761,
+      "text": "보완필요점은 없습니다",
+      "model": "neutral",
+      "conf": 0.9948,
+      "rule": "neutral"
+    },
+    {
+      "n": 3421,
+      "pct": 0.452,
+      "text": "보완할 점이 없습니다",
+      "model": "neutral",
+      "conf": 0.9935,
+      "rule": "neutral"
+    },
+    {
+      "n": 2875,
+      "pct": 0.38,
+      "text": "맡은 업무에 최선을 다함",
+      "model": "positive",
+      "conf": 0.9683,
+      "rule": "positive"
+    },
+    {
+      "n": 2320,
+      "pct": 0.306,
+      "text": "수평적 의사소통과 부드러운 리더십으로 문제해결에 앞장서며, 구성원들의 자발적 참여를 유도함",
+      "model": "positive",
+      "conf": 0.9876,
+      "rule": "positive"
+    },
+    {
+      "n": 2000,
+      "pct": 0.264,
+      "text": "보완 필요점 없습니다",
+      "model": "neutral",
+      "conf": 0.9946,
+      "rule": "neutral"
+    },
+    {
+      "n": 1927,
+      "pct": 0.254,
+      "text": "보완 필요점이 없습니다",
+      "model": "neutral",
+      "conf": 0.9948,
+      "rule": "neutral"
+    },
+    {
+      "n": 1760,
+      "pct": 0.232,
+      "text": "특별한 보완필요점 없음",
+      "model": "neutral",
+      "conf": 0.9942,
+      "rule": "neutral"
+    },
+    {
+      "n": 1624,
+      "pct": 0.214,
+      "text": "보완 필요점 없음",
+      "model": "neutral",
+      "conf": 0.9947,
+      "rule": "neutral"
+    },
+    {
+      "n": 1506,
+      "pct": 0.199,
+      "text": "수평적 의사소통과 부드러운 리더십",
+      "model": "positive",
+      "conf": 0.9024,
+      "rule": "positive"
+    },
+    {
+      "n": 1399,
+      "pct": 0.185,
+      "text": "보완 필요사항 없음",
+      "model": "neutral",
+      "conf": 0.9946,
+      "rule": "neutral"
+    },
+    {
+      "n": 1339,
+      "pct": 0.177,
+      "text": "신중한 성격으로 중요한 결정을 할때 심사숙고함",
+      "model": "positive",
+      "conf": 0.9848,
+      "rule": "positive"
+    },
+    {
+      "n": 1287,
+      "pct": 0.17,
+      "text": "보완할점이 없습니다",
+      "model": "neutral",
+      "conf": 0.993,
+      "rule": "neutral"
+    },
+    {
+      "n": 1221,
+      "pct": 0.161,
+      "text": "보완 필요점이 없음",
+      "model": "neutral",
+      "conf": 0.995,
+      "rule": "neutral"
+    },
+    {
+      "n": 1130,
+      "pct": 0.149,
+      "text": "솔선수범으로 어려움 극복",
+      "model": "positive",
+      "conf": 0.8952,
+      "rule": "positive"
+    },
+    {
+      "n": 1114,
+      "pct": 0.147,
+      "text": "별도 보완필요점 없음",
+      "model": "neutral",
+      "conf": 0.994,
+      "rule": "neutral"
+    },
+    {
+      "n": 1103,
+      "pct": 0.146,
+      "text": "수평적 의사소통과 부드러운 리더십으로 문제해결에 앞장섬",
+      "model": "positive",
+      "conf": 0.9879,
+      "rule": "positive"
+    },
+    {
+      "n": 1090,
+      "pct": 0.144,
+      "text": "선로고장 시 평일 및 주말을 가리지 않고 문제를 해결하기위해 솔선수범으로 움직여주십니다",
+      "model": "positive",
+      "conf": 0.9778,
+      "rule": "positive"
+    },
+    {
+      "n": 1042,
+      "pct": 0.138,
+      "text": "또한 우천 및 기상악화 시 선로순시를 시행하여 선로 사고예방을 위해 최선을 다하셨습니다",
+      "model": "positive",
+      "conf": 0.9434,
+      "rule": "positive"
+    }
+  ]
+}

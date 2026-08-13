@@ -1,0 +1,995 @@
+{
+  "model": "D:/dev/wordcloud/model/hr_sentiment_finetuned",
+  "device": "cuda",
+  "census_examples": [
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 166,
+      "text": "특이사항 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0046,
+        "negative": 0.0017,
+        "neutral": 0.9937
+      },
+      "margin": 0.9891
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 159,
+      "text": "해당 분야 오랜 경험",
+      "model": "neutral",
+      "p": {
+        "positive": 0.1814,
+        "negative": 0.0026,
+        "neutral": 0.816
+      },
+      "margin": 0.6346
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 154,
+      "text": "단점 : 특이사항 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0038,
+        "negative": 0.0019,
+        "neutral": 0.9943
+      },
+      "margin": 0.9905
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 127,
+      "text": "잘 모르겠음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.002,
+        "negative": 0.0062,
+        "neutral": 0.9917
+      },
+      "margin": 0.9855
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 120,
+      "text": "장점이 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0043,
+        "negative": 0.2449,
+        "neutral": 0.7508
+      },
+      "margin": 0.5059
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 109,
+      "text": "활기찬 회사생활을 위하여 건강관리가 필요함",
+      "model": "neutral",
+      "p": {
+        "positive": 0.014,
+        "negative": 0.1714,
+        "neutral": 0.8146
+      },
+      "margin": 0.6432
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 101,
+      "text": "상황변화에 대한 인식",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0118,
+        "negative": 0.0049,
+        "neutral": 0.9832
+      },
+      "margin": 0.9714
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 90,
+      "text": "원하는 방향으로 상대방 행동 유발",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0367,
+        "negative": 0.0066,
+        "neutral": 0.9567
+      },
+      "margin": 0.92
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 90,
+      "text": "보완할 특이사항 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0076,
+        "negative": 0.0015,
+        "neutral": 0.9909
+      },
+      "margin": 0.9833
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 87,
+      "text": "특별한 장점이 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0025,
+        "negative": 0.0024,
+        "neutral": 0.9951
+      },
+      "margin": 0.9926
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 86,
+      "text": "동료들과의 의사소통",
+      "model": "neutral",
+      "p": {
+        "positive": 0.1627,
+        "negative": 0.003,
+        "neutral": 0.8343
+      },
+      "margin": 0.6716
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 85,
+      "text": "특별한 보완필요 사항 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0085,
+        "negative": 0.0014,
+        "neutral": 0.9901
+      },
+      "margin": 0.9816
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 76,
+      "text": "잘 모르겠습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.002,
+        "negative": 0.0047,
+        "neutral": 0.9933
+      },
+      "margin": 0.9886
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 74,
+      "text": "보완필요점은 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0073,
+        "negative": 0.0013,
+        "neutral": 0.9913
+      },
+      "margin": 0.984
+    },
+    {
+      "field": "장점",
+      "verdict": "neutral",
+      "occurrences": 74,
+      "text": "ㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇ",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0127,
+        "negative": 0.0017,
+        "neutral": 0.9856
+      },
+      "margin": 0.9729
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 73,
+      "text": "업무에 대한 열의로 다양한 업무 추진, 불필요한일 버리기 등으로 경감 필요",
+      "model": "negative",
+      "p": {
+        "positive": 0.0031,
+        "negative": 0.9897,
+        "neutral": 0.0071
+      },
+      "margin": 0.9826
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 42,
+      "text": "맡은바 임무에 최선을 다하는 모습이 열정적이지만, 개인의 행복을 챙기는 노력도 필요해 보임",
+      "model": "negative",
+      "p": {
+        "positive": 0.0262,
+        "negative": 0.4974,
+        "neutral": 0.4764
+      },
+      "margin": 0.021
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 36,
+      "text": "업무에 대한 관심이 없음",
+      "model": "negative",
+      "p": {
+        "positive": 0.0027,
+        "negative": 0.9903,
+        "neutral": 0.0069
+      },
+      "margin": 0.9834
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 35,
+      "text": "타부서와의 의사소통이 필요합니다",
+      "model": "negative",
+      "p": {
+        "positive": 0.0043,
+        "negative": 0.9903,
+        "neutral": 0.0054
+      },
+      "margin": 0.9849
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 32,
+      "text": "하지만 너무 업무에 치중하지 않고 주변을 돌아봐야 합니다",
+      "model": "negative",
+      "p": {
+        "positive": 0.0069,
+        "negative": 0.7984,
+        "neutral": 0.1947
+      },
+      "margin": 0.6037
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 32,
+      "text": "소통을 소홀히 하며 협업에 비협조적",
+      "model": "negative",
+      "p": {
+        "positive": 0.0036,
+        "negative": 0.9905,
+        "neutral": 0.0059
+      },
+      "margin": 0.9846
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 27,
+      "text": "업무에 열의가 있으나 좀더 성실한 모습이면 더 좋을듯함",
+      "model": "negative",
+      "p": {
+        "positive": 0.0024,
+        "negative": 0.9871,
+        "neutral": 0.0105
+      },
+      "margin": 0.9766
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 20,
+      "text": "평가방식개선요망",
+      "model": "negative",
+      "p": {
+        "positive": 0.0027,
+        "negative": 0.9854,
+        "neutral": 0.0119
+      },
+      "margin": 0.9735
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 19,
+      "text": "장점을 찾을수 없음",
+      "model": "negative",
+      "p": {
+        "positive": 0.0023,
+        "negative": 0.9763,
+        "neutral": 0.0214
+      },
+      "margin": 0.9549
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 18,
+      "text": "장점이 전혀 없습니다",
+      "model": "negative",
+      "p": {
+        "positive": 0.0038,
+        "negative": 0.9878,
+        "neutral": 0.0084
+      },
+      "margin": 0.9794
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 15,
+      "text": "상황을 본인에게만 유리하게 유도",
+      "model": "negative",
+      "p": {
+        "positive": 0.0047,
+        "negative": 0.9863,
+        "neutral": 0.009
+      },
+      "margin": 0.9773
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 14,
+      "text": "업무적으로 매우 강합니다",
+      "model": "negative",
+      "p": {
+        "positive": 0.0301,
+        "negative": 0.8982,
+        "neutral": 0.0718
+      },
+      "margin": 0.8264
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 13,
+      "text": "협업, 추진력, 직무능력, 책임감, 상호존중 및 배려심이 부족함",
+      "model": "negative",
+      "p": {
+        "positive": 0.0023,
+        "negative": 0.9908,
+        "neutral": 0.0069
+      },
+      "margin": 0.9839
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 13,
+      "text": "자기 중심적 사고",
+      "model": "negative",
+      "p": {
+        "positive": 0.0034,
+        "negative": 0.9788,
+        "neutral": 0.0178
+      },
+      "margin": 0.961
+    },
+    {
+      "field": "장점",
+      "verdict": "negative",
+      "occurrences": 12,
+      "text": "팀원들에게의 세심한 배려를 요함",
+      "model": "negative",
+      "p": {
+        "positive": 0.0033,
+        "negative": 0.9912,
+        "neutral": 0.0055
+      },
+      "margin": 0.9857
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 14081,
+      "text": "보완필요점 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0027,
+        "negative": 0.0019,
+        "neutral": 0.9954
+      },
+      "margin": 0.9927
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 10673,
+      "text": "보완필요점이 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0028,
+        "negative": 0.0018,
+        "neutral": 0.9954
+      },
+      "margin": 0.9926
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 6373,
+      "text": "보완필요점은 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0026,
+        "negative": 0.002,
+        "neutral": 0.9954
+      },
+      "margin": 0.9928
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 2937,
+      "text": "보완할 점이 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0046,
+        "negative": 0.0015,
+        "neutral": 0.9939
+      },
+      "margin": 0.9893
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 2306,
+      "text": "보완 필요점이 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0027,
+        "negative": 0.0019,
+        "neutral": 0.9954
+      },
+      "margin": 0.9927
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 2176,
+      "text": "특별한 보완필요점 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0027,
+        "negative": 0.0022,
+        "neutral": 0.995
+      },
+      "margin": 0.9923
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 2154,
+      "text": "보완 필요점 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0025,
+        "negative": 0.0021,
+        "neutral": 0.9954
+      },
+      "margin": 0.9929
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 2120,
+      "text": "보완 필요점 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0026,
+        "negative": 0.002,
+        "neutral": 0.9954
+      },
+      "margin": 0.9928
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 1441,
+      "text": "보완할점이 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0036,
+        "negative": 0.0016,
+        "neutral": 0.9948
+      },
+      "margin": 0.9912
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 1380,
+      "text": "보완 필요사항 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0024,
+        "negative": 0.0022,
+        "neutral": 0.9954
+      },
+      "margin": 0.993
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 1291,
+      "text": "보완 필요점이 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0025,
+        "negative": 0.002,
+        "neutral": 0.9955
+      },
+      "margin": 0.993
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 1193,
+      "text": "특별한 보완사항 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0035,
+        "negative": 0.0019,
+        "neutral": 0.9946
+      },
+      "margin": 0.9911
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 1155,
+      "text": "보완필요점 해당사항 없음",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0026,
+        "negative": 0.0022,
+        "neutral": 0.9953
+      },
+      "margin": 0.9927
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 961,
+      "text": "특이사항 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0032,
+        "negative": 0.0022,
+        "neutral": 0.9947
+      },
+      "margin": 0.9915
+    },
+    {
+      "field": "단점",
+      "verdict": "neutral",
+      "occurrences": 919,
+      "text": "보완사항 없습니다",
+      "model": "neutral",
+      "p": {
+        "positive": 0.0031,
+        "negative": 0.0017,
+        "neutral": 0.9952
+      },
+      "margin": 0.9921
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 1346,
+      "text": "신중한 성격으로 중요한 결정을 할때 심사숙고함",
+      "model": "positive",
+      "p": {
+        "positive": 0.9866,
+        "negative": 0.0054,
+        "neutral": 0.008
+      },
+      "margin": 0.9786
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 448,
+      "text": "수평적 의사소통과 부드러운 리더십으로 문제해결에 앞장서며, 구성원들의 자발적 참여를 유도함",
+      "model": "positive",
+      "p": {
+        "positive": 0.9873,
+        "negative": 0.006,
+        "neutral": 0.0068
+      },
+      "margin": 0.9805
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 367,
+      "text": "맡은 업무에 최선을 다함",
+      "model": "positive",
+      "p": {
+        "positive": 0.9759,
+        "negative": 0.0031,
+        "neutral": 0.021
+      },
+      "margin": 0.9549
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 336,
+      "text": "맡은 업무는 열정을 가지고 책임을 지는 성격으로 성취욕이 강합니다",
+      "model": "positive",
+      "p": {
+        "positive": 0.9872,
+        "negative": 0.0048,
+        "neutral": 0.008
+      },
+      "margin": 0.9792
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 280,
+      "text": "여러모로 훌륭하십니다",
+      "model": "positive",
+      "p": {
+        "positive": 0.9804,
+        "negative": 0.0054,
+        "neutral": 0.0142
+      },
+      "margin": 0.9662
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 278,
+      "text": "업무열의가 높고 적극적인 성격으로 모든 일에 스스로 책임을 집니다",
+      "model": "positive",
+      "p": {
+        "positive": 0.9872,
+        "negative": 0.0051,
+        "neutral": 0.0077
+      },
+      "margin": 0.9795
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 276,
+      "text": "수평적 의사소통과 부드러운 리더십",
+      "model": "positive",
+      "p": {
+        "positive": 0.974,
+        "negative": 0.0025,
+        "neutral": 0.0235
+      },
+      "margin": 0.9505
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 259,
+      "text": "매끄러운 민원업무 처리",
+      "model": "positive",
+      "p": {
+        "positive": 0.975,
+        "negative": 0.0024,
+        "neutral": 0.0226
+      },
+      "margin": 0.9524
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 252,
+      "text": "타 부서원들과 원활한 관계 유지",
+      "model": "positive",
+      "p": {
+        "positive": 0.9849,
+        "negative": 0.0034,
+        "neutral": 0.0117
+      },
+      "margin": 0.9732
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 223,
+      "text": "목표 달성을 위해 과감한 시도와 확신으로 실패를 두려워하지 않습니다",
+      "model": "positive",
+      "p": {
+        "positive": 0.9745,
+        "negative": 0.0106,
+        "neutral": 0.0148
+      },
+      "margin": 0.9597
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 218,
+      "text": "목표를 위한 구체적 전략 제시",
+      "model": "positive",
+      "p": {
+        "positive": 0.984,
+        "negative": 0.0049,
+        "neutral": 0.0111
+      },
+      "margin": 0.9729
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 189,
+      "text": "많은 업무량을 빠르게 처리하는 능력이 우수함",
+      "model": "positive",
+      "p": {
+        "positive": 0.9876,
+        "negative": 0.0055,
+        "neutral": 0.0069
+      },
+      "margin": 0.9807
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 188,
+      "text": "조직이 추구하는 업무방향 이해",
+      "model": "positive",
+      "p": {
+        "positive": 0.7018,
+        "negative": 0.0054,
+        "neutral": 0.2928
+      },
+      "margin": 0.409
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 188,
+      "text": "보완할 점에 대해 딱히 없으며 다방면에 훌륭합니다",
+      "model": "positive",
+      "p": {
+        "positive": 0.9769,
+        "negative": 0.0043,
+        "neutral": 0.0189
+      },
+      "margin": 0.958
+    },
+    {
+      "field": "단점",
+      "verdict": "positive",
+      "occurrences": 179,
+      "text": "본인 업무에 성실하며, 맡은바 업무에 최선을 다함",
+      "model": "positive",
+      "p": {
+        "positive": 0.9855,
+        "negative": 0.0038,
+        "neutral": 0.0107
+      },
+      "margin": 0.9748
+    }
+  ],
+  "sample_bands": {
+    "correct": {
+      "n": 374,
+      "margin_mean": 0.9634,
+      "margin_median": 0.9799,
+      "bands": {
+        "강한확신(≥0.60)": 368,
+        "보통(0.20~0.60)": 3,
+        "경계선(<0.20)": 3
+      }
+    },
+    "wrong": {
+      "n": 26,
+      "margin_mean": 0.7588,
+      "margin_median": 0.8842,
+      "bands": {
+        "강한확신(≥0.60)": 20,
+        "보통(0.20~0.60)": 5,
+        "경계선(<0.20)": 1
+      }
+    },
+    "soft": {
+      "n": 22,
+      "margin_mean": 0.7361,
+      "margin_median": 0.8765,
+      "bands": {
+        "강한확신(≥0.60)": 16,
+        "보통(0.20~0.60)": 5,
+        "경계선(<0.20)": 1
+      }
+    },
+    "flip": {
+      "n": 4,
+      "margin_mean": 0.8838,
+      "margin_median": 0.9487,
+      "bands": {
+        "강한확신(≥0.60)": 4
+      }
+    }
+  },
+  "sample_flip_detail": [
+    {
+      "no": 109,
+      "field": "단점",
+      "text": "업무에 대해 너무 꼼꼼함",
+      "human": "positive",
+      "model": "negative",
+      "p": {
+        "positive": 0.0024,
+        "negative": 0.9656,
+        "neutral": 0.0321
+      },
+      "margin": 0.9335
+    },
+    {
+      "no": 170,
+      "field": "단점",
+      "text": "엄무에 너무 집중적임",
+      "human": "positive",
+      "model": "negative",
+      "p": {
+        "positive": 0.0023,
+        "negative": 0.9906,
+        "neutral": 0.0071
+      },
+      "margin": 0.9835
+    },
+    {
+      "no": 214,
+      "field": "단점",
+      "text": "일을 너무 열심히 하는게 단점",
+      "human": "positive",
+      "model": "negative",
+      "p": {
+        "positive": 0.0027,
+        "negative": 0.8334,
+        "neutral": 0.164
+      },
+      "margin": 0.6694
+    },
+    {
+      "no": 334,
+      "field": "단점",
+      "text": "지사 리더임에도 불구하고 먼저 솔선수범을 행동으로 보여주시어 직원들이 부담스러워 함",
+      "human": "negative",
+      "model": "positive",
+      "p": {
+        "positive": 0.9693,
+        "negative": 0.0101,
+        "neutral": 0.0206
+      },
+      "margin": 0.9487
+    }
+  ],
+  "cell_flip_n": 31,
+  "dev_sets": {
+    "baseline399": {
+      "n": 398,
+      "correct": 389,
+      "acc": 97.74,
+      "flip": 0,
+      "flip_detail": [],
+      "nearest": [
+        {
+          "text": "보다 적극적인 자세로 업무에 임하고 새로운 도전의식을 갖는다면 본부의 중추로 성장할 것으로 기대됨",
+          "human": "negative",
+          "model": "negative",
+          "opp_p": 0.0273
+        },
+        {
+          "text": "지나칠 정도로 성과 기여도가 높음",
+          "human": "positive",
+          "model": "positive",
+          "opp_p": 0.0266
+        },
+        {
+          "text": "너무 밝은 모습으로 분위기를 너무 좋게 만들어줌",
+          "human": "positive",
+          "model": "positive",
+          "opp_p": 0.0251
+        }
+      ]
+    },
+    "8c_hard": {
+      "n": 140,
+      "correct": 127,
+      "acc": 90.71,
+      "flip": 0,
+      "flip_detail": [],
+      "nearest": [
+        {
+          "text": "한 사업년도 정도의 환경이나 상황 변화를 예측한 후, 조직에 필요한 행동을 솔선하여 실행한다",
+          "human": "positive",
+          "model": "positive",
+          "opp_p": 0.0798
+        },
+        {
+          "text": "주어진 업무에 반론을 제기하지 않음",
+          "human": "negative",
+          "model": "neutral",
+          "opp_p": 0.0644
+        },
+        {
+          "text": "업무 지시 또는 방향 제시의 과정에서 눈높이와 이해도를 고려하여 소통하도록 다소간 노력의 여지가 있음",
+          "human": "negative",
+          "model": "neutral",
+          "opp_p": 0.0291
+        }
+      ]
+    },
+    "c3_neu149": {
+      "n": 149,
+      "correct": 114,
+      "acc": 76.51,
+      "flip": 0,
+      "flip_detail": [],
+      "nearest": [
+        {
+          "text": "하고자하는 일에대하여 집요함",
+          "human": "positive",
+          "model": "positive",
+          "opp_p": 0.4445
+        },
+        {
+          "text": "매사 완벽을 추구하는 성품으로 &#46468;론 업무상 과도하게 완벽을 추구",
+          "human": "positive",
+          "model": "neutral",
+          "opp_p": 0.3842
+        },
+        {
+          "text": "수금업무에 전문가 되기",
+          "human": "negative",
+          "model": "neutral",
+          "opp_p": 0.3136
+        }
+      ]
+    },
+    "sa_speech74": {
+      "n": 74,
+      "correct": 62,
+      "acc": 83.78,
+      "flip": 0,
+      "flip_detail": [],
+      "nearest": [
+        {
+          "text": "과한 열의가 필요없는 강압적인(고함 등) 의사소통 방식으로 표출됨",
+          "human": "negative",
+          "model": "neutral",
+          "opp_p": 0.026
+        },
+        {
+          "text": "조심스럽고 여러사람이 인정하는 결과를 내기 위해 신경을 많이 쓰는 유형",
+          "human": "positive",
+          "model": "positive",
+          "opp_p": 0.0142
+        },
+        {
+          "text": "업무적 실수 줄이기",
+          "human": "negative",
+          "model": "neutral",
+          "opp_p": 0.0132
+        }
+      ]
+    }
+  },
+  "dev_total": {
+    "n": 761,
+    "flip": 0
+  }
+}

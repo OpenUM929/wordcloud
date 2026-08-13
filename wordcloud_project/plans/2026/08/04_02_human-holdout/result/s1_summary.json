@@ -1,0 +1,84 @@
+{
+ "files_scanned": 117,
+ "files_with_labels": 90,
+ "files_skipped_big": [
+  {
+   "path": "emotion/weak_export_260623.jsonl",
+   "bytes": 647639948
+  },
+  {
+   "path": "emotion/weak_export_260624.jsonl",
+   "bytes": 762576407
+  },
+  {
+   "path": "emotion/weak_export_260708.jsonl",
+   "bytes": 762075166
+  },
+  {
+   "path": "emotion/weak_export_260714.jsonl",
+   "bytes": 2322240001
+  },
+  {
+   "path": "eval/validation_candidates_260714.jsonl",
+   "bytes": 79272537
+  }
+ ],
+ "rows_read": 224609,
+ "labels_collected": 30161,
+ "unique_field_text": 13493,
+ "conflicting_keys": 818,
+ "by_label_field": {
+  "human_decision": 22879,
+  "sentiment_gold": 4549,
+  "gold": 1682,
+  "claude_judgment": 1040,
+  "prev_human_decision": 11
+ },
+ "by_decision_source": {
+  "(미기재)": 17969,
+  "packet23_judge_260714(claude_b346/struct/req_counterweight)": 2942,
+  "pattern_hardcode_260715": 1713,
+  "human": 1554,
+  "auto_fragment": 1295,
+  "packet23_judge_260714_v3": 1105,
+  "packet23_judge_260714_v2": 1034,
+  "rule_silver": 468,
+  "pattern_D_trait_harm": 400,
+  "pattern_C_excess_단점": 400,
+  "pattern_A_offtask": 329,
+  "pattern_D_trait_pos": 271,
+  "user_agreed": 183,
+  "claude_delegated_c6": 148,
+  "pattern_B_otherdept_단점": 109,
+  "pattern_C_excess_장점": 106,
+  "pattern_B_otherdept_장점": 97,
+  "human(hd무표시)+opus_triage_rule_confirmed": 35,
+  "human(group-review 260713)+opus": 3
+ },
+ "by_label_field_and_source": {
+  "human_decision | (미기재)": 10731,
+  "sentiment_gold | (미기재)": 4549,
+  "human_decision | packet23_judge_260714(claude_b346/struct/req_counterweight)": 2942,
+  "human_decision | pattern_hardcode_260715": 1713,
+  "gold | (미기재)": 1682,
+  "human_decision | human": 1510,
+  "human_decision | auto_fragment": 1295,
+  "human_decision | packet23_judge_260714_v3": 1105,
+  "human_decision | packet23_judge_260714_v2": 1034,
+  "claude_judgment | (미기재)": 996,
+  "human_decision | rule_silver": 468,
+  "human_decision | pattern_D_trait_harm": 400,
+  "human_decision | pattern_C_excess_단점": 400,
+  "human_decision | pattern_A_offtask": 329,
+  "human_decision | pattern_D_trait_pos": 271,
+  "human_decision | user_agreed": 183,
+  "human_decision | claude_delegated_c6": 148,
+  "human_decision | pattern_B_otherdept_단점": 109,
+  "human_decision | pattern_C_excess_장점": 106,
+  "human_decision | pattern_B_otherdept_장점": 97,
+  "claude_judgment | human": 44,
+  "human_decision | human(hd무표시)+opus_triage_rule_confirmed": 35,
+  "prev_human_decision | (미기재)": 11,
+  "human_decision | human(group-review 260713)+opus": 3
+ }
+}

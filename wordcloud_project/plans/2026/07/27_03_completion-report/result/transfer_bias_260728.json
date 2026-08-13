@@ -1,0 +1,101 @@
+{
+  "purity_threshold": 0.95,
+  "model": "D:/dev/wordcloud/model/hr_sentiment_finetuned",
+  "note": "재현 = 타 연도 사전으로 칸을 이관한 부분집합, 전수 = 해당 연도 칸 확정 전량",
+  "years": {
+    "2024": {
+      "full": {
+        "n": 870367,
+        "fields": {
+          "장점": {
+            "n": 443637,
+            "match_pct": 95.63,
+            "to_neutral_pct": 3.4,
+            "to_flip_pct": 0.98
+          },
+          "단점": {
+            "n": 426730,
+            "match_pct": 35.77,
+            "to_neutral_pct": 48.85,
+            "to_flip_pct": 15.38
+          }
+        },
+        "mismatch_pct": 33.72,
+        "flip_pct": 8.04
+      },
+      "transfer_reproduced": {
+        "n": 226274,
+        "fields": {
+          "장점": {
+            "n": 59224,
+            "match_pct": 93.87,
+            "to_neutral_pct": 5.17,
+            "to_flip_pct": 0.95
+          },
+          "단점": {
+            "n": 167050,
+            "match_pct": 12.65,
+            "to_neutral_pct": 80.91,
+            "to_flip_pct": 6.43
+          }
+        },
+        "mismatch_pct": 66.09,
+        "flip_pct": 5.0
+      },
+      "coverage_pct": 26.0,
+      "bias_k": {
+        "mismatch": 1.96,
+        "flip": 0.6219
+      }
+    },
+    "2025": {
+      "full": {
+        "n": 739918,
+        "fields": {
+          "장점": {
+            "n": 367869,
+            "match_pct": 95.47,
+            "to_neutral_pct": 3.5,
+            "to_flip_pct": 1.04
+          },
+          "단점": {
+            "n": 372049,
+            "match_pct": 33.72,
+            "to_neutral_pct": 50.45,
+            "to_flip_pct": 15.82
+          }
+        },
+        "mismatch_pct": 35.58,
+        "flip_pct": 8.47
+      },
+      "transfer_reproduced": {
+        "n": 204859,
+        "fields": {
+          "장점": {
+            "n": 52544,
+            "match_pct": 94.13,
+            "to_neutral_pct": 4.92,
+            "to_flip_pct": 0.94
+          },
+          "단점": {
+            "n": 152315,
+            "match_pct": 11.17,
+            "to_neutral_pct": 81.76,
+            "to_flip_pct": 7.07
+          }
+        },
+        "mismatch_pct": 67.55,
+        "flip_pct": 5.5
+      },
+      "coverage_pct": 27.69,
+      "bias_k": {
+        "mismatch": 1.8985,
+        "flip": 0.6494
+      }
+    }
+  },
+  "bias_k_mean": {
+    "mismatch": 1.9293,
+    "flip": 0.6357
+  }
+}

@@ -1,0 +1,144 @@
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "거듭된 야근과 업무과중으로 건강관리 필요함", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "관리감독없이업무수행", "from": "not_group", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "관리감독 없이 업무 수행", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "관리감독 없이 업무 수행", "from": "neutral", "to": "positive", "pn": false}
+{"action": "ALREADY", "file": "field_conflict_review_260624.jsonl", "text": "다년간 업무 수행으로 다져진 업무 노하우를 후배들에게 공유 필요", "label": "negative"}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "명확한 의사전달", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "명확한 의사전달", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "수평적 의사소통과 부드러운 리더십", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "업무를 열심히 하고자한다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "자신의 업무를 점검", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "장점이 없습니다", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "장점이 없습니다", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "장점이 없습니다", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "항상 열정적인 자세로 업무에 임하시다 보니 건강이 걱정될 때가 있습니다", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "사업소내 업무관련해서 미흡한 부분은 없다고 판단됩니다", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "개인적인 건강관리에 노력", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "성격은 좋으나 직원들과 소통을 못함", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "현장경험과 지식 풍부", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "업무에 대한 전문성", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "논리적인 업무처리", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "맡은바 책임을 다하지만 적극성은 떨어짐", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "타 업무분야에 대한 이해도가 늘어나면 전문성이 더 좋아질듯 함", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "오랜 근무경력으로 다양한 경험이 있을 것으로 보이나 참여 의지가 없음", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "모든면에서 장점이 없어보임", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "장점이 없음", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "장점이 없음", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "장점이 없음", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "업무 관련성이 적음", "from": "negative", "to": "neutral", "pn": false}
+{"action": "ALREADY", "file": "field_conflict_review_260624.jsonl", "text": "빠른 문제해결과 여러측면으로 접근해주셔서 좋습니다", "label": "positive"}
+{"action": "ALREADY", "file": "field_conflict_review_260624.jsonl", "text": "갈등발생시 다향한 소통채널을 통하여 다각적이고 적극적인 의견수렴해주세요", "label": "negative"}
+{"action": "FIX", "file": "field_conflict_review_260624.jsonl", "text": "업무외 시간에도 쉬지 않고 일을 처리하려고 함", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "소극적 조직발전 대인관계", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "기존의 사실에 기반한 닫힌 사고", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "업무 순서결정에 대한 어려움", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "부처장으로 처 전체를 통섭적으로 보는 관점 보완", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "자신의 위치에서 업무를 무난하게 처리한다", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "발전업무에 능통하며, 정책동향 파악", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "직원들과 대화시 언어선택", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "업무에 대한 구분이 분명하고 직접 업무에 참여하지 않으려 함", "from": "neutral", "to": "negative", "pn": false}
+{"action": "ALREADY", "file": "gold_8c_train_260706.jsonl", "text": "주변 환경이나 상황 변화를 예측한 후, 조직에 필요한 행동을 솔선하여 실행한다", "label": "positive"}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "커뮤니케이션 스킬, 고객 관점에서 조언", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "단편적인 사실에 근거하여 판단하는 습관 지양", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "전문 자격증 보유 및 현장겸험", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "무시, 강한어조 등", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "승진준비 필요 외에 없음", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "단기관점에서 효과성을 기준으로 업무를 처리한다", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "직원들의 민원해결 및 업무에 대한 길라잡이 역할", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "고객 관점에서 자세한 조언", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "부하직원 개발에 대한 보완", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "수금업무능력 숙달, 매끄러운민원업무처리", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "상황에 따라 다른 모습을 보임", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "매끄러운 민원 업무", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "본인의 생각과 맞지 않는 부분에서의 조율", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "타부서 입장에서 업무를 수행하고 진행합니다", "from": "not_group", "to": "positive", "pn": false}
+{"action": "ALREADY", "file": "gold_8c_train_260706.jsonl", "text": "본사의 의견에 의존함", "label": "negative"}
+{"action": "ALREADY", "file": "gold_8c_train_260706.jsonl", "text": "조직이 원하는 방향으로 주변의 행동을 유발한다", "label": "positive"}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "다양한 활동을 업무와 병행함", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "업무 관련하여 세세하게 반복적으로 지시하는 경향이 있음", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "gold_8c_train_260706.jsonl", "text": "타인과 관계를 우선시함", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "단점이 없이 업무에 충실함", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "맡은 바를 적극적으로 임하고 보완할 점 없습니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "맡은 바를 적극적으로 임하고 보완할 점 없습니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완이 필요없는 완벽한 사람", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완필요점 없을정도로 훌륭합니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완필요점이 없고, 매우 우수함", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완필요점이 없고 역량이 뛰어남", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완할점 없음, 지금처럼 해주심 감사함", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완할점이 없을 정도로 열심히 함", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "성과기여도 업무열의 등 보완사항이 없습니다", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "원만한 소통으로 보완필요점 없음", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "최선을 다하기 때문에 보완점이 없음", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "특별한 단점 없이 업무를 잘 수행하십니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "특별한 단점 없이 업무를 잘 수행하십니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "항상 적극적으로 업무를 임해주셔서 보완 필요점이 없습니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완필요점도 없다고 생각합니다", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "직원간 의사소통이 뛰어나나 개선필요", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "솔선수범하는 적극적 업무처리로 보완필요점 없음", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "보완할 점이 없고 업무 능력이 탁월합니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "오랜경력으로 보완필요없는 능력을 갖춤", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "업무에 적극적이며, 보완 필요점 없음", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "업무를 잘 살피므로 보완할 점 없다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "특별한 단점이 없는 유능한 인재임", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_260624.jsonl", "text": "모든 업무에 적극적이며 보완할점 없음", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_g4_260624.jsonl", "text": "건강관리 및 자기계발에 노력", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "group_needs_human_g4_260624.jsonl", "text": "꾸준한 자기 개발, 다양한 관계 형성", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "group_needs_human_g4_260624.jsonl", "text": "꾸준한 자기 개발, 다양한 관계 형성", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "좀 더 세밀한 직무수행과 직무 상하관계에서 균형자 역할이 중요함, 은퇴후 미래설계도 잘 하시기 바람", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "다른 직원들과 만나서 얘기할 수 있으면 좋을 것 같습니다", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "타부서 직원간의 업무 협의 및 조율", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "직권들과의 소통이 원할하며 보완할점이 없음", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "명확한 의사전달, 단호한결단력", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "민원인과 소통 /  명확한 의사 전달", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "내선계기 업무 수행을 적절히 수행하나 추가적인 노력필요함", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "위 아래와 두루 소통하며 원만하게 생활함", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "종합적 판단능력", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "실험을 진행할 때, 건강 유의하시면 좋겠습니다", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "사업소 분위기를 조성합니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "분위기메이커, 고객친절", "from": "neutral", "to": "positive", "pn": false}
+{"action": "ALREADY", "file": "hard_failure_review_260630.jsonl", "text": "직원들과 의사소통이 원화합니다", "label": "positive"}
+{"action": "FIX", "file": "hard_failure_review_260630.jsonl", "text": "업무 전문성을 향상하기 위해 노력", "from": "not_group", "to": "positive", "pn": false}
+{"action": "FIX", "file": "silver_active_260707_c2.jsonl", "text": "보완할 필요성이 없어보이나 좀더 활달했으면 좋겠음", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "직원들간의 업무 분장확실에 보임/", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "자신의 업무를 점검함", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "상황변화에 대한 인식이 구체화됨", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "공사현장, 안전컨설팅 등 현장 업무를 선호하며, 기타 업무에 대해서 수동적임", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "근태, 업무 처리 기간 및 시간관련", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "대내외 네크워크 보완", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "매사 업무적으로 구체적인 지시", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "보고 준비시 업무에 대하여 만전을 기해야함", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "비계량 지표를 계량해야 함", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "8c_hard", "text": "상하간의 업무조정능력", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "신속한 의사결정 바탕 업무", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "자기주관 뚜렷", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "적극적인 마인드와 폭넓은 지식", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "수평적 사고와 부드러운 리더쉽", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "부드러운 소통 리더십, 철저한 업무처리", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "민원인과의 소통 및 부드러운 카리스마", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "직원들 간 더 많은 의사소통", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "5직급에서 진급하여 기존에 친분이 있기에 더 편하게 업무에 관해 의논할수 있습니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "표현이 조금 오해를 불러일으킬수 있으나", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "부드러운 리더십, 업무 전문성", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "업무에 대한 열의과다로 과다 업무지시", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "조금더 진솔한 대화를 하고싶다", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "회사의 어려운 상황속에서도 많이 수고하고 있습니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "소통을 좋아 하지만", "from": "positive", "to": "neutral", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "부하직원에 대한 신뢰", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "풍부한 경험, 적극적인 생활", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "신속한 업무처리 및 높은 전문성", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "업무가 많고 이슈가 다양한 만큼 선택과 집중할 수 있도록 조직을 이끌어 주시길 바람", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "약관, 제도 등의 해박한 지식과 업무에 대한 강한 책임감으로 문제를 해결하는데", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "솔선수범자세, 동료의식, 세심함", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "업무전문성 발휘한 업무", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "차장님으로서 어떠한 결정을 내리실때 믿고 따를수 있습니다", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "전문성을 높이기 위한 열의", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "자율적인 분위기 형성", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "baseline399", "text": "고객 니즈파악 및 소통", "from": "neutral", "to": "positive", "pn": false}
+{"action": "FIX", "slice": "c3_neu149", "text": "세대간, 노사간 갈등", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "c3_neu149", "text": "메일함 좀 비웠으면 좋겠음", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "c3_neu149", "text": "인사이동이 늦어 업무 경험이 부족하여 시간이 필요", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "c3_neu149", "text": "아직 적응이 필요함", "from": "neutral", "to": "negative", "pn": false}
+{"action": "FIX", "slice": "c3_neu149", "text": "매사 완벽을 추구하는 성품으로 &#46468;론 업무상 과도하게 완벽을 추구", "from": "negative", "to": "positive", "pn": true}
+{"action": "FIX", "slice": "c3_neu149", "text": "너무 완벽한 업무처리 추구", "from": "negative", "to": "positive", "pn": true}
+{"action": "FIX", "slice": "sa_speech74", "text": "대외적인 업무 진행에 있어서 수동적인 경향이 있으나 이는 과도한 행사성 업무를 자제하려는 것으로 보여짐", "from": "negative", "to": "neutral", "pn": false}
+{"action": "FIX", "slice": "sa_speech74", "text": "개인적 감정에 치우침 /", "from": "neutral", "to": "negative", "pn": false}

@@ -1,0 +1,530 @@
+{
+  "n": 761,
+  "s1_wrong": 305,
+  "s10_fixed": 261,
+  "flip_fixed": 51,
+  "flip_fixed_by_rule": 36,
+  "confusion": {
+    "negative->negative": 107,
+    "negative->neutral": 94,
+    "negative->positive": 40,
+    "neutral->negative": 48,
+    "neutral->neutral": 82,
+    "neutral->positive": 32,
+    "positive->negative": 15,
+    "positive->neutral": 76,
+    "positive->positive": 267
+  },
+  "examples": [
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "직무분야에 대한 전문지식이 더 필요함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9919
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "서로를 배려하는 유연한 사고방식 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9921
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "업무를 주체적으로 끌고갈 필요가 있음",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9917
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "냉철한 판단력과 강한 리더십이 조금 필요하다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9914
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "상대방이 이해할수 있도록 업무를 진행함",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "positive",
+      "s10": "positive",
+      "s10_conf": 0.8982
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "부서간의 협조 및 목표 달성을 위한 노력 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9922
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "창의적인 도전을 위한 노력 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9917
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "현안사항 발생시 창의적 사고가 필요함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9915
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "직원 간 화합이 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9911
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "조금더 진솔한 대화를 하고싶다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9806
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "도전적 목표 설정과 과감한 도전필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9919
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "커뮤니케이션 스킬이 향상 되었음 좋겠음",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9911
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "보다 적극적인 자세로 업무에 임하고 새로운 도전의식을 갖는다면 본부의 중추로 성장할 것으로 기대됨",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "positive",
+      "s10": "negative",
+      "s10_conf": 0.7347
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "보다 적극적인 업무 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9911
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "보다 적극적인 연구 수행이 필요함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "neutral",
+      "s10": "negative",
+      "s10_conf": 0.9907
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "사무실에서 웃음소리가 너무 큼",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "positive",
+      "s10": "negative",
+      "s10_conf": 0.7002
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "대화를 통한 업무처리 능력 향상 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.992
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "요금팀과의 협업시 적극적 자세 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9923
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "전문지식 함양에 조금더한 노력필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9915
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "윤리의식 향상 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9915
+    },
+    {
+      "slice": "baseline399",
+      "field": "장점",
+      "text": "직원들 맘을 이해하려고 녹력함",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "positive",
+      "s10": "positive",
+      "s10_conf": 0.9842
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "고객중심의 서비스를 제공",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "negative",
+      "s10": "positive",
+      "s10_conf": 0.879
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "업무가 많고 이슈가 다양한 만큼 선택과 집중할 수 있도록 조직을 이끌어 주시길 바람",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9898
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "보완할 점은 건강관리에 좀더 신경써야 함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "neutral",
+      "s10": "negative",
+      "s10_conf": 0.8419
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "좀더 주도적인 모습도 좋을것 같습니다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "positive",
+      "s10": "negative",
+      "s10_conf": 0.9803
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "겉치레와 자기중심 사고에서 벗어나고, 업무책임감을 가질 필요 있음",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9918
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "추진력과 완수에 대한 책임감이 필요함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9922
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "노사간 행사시 적극적인 참여 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "neutral",
+      "s10": "negative",
+      "s10_conf": 0.9918
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "주변과 의사소통을 원활히 하시면 좋을것같음",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9895
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "책임감을 가지고 업무를 주도적으로 수행할 필요가 있음",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9919
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "적극적으로 상호간 소통이 필요함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9925
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "자기개발을 위해 노력하면 좋을것같음",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9895
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "협업 및 소통능력 함양 필요",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9921
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "커뮤니케이션 스킬 및 대인관계 능력이 보완되어야함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9907
+    },
+    {
+      "slice": "baseline399",
+      "field": "단점",
+      "text": "항상 조용하고 과묵하여 활발하였으면 함",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "neutral",
+      "s10": "negative",
+      "s10_conf": 0.8124
+    },
+    {
+      "slice": "8c_hard",
+      "field": "단점",
+      "text": "기분이 겉으로 드러나 감정기복이 보일 &#46468;가 있음",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9823
+    },
+    {
+      "slice": "8c_hard",
+      "field": "단점",
+      "text": "업무를 할&#46468; 다혈질이십니다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "positive",
+      "s10": "negative",
+      "s10_conf": 0.9736
+    },
+    {
+      "slice": "8c_hard",
+      "field": "단점",
+      "text": "업무욕심이 많아 성취욕이 강합니다",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "neutral",
+      "s10": "positive",
+      "s10_conf": 0.9337
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "장점",
+      "text": "열의, 전문성, 협업, 윤리의식",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "positive",
+      "s10": "positive",
+      "s10_conf": 0.6951
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "장점",
+      "text": "업무 책임감, 적극성 등",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "positive",
+      "s10": "positive",
+      "s10_conf": 0.8508
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "장점",
+      "text": "업무에 대한 열의, CS마인드",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "positive",
+      "s10": "positive",
+      "s10_conf": 0.55
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "장점",
+      "text": "자기애와 자신감이 높음",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "neutral",
+      "s10": "positive",
+      "s10_conf": 0.953
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "단점",
+      "text": "보완필요점이 없는 간부의 자질을 가지고 있음",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "neutral",
+      "s10": "positive",
+      "s10_conf": 0.8362
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "장점",
+      "text": "문제발생시 적극적인 문제해결 의지",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "positive",
+      "s10": "positive",
+      "s10_conf": 0.6322
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "단점",
+      "text": "업무 프로세스를 개선하고자 노력하고 보완점은 없음",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "neutral",
+      "s10": "positive",
+      "s10_conf": 0.8292
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "단점",
+      "text": "업무가 어떻게 처리되고 있는지 중간중간 말씀해주시면 좋을 것 같습니다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.768
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "단점",
+      "text": "보완점은 딱히 없어 보이나 고집만 내려 놓는다면 상당히 좋아질 것으로 보입니다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "neutral",
+      "s10": "negative",
+      "s10_conf": 0.7878
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "단점",
+      "text": "내년에는 직원들이 힘들어하지 않게 잘 해주셨으면 좋겠습니다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.9005
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "단점",
+      "text": "회사를 너무 편하게 다니시는거같습니다",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "positive",
+      "s10": "negative",
+      "s10_conf": 0.6073
+    },
+    {
+      "slice": "c3_neu149",
+      "field": "장점",
+      "text": "적극적인 업무 태도 및 성과",
+      "gold": "positive",
+      "s1": "negative",
+      "s2": "positive",
+      "s10": "positive",
+      "s10_conf": 0.8913
+    },
+    {
+      "slice": "sa_speech74",
+      "field": "단점",
+      "text": "창&#51033;적인 의견 미흡",
+      "gold": "negative",
+      "s1": "positive",
+      "s2": "negative",
+      "s10": "negative",
+      "s10_conf": 0.7418
+    }
+  ]
+}

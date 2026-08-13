@@ -1,0 +1,477 @@
+{
+  "measured_at": "2026-08-05",
+  "note": "A=학습만 제외(구 score_human_only_260730.py 재현) · B=학습+검증 모두 제외(정본) · C=검증셋 겹침 대조군",
+  "train_files": 13,
+  "test_sets": [
+    "baseline_eval_260624.jsonl",
+    "gold_8c_test_260706.jsonl",
+    "gold_8c_test_c3neu_260707.jsonl",
+    "gold_speechact_test_260707.jsonl"
+  ],
+  "human_keys_total": 1511,
+  "A_train_excluded_only": {
+    "n": 249,
+    "correct": 164,
+    "acc": 65.86,
+    "acc_ci": [
+      59.77,
+      71.47
+    ],
+    "posneg_flip": 23,
+    "flip_pct": 9.24,
+    "flip_ci": [
+      6.23,
+      13.48
+    ],
+    "label_dist": {
+      "neutral": 69,
+      "positive": 81,
+      "negative": 99
+    },
+    "field_dist": {
+      "장점": 44,
+      "단점": 179,
+      "(없음)": 26
+    },
+    "per_class": {
+      "positive": {
+        "n": 81,
+        "correct": 55,
+        "recall": 67.9,
+        "pred": {
+          "positive": 55,
+          "neutral": 18,
+          "negative": 8
+        }
+      },
+      "negative": {
+        "n": 99,
+        "correct": 50,
+        "recall": 50.51,
+        "pred": {
+          "negative": 50,
+          "neutral": 34,
+          "positive": 15
+        }
+      },
+      "neutral": {
+        "n": 69,
+        "correct": 59,
+        "recall": 85.51,
+        "pred": {
+          "neutral": 59,
+          "positive": 4,
+          "negative": 6
+        }
+      }
+    }
+  },
+  "B_clean_holdout": {
+    "n": 88,
+    "correct": 37,
+    "acc": 42.05,
+    "acc_ci": [
+      32.28,
+      52.48
+    ],
+    "posneg_flip": 13,
+    "flip_pct": 14.77,
+    "flip_ci": [
+      8.84,
+      23.65
+    ],
+    "label_dist": {
+      "negative": 48,
+      "neutral": 11,
+      "positive": 29
+    },
+    "field_dist": {
+      "단점": 48,
+      "장점": 14,
+      "(없음)": 26
+    },
+    "per_class": {
+      "positive": {
+        "n": 29,
+        "correct": 18,
+        "recall": 62.07,
+        "pred": {
+          "neutral": 11,
+          "positive": 18
+        }
+      },
+      "negative": {
+        "n": 48,
+        "correct": 11,
+        "recall": 22.92,
+        "pred": {
+          "neutral": 24,
+          "positive": 13,
+          "negative": 11
+        }
+      },
+      "neutral": {
+        "n": 11,
+        "correct": 8,
+        "recall": 72.73,
+        "pred": {
+          "neutral": 8,
+          "positive": 2,
+          "negative": 1
+        }
+      }
+    }
+  },
+  "C_testset_overlap": {
+    "n": 161,
+    "correct": 127,
+    "acc": 78.88,
+    "acc_ci": [
+      71.94,
+      84.48
+    ],
+    "posneg_flip": 10,
+    "flip_pct": 6.21,
+    "flip_ci": [
+      3.41,
+      11.05
+    ],
+    "label_dist": {
+      "neutral": 58,
+      "positive": 52,
+      "negative": 51
+    },
+    "field_dist": {
+      "장점": 30,
+      "단점": 131
+    },
+    "per_class": {
+      "positive": {
+        "n": 52,
+        "correct": 37,
+        "recall": 71.15,
+        "pred": {
+          "positive": 37,
+          "negative": 8,
+          "neutral": 7
+        }
+      },
+      "negative": {
+        "n": 51,
+        "correct": 39,
+        "recall": 76.47,
+        "pred": {
+          "negative": 39,
+          "neutral": 10,
+          "positive": 2
+        }
+      },
+      "neutral": {
+        "n": 58,
+        "correct": 51,
+        "recall": 87.93,
+        "pred": {
+          "neutral": 51,
+          "positive": 2,
+          "negative": 5
+        }
+      }
+    }
+  },
+  "D_strata_of_B": {
+    "260715 교정 묶음(회수분)": {
+      "n": 62,
+      "correct": 20,
+      "acc": 32.26,
+      "acc_ci": [
+        21.95,
+        44.63
+      ],
+      "posneg_flip": 13,
+      "flip_pct": 20.97,
+      "flip_ci": [
+        12.68,
+        32.64
+      ],
+      "label_dist": {
+        "negative": 48,
+        "neutral": 11,
+        "positive": 3
+      },
+      "field_dist": {
+        "단점": 48,
+        "장점": 14
+      },
+      "per_class": {
+        "positive": {
+          "n": 3,
+          "correct": 1,
+          "recall": 33.33,
+          "pred": {
+            "neutral": 2,
+            "positive": 1
+          }
+        },
+        "negative": {
+          "n": 48,
+          "correct": 11,
+          "recall": 22.92,
+          "pred": {
+            "neutral": 24,
+            "positive": 13,
+            "negative": 11
+          }
+        },
+        "neutral": {
+          "n": 11,
+          "correct": 8,
+          "recall": 72.73,
+          "pred": {
+            "neutral": 8,
+            "positive": 2,
+            "negative": 1
+          }
+        }
+      }
+    },
+    "그 외": {
+      "n": 26,
+      "correct": 17,
+      "acc": 65.38,
+      "acc_ci": [
+        46.22,
+        80.59
+      ],
+      "posneg_flip": 0,
+      "flip_pct": 0.0,
+      "flip_ci": [
+        0.0,
+        12.87
+      ],
+      "label_dist": {
+        "positive": 26
+      },
+      "field_dist": {
+        "(없음)": 26
+      },
+      "per_class": {
+        "positive": {
+          "n": 26,
+          "correct": 17,
+          "recall": 65.38,
+          "pred": {
+            "positive": 17,
+            "neutral": 9
+          }
+        }
+      }
+    },
+    "칸 있음(프리픽스 적용)": {
+      "n": 62,
+      "correct": 20,
+      "acc": 32.26,
+      "acc_ci": [
+        21.95,
+        44.63
+      ],
+      "posneg_flip": 13,
+      "flip_pct": 20.97,
+      "flip_ci": [
+        12.68,
+        32.64
+      ],
+      "label_dist": {
+        "negative": 48,
+        "neutral": 11,
+        "positive": 3
+      },
+      "field_dist": {
+        "단점": 48,
+        "장점": 14
+      },
+      "per_class": {
+        "positive": {
+          "n": 3,
+          "correct": 1,
+          "recall": 33.33,
+          "pred": {
+            "neutral": 2,
+            "positive": 1
+          }
+        },
+        "negative": {
+          "n": 48,
+          "correct": 11,
+          "recall": 22.92,
+          "pred": {
+            "neutral": 24,
+            "positive": 13,
+            "negative": 11
+          }
+        },
+        "neutral": {
+          "n": 11,
+          "correct": 8,
+          "recall": 72.73,
+          "pred": {
+            "neutral": 8,
+            "positive": 2,
+            "negative": 1
+          }
+        }
+      }
+    },
+    "칸 없음(프리픽스 없음)": {
+      "n": 26,
+      "correct": 17,
+      "acc": 65.38,
+      "acc_ci": [
+        46.22,
+        80.59
+      ],
+      "posneg_flip": 0,
+      "flip_pct": 0.0,
+      "flip_ci": [
+        0.0,
+        12.87
+      ],
+      "label_dist": {
+        "positive": 26
+      },
+      "field_dist": {
+        "(없음)": 26
+      },
+      "per_class": {
+        "positive": {
+          "n": 26,
+          "correct": 17,
+          "recall": 65.38,
+          "pred": {
+            "positive": 17,
+            "neutral": 9
+          }
+        }
+      }
+    },
+    "decision_source=human*": {
+      "n": 45,
+      "correct": 32,
+      "acc": 71.11,
+      "acc_ci": [
+        56.63,
+        82.27
+      ],
+      "posneg_flip": 2,
+      "flip_pct": 4.44,
+      "flip_ci": [
+        1.23,
+        14.83
+      ],
+      "label_dist": {
+        "negative": 10,
+        "neutral": 8,
+        "positive": 27
+      },
+      "field_dist": {
+        "단점": 19,
+        "(없음)": 26
+      },
+      "per_class": {
+        "positive": {
+          "n": 27,
+          "correct": 18,
+          "recall": 66.67,
+          "pred": {
+            "positive": 18,
+            "neutral": 9
+          }
+        },
+        "negative": {
+          "n": 10,
+          "correct": 6,
+          "recall": 60.0,
+          "pred": {
+            "neutral": 2,
+            "positive": 2,
+            "negative": 6
+          }
+        },
+        "neutral": {
+          "n": 8,
+          "correct": 8,
+          "recall": 100.0,
+          "pred": {
+            "neutral": 8
+          }
+        }
+      }
+    },
+    "decision_source=user_agreed": {
+      "n": 43,
+      "correct": 5,
+      "acc": 11.63,
+      "acc_ci": [
+        5.07,
+        24.48
+      ],
+      "posneg_flip": 11,
+      "flip_pct": 25.58,
+      "flip_ci": [
+        14.93,
+        40.24
+      ],
+      "label_dist": {
+        "negative": 38,
+        "positive": 2,
+        "neutral": 3
+      },
+      "field_dist": {
+        "단점": 29,
+        "장점": 14
+      },
+      "per_class": {
+        "positive": {
+          "n": 2,
+          "correct": 0,
+          "recall": 0.0,
+          "pred": {
+            "neutral": 2
+          }
+        },
+        "negative": {
+          "n": 38,
+          "correct": 5,
+          "recall": 13.16,
+          "pred": {
+            "neutral": 22,
+            "positive": 11,
+            "negative": 5
+          }
+        },
+        "neutral": {
+          "n": 3,
+          "correct": 0,
+          "recall": 0.0,
+          "pred": {
+            "positive": 2,
+            "negative": 1
+          }
+        }
+      }
+    }
+  },
+  "B_decision_source_dist": {
+    "human": 45,
+    "user_agreed": 43
+  },
+  "B_src_file_dist": {
+    "gold_corrected_260715.jsonl": 62,
+    "gold_corrected_t1_260715.jsonl": 62,
+    "hard_labeling_260715.jsonl": 62,
+    "label_master_260804.jsonl": 54,
+    "8c_auto__신체_사생활_260706.jsonl": 1,
+    "hard_silver_260707.jsonl": 26
+  },
+  "optimism_gap_pp": 36.83,
+  "A_minus_B_pp": 23.81
+}

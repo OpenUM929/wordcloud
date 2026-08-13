@@ -1,0 +1,114 @@
+{
+  "field_only_bound": {
+    "n": 870367,
+    "ceiling_pct": 72.69,
+    "s0_acc_pct": 66.28,
+    "per_field": {
+      "장점": {
+        "n": 443637,
+        "best_label": "positive",
+        "best_pct": 95.63,
+        "s0_label": "positive",
+        "s0_pct": 95.63
+      },
+      "단점": {
+        "n": 426730,
+        "best_label": "neutral",
+        "best_pct": 48.85,
+        "s0_label": "negative",
+        "s0_pct": 35.77
+      }
+    }
+  },
+  "information": {
+    "H_Y": 1.416,
+    "H_Y_given_F": 0.8605,
+    "I_Y_F": 0.5556,
+    "explained_ratio_pct": 39.24,
+    "residual_ratio_pct": 60.76,
+    "marginal": {
+      "positive": 489877,
+      "negative": 156962,
+      "neutral": 223528
+    }
+  },
+  "mcnemar_400_accuracy": {
+    "both_correct": 249,
+    "only_s0": 4,
+    "only_current": 125,
+    "both_wrong": 22,
+    "b": 4,
+    "c": 125,
+    "chi2": 111.63,
+    "p": 4.31e-26
+  },
+  "mcnemar_400_reversal": {
+    "only_s0_reversed": 28,
+    "only_current_reversed": 1,
+    "b": 28,
+    "c": 1,
+    "chi2": 23.31,
+    "p": 1.38e-06
+  },
+  "mcnemar_761_bound": {
+    "n": 761,
+    "wrong_before": 210,
+    "wrong_after": 69,
+    "c_minus_b": 141,
+    "chi2_lower_bound": 70.3,
+    "p_upper_bound": 5.22e-17
+  },
+  "kappa_400": {
+    "s0": {
+      "po": 0.6325,
+      "pe": 0.3589,
+      "kappa": 0.4268
+    },
+    "current": {
+      "po": 0.935,
+      "pe": 0.4096,
+      "kappa": 0.8899
+    }
+  },
+  "macro_f1_761": {
+    "before": 0.5374,
+    "after": 0.8878
+  },
+  "expected_cost": {
+    "w=0.10": {
+      "set761_before": 0.0844,
+      "set761_after": 0.0091,
+      "sample400_s0": 0.1065,
+      "sample400_current": 0.0155
+    },
+    "w=0.25": {
+      "set761_before": 0.1163,
+      "set761_after": 0.0227,
+      "sample400_s0": 0.15,
+      "sample400_current": 0.0238
+    },
+    "w=0.50": {
+      "set761_before": 0.1695,
+      "set761_after": 0.0453,
+      "sample400_s0": 0.2225,
+      "sample400_current": 0.0375
+    }
+  },
+  "ci_check": {
+    "s0_acc": {
+      "p": 63.25,
+      "reported": 4.72,
+      "recomputed": 4.72
+    },
+    "cur_acc": {
+      "p": 93.5,
+      "reported": 2.42,
+      "recomputed": 2.42
+    },
+    "cur_rev": {
+      "p": 1.0,
+      "reported": 0.98,
+      "recomputed": 0.98
+    }
+  }
+}

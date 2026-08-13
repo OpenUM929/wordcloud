@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="1100" height="480" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5b6b7f"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1100" height="480" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="700" fill="#1f2937">[그림 1] 종래 감정 판정 프로세스와 그 한계</text>
+
+  <!-- ============ 단계 ㉮ : 감정 분석 도입 이전 ============ -->
+  <text x="24" y="72" font-size="13.5" font-weight="700" fill="#a2504d">㉮ 감정 분석 기능 도입 이전 — 평가 항목 칸에 의한 극성 결정</text>
+
+  <rect x="24" y="86" width="150" height="56" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="99" y="110" font-size="13" fill="#1f2937" text-anchor="middle">인사평가 문서</text>
+  <text x="99" y="128" font-size="11.5" fill="#5b6b7f" text-anchor="middle">(자유 서술형)</text>
+
+  <rect x="204" y="86" width="170" height="56" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="289" y="110" font-size="13" fill="#1f2937" text-anchor="middle">평가 항목 칸 구분</text>
+  <text x="289" y="128" font-size="11.5" fill="#5b6b7f" text-anchor="middle">장점 칸 · 단점 칸</text>
+
+  <rect x="404" y="86" width="290" height="56" rx="8" fill="#fdecec" stroke="#c0504d" stroke-width="1.5"/>
+  <text x="549" y="110" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">칸을 그대로 극성으로 사용</text>
+  <text x="549" y="129" font-size="11.5" fill="#a2504d" text-anchor="middle">장점 칸 → 전량 긍정 · 단점 칸 → 전량 부정</text>
+
+  <rect x="724" y="86" width="200" height="56" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.5"/>
+  <text x="824" y="110" font-size="13" fill="#1f2937" text-anchor="middle">판정 결과 취합</text>
+  <text x="824" y="128" font-size="11.5" fill="#6b5a8a" text-anchor="middle">워드클라우드 / 부서·직급 차트</text>
+
+  <line x1="174" y1="114" x2="198" y2="114" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="374" y1="114" x2="398" y2="114" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="694" y1="114" x2="718" y2="114" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <text x="24" y="164" font-size="12" fill="#a2504d">※ 중립을 담을 자리가 없고, 칸과 내용이 어긋나는 문장은 그대로 오분류된다.</text>
+
+  <!-- ============ 단계 ㉯ : 선출원 발명 ============ -->
+  <text x="24" y="204" font-size="13.5" font-weight="700" fill="#2f5d8a">㉯ 선출원 발명 — 문장 단위 감정 분석의 도입</text>
+
+  <rect x="24" y="218" width="150" height="56" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="99" y="242" font-size="13" fill="#1f2937" text-anchor="middle">문장 단위 분해</text>
+  <text x="99" y="260" font-size="11.5" fill="#5b6b7f" text-anchor="middle">전처리 · 정제</text>
+
+  <rect x="204" y="218" width="240" height="56" rx="8" fill="#eaf1f8" stroke="#2f5d8a" stroke-width="1.5"/>
+  <text x="324" y="242" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">한국어 특화 감정 분석 모델</text>
+  <text x="324" y="261" font-size="11.5" fill="#2f5d8a" text-anchor="middle">감정 레이블 · 확신도 산출</text>
+
+  <rect x="474" y="218" width="220" height="56" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="584" y="242" font-size="12.5" fill="#1f2937" text-anchor="middle">emotion_analysis_results</text>
+  <text x="584" y="260" font-size="11.5" fill="#5b6b7f" text-anchor="middle">에 저장</text>
+
+  <rect x="724" y="218" width="200" height="56" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.5"/>
+  <text x="824" y="242" font-size="13" fill="#1f2937" text-anchor="middle">판정 결과 취합</text>
+  <text x="824" y="260" font-size="11.5" fill="#6b5a8a" text-anchor="middle">워드클라우드 / 부서·직급 차트</text>
+
+  <line x1="174" y1="246" x2="198" y2="246" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="444" y1="246" x2="468" y2="246" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="694" y1="246" x2="718" y2="246" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <text x="24" y="296" font-size="12" fill="#2f5d8a">※ 극성이 문장의 내용에 근거하여 결정되고 중립을 포함하는 분류가 가능해져, ㉮의 두 한계는 해소된다.</text>
+
+  <!-- ============ 남는 한계 ============ -->
+  <text x="24" y="336" font-size="14" font-weight="700" fill="#a2504d">그럼에도 남는 한계 — 판정 곤란 문장</text>
+
+  <rect x="24" y="350" width="336" height="118" rx="8" fill="#fdf4f4" stroke="#d59896" stroke-width="1.2"/>
+  <text x="42" y="374" font-size="13" font-weight="700" fill="#a2504d">① 경계 문장이 그대로 자동 확정됨</text>
+  <text x="42" y="396" font-size="12.5" fill="#3b4756">긍정과 부정의 경계에 놓인 소수의 문장은</text>
+  <text x="42" y="416" font-size="12.5" fill="#3b4756">확신 정도와 무관하게 최종값으로 확정되어</text>
+  <text x="42" y="436" font-size="12.5" fill="#3b4756">취합에 반영된다. 사람이 확인하기 전에</text>
+  <text x="42" y="456" font-size="12.5" fill="#3b4756">원본이 갱신되어 검증 공백이 생긴다.</text>
+
+  <rect x="382" y="350" width="336" height="118" rx="8" fill="#fdf4f4" stroke="#d59896" stroke-width="1.2"/>
+  <text x="400" y="374" font-size="13" font-weight="700" fill="#a2504d">② 개선이 항상 프로그램 수정을 요구</text>
+  <text x="400" y="396" font-size="12.5" fill="#3b4756">바로잡으려면 규칙 추가 또는 재학습이</text>
+  <text x="400" y="416" font-size="12.5" fill="#3b4756">필요하다. 규칙 추가는 이미 맞던 문장을</text>
+  <text x="400" y="436" font-size="12.5" fill="#3b4756">뒤집는 회귀를, 재학습은 데이터·검증·배포</text>
+  <text x="400" y="456" font-size="12.5" fill="#3b4756">주기를 수반하여 즉시성이 없다.</text>
+
+  <rect x="740" y="350" width="336" height="118" rx="8" fill="#fdf4f4" stroke="#d59896" stroke-width="1.2"/>
+  <text x="758" y="374" font-size="13" font-weight="700" fill="#a2504d">③ 외부 AI 활용의 두 장벽</text>
+  <text x="758" y="396" font-size="12.5" fill="#3b4756">개인정보 장벽 — 평가 원문을 외부에 그대로</text>
+  <text x="758" y="416" font-size="12.5" fill="#3b4756">전달할 수 없다. 출력 형식 장벽 — 응답 형식</text>
+  <text x="758" y="436" font-size="12.5" fill="#3b4756">이 매번 달라, 반영할 때마다 파싱·연계 코드</text>
+  <text x="758" y="456" font-size="12.5" fill="#3b4756">를 새로 작성해야 한다.</text>
+</svg>

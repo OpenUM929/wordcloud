@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 560" width="1180" height="560" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+  <defs>
+    <marker id="m9a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5b6b7f"/>
+    </marker>
+    <marker id="m9g" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#4c8c5a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1180" height="560" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="700" fill="#1f2937">[그림 5] 시스템 모듈 구성도 — 9개 모듈이 단일 판정 데이터 구조를 매개로 상태·결과를 공유</text>
+
+  <!-- lane labels -->
+  <text x="34" y="70" font-size="12.5" font-weight="700" fill="#4a6182">추출 계열</text>
+  <text x="336" y="70" font-size="12.5" font-weight="700" fill="#a8761f">생성 계열</text>
+  <text x="638" y="70" font-size="12.5" font-weight="700" fill="#3f7a4f">판정 계열</text>
+  <text x="940" y="70" font-size="12.5" font-weight="700" fill="#6b4f96">반영·횡단 계열</text>
+
+  <!-- 추출 계열 -->
+  <rect x="24" y="84" width="272" height="88" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="160" y="108" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">판정 곤란 문장 추출 모듈</text>
+  <text x="160" y="128" font-size="11.3" fill="#3b4756" text-anchor="middle">가명 원복 없이 로드 · 이중 판정값</text>
+  <text x="160" y="146" font-size="11.3" fill="#3b4756" text-anchor="middle">극성불일치/저마진 선별 · PII 격리</text>
+  <text x="160" y="162" font-size="11" fill="#8a94a6" text-anchor="middle">항목 목록 · 격리 목록 반환</text>
+
+  <rect x="24" y="192" width="272" height="72" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="160" y="216" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">배치 연동 모듈</text>
+  <text x="160" y="236" font-size="11.3" fill="#3b4756" text-anchor="middle">배치 종료 시 자동 생성·저장</text>
+  <text x="160" y="252" font-size="11.3" fill="#8a94a6" text-anchor="middle">예외 시 경고만, 배치 본처리 무영향</text>
+
+  <!-- 생성 계열 -->
+  <rect x="326" y="84" width="272" height="88" rx="8" fill="#fdf3e3" stroke="#c98a2e" stroke-width="1.5"/>
+  <text x="462" y="108" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">판정 데이터 구조 골격 생성 모듈</text>
+  <text x="462" y="128" font-size="11.3" fill="#3b4756" text-anchor="middle">(프롬프트 결합 모듈)</text>
+  <text x="462" y="146" font-size="11.3" fill="#a8761f" text-anchor="middle">핵심 1 — 출력 형식을 강제하는 봉투 생성</text>
+  <text x="462" y="162" font-size="11" fill="#8a94a6" text-anchor="middle">단계정의·상태사전·지시문·규칙·출력형식</text>
+
+  <rect x="326" y="192" width="272" height="72" rx="8" fill="#fdf3e3" stroke="#c98a2e" stroke-width="1.5"/>
+  <text x="462" y="216" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">모델 신뢰도 부착 모듈</text>
+  <text x="462" y="236" font-size="11.3" fill="#3b4756" text-anchor="middle">온도 스케일링 보정 확률 → 참고값</text>
+  <text x="462" y="252" font-size="11.3" fill="#8a94a6" text-anchor="middle">비활성/실패 시 미부착(선택적 보조 신호)</text>
+
+  <!-- 판정 계열 -->
+  <rect x="628" y="84" width="272" height="88" rx="8" fill="#eef7ef" stroke="#4c8c5a" stroke-width="1.5"/>
+  <text x="764" y="108" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">외부 판정 위임 인터페이스</text>
+  <text x="764" y="128" font-size="11.3" fill="#3b4756" text-anchor="middle">판정 데이터 구조 다운로드 → 외부 AI 전달</text>
+  <text x="764" y="146" font-size="11.3" fill="#3b4756" text-anchor="middle">완료 파일 업로드/본문전달/경로지정</text>
+  <text x="764" y="162" font-size="11" fill="#8a94a6" text-anchor="middle">보관 실패해도 집계·반영은 진행</text>
+
+  <rect x="628" y="192" width="272" height="88" rx="8" fill="#eef7ef" stroke="#4c8c5a" stroke-width="1.5"/>
+  <text x="764" y="216" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">웹 검토 인터페이스</text>
+  <text x="764" y="234" font-size="11.3" fill="#3b4756" text-anchor="middle">(그룹검토 게시판)</text>
+  <text x="764" y="252" font-size="11.3" fill="#3b4756" text-anchor="middle">status=2 항목만 선별 조회·저장</text>
+  <text x="764" y="268" font-size="11" fill="#8a94a6" text-anchor="middle">읽기-수정-쓰기로 갱신 유실 방지</text>
+
+  <!-- 반영·횡단 계열 -->
+  <rect x="930" y="84" width="226" height="72" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.5"/>
+  <text x="1043" y="108" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">반영 모듈</text>
+  <text x="1043" y="128" font-size="11.3" fill="#3b4756" text-anchor="middle">상태·라벨 정규화 → in-place 병합</text>
+  <text x="1043" y="144" font-size="11" fill="#8a94a6" text-anchor="middle">출처 판별 분기 없는 단일 함수</text>
+
+  <rect x="930" y="172" width="226" height="72" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.5"/>
+  <text x="1043" y="196" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">상태·감사 모듈</text>
+  <text x="1043" y="216" font-size="11.3" fill="#3b4756" text-anchor="middle">상태 코드별 분포 집계</text>
+  <text x="1043" y="232" font-size="11" fill="#8a94a6" text-anchor="middle">잔여 사람 이관분 → 게시판 유도</text>
+
+  <rect x="930" y="260" width="226" height="72" rx="8" fill="#fdecec" stroke="#c0504d" stroke-width="1.5"/>
+  <text x="1043" y="284" font-size="13" font-weight="700" fill="#1f2937" text-anchor="middle">경로 방어 모듈</text>
+  <text x="1043" y="304" font-size="11.3" fill="#a2504d" text-anchor="middle">저장·조회 경로 화이트리스트 검사</text>
+  <text x="1043" y="320" font-size="11" fill="#8a94a6" text-anchor="middle">모든 모듈의 파일 I/O 를 횡단 보호</text>
+
+  <!-- data flow arrows: extract -> build -->
+  <line x1="296" y1="128" x2="322" y2="128" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m9a)"/>
+  <!-- build -> judge -->
+  <line x1="598" y1="128" x2="624" y2="128" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m9a)"/>
+  <!-- 외부판정 <-> 웹검토 (status 2 escalation) -->
+  <path d="M764,172 L764,188" fill="none" stroke="#4c8c5a" stroke-width="1.7" marker-end="url(#m9g)"/>
+  <text x="774" y="184" font-size="11" fill="#3f7a4f">status=2</text>
+  <!-- judge -> 반영 -->
+  <path d="M900,128 L916,128 L916,120 L926,120" fill="none" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m9a)"/>
+  <path d="M900,236 L916,236 L916,208 L926,208" fill="none" stroke="#5b6b7f" stroke-width="1.7" marker-end="url(#m9a)"/>
+
+  <!-- shared packet backbone -->
+  <rect x="24" y="360" width="1132" height="86" rx="8" fill="#f7f9fc" stroke="#c3cfdd" stroke-width="1.3"/>
+  <text x="44" y="386" font-size="13" font-weight="700" fill="#1f2937">공유 매개: 자기설명 판정 데이터 구조(그림3) — 모든 모듈은 이 판정 데이터 구조 파일 하나의 상태·필드를 읽고 써서 통신한다.</text>
+  <text x="44" y="410" font-size="12" fill="#3b4756">서버 상시 연결·별도 API 계약이 없어도, 판정 데이터 구조 파일의 왕복만으로 9개 모듈이 하나의 파이프라인처럼 동작한다.</text>
+  <text x="44" y="430" font-size="12" fill="#3b4756">경로 방어 모듈은 특정 단계에 속하지 않고 저장(추출·생성)·조회(위임·검토) 전 구간의 파일 I/O 를 공통으로 검사한다.</text>
+
+  <path d="M160,376 L160,264" fill="none" stroke="#8a94a6" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <path d="M462,376 L462,264" fill="none" stroke="#8a94a6" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <path d="M764,376 L764,280" fill="none" stroke="#8a94a6" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <path d="M1043,376 L1043,332" fill="none" stroke="#8a94a6" stroke-width="1.2" stroke-dasharray="4 3"/>
+
+  <!-- legend -->
+  <text x="24" y="472" font-size="12" fill="#5b6b7f">범례</text>
+  <rect x="24" y="482" width="16" height="16" rx="3" fill="#eef2f7" stroke="#5a7fa6"/>
+  <text x="46" y="495" font-size="11.5" fill="#3b4756">추출 계열</text>
+  <rect x="120" y="482" width="16" height="16" rx="3" fill="#fdf3e3" stroke="#c98a2e"/>
+  <text x="142" y="495" font-size="11.5" fill="#3b4756">생성 계열(핵심 1)</text>
+  <rect x="256" y="482" width="16" height="16" rx="3" fill="#eef7ef" stroke="#4c8c5a"/>
+  <text x="278" y="495" font-size="11.5" fill="#3b4756">판정 계열</text>
+  <rect x="352" y="482" width="16" height="16" rx="3" fill="#f2eef7" stroke="#7a5aa6"/>
+  <text x="374" y="495" font-size="11.5" fill="#3b4756">반영·감사 계열</text>
+  <rect x="486" y="482" width="16" height="16" rx="3" fill="#fdecec" stroke="#c0504d"/>
+  <text x="508" y="495" font-size="11.5" fill="#3b4756">횡단(경로 방어)</text>
+
+  <text x="24" y="524" font-size="12" fill="#3b4756">· 9개 모듈은 배치→추출→생성→위임/검토→반영→감사의 단계를 각각 담당하며, 시스템과 외부 판정 수단·검토자의 결합은 판정 데이터 구조 파일 상태만으로 이루어진다.</text>
+</svg>

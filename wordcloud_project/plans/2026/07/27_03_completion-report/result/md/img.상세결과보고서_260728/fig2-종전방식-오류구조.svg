@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="900" height="400" font-family="Malgun Gothic, 맑은 고딕, sans-serif">
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6472"/>
+    </marker>
+  </defs>
+  <rect width="900" height="400" fill="#ffffff"/>
+
+  <text x="24" y="32" font-size="16" font-weight="bold" fill="#20262e">종전 방식이 실제 자료에서 만들어 낸 결과 — 3개 연도 전수 대조</text>
+  <text x="24" y="53" font-size="12.5" fill="#5a6472">2023·2024·2025년 기입 칸이 보존된 문장 2,635,919건을 종전 방식대로 다시 세고, 문장 내용과 대조한 결과입니다. 추정치는 없습니다.</text>
+
+  <!-- 입력 -->
+  <rect x="24" y="140" width="196" height="86" rx="5" fill="#e8edf4" stroke="#9fb0c8"/>
+  <text x="122" y="169" font-size="12.5" text-anchor="middle" fill="#2b3a4d">3개 연도 전수</text>
+  <text x="122" y="195" font-size="18" font-weight="bold" text-anchor="middle" fill="#20262e">2,635,919건</text>
+  <text x="122" y="213" font-size="11" text-anchor="middle" fill="#6b7482">기입 칸이 보존된 문장</text>
+
+  <text x="255" y="172" font-size="11.5" text-anchor="middle" fill="#8b929c">종전 방식</text>
+  <text x="255" y="188" font-size="11.5" text-anchor="middle" fill="#8b929c">으로 재집계</text>
+
+  <!-- 분기 -->
+  <path d="M220,183 L288,183" fill="none" stroke="#5a6472" stroke-width="1.8"/>
+  <path d="M288,183 L288,100 L316,100" fill="none" stroke="#5a6472" stroke-width="1.8" marker-end="url(#a2)"/>
+  <path d="M288,183 L316,183" fill="none" stroke="#5a6472" stroke-width="1.8" marker-end="url(#a2)"/>
+  <path d="M288,183 L288,266 L316,266" fill="none" stroke="#5a6472" stroke-width="1.8" marker-end="url(#a2)"/>
+
+  <!-- 결과 3분기 -->
+  <rect x="320" y="70" width="368" height="60" rx="5" fill="#e6f0e8" stroke="#8fb79b"/>
+  <text x="338" y="94" font-size="12.5" fill="#2c4a34">칸대로 세어도 내용과 맞았던 것</text>
+  <text x="338" y="118" font-size="17" font-weight="bold" fill="#2c4a34">1,734,065건 · 65.8%</text>
+
+  <rect x="320" y="153" width="368" height="60" rx="5" fill="#f3f0e4" stroke="#c6bb92"/>
+  <text x="338" y="177" font-size="12.5" fill="#4d4526">실제로는 중립인데 칭찬·불만으로 셈</text>
+  <text x="338" y="201" font-size="17" font-weight="bold" fill="#4d4526">687,287건 · 26.07%</text>
+
+  <rect x="320" y="236" width="368" height="60" rx="5" fill="#f6e8e8" stroke="#c99a9a"/>
+  <text x="338" y="260" font-size="12.5" font-weight="bold" fill="#5c2b2b">칭찬 ↔ 불만이 정반대로 뒤집힘</text>
+  <text x="338" y="284" font-size="17" font-weight="bold" fill="#5c2b2b">214,567건 · 8.14%</text>
+
+  <!-- 합계 -->
+  <path d="M688,183 L716,183" fill="none" stroke="#5a6472" stroke-width="1.8" marker-end="url(#a2)"/>
+  <path d="M688,266 L702,266 L702,183" fill="none" stroke="#5a6472" stroke-width="1.8"/>
+
+  <rect x="720" y="140" width="156" height="86" rx="5" fill="#f6e8e8" stroke="#c99a9a"/>
+  <text x="798" y="167" font-size="12" text-anchor="middle" fill="#5c2b2b">내용과 다르게</text>
+  <text x="798" y="183" font-size="12" text-anchor="middle" fill="#5c2b2b">계산된 분</text>
+  <text x="798" y="206" font-size="17" font-weight="bold" text-anchor="middle" fill="#5c2b2b">901,854건</text>
+  <text x="798" y="221" font-size="12" text-anchor="middle" fill="#5c2b2b">전체의 34.2%</text>
+
+  <line x1="24" y1="318" x2="876" y2="318" stroke="#e2e5e9"/>
+  <text x="24" y="342" font-size="12" fill="#5a6472"><tspan font-weight="bold">가장 위험한 것은 맨 아래 줄입니다.</tspan> 칭찬으로 적힌 말이 불만으로, 불만으로 적힌 말이 칭찬으로 집계된 건이 214,567건입니다.</text>
+  <text x="24" y="363" font-size="12" fill="#5a6472">연도별 뒤바뀜 비율은 2023년 7.99% · 2024년 8.04% · 2025년 8.47% 로, 연도가 달라도 같은 크기로 나타났습니다(편차 0.5%p).</text>
+  <text x="24" y="386" font-size="11.5" fill="#8b929c">근거: §6-3 (라) 3개 연도 전수 합계 · 전수 실측</text>
+</svg>

@@ -1,0 +1,359 @@
+{
+  "n_total": 761,
+  "device": "cuda",
+  "stages": [
+    {
+      "stage": "S0 감정 분석 미도입(입력 칸 = 라벨)",
+      "date": "도입 이전",
+      "note": "문장을 읽지 않음",
+      "field_prefix": false,
+      "overall": {
+        "n": 761,
+        "acc": 72.4,
+        "posneg": 48
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 82.41,
+          "posneg": 23
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 47.14,
+          "posneg": 17
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 66.44,
+          "posneg": 7
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 78.38,
+          "posneg": 1
+        }
+      }
+    },
+    {
+      "stage": "S1 초기 파인튜닝(대조군)",
+      "date": "2026-06-30",
+      "note": "사람 gold 1,579 학습",
+      "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/model_out_ctrl",
+      "field_prefix": false,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 2.71,
+      "overall": {
+        "n": 761,
+        "acc": 74.9,
+        "posneg": 14
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 92.21,
+          "posneg": 1
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 67.14,
+          "posneg": 5
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 41.61,
+          "posneg": 5
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 63.51,
+          "posneg": 3
+        }
+      }
+    },
+    {
+      "stage": "S2 하드샘플 1차 추가",
+      "date": "2026-06-30",
+      "note": "gold 2,123",
+      "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/model_out_round1",
+      "field_prefix": false,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 1.73,
+      "overall": {
+        "n": 761,
+        "acc": 73.85,
+        "posneg": 10
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 93.22,
+          "posneg": 0
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 64.29,
+          "posneg": 1
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 38.26,
+          "posneg": 4
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 59.46,
+          "posneg": 5
+        }
+      }
+    },
+    {
+      "stage": "S3 전 gold 통합",
+      "date": "2026-07-01",
+      "note": "정식 gold 3,040",
+      "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/model_out_final",
+      "field_prefix": false,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 1.74,
+      "overall": {
+        "n": 761,
+        "acc": 75.95,
+        "posneg": 12
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 92.71,
+          "posneg": 0
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 70.71,
+          "posneg": 2
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 42.28,
+          "posneg": 6
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 63.51,
+          "posneg": 4
+        }
+      }
+    },
+    {
+      "stage": "S4 하드클래스(8c) 학습",
+      "date": "2026-07-07",
+      "note": "8c 하드 gold 추가",
+      "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/model_out_8c",
+      "field_prefix": false,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 1.73,
+      "overall": {
+        "n": 761,
+        "acc": 78.71,
+        "posneg": 10
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 91.96,
+          "posneg": 1
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 82.14,
+          "posneg": 2
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 40.27,
+          "posneg": 6
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 78.38,
+          "posneg": 1
+        }
+      }
+    },
+    {
+      "stage": "S5 필드신호 미적용(A/B 대조)",
+      "date": "2026-07-07",
+      "note": "train 3,328, 필드 OFF",
+      "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/model_out_ft_off",
+      "field_prefix": false,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 2.36,
+      "overall": {
+        "n": 761,
+        "acc": 80.95,
+        "posneg": 11
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 94.47,
+          "posneg": 0
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 85.71,
+          "posneg": 1
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 41.61,
+          "posneg": 9
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 78.38,
+          "posneg": 1
+        }
+      }
+    },
+    {
+      "stage": "S6 필드신호 적용(A/B 처리)",
+      "date": "2026-07-07",
+      "note": "train 3,328, 필드 ON",
+      "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/model_out_ft_on",
+      "field_prefix": true,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 2.51,
+      "overall": {
+        "n": 761,
+        "acc": 81.21,
+        "posneg": 2
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 95.98,
+          "posneg": 0
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 87.14,
+          "posneg": 0
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 38.93,
+          "posneg": 2
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 75.68,
+          "posneg": 0
+        }
+      }
+    },
+    {
+      "stage": "S7 능동학습 누적",
+      "date": "2026-07-08",
+      "note": "c4 시점 체크포인트",
+      "path": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/model_out_backup_c4_260708",
+      "field_prefix": true,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 2.49,
+      "overall": {
+        "n": 761,
+        "acc": 89.36,
+        "posneg": 4
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 96.73,
+          "posneg": 1
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 91.43,
+          "posneg": 0
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 73.15,
+          "posneg": 3
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 78.38,
+          "posneg": 0
+        }
+      }
+    },
+    {
+      "stage": "S8 배포 확정본(seed45)",
+      "date": "2026-07-08",
+      "note": "현 운영 모델",
+      "path": "D:/dev/wordcloud/model/hr_sentiment_finetuned",
+      "field_prefix": true,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1",
+        "2": "LABEL_2"
+      },
+      "elapsed": 2.45,
+      "overall": {
+        "n": 761,
+        "acc": 90.93,
+        "posneg": 0
+      },
+      "slices": {
+        "baseline399": {
+          "n": 398,
+          "acc": 97.74,
+          "posneg": 0
+        },
+        "8c_hard": {
+          "n": 140,
+          "acc": 90.71,
+          "posneg": 0
+        },
+        "c3_neu149": {
+          "n": 149,
+          "acc": 76.51,
+          "posneg": 0
+        },
+        "sa_speech74": {
+          "n": 74,
+          "acc": 83.78,
+          "posneg": 0
+        }
+      }
+    }
+  ]
+}

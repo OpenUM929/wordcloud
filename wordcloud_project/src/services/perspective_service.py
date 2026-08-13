@@ -3415,6 +3415,14 @@ TREND_METRICS = {
 TREND_POSITIVE_COLOR = '#28a745'
 TREND_NEGATIVE_COLOR = '#dc3545'
 
+# 차트 디자인 토큰 — Material Tailwind 라인 차트 규격
+# (grid #dddddd strokeDashArray:5, 축 라벨 #616161 12px, 흰 카드 위 회색 캔버스)
+TREND_CANVAS_COLOR = '#f1f5f9'
+TREND_CARD_COLOR = '#ffffff'
+TREND_GRID_COLOR = '#dddddd'
+TREND_LABEL_COLOR = '#616161'
+TREND_TITLE_COLOR = '#1e293b'
+
 
 def _trend_sentence_counts(items, corrections_map=None):
     """items 안의 문장을 극성별로 집계한다.
@@ -3579,9 +3587,17 @@ def _trend_series(trend, unit):
 def _save_trend_chart_to_path(trend, output_path, options):
     """aggregate_sentiment_trend 결과를 라인 차트 PNG로 저장. 성공 시 True.
 
+    디자인은 Material Tailwind 라인 차트 규격을 따른다 — 흰 카드, 축선·눈금 제거,
+    점선 그리드(#dddddd), 회색 12px 라벨, 부드러운 곡선. 다만 값 라벨과 마커는
+    MT 원본(dataLabels:false, markers.size:0)과 달리 유지한다 — 인사처 납품물은
+    수치를 읽는 문서라 그래프에 값이 찍혀 있어야 한다(2026-08-12 사용자 결정).
+
     한글 폰트는 호출부(라우트)에서 _setup_korean_font() 를 1회 실행해 둔다.
     """
+    import numpy as np
     import matplotlib.pyplot as plt
+    import matplotlib.patheffects as patheffects
+    from matplotlib.patches import FancyBboxPatch
 
     options = options or {}
     unit = options.get('unit', 'pct')
@@ -3590,75 +3606,151 @@ def _save_trend_chart_to_path(trend, output_path, options):
         return False
 
     pos_series, neg_series = _trend_series(trend, unit)
-    # 결측(None)은 nan 으로 바꿔 선이 끊기게 한다
-    to_plot = lambda seq: [float('nan') if v is None else float(v) for v in seq]
-    y_pos, y_neg = to_plot(pos_series), to_plot(neg_series)
-
     width = int(options.get('width', 800) or 800)
     height = int(options.get('height', 600) or 600)
     metric_label = trend.get('metric_label', '')
     unit_label = '백분율(%)' if unit == 'pct' else '수량'
 
+    def _runs(series):
+        """값이 이어지는 구간(인덱스 묶음). 결측 연도에서 끊긴다."""
+        out, cur = [], []
+        for i, v in enumerate(series):
+            if v is None:
+                if cur:
+                    out.append(cur)
+                cur = []
+            else:
+                cur.append(i)
+        if cur:
+            out.append(cur)
+        return out
+
+    def _smooth(xs, ys):
+        """PCHIP 단조 보존 보간 — 점 사이가 실제 값 범위를 넘지 않는다(오버슈트 없음)."""
+        if len(xs) < 3:
+            return xs, ys
+        try:
+            from scipy.interpolate import PchipInterpolator
+            fx = np.linspace(xs[0], xs[-1], 200)
+            return fx, PchipInterpolator(xs, ys)(fx)
+        except Exception:
+            return xs, ys
+
     fig = None
     try:
-        fig, ax = plt.subplots(figsize=(width / 100.0, height / 100.0), dpi=100)
+        fig = plt.figure(figsize=(width / 100.0, height / 100.0), dpi=100,
+                         facecolor=TREND_CANVAS_COLOR)
+
+        # 흰 카드(둥근 모서리 + 옅은 그림자) — MT 카드 래퍼
+        card = FancyBboxPatch(
+            (0.03, 0.04), 0.94, 0.92, transform=fig.transFigure,
+            boxstyle='round,pad=0,rounding_size=0.018',
+            facecolor=TREND_CARD_COLOR, edgecolor='#ececec', linewidth=1, zorder=0)
+        card.set_path_effects([patheffects.withSimplePatchShadow(
+            offset=(2, -2), alpha=0.10, shadow_rgbFace='#94a3b8')])
+        fig.add_artist(card)
+
+        ax = fig.add_axes([0.10, 0.22, 0.86, 0.55])
+        ax.set_facecolor(TREND_CARD_COLOR)
         x = list(range(len(rows)))
 
-        def _plot_series(y_plot, series, color, label, marker):
-            # 실선: 결측 연도에서 끊긴다(값이 없다는 사실을 숨기지 않는다)
-            ax.plot(x, y_plot, marker=marker, linewidth=2, markersize=7,
-                    color=color, label=label)
-            # 점선: 결측 연도를 건너뛴 추이 보조선 — 중간 연도가 비어도 흐름은 보이게
-            pts = [(xi, v) for xi, v in zip(x, series) if v is not None]
-            if len(pts) >= 2 and any(v is None for v in series):
-                ax.plot([p[0] for p in pts], [p[1] for p in pts],
-                        linestyle=':', linewidth=1.2, color=color, alpha=0.55, zorder=1)
+        def _plot_series(series, color, label, marker):
+            labeled = False
+            runs = _runs(series)
+            # 실선(곡선): 결측 연도에서 끊긴다 — 값이 없다는 사실을 숨기지 않는다
+            for run in runs:
+                if len(run) < 2:
+                    continue
+                sx, sy = _smooth(run, [series[i] for i in run])
+                ax.plot(sx, sy, color=color, linewidth=3, solid_capstyle='round',
+                        label=(None if labeled else label), zorder=3)
+                labeled = True
+            # 점선: 값이 없는 구간만 이어 준다 — 흐름은 보이되 실선과 겹치지 않게
+            for prev_run, next_run in zip(runs, runs[1:]):
+                i, j = prev_run[-1], next_run[0]
+                ax.plot([i, j], [series[i], series[j]], color=color, linewidth=1.4,
+                        alpha=0.5, linestyle=(0, (4, 4)), zorder=2)
+            pts = [(i, series[i]) for i in x if series[i] is not None]
+            # 마커: 실제 측정 지점(연도)을 표시
+            ax.plot([p[0] for p in pts], [p[1] for p in pts], linestyle='none',
+                    marker=marker, markersize=8, color=color, markeredgecolor='white',
+                    markeredgewidth=1.6, zorder=4, label=(None if labeled else label))
 
-        _plot_series(y_pos, pos_series, TREND_POSITIVE_COLOR, '긍정', 'o')
-        _plot_series(y_neg, neg_series, TREND_NEGATIVE_COLOR, '부정', '^')
+        _plot_series(pos_series, TREND_POSITIVE_COLOR, '긍정', 'o')
+        _plot_series(neg_series, TREND_NEGATIVE_COLOR, '부정', '^')
 
-        for xi, (vp, vn) in enumerate(zip(pos_series, neg_series)):
-            if vp is not None:
-                ax.annotate(f"{vp}%" if unit == 'pct' else f"{vp}",
-                            (xi, vp), textcoords='offset points', xytext=(0, 8),
-                            ha='center', fontsize=9, color=TREND_POSITIVE_COLOR)
-            if vn is not None:
-                ax.annotate(f"{vn}%" if unit == 'pct' else f"{vn}",
-                            (xi, vn), textcoords='offset points', xytext=(0, -14),
-                            ha='center', fontsize=9, color=TREND_NEGATIVE_COLOR)
+        fmt = (lambda v: f"{v}%") if unit == 'pct' else (lambda v: f"{v}")
+
+        def _label(value, xi, above, color):
+            if value is None:
+                return
+            ax.annotate(fmt(value), (xi, value), textcoords='offset points',
+                        xytext=(0, 12 if above else -19), ha='center',
+                        fontsize=11, color=color, zorder=5)
+
+        for xi in x:
+            vp, vn = pos_series[xi], neg_series[xi]
+            # 두 계열이 교차하는 지점에서 라벨이 겹치지 않도록, 위에 있는 쪽 값은
+            # 위에 / 아래에 있는 쪽 값은 아래에 붙인다(같으면 긍정을 위로)
+            pos_above = True if (vp is None or vn is None) else (vp >= vn)
+            _label(vp, xi, pos_above, TREND_POSITIVE_COLOR)
+            _label(vn, xi, not pos_above, TREND_NEGATIVE_COLOR)
 
         ax.set_xticks(x)
-        ax.set_xticklabels(rows)
-        ax.set_xlabel('평가 연도')
-        ax.set_ylabel('비율 (%)' if unit == 'pct' else metric_label)
+        ax.set_xticklabels([str(r) for r in rows])
+        ax.set_xlim(-0.35, len(rows) - 0.65)
         if unit == 'pct':
-            ax.set_ylim(0, 100)
+            ax.set_ylim(-8, 114)
+            ax.set_yticks([0, 25, 50, 75, 100])
+            ax.set_yticklabels(['0%', '25%', '50%', '75%', '100%'])
         else:
-            ax.set_ylim(bottom=0)
+            vals = [v for v in list(pos_series) + list(neg_series) if v is not None]
+            top = max(vals) if vals else 0
+            if top <= 0:
+                top = 1
+            ax.set_ylim(-top * 0.14, top * 1.30)
             # 건수·종류 수는 정수 지표 — 0.25 같은 눈금이 나오지 않게 한다
             if trend.get('metric') in ('sentence_cnt', 'word_freq', 'word_uniq'):
                 from matplotlib.ticker import MaxNLocator
-                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.grid(True, axis='y', linestyle='--', alpha=0.4)
-        ax.legend(loc='best')
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
+            # 아래쪽 여백은 값 라벨 자리일 뿐이므로 음수 눈금은 지운다
+            ax.set_yticks([t for t in ax.get_yticks() if 0 <= t <= ax.get_ylim()[1]])
+
+        # MT: 축선·눈금 없음, 가로·세로 점선 그리드, 회색 12px 라벨
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        ax.grid(True, which='major', color=TREND_GRID_COLOR,
+                linestyle=(0, (5, 5)), linewidth=1)
+        ax.set_axisbelow(True)
+        ax.tick_params(axis='both', length=0, colors=TREND_LABEL_COLOR,
+                       labelsize=12, pad=8)
+
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.13), ncol=2,
+                  frameon=False, fontsize=12, handlelength=1.8,
+                  handletextpad=0.6, columnspacing=2.4, labelcolor=TREND_LABEL_COLOR)
 
         title = options.get('title') or '연도별 긍정/부정 추이'
-        ax.set_title(f"{title}\n지표: {metric_label} · 단위: {unit_label}", fontsize=13)
+        fig.text(0.07, 0.885, title, fontsize=16, fontweight='bold',
+                 color=TREND_TITLE_COLOR, va='center')
+        fig.text(0.07, 0.833, f"지표: {metric_label} · 단위: {unit_label}",
+                 fontsize=11, color=TREND_LABEL_COLOR, va='center')
 
         notes = []
         if unit == 'pct':
             notes.append('분모 = 긍정+부정 (중립 제외)')
         if trend.get('basis') == 'word':
             notes.append('단어 기준은 중립 단어를 긍정에 포함(워드클라우드와 동일 기준)')
+        if len(rows) >= 3:
+            notes.append('연도 사이 곡선은 시각 표현 (실측값 아님)')
         if trend.get('skipped_rows'):
             skipped_names = ', '.join(str(s.get('row')) for s in trend['skipped_rows'])
             notes.append(f'값 없음: {skipped_names}')
         if notes:
-            fig.text(0.01, 0.01, ' | '.join(notes), fontsize=8, color='#666')
+            fig.text(0.07, 0.062, ' | '.join(notes), fontsize=8.5,
+                     color='#9e9e9e', va='center')
 
-        fig.tight_layout(rect=(0, 0.03, 1, 1))
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        fig.savefig(output_path, dpi=100)
+        fig.savefig(output_path, dpi=100, facecolor=fig.get_facecolor())
         return True
     except Exception as e:
         logger.error("trend_chart_failed error=%s", e, extra={'stage': 'TREND_GRAPH'})

@@ -1,0 +1,314 @@
+{
+  "n": 400,
+  "seed": 20260727,
+  "device": "cuda",
+  "label_dist": {
+    "positive": 219,
+    "negative": 65,
+    "neutral": 116
+  },
+  "cell": {
+    "overall": {
+      "n": 400,
+      "correct": 253,
+      "acc": 63.25,
+      "acc_ci95": 4.72,
+      "mismatch": 147,
+      "mismatch_pct": 36.75,
+      "mismatch_ci95": 4.72,
+      "posneg": 31,
+      "posneg_pct": 7.75,
+      "posneg_ci95": 2.62
+    },
+    "장점": {
+      "n": 204,
+      "correct": 190,
+      "acc": 93.14,
+      "acc_ci95": 3.47,
+      "mismatch": 14,
+      "mismatch_pct": 6.86,
+      "mismatch_ci95": 3.47,
+      "posneg": 2,
+      "posneg_pct": 0.98,
+      "posneg_ci95": 1.35
+    },
+    "단점": {
+      "n": 196,
+      "correct": 63,
+      "acc": 32.14,
+      "acc_ci95": 6.54,
+      "mismatch": 133,
+      "mismatch_pct": 67.86,
+      "mismatch_ci95": 6.54,
+      "posneg": 29,
+      "posneg_pct": 14.8,
+      "posneg_ci95": 4.97
+    }
+  },
+  "model": {
+    "overall": {
+      "n": 400,
+      "correct": 374,
+      "acc": 93.5,
+      "acc_ci95": 2.42,
+      "mismatch": 26,
+      "mismatch_pct": 6.5,
+      "mismatch_ci95": 2.42,
+      "posneg": 4,
+      "posneg_pct": 1.0,
+      "posneg_ci95": 0.98
+    },
+    "장점": {
+      "n": 204,
+      "correct": 197,
+      "acc": 96.57,
+      "acc_ci95": 2.5,
+      "mismatch": 7,
+      "mismatch_pct": 3.43,
+      "mismatch_ci95": 2.5,
+      "posneg": 0,
+      "posneg_pct": 0.0,
+      "posneg_ci95": 0.0
+    },
+    "단점": {
+      "n": 196,
+      "correct": 177,
+      "acc": 90.31,
+      "acc_ci95": 4.14,
+      "mismatch": 19,
+      "mismatch_pct": 9.69,
+      "mismatch_ci95": 4.14,
+      "posneg": 4,
+      "posneg_pct": 2.04,
+      "posneg_ci95": 1.98
+    }
+  },
+  "census_vs_sample": [
+    {
+      "scope": "전체",
+      "census_pct": 33.72,
+      "sample_pct": 36.75,
+      "ci_lo": 32.03,
+      "ci_hi": 41.47,
+      "inside": true
+    },
+    {
+      "scope": "장점란",
+      "census_pct": 4.37,
+      "sample_pct": 6.86,
+      "ci_lo": 3.39,
+      "ci_hi": 10.33,
+      "inside": true
+    },
+    {
+      "scope": "단점란",
+      "census_pct": 64.23,
+      "sample_pct": 67.86,
+      "ci_lo": 61.32,
+      "ci_hi": 74.4,
+      "inside": true
+    }
+  ],
+  "human_model_agreement": {
+    "n": 400,
+    "agree": 374,
+    "pct": 93.5,
+    "ci95": 2.42,
+    "posneg": 4
+  },
+  "confusion_human_model": {
+    "negative->negative": 61,
+    "negative->neutral": 3,
+    "negative->positive": 1,
+    "neutral->negative": 7,
+    "neutral->neutral": 101,
+    "neutral->positive": 8,
+    "positive->negative": 3,
+    "positive->neutral": 4,
+    "positive->positive": 212
+  },
+  "disagreements": [
+    {
+      "no": 16,
+      "field": "단점",
+      "text": "너무 착해서 문제임",
+      "human": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 42,
+      "field": "단점",
+      "text": "기본을 상당히 중요시 하지만 너무 세세한 터치는 부작용을 불러올 수도 있다",
+      "human": "negative",
+      "model": "neutral"
+    },
+    {
+      "no": 65,
+      "field": "단점",
+      "text": "적극적인 업무처리와 열의",
+      "human": "positive",
+      "model": "neutral"
+    },
+    {
+      "no": 66,
+      "field": "단점",
+      "text": "조직이 추구하는 방향성에 대한 인식",
+      "human": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 71,
+      "field": "단점",
+      "text": "지금도 잘하고 계셔서 보완필요점이 없다",
+      "human": "positive",
+      "model": "neutral"
+    },
+    {
+      "no": 88,
+      "field": "단점",
+      "text": "을 인식 하시길",
+      "human": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 109,
+      "field": "단점",
+      "text": "업무에 대해 너무 꼼꼼함",
+      "human": "positive",
+      "model": "negative"
+    },
+    {
+      "no": 112,
+      "field": "장점",
+      "text": "관련분야 자격증 취득",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 126,
+      "field": "단점",
+      "text": "타부서를 아우르는 협업",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 134,
+      "field": "단점",
+      "text": "일이 바쁘셔서 체력을 조금 더 키우시는게 좋을거 같습니다",
+      "human": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 149,
+      "field": "단점",
+      "text": "개인적인 의견이 거의 없으심",
+      "human": "negative",
+      "model": "neutral"
+    },
+    {
+      "no": 168,
+      "field": "단점",
+      "text": "소프트웨어 활용능력",
+      "human": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 170,
+      "field": "단점",
+      "text": "엄무에 너무 집중적임",
+      "human": "positive",
+      "model": "negative"
+    },
+    {
+      "no": 178,
+      "field": "단점",
+      "text": "경영 목표를 명확하게 전달하고 각인",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 214,
+      "field": "단점",
+      "text": "일을 너무 열심히 하는게 단점",
+      "human": "positive",
+      "model": "negative"
+    },
+    {
+      "no": 233,
+      "field": "장점",
+      "text": "특정업무에 대해서만 현장 경험 풍부, 노하우 보유",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 247,
+      "field": "장점",
+      "text": "업무처리, 연구개발, 대인관계",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 276,
+      "field": "단점",
+      "text": "업무외적으로 얼굴을 볼 수 있는 점",
+      "human": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 285,
+      "field": "단점",
+      "text": "현장민원에 너무 적극적이어서 가끔 본인이 스트레스를 받을 수 있을 것 같다",
+      "human": "neutral",
+      "model": "negative"
+    },
+    {
+      "no": 292,
+      "field": "단점",
+      "text": "업무 시스템을 개선하기 위해 노력",
+      "human": "positive",
+      "model": "neutral"
+    },
+    {
+      "no": 323,
+      "field": "장점",
+      "text": "조용한 성격이십니다",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 328,
+      "field": "단점",
+      "text": "유연한 업무 태도로 업무 해결 능력 개발",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 334,
+      "field": "단점",
+      "text": "지사 리더임에도 불구하고 먼저 솔선수범을 행동으로 보여주시어 직원들이 부담스러워 함",
+      "human": "negative",
+      "model": "positive"
+    },
+    {
+      "no": 335,
+      "field": "장점",
+      "text": "담당업무에 대한 책임감, 전문성 및 문제해결 능력",
+      "human": "positive",
+      "model": "neutral"
+    },
+    {
+      "no": 366,
+      "field": "장점",
+      "text": "유머스러운 부분이 있습니다",
+      "human": "neutral",
+      "model": "positive"
+    },
+    {
+      "no": 375,
+      "field": "장점",
+      "text": "맡은바 업무는 충실히 수행하나 진취적 자세는 없고, 딱딱한 말투는 고쳤으면 좋겠음",
+      "human": "negative",
+      "model": "neutral"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "test1_structure": {
+    "keys": [
+      "no",
+      "rec_id",
+      "field",
+      "text",
+      "claude_judgment"
+    ],
+    "model_columns": [],
+    "passed": true
+  },
+  "test2_not_a_copy": {
+    "agree": 374,
+    "n": 400,
+    "pct": 93.5,
+    "passed": true
+  },
+  "test3_third_party": {
+    "n": 100,
+    "r1_r2": 98,
+    "r1_model": 95,
+    "r2_model": 97,
+    "delta_pp": 3.0,
+    "passed": true
+  },
+  "timestamps": [
+    {
+      "file": "blind_judged_400.jsonl",
+      "created": "2026-07-27 17:14:41",
+      "modified": "2026-07-27 17:14:41"
+    },
+    {
+      "file": "blind_sample_260727.json",
+      "created": "2026-07-27 17:14:52",
+      "modified": "2026-07-30 17:17:33"
+    },
+    {
+      "file": "measure_blind_sample_260727.py",
+      "created": "2026-07-30 20:33:57",
+      "modified": "2026-07-30 20:33:57"
+    },
+    {
+      "file": "irr_subset_260730.jsonl",
+      "created": "2026-07-30 20:44:51",
+      "modified": "2026-07-30 20:44:51"
+    },
+    {
+      "file": "irr_reader2_260730.jsonl",
+      "created": "2026-07-30 20:45:48",
+      "modified": "2026-07-30 20:45:48"
+    }
+  ],
+  "test4_ctime_order": {
+    "label_first": true,
+    "gap_sec": 10,
+    "limit": "다른 경로에서의 사전 채점 가능성은 배제 못 함",
+    "passed": true
+  },
+  "summary": {
+    "passed": 4,
+    "of": 4,
+    "limit": "세 시험 모두 '모델 출력의 복사본이 아님'을 보일 뿐, 판독 시각의 선후를 직접 증명하지 않는다. 전향적 절차 기록은 §10-4 제9조로 강제한다."
+  }
+}

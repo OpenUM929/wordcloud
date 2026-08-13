@@ -1,7 +1,7 @@
 # 계획서 — 연도별 긍정/부정 추이 라인 그래프 이미지 생성 및 「그래프 저장」 버튼 추가
 
 > 상태: Pre-Done | 작성일: 2026-08-12 | 관련 CR: REQ-2608-003, REQ-2608-004
-> 최초 작성 2026-08-12 · 최종 개정 2026-08-12 (당일 제1차) — rev-260812-01
+> 최초 작성 2026-08-12 · 최종 개정 2026-08-12 (당일 제2차) — rev-260812-02
 > 작업 유형: B (기능 개선/신규 기능)
 > 선행: 없음
 
@@ -13,6 +13,7 @@
 |------|-----------|-----------|
 | 2026-08-12 | 전체 | 최초 작성 |
 | 2026-08-12 | 요구사항 원자화 · §9 신설 | 구현 완료(§4 1~11단계 중 10단계 P2 포함 전부 수행). 원자화 표 `작업 후 답` 을 실측 근거로 채움. 결측 연도 점선 보조선·정수 눈금 2건은 렌더 확인 후 계획서에 없던 보완으로 추가(§9-2). 상태 `Todo` → `Pre-Done` (실화면 검증 T1~T11 대기) |
+| 2026-08-12 | 원자화 근거 라인 · §9-2 · §10 신설 | 사용자 요청으로 차트 디자인을 **Material Tailwind 라인 차트** 규격으로 재작성(`_save_trend_chart_to_path` 렌더부 한정). 렌더 함수 교체로 이동한 근거 라인 번호 21곳 갱신. 상태는 `Pre-Done` 유지 |
 
 ---
 
@@ -28,21 +29,21 @@
 
 | # | 원자 질문 | 기대 (사용자 확인) | 작업 후 답 (근거) |
 |---|-----------|--------------------|-------------------|
-| 1.1 | 새로 만드는 그래프는 막대가 아니라 **선(line)** 으로 그리는가? | Y | **Y** — `ax.plot(...)` 만 사용(막대 API 없음): `perspective_service.py:3609, 3614` |
-| 1.2 | 선은 **긍정 1개 + 부정 1개, 총 2개**인가? | Y | **Y** — `_plot_series` 를 긍정(`#28a745`)·부정(`#dc3545`) 2회 호출: `perspective_service.py:3617-3618` |
-| 1.3 | X축은 **평가 연도**이고, 사용자가 화면에서 체크한 연도만 표시되는가? (예: 2024·2026만 체크하면 점 2개) | Y | **Y** — 화면의 `getSelectedRowValues()`(`perspective_test.html:626-629`) → `row_values` → `aggregate_sentiment_trend` 가 그 값만 순회(`perspective_service.py:3516-3540`). 테스트 `test_sentiment_trend.py` [A] `rows=['2024','2025','2026']` 그대로 반영 확인 |
-| 1.4 | 그래프 대상은 **선택한 직원 1명 기준**인가? | Y | **Y** — 직원 1명 단위 호출(`save_trend_graph_to_deploy`, `perspective_service.py:3671`), 데이터는 `_get_evaluations_for_employee(unified_data, resolved_id)`(`:3706`) |
+| 1.1 | 새로 만드는 그래프는 막대가 아니라 **선(line)** 으로 그리는가? | Y | **Y** — `ax.plot(...)` 만 사용(막대 API 없음): `perspective_service.py:3665, 3671, 3675` |
+| 1.2 | 선은 **긍정 1개 + 부정 1개, 총 2개**인가? | Y | **Y** — `_plot_series` 를 긍정(`#28a745`)·부정(`#dc3545`) 2회 호출: `perspective_service.py:3679-3680` |
+| 1.3 | X축은 **평가 연도**이고, 사용자가 화면에서 체크한 연도만 표시되는가? (예: 2024·2026만 체크하면 점 2개) | Y | **Y** — 화면의 `getSelectedRowValues()`(`perspective_test.html:626-629`) → `row_values` → `aggregate_sentiment_trend` 가 그 값만 순회(`perspective_service.py:3524-3548`). 테스트 `test_sentiment_trend.py` [A] `rows=['2024','2025','2026']` 그대로 반영 확인 |
+| 1.4 | 그래프 대상은 **선택한 직원 1명 기준**인가? | Y | **Y** — 직원 1명 단위 호출(`save_trend_graph_to_deploy`, `perspective_service.py:3763`), 데이터는 `_get_evaluations_for_employee(unified_data, resolved_id)`(`:3800`) |
 | 2.1 | 그래프를 만들 때 **비율 산출 지표를 사용자가 선택**할 수 있는가? (긍/부정 단어 수, 긍/부정 문장 수 등) | Y | **Y** — 5종 셀렉트 `#graphMetric`(`perspective_test.html:334-340`) → `TREND_METRICS`(`perspective_service.py:3407-3413`). 라우트에서 미등록 값은 400(`perspective_routes.py:577-578`) |
-| 2.2 | 그래프를 만들 때 **표시 단위(백분율 % / 수량)** 를 사용자가 선택할 수 있는가? | Y | **Y** — `#graphUnit`(`perspective_test.html:343-346`) → `_trend_series(trend, unit)`(`perspective_service.py:3553`). 테스트 [E]/[E-2] 로 % ↔ 수량 전환 확인 |
-| 2.3 | 백분율 모드의 분모는 **긍정+부정**(중립 제외)인가? | Y | **Y** — `total = p + n` 만 사용(`perspective_service.py:3565-3572`), 중립은 애초에 계열에 들어가지 않음(`:3446-3451`). 테스트 [E] `연도별 합 = 100` 통과 |
-| 3.1 | 그래프는 화면에만 뜨는 게 아니라 **PNG 파일로 저장**되는가? | Y | **Y** — `fig.savefig(output_path, dpi=100)`(`perspective_service.py:3661`). 테스트 `test_trend_save_path.py` [A] 파일 존재 True, 렌더 산출물 27~39KB |
-| 3.2 | 저장 위치는 제출용 저장과 같은 `outputs/배포/` 아래의 **별도 폴더**인가? | Y | **Y** — `DEPLOY_OUTPUT_DIR/그래프/`(`perspective_service.py:3728-3730`, `DEPLOY_OUTPUT_DIR` 은 `:72` = `outputs/배포`). 기존 `통합`/`긍정`/`부정` 폴더와 병렬 |
-| 3.3 | 파일명은 **직원 사번(또는 이름_사번)** 으로 시작하는가? | Y | **Y** — `save_to_deploy` 와 동일한 `safe_name` 규칙 재사용(`perspective_service.py:3727`, 기존 `save_to_deploy` 는 `:3275`) 후 `_긍부정그래프.png` 접미. 테스트 [A] `홍길동_110110_긍부정그래프.png` 확인 |
+| 2.2 | 그래프를 만들 때 **표시 단위(백분율 % / 수량)** 를 사용자가 선택할 수 있는가? | Y | **Y** — `#graphUnit`(`perspective_test.html:343-346`) → `_trend_series(trend, unit)`(`perspective_service.py:3561`). 테스트 [E]/[E-2] 로 % ↔ 수량 전환 확인 |
+| 2.3 | 백분율 모드의 분모는 **긍정+부정**(중립 제외)인가? | Y | **Y** — `total = p + n` 만 사용(`perspective_service.py:3573-3580`), 중립은 애초에 계열에 들어가지 않음(`:3454-3459`). 테스트 [E] `연도별 합 = 100` 통과 |
+| 3.1 | 그래프는 화면에만 뜨는 게 아니라 **PNG 파일로 저장**되는가? | Y | **Y** — `fig.savefig(output_path, dpi=100)`(`perspective_service.py:3753`). 테스트 `test_trend_save_path.py` [A] 파일 존재 True, 렌더 산출물 27~39KB |
+| 3.2 | 저장 위치는 제출용 저장과 같은 `outputs/배포/` 아래의 **별도 폴더**인가? | Y | **Y** — `DEPLOY_OUTPUT_DIR/그래프/`(`perspective_service.py:3820-3822`, `DEPLOY_OUTPUT_DIR` 은 `:72` = `outputs/배포`). 기존 `통합`/`긍정`/`부정` 폴더와 병렬 |
+| 3.3 | 파일명은 **직원 사번(또는 이름_사번)** 으로 시작하는가? | Y | **Y** — `save_to_deploy` 와 동일한 `safe_name` 규칙 재사용(`perspective_service.py:3819`, 기존 `save_to_deploy` 는 `:3275`) 후 `_긍부정그래프.png` 접미. 테스트 [A] `홍길동_110110_긍부정그래프.png` 확인 |
 | 3.4 | 제출용 저장처럼 **직원 여러 명(CSV·전체)** 도 일괄 생성 가능한가? | Y | **Y** — 라우트가 `employee_ids`/`all_employees` 처리(`perspective_routes.py:603-628`), 화면은 제출용 저장과 같은 세션·청크·4워커 루프(`perspective_test.html:1987-2043`) |
 | 3.5 | 생성된 그래프가 **결과물 ZIP 다운로드에 포함**되는가? | Y | **Y** — ZIP 수집부에 `graph` 키 추가(`perspective_routes.py:352-353`). 그래프 저장도 같은 deploy 세션을 쓰므로 `_lastDeploySessionId` 로 동일 경로 다운로드(`perspective_test.html:2044` → `downloadDeployZip()` `:1824`) |
 | 4.1 | 「그래프 저장」 버튼은 **「제출용 저장」 버튼의 바로 우측**에 있는가? | Y | **Y** — `btnSaveDeploy`(`perspective_test.html:325`) 바로 다음, `zipDownloadBtn`(`:350`) 앞에 삽입(`:326-348` 래퍼, 버튼 자체는 `:327`) |
-| 4.2 | 기존 「제출용 저장」 동작은 **변경되지 않는가**? | Y | **Y** — `save_to_deploy`·`api_save_deploy` 무수정. `git diff` 상 `perspective_service.py` 는 **삭제 0줄·추가 402줄**(순수 추가). 기존 파일에서 바뀐 것은 버튼 비활성화 목록에 `btnSaveGraph` 를 더한 3곳뿐 |
-| 5.1 | 이 작업으로 긍정/부정 **판정 로직(문장·단어 점수)** 이 바뀌는가? | N (집계·표시만) | **N** — `_get_sentence_level_scores`·`calculate_word_scores` 무수정, 단어 극성 경계도 기존과 동일한 `score >= 0`/`< 0` 을 그대로 재현(`perspective_service.py:3475-3481`, 기존 `save_to_deploy` 는 `:3312-3313`). 테스트 [F] 로 경계 동일성 확인 |
+| 4.2 | 기존 「제출용 저장」 동작은 **변경되지 않는가**? | Y | **Y** — `save_to_deploy`·`api_save_deploy` 무수정. `git diff` 상 `perspective_service.py` 는 **삭제 0줄·추가 434줄**(순수 추가). 기존 파일에서 바뀐 것은 버튼 비활성화 목록에 `btnSaveGraph` 를 더한 3곳뿐 |
+| 5.1 | 이 작업으로 긍정/부정 **판정 로직(문장·단어 점수)** 이 바뀌는가? | N (집계·표시만) | **N** — `_get_sentence_level_scores`·`calculate_word_scores` 무수정, 단어 극성 경계도 기존과 동일한 `score >= 0`/`< 0` 을 그대로 재현(`perspective_service.py:3483-3489`, 기존 `save_to_deploy` 는 `:3312-3313`). 테스트 [F] 로 경계 동일성 확인 |
 
 > 작업 후 각 행의 `작업 후 답` 을 실측 근거(`파일:라인`, 테스트명, 로그)로 채운다. 기대와 답이 불일치하면 Done 불가.
 > 위 근거의 `파일:라인` 은 2026-08-12 구현 반영 후 워킹트리 기준이다. 라인 번호는 §2(현재 시스템 분석)의 구현 **전** 번호와 다르다.
@@ -381,7 +382,7 @@ WP/plans/2026/08/12_01_sentiment-trend/backup/
 
 | 파일 | 변경 | 내용 |
 |------|------|------|
-| `WP/src/services/perspective_service.py` | **+402 / -0** (순수 추가) | `TREND_METRICS`(`:3407`) · `_trend_sentence_counts`(`:3419`) · `_trend_word_counts`(`:3455`) · `aggregate_sentiment_trend`(`:3490`) · `_trend_series`(`:3553`) · `_save_trend_chart_to_path`(`:3579`) · `save_trend_graph_to_deploy`(`:3671`) · `_append_trend_graph_to_manifest`(`:3767`) |
+| `WP/src/services/perspective_service.py` | **+434 / -0** (순수 추가) | `TREND_METRICS`(`:3407`) · `_trend_sentence_counts`(`:3427`) · `_trend_word_counts`(`:3463`) · `aggregate_sentiment_trend`(`:3498`) · `_trend_series`(`:3561`) · `_save_trend_chart_to_path`(`:3587`) · `save_trend_graph_to_deploy`(`:3763`) · `_append_trend_graph_to_manifest`(`:3859`) |
 | `WP/src/routes/perspective_routes.py` | +106 / -2 | `POST /api/perspective/matrix/save-graph`(`:560`) · ZIP 수집에 `graph` 키(`:352-353`) · `employee-entries` 에 `graph` 소스 추가(`:1329-1330`, `:1342`, `:1349`) |
 | `WP/src/services/gallery_db_service.py` | +2 / -1 | 썸네일 폴백 `images.combined or images.graph`(`:252`) — 그래프 entry 는 `combined` 가 없어 카드 썸네일이 비는 문제 방지 |
 | `WP/web/templates/perspective_test.html` | +314 / -0 | 「📈 그래프 저장」 버튼(`:327`)·옵션 패널(`:328-348`)·`toggleGraphOptions`(`:1844`)·`saveGraph`(`:1872`)·`renderGraphComplete`(`:2049`), 버튼 비활성화 목록 3곳에 `btnSaveGraph` 추가 |
@@ -389,8 +390,8 @@ WP/plans/2026/08/12_01_sentiment-trend/backup/
 
 **계획서에 없던 보완 2건** (렌더 결과 확인 후 추가):
 
-1. **결측 연도 점선 보조선** — 중간 연도에 데이터가 없으면 실선이 양쪽 모두 끊겨 "선 그래프"가 성립하지 않았다. 실선은 계획대로 끊되(값 없음을 숨기지 않음), 존재하는 점만 이은 **점선 보조선**을 겹쳐 그린다(`perspective_service.py:3606-3615`).
-2. **정수 눈금** — 수량 모드에서 문장 수 1·2 가 `0.25` 단위 눈금으로 표시돼 `MaxNLocator(integer=True)` 적용(`perspective_service.py:3637-3640`).
+1. **결측 연도 점선 보조선** — 중간 연도에 데이터가 없으면 실선이 양쪽 모두 끊겨 "선 그래프"가 성립하지 않았다. 실선은 계획대로 끊되(값 없음을 숨기지 않음), **비어 있는 구간만** 점선으로 잇는다(`perspective_service.py:3668-3672`). 제2차 개정에서 전 구간 겹침 → 빈 구간 한정으로 좁혔다(§10).
+2. **정수 눈금** — 수량 모드에서 문장 수 1·2 가 `0.25` 단위 눈금으로 표시돼 `MaxNLocator(integer=True)` 적용(`perspective_service.py:3712-3715`).
 
 ### 9-3. 착수 전 결정 4건 — 채택안대로 진행
 
@@ -436,5 +437,79 @@ WP/plans/2026/08/12_01_sentiment-trend/backup/
 ```
 cd D:/dev/wordcloud/wordcloud_project && python web/app.py
 ```
+
+---
+
+## 10. 디자인 개정 (제2차, 2026-08-12) — Material Tailwind 라인 차트
+
+사용자 요청: <https://www.material-tailwind.com/docs/html/plugins/charts> 의 차트 디자인 적용.
+동시에 **내부망 이관을 위한 로컬화** 원칙을 유지할 것.
+
+### 10-1. 조사 — MT 차트의 정체와 적용 방식
+
+| 항목 | 실측 |
+|------|------|
+| MT 차트 엔진 | **ApexCharts** 래핑 (`cdn.jsdelivr.net/npm/apexcharts`). MT 고유 차트 엔진이 아니다 |
+| MT 라인차트 옵션 | `curve:"smooth"` · `lineCap:"round"` · `markers.size:0` · `dataLabels.enabled:false` · `axisBorder/axisTicks: show:false` · grid `#dddddd` `strokeDashArray:5` (가로+세로) · 축 라벨 `#616161` 12px 400 · 흰 카드(rounded+shadow) |
+| 우리 산출물 | 서버 matplotlib PNG 1장. 화면 차트는 없음 |
+| 프로젝트 차트 라이브러리 | **0건** — `plans_kanban.html` 은 손으로 짠 인라인 SVG(`polyline`, `:1615-1627`) |
+| 로컬 벤더 폴더 | `WP/web/static/vendor/` (bootstrap·d3·jquery·mermaid 이미 로컬화) |
+| 곡선 렌더 가능 여부 | `scipy 1.15.3` 존재 → PCHIP(단조 보존)로 **오버슈트 없는** 곡선 가능 |
+
+**결론**: MT 디자인은 렌더 스펙이므로 라이브러리 교체 없이 재현 가능하다. 산출물이 PNG 파일이라
+서버 렌더를 유지하면 **로컬화할 외부 자산이 생기지 않는다** — 내부망 이관 관점에서 가장 안전하다.
+
+### 10-2. 사용자 결정 3건 (2026-08-12)
+
+| # | 질문 | 선택 | 근거 |
+|---|------|------|------|
+| E-1 | 적용 방식 | **matplotlib PNG만 MT 스타일로** | 외부 의존성 0개 추가 → 로컬화 불필요, 배치·ZIP·갤러리 흐름 무영향 |
+| E-2 | 값 라벨·마커 | **유지** (MT 원본은 둘 다 끔) | 인사처 납품물은 수치를 읽는 문서 — PNG 한 장에 값이 찍혀 있어야 함 |
+| E-3 | 선 형태 | **PCHIP 곡선** | MT 의 smooth 를 재현하되 단조 보존이라 점 사이가 실제 값 범위를 넘지 않음 |
+
+E-2 가 MT 원본과의 유일한 실질 차이다.
+
+### 10-3. 변경 내역 — 렌더 함수 1개만 교체
+
+| 파일 | 변경 | 내용 |
+|------|------|------|
+| `WP/src/services/perspective_service.py` | 디자인 토큰 5개 추가(`:3418-3424`) + `_save_trend_chart_to_path`(`:3587`) 렌더부 전면 재작성 | 집계 함수(`aggregate_sentiment_trend` 등)·저장 경로·라우트·화면·판정 로직 **무변경** |
+
+| 요소 | 제1차 | 제2차 (MT) |
+|------|-------|------------|
+| 배경 | matplotlib 기본 | 연회색 캔버스(`#f1f5f9`) + 흰 카드(둥근 모서리·그림자, `:3644-3651`) |
+| 제목 | 가운데 2줄 | 좌상단 제목 + 회색 소제목(지표·단위, `:3732-3736`) |
+| 축 | 사각 spine 4면 | 축선·눈금 제거(`:3720-3721` spines · `:3725-3726` `tick_params(length=0)`) |
+| 그리드 | 가로만 `--` alpha 0.4 | 가로+세로 `#dddddd` 점선 dash 5 (`:3722-3724`) |
+| 선 | 직선 2px | PCHIP 곡선 3px, 둥근 끝(`_smooth` `:3628-3637` · 실선 `:3660-3667`) |
+| 결측 구간 | 점선이 전 구간에 겹침 | **빈 구간만** 점선(`:3668-3672`) |
+| 값 라벨 | 항상 긍정 위/부정 아래 → 교차 시 겹침 | 위에 있는 계열 값을 위로 배치(`:3684-3697`) |
+| 라벨 색·크기 | 기본 | `#616161` 12px (`:3725-3726`) |
+| 범례 | 박스 `loc='best'` | 하단 중앙, 테두리 없음(`:3728-3730`) |
+
+### 10-4. 검증 (서버 미기동)
+
+| 항목 | 결과 |
+|------|------|
+| `python -m py_compile` | 통과 |
+| 기존 테스트 34항목 재실행 | **전건 통과 / 실패 0** — `result/_run_trend_260812_02.txt` |
+| 사전 원본 대비 diff | **삭제 0줄 / 추가 434줄** (`backup/src/services/perspective_service.py` 대조) — 계획 착수 전 코드 무수정 유지 |
+| 렌더 육안 확인 | `result/preview/` 4종 — 5연도 %, 결측 연도, 수량 모드, 2연도 |
+
+`result/preview/` 육안 확인 결과:
+
+| 파일 | 확인 내용 |
+|------|-----------|
+| `01_pct_5y.png` | MT 룩 재현(카드·점선 그리드·축선 없음), 곡선 오버슈트 없음, 교차 지점 값 라벨 겹침 없음 |
+| `02_pct_gap.png` | 2023 결측 — 실선 끊김 + 빈 구간만 점선, 각주 `값 없음: 2023` |
+| `03_count_5y.png` | 수량 모드 정수 눈금(0·4·8·12), 음수 눈금 없음 |
+| `04_pct_2y.png` | 2점은 직선(PCHIP 미적용), 단어 기준 각주 표기 |
+
+렌더 확인 중 발견해 고친 2건: **교차 지점 값 라벨 겹침**, **범례와 각주 충돌**.
+
+### 10-5. 남은 일
+
+- [ ] T12 실화면에서 「그래프 저장」 → 생성된 PNG 가 `result/preview/` 와 같은 디자인인지 확인
+- [ ] T10(배포 대상 환경 한글 렌더)은 폰트 등록 경로가 그대로이므로 제1차와 동일 조건
 
 ---

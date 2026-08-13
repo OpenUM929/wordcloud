@@ -1,0 +1,33 @@
+{
+  "total": 12924,
+  "origin": {
+    "unknown": 5655,
+    "human": 1511,
+    "machine": 5758
+  },
+  "basis": {
+    "direct": 5713,
+    "cross_file": 1556
+  },
+  "by_split": {
+    "train": {
+      "unknown": 1894,
+      "human": 1262,
+      "machine": 529
+    },
+    "not_promoted": {
+      "human": 88,
+      "unknown": 3234,
+      "machine": 5157
+    },
+    "eval_only": {
+      "unknown": 527,
+      "human": 161,
+      "machine": 72
+    }
+  },
+  "human_rule": "decision_source 가 'human' 으로 시작하거나 == 'user_agreed'",
+  "machine_rule": "decision_source 가 packet23_judge/claude*/pattern*/rule_* 로 시작하거나 'silver' 포함, 또는 group 이 active_silver* 로 시작",
+  "note": "원본 코퍼스는 append-only 이므로 소급 수정하지 않고 별도 대장으로 기록함. unknown 은 '기록 누락'이 아니라 '판별 불가로 확정 기록'된 상태임. cross_file 귀속은 사람에게 관대한 방향이므로 human 수는 상한 추정치.",
+  "record_file": "training_provenance_260730.jsonl"
+}

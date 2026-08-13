@@ -1,0 +1,41 @@
+{
+ "train_files": 13,
+ "test_sets": 4,
+ "train_keys": 3578,
+ "test_keys": 762,
+ "missing_files": [],
+ "s1_rows": 30161,
+ "tiers": {
+  "A": {
+   "unique": 1392,
+   "in_train": 1218,
+   "in_test": 154,
+   "holdout": 20
+  },
+  "B": {
+   "unique": 8063,
+   "in_train": 3572,
+   "in_test": 733,
+   "holdout": 3758
+  },
+  "C": {
+   "unique": 6388,
+   "in_train": 563,
+   "in_test": 97,
+   "holdout": 5728
+  }
+ },
+ "holdout_A_label_dist": {
+  "negative": 10,
+  "neutral": 8,
+  "positive": 2
+ },
+ "holdout_A_field_dist": {
+  "단점": 19,
+  "장점": 1
+ },
+ "holdout_A_src_files": {
+  "eval/review/hard_labeling_260715.jsonl": 19,
+  "eval/review/hardsample_pn_review_260713.jsonl": 1
+ }
+}

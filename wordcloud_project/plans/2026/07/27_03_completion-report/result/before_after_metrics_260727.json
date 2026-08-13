@@ -1,0 +1,517 @@
+{
+  "model_sha256": "620faad693039d1ee8290b9bd31f53e56e978b91361771997f187069eb00d032",
+  "device": "cuda",
+  "temperature": 1.6,
+  "n_total": 761,
+  "elapsed_sec": 1.773,
+  "throughput_per_sec": 429.2,
+  "ms_per_sentence": 2.33,
+  "slices": {
+    "baseline399": {
+      "korean": "일반 대표 문장셋",
+      "n": 398,
+      "before_acc": 82.41,
+      "before_posneg_err": 23,
+      "before_posneg_rate": 5.78,
+      "after_acc": 97.74,
+      "after_posneg_err": 0,
+      "after_posneg_rate": 0.0,
+      "acc_gain_pp": 15.33,
+      "reclass_n": 65,
+      "reclass_rate": 16.33,
+      "reclass_correct": 62,
+      "reclass_accuracy": 95.38,
+      "reclass_harmful": 1,
+      "kept_n": 333,
+      "kept_accuracy": 98.2,
+      "direction_agreement": 83.67,
+      "kappa_after": 0.9568,
+      "kappa_before": 0.6605,
+      "mean_confidence": 0.8993,
+      "low_conf_n": 5,
+      "low_conf_rate": 1.26,
+      "per_class": {
+        "positive": {
+          "tp": 249,
+          "fp": 2,
+          "fn": 2,
+          "precision": 0.992,
+          "recall": 0.992,
+          "f1": 0.992
+        },
+        "negative": {
+          "tp": 100,
+          "fp": 5,
+          "fn": 0,
+          "precision": 0.9524,
+          "recall": 1.0,
+          "f1": 0.9756
+        },
+        "neutral": {
+          "tp": 40,
+          "fp": 2,
+          "fn": 7,
+          "precision": 0.9524,
+          "recall": 0.8511,
+          "f1": 0.8989
+        }
+      },
+      "per_class_before": {
+        "positive": {
+          "tp": 231,
+          "fp": 11,
+          "fn": 20,
+          "precision": 0.9545,
+          "recall": 0.9203,
+          "f1": 0.9371
+        },
+        "negative": {
+          "tp": 97,
+          "fp": 59,
+          "fn": 3,
+          "precision": 0.6218,
+          "recall": 0.97,
+          "f1": 0.7578
+        },
+        "neutral": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 47,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "confusion_after": {
+        "negative->negative": 100,
+        "neutral->negative": 5,
+        "neutral->neutral": 40,
+        "neutral->positive": 2,
+        "positive->neutral": 2,
+        "positive->positive": 249
+      },
+      "confusion_before": {
+        "negative->negative": 97,
+        "negative->positive": 3,
+        "neutral->negative": 39,
+        "neutral->positive": 8,
+        "positive->negative": 20,
+        "positive->positive": 231
+      },
+      "gold_dist": {
+        "positive": 251,
+        "negative": 100,
+        "neutral": 47
+      },
+      "field_dist": {
+        "장점": 242,
+        "단점": 156
+      }
+    },
+    "8c_hard": {
+      "korean": "혼합·고난도 문장셋",
+      "n": 140,
+      "before_acc": 47.14,
+      "before_posneg_err": 17,
+      "before_posneg_rate": 12.14,
+      "after_acc": 90.71,
+      "after_posneg_err": 0,
+      "after_posneg_rate": 0.0,
+      "acc_gain_pp": 43.57,
+      "reclass_n": 71,
+      "reclass_rate": 50.71,
+      "reclass_correct": 65,
+      "reclass_accuracy": 91.55,
+      "reclass_harmful": 4,
+      "kept_n": 69,
+      "kept_accuracy": 89.86,
+      "direction_agreement": 49.29,
+      "kappa_after": 0.8587,
+      "kappa_before": 0.222,
+      "mean_confidence": 0.8609,
+      "low_conf_n": 2,
+      "low_conf_rate": 1.43,
+      "per_class": {
+        "positive": {
+          "tp": 35,
+          "fp": 3,
+          "fn": 1,
+          "precision": 0.9211,
+          "recall": 0.9722,
+          "f1": 0.9459
+        },
+        "negative": {
+          "tp": 42,
+          "fp": 4,
+          "fn": 5,
+          "precision": 0.913,
+          "recall": 0.8936,
+          "f1": 0.9032
+        },
+        "neutral": {
+          "tp": 50,
+          "fp": 6,
+          "fn": 7,
+          "precision": 0.8929,
+          "recall": 0.8772,
+          "f1": 0.885
+        }
+      },
+      "per_class_before": {
+        "positive": {
+          "tp": 21,
+          "fp": 6,
+          "fn": 15,
+          "precision": 0.7778,
+          "recall": 0.5833,
+          "f1": 0.6667
+        },
+        "negative": {
+          "tp": 45,
+          "fp": 68,
+          "fn": 2,
+          "precision": 0.3982,
+          "recall": 0.9574,
+          "f1": 0.5625
+        },
+        "neutral": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 57,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "confusion_after": {
+        "negative->negative": 42,
+        "negative->neutral": 5,
+        "neutral->negative": 4,
+        "neutral->neutral": 50,
+        "neutral->positive": 3,
+        "positive->neutral": 1,
+        "positive->positive": 35
+      },
+      "confusion_before": {
+        "negative->negative": 45,
+        "negative->positive": 2,
+        "neutral->negative": 53,
+        "neutral->positive": 4,
+        "positive->negative": 15,
+        "positive->positive": 21
+      },
+      "gold_dist": {
+        "negative": 47,
+        "positive": 36,
+        "neutral": 57
+      },
+      "field_dist": {
+        "장점": 27,
+        "단점": 113
+      }
+    },
+    "c3_neu149": {
+      "korean": "중립 경계 문장셋",
+      "n": 149,
+      "before_acc": 66.44,
+      "before_posneg_err": 7,
+      "before_posneg_rate": 4.7,
+      "after_acc": 76.51,
+      "after_posneg_err": 0,
+      "after_posneg_rate": 0.0,
+      "acc_gain_pp": 10.07,
+      "reclass_n": 60,
+      "reclass_rate": 40.27,
+      "reclass_correct": 34,
+      "reclass_accuracy": 56.67,
+      "reclass_harmful": 19,
+      "kept_n": 89,
+      "kept_accuracy": 89.89,
+      "direction_agreement": 59.73,
+      "kappa_after": 0.6485,
+      "kappa_before": 0.4808,
+      "mean_confidence": 0.7321,
+      "low_conf_n": 33,
+      "low_conf_rate": 22.15,
+      "per_class": {
+        "positive": {
+          "tp": 48,
+          "fp": 3,
+          "fn": 8,
+          "precision": 0.9412,
+          "recall": 0.8571,
+          "f1": 0.8972
+        },
+        "negative": {
+          "tp": 34,
+          "fp": 8,
+          "fn": 16,
+          "precision": 0.8095,
+          "recall": 0.68,
+          "f1": 0.7391
+        },
+        "neutral": {
+          "tp": 32,
+          "fp": 24,
+          "fn": 11,
+          "precision": 0.5714,
+          "recall": 0.7442,
+          "f1": 0.6465
+        }
+      },
+      "per_class_before": {
+        "positive": {
+          "tp": 50,
+          "fp": 17,
+          "fn": 6,
+          "precision": 0.7463,
+          "recall": 0.8929,
+          "f1": 0.813
+        },
+        "negative": {
+          "tp": 49,
+          "fp": 33,
+          "fn": 1,
+          "precision": 0.5976,
+          "recall": 0.98,
+          "f1": 0.7424
+        },
+        "neutral": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 43,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "confusion_after": {
+        "negative->negative": 34,
+        "negative->neutral": 16,
+        "neutral->negative": 8,
+        "neutral->neutral": 32,
+        "neutral->positive": 3,
+        "positive->neutral": 8,
+        "positive->positive": 48
+      },
+      "confusion_before": {
+        "negative->negative": 49,
+        "negative->positive": 1,
+        "neutral->negative": 27,
+        "neutral->positive": 16,
+        "positive->negative": 6,
+        "positive->positive": 50
+      },
+      "gold_dist": {
+        "negative": 50,
+        "neutral": 43,
+        "positive": 56
+      },
+      "field_dist": {
+        "단점": 82,
+        "장점": 67
+      }
+    },
+    "sa_speech74": {
+      "korean": "개선요청·완곡표현 문장셋",
+      "n": 74,
+      "before_acc": 78.38,
+      "before_posneg_err": 1,
+      "before_posneg_rate": 1.35,
+      "after_acc": 83.78,
+      "after_posneg_err": 0,
+      "after_posneg_rate": 0.0,
+      "acc_gain_pp": 5.41,
+      "reclass_n": 20,
+      "reclass_rate": 27.03,
+      "reclass_correct": 12,
+      "reclass_accuracy": 60.0,
+      "reclass_harmful": 8,
+      "kept_n": 54,
+      "kept_accuracy": 92.59,
+      "direction_agreement": 72.97,
+      "kappa_after": 0.7303,
+      "kappa_before": 0.5815,
+      "mean_confidence": 0.8315,
+      "low_conf_n": 9,
+      "low_conf_rate": 12.16,
+      "per_class": {
+        "positive": {
+          "tp": 15,
+          "fp": 3,
+          "fn": 0,
+          "precision": 0.8333,
+          "recall": 1.0,
+          "f1": 0.9091
+        },
+        "negative": {
+          "tp": 36,
+          "fp": 1,
+          "fn": 8,
+          "precision": 0.973,
+          "recall": 0.8182,
+          "f1": 0.8889
+        },
+        "neutral": {
+          "tp": 11,
+          "fp": 8,
+          "fn": 4,
+          "precision": 0.5789,
+          "recall": 0.7333,
+          "f1": 0.6471
+        }
+      },
+      "per_class_before": {
+        "positive": {
+          "tp": 15,
+          "fp": 6,
+          "fn": 0,
+          "precision": 0.7143,
+          "recall": 1.0,
+          "f1": 0.8333
+        },
+        "negative": {
+          "tp": 43,
+          "fp": 10,
+          "fn": 1,
+          "precision": 0.8113,
+          "recall": 0.9773,
+          "f1": 0.8866
+        },
+        "neutral": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 15,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "confusion_after": {
+        "negative->negative": 36,
+        "negative->neutral": 8,
+        "neutral->negative": 1,
+        "neutral->neutral": 11,
+        "neutral->positive": 3,
+        "positive->positive": 15
+      },
+      "confusion_before": {
+        "negative->negative": 43,
+        "negative->positive": 1,
+        "neutral->negative": 10,
+        "neutral->positive": 5,
+        "positive->positive": 15
+      },
+      "gold_dist": {
+        "negative": 44,
+        "neutral": 15,
+        "positive": 15
+      },
+      "field_dist": {
+        "단점": 53,
+        "장점": 21
+      }
+    }
+  },
+  "overall": {
+    "n": 761,
+    "before_acc": 72.4,
+    "before_posneg_err": 48,
+    "before_posneg_rate": 6.31,
+    "after_acc": 90.93,
+    "after_posneg_err": 0,
+    "after_posneg_rate": 0.0,
+    "acc_gain_pp": 18.53,
+    "reclass_n": 216,
+    "reclass_rate": 28.38,
+    "reclass_correct": 173,
+    "reclass_accuracy": 80.09,
+    "reclass_harmful": 32,
+    "kept_n": 545,
+    "kept_accuracy": 95.23,
+    "direction_agreement": 71.62,
+    "kappa_after": 0.8571,
+    "kappa_before": 0.5485,
+    "mean_confidence": 0.8529,
+    "low_conf_n": 49,
+    "low_conf_rate": 6.44,
+    "per_class": {
+      "positive": {
+        "tp": 347,
+        "fp": 11,
+        "fn": 11,
+        "precision": 0.9693,
+        "recall": 0.9693,
+        "f1": 0.9693
+      },
+      "negative": {
+        "tp": 212,
+        "fp": 18,
+        "fn": 29,
+        "precision": 0.9217,
+        "recall": 0.8797,
+        "f1": 0.9002
+      },
+      "neutral": {
+        "tp": 133,
+        "fp": 40,
+        "fn": 29,
+        "precision": 0.7688,
+        "recall": 0.821,
+        "f1": 0.794
+      }
+    },
+    "per_class_before": {
+      "positive": {
+        "tp": 317,
+        "fp": 40,
+        "fn": 41,
+        "precision": 0.888,
+        "recall": 0.8855,
+        "f1": 0.8867
+      },
+      "negative": {
+        "tp": 234,
+        "fp": 170,
+        "fn": 7,
+        "precision": 0.5792,
+        "recall": 0.971,
+        "f1": 0.7256
+      },
+      "neutral": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 162,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      }
+    },
+    "confusion_after": {
+      "negative->negative": 212,
+      "negative->neutral": 29,
+      "neutral->negative": 18,
+      "neutral->neutral": 133,
+      "neutral->positive": 11,
+      "positive->neutral": 11,
+      "positive->positive": 347
+    },
+    "confusion_before": {
+      "negative->negative": 234,
+      "negative->positive": 7,
+      "neutral->negative": 129,
+      "neutral->positive": 33,
+      "positive->negative": 41,
+      "positive->positive": 317
+    },
+    "gold_dist": {
+      "positive": 358,
+      "negative": 241,
+      "neutral": 162
+    },
+    "field_dist": {
+      "장점": 357,
+      "단점": 404
+    }
+  }
+}

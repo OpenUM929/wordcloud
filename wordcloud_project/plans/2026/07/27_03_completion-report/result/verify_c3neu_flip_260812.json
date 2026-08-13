@@ -1,0 +1,32 @@
+{
+  "model_sha256": "620faad693039d1ee8290b9bd31f53e56e978b91361771997f187069eb00d032",
+  "device": "cuda",
+  "temperature": 1.6,
+  "eval_file": "gold_8c_test_c3neu_260707.jsonl",
+  "n_file_rows": 149,
+  "n_scored": 149,
+  "elapsed_sec": 0.652,
+  "accuracy_pct": 76.51,
+  "pos_neg_flip": 0,
+  "flip_pos_to_neg": 0,
+  "flip_neg_to_pos": 0,
+  "confusion": {
+    "negative->negative": 34,
+    "negative->neutral": 16,
+    "neutral->negative": 8,
+    "neutral->neutral": 32,
+    "neutral->positive": 3,
+    "positive->neutral": 8,
+    "positive->positive": 48
+  },
+  "gold_dist": {
+    "negative": 50,
+    "neutral": 43,
+    "positive": 56
+  },
+  "pred_dist": {
+    "neutral": 56,
+    "negative": 42,
+    "positive": 51
+  }
+}

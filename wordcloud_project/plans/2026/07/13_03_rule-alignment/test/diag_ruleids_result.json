@@ -1,0 +1,156 @@
+[
+  {
+    "rec_id": "batch_20260624_1-137694",
+    "field": "장점",
+    "gold": "positive",
+    "model": "neutral",
+    "override_rule": "rule4_default",
+    "override_label": "negative",
+    "kote": [
+      0.032,
+      0.861,
+      0.107
+    ],
+    "text": "관리감독없이업무수행"
+  },
+  {
+    "rec_id": "batch_20260624_0-377567",
+    "field": "단점",
+    "gold": "negative",
+    "model": "negative",
+    "override_rule": "improvement_request_neutral",
+    "override_label": "neutral",
+    "kote": [
+      0.923,
+      0.022,
+      0.055
+    ],
+    "text": "다년간 업무 수행으로 다져진 업무 노하우를 후배들에게 공유 필요"
+  },
+  {
+    "rec_id": "batch_20260624_0-426407",
+    "field": "단점",
+    "gold": "neutral",
+    "model": "neutral",
+    "override_rule": "improvement_request_neg",
+    "override_label": "negative",
+    "kote": [
+      0.066,
+      0.914,
+      0.02
+    ],
+    "text": "직원간 의사소통이 뛰어나나 개선필요"
+  },
+  {
+    "rec_id": "val-batch_20260624_0-154306",
+    "field": "단점",
+    "gold": "positive",
+    "model": "negative",
+    "override_rule": "rule2_contrast_lasthigh",
+    "override_label": "positive",
+    "kote": [
+      0.304,
+      0.029,
+      0.666
+    ],
+    "text": "주변 환경이나 상황 변화를 예측한 후, 조직에 필요한 행동을 솔선하여 실행한다"
+  },
+  {
+    "rec_id": "batch_20260624_1-94956",
+    "field": "장점",
+    "gold": "positive",
+    "model": "negative",
+    "override_rule": "rule4_default",
+    "override_label": "negative",
+    "kote": [
+      0.02,
+      0.932,
+      0.049
+    ],
+    "text": "직원들과 의사소통이 원화합니다"
+  },
+  {
+    "rec_id": "val-batch_20260624_1-332958",
+    "field": "장점",
+    "gold": "positive",
+    "model": "positive",
+    "override_rule": "rule3_last_low",
+    "override_label": "negative",
+    "kote": [
+      0.261,
+      0.389,
+      0.35
+    ],
+    "text": "타부서 입장에서 업무를 수행하고 진행합니다"
+  },
+  {
+    "rec_id": "batch_20260624_0-293159",
+    "field": "단점",
+    "gold": "positive",
+    "model": "positive",
+    "override_rule": "positive_rescue",
+    "override_label": "positive",
+    "kote": [
+      0.983,
+      0.004,
+      0.014
+    ],
+    "text": "빠른 문제해결과 여러측면으로 접근해주셔서 좋습니다"
+  },
+  {
+    "rec_id": "batch_20260624_1-148381",
+    "field": "장점",
+    "gold": "positive",
+    "model": "positive",
+    "override_rule": "positive_rescue",
+    "override_label": "positive",
+    "kote": [
+      0.264,
+      0.098,
+      0.638
+    ],
+    "text": "업무 전문성을 향상하기 위해 노력"
+  },
+  {
+    "rec_id": "val-batch_20260624_0-71779",
+    "field": "단점",
+    "gold": "negative",
+    "model": "negative",
+    "override_rule": "rule4_default",
+    "override_label": "negative",
+    "kote": [
+      0.141,
+      0.447,
+      0.412
+    ],
+    "text": "본사의 의견에 의존함"
+  },
+  {
+    "rec_id": "val-batch_20260624_1-6960",
+    "field": "장점",
+    "gold": "positive",
+    "model": "negative",
+    "override_rule": "rule4_default",
+    "override_label": "negative",
+    "kote": [
+      0.138,
+      0.408,
+      0.454
+    ],
+    "text": "조직이 원하는 방향으로 주변의 행동을 유발한다"
+  },
+  {
+    "rec_id": "batch_20260624_0-372103",
+    "field": "단점",
+    "gold": "negative",
+    "model": "positive",
+    "override_rule": "improvement_request_neutral",
+    "override_label": "neutral",
+    "kote": [
+      0.755,
+      0.134,
+      0.111
+    ],
+    "text": "갈등발생시 다향한 소통채널을 통하여 다각적이고 적극적인 의견수렴해주세요"
+  }
+]

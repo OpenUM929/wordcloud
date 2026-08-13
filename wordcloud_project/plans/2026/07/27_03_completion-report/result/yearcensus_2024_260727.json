@@ -1,0 +1,217 @@
+{
+  "source": "D:/dev/wordcloud/wordcloud_project/plans/_datasets/kote_finetune/emotion/weak_export_260714.jsonl",
+  "batch": "batch_20260709_0",
+  "year": 2024,
+  "model": "D:/dev/wordcloud/model/hr_sentiment_finetuned",
+  "device": "cuda",
+  "field_available": false,
+  "n_rows_raw": 886985,
+  "n_clause_excluded": 19096,
+  "n_sentences": 867889,
+  "n_unique": 380028,
+  "infer_sec": 1039.3,
+  "rule_engine_dist": {
+    "positive": 518094,
+    "neutral": 202428,
+    "negative": 147367
+  },
+  "model_dist": {
+    "neutral": 267301,
+    "positive": 450740,
+    "negative": 149848
+  },
+  "model_pct": {
+    "neutral": 30.8,
+    "positive": 51.94,
+    "negative": 17.27
+  },
+  "no_weakness": {
+    "n": 156974,
+    "pct": 18.09,
+    "unique": 14862,
+    "model_label": {
+      "neutral": 151121,
+      "positive": 3549,
+      "negative": 2304
+    }
+  },
+  "rule_vs_model": {
+    "agree": 755571,
+    "agree_pct": 87.06,
+    "posneg": 10980,
+    "posneg_pct": 1.27,
+    "matrix": {
+      "negative->negative": 126866,
+      "negative->neutral": 20281,
+      "negative->positive": 495,
+      "neutral->negative": 12497,
+      "neutral->neutral": 183894,
+      "neutral->positive": 5434,
+      "positive->negative": 10485,
+      "positive->neutral": 63126,
+      "positive->positive": 444811
+    }
+  },
+  "top_repeated": [
+    {
+      "n": 14092,
+      "pct": 1.624,
+      "text": "보완필요점 없습니다",
+      "model": "neutral",
+      "conf": 0.9946,
+      "rule": "neutral"
+    },
+    {
+      "n": 10687,
+      "pct": 1.231,
+      "text": "보완필요점이 없습니다",
+      "model": "neutral",
+      "conf": 0.9948,
+      "rule": "neutral"
+    },
+    {
+      "n": 6447,
+      "pct": 0.743,
+      "text": "보완필요점은 없습니다",
+      "model": "neutral",
+      "conf": 0.9948,
+      "rule": "neutral"
+    },
+    {
+      "n": 3101,
+      "pct": 0.357,
+      "text": "맡은 업무에 최선을 다함",
+      "model": "positive",
+      "conf": 0.9683,
+      "rule": "positive"
+    },
+    {
+      "n": 2953,
+      "pct": 0.34,
+      "text": "보완할 점이 없습니다",
+      "model": "neutral",
+      "conf": 0.9935,
+      "rule": "neutral"
+    },
+    {
+      "n": 2565,
+      "pct": 0.296,
+      "text": "수평적 의사소통과 부드러운 리더십으로 문제해결에 앞장서며, 구성원들의 자발적 참여를 유도함",
+      "model": "positive",
+      "conf": 0.9876,
+      "rule": "positive"
+    },
+    {
+      "n": 2308,
+      "pct": 0.266,
+      "text": "보완 필요점이 없습니다",
+      "model": "neutral",
+      "conf": 0.9948,
+      "rule": "neutral"
+    },
+    {
+      "n": 2176,
+      "pct": 0.251,
+      "text": "특별한 보완필요점 없음",
+      "model": "neutral",
+      "conf": 0.9942,
+      "rule": "neutral"
+    },
+    {
+      "n": 2154,
+      "pct": 0.248,
+      "text": "보완 필요점 없음",
+      "model": "neutral",
+      "conf": 0.9947,
+      "rule": "neutral"
+    },
+    {
+      "n": 2120,
+      "pct": 0.244,
+      "text": "보완 필요점 없습니다",
+      "model": "neutral",
+      "conf": 0.9946,
+      "rule": "neutral"
+    },
+    {
+      "n": 1696,
+      "pct": 0.195,
+      "text": "수평적 의사소통과 부드러운 리더십",
+      "model": "positive",
+      "conf": 0.9024,
+      "rule": "positive"
+    },
+    {
+      "n": 1442,
+      "pct": 0.166,
+      "text": "보완할점이 없습니다",
+      "model": "neutral",
+      "conf": 0.993,
+      "rule": "neutral"
+    },
+    {
+      "n": 1407,
+      "pct": 0.162,
+      "text": "신중한 성격으로 중요한 결정을 할때 심사숙고함",
+      "model": "positive",
+      "conf": 0.9848,
+      "rule": "positive"
+    },
+    {
+      "n": 1389,
+      "pct": 0.16,
+      "text": "보완 필요사항 없음",
+      "model": "neutral",
+      "conf": 0.9946,
+      "rule": "neutral"
+    },
+    {
+      "n": 1291,
+      "pct": 0.149,
+      "text": "보완 필요점이 없음",
+      "model": "neutral",
+      "conf": 0.995,
+      "rule": "neutral"
+    },
+    {
+      "n": 1196,
+      "pct": 0.138,
+      "text": "많은 업무량을 빠르게 처리하는 능력이 우수함",
+      "model": "positive",
+      "conf": 0.9871,
+      "rule": "positive"
+    },
+    {
+      "n": 1193,
+      "pct": 0.137,
+      "text": "특별한 보완사항 없음",
+      "model": "neutral",
+      "conf": 0.9937,
+      "rule": "neutral"
+    },
+    {
+      "n": 1155,
+      "pct": 0.133,
+      "text": "보완필요점 해당사항 없음",
+      "model": "neutral",
+      "conf": 0.994,
+      "rule": "neutral"
+    },
+    {
+      "n": 1127,
+      "pct": 0.13,
+      "text": "특이사항 없습니다",
+      "model": "neutral",
+      "conf": 0.9932,
+      "rule": "neutral"
+    },
+    {
+      "n": 1065,
+      "pct": 0.123,
+      "text": "매끄러운 민원업무 처리",
+      "model": "positive",
+      "conf": 0.8699,
+      "rule": "positive"
+    }
+  ]
+}

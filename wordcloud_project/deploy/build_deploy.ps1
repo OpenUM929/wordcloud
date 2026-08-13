@@ -34,7 +34,7 @@ $FullOutputDir = Join-Path $DefaultOutput "wordcloud-internal"
 $ExcludeDirs = @("venv", "__pycache__", ".git", ".sessions", "doc",
                  "vendor_python_pkgs", "logs", "temp", "node_modules", "deploy",
                  ".pytest_cache", "inputs", "scripts", ".opencode", ".clinerules", "failed",
-                 "plans", "default", "outputs", "processed_data",
+                 "plans", "report", "default", "outputs", "processed_data",
                  # setup.py 빌드 잔재(옛 소스 사본 반입 방지 — 잔재 소스 트랩)
                  "build", "*.egg-info")
 $ExcludeFiles = @("*.pyc", ".gitignore", "CACHEDIR.TAG", "README.md", "mermaid.min.js",
@@ -95,8 +95,8 @@ function Build-SourceOnly {
 
     Exec-Robocopy $ProjectRoot $StagingDir -ExcludeDirs $ExcludeDirs -ExcludeFiles $ExcludeFiles
 
-    # .clinerules/docs/cr/ 복사 (zip 루트에 포함, plans_routes.py 경로 유지)
-    $CRSource = Resolve-Path "$ProjectRoot/../.clinerules/docs/cr"
+    # .clinerules/outputs/cr/ 복사 (zip 안에서는 기존 plans_routes.py 경로(.clinerules/docs/cr) 유지)
+    $CRSource = Resolve-Path "$ProjectRoot/../.clinerules/outputs/cr" -ErrorAction Stop
     $CRDest = Join-Path $StagingRoot ".clinerules\docs\cr"
     New-Item -ItemType Directory -Path $CRDest -Force | Out-Null
     Copy-Item -Path "$CRSource\*" -Destination $CRDest -Recurse
@@ -164,13 +164,14 @@ function Build-FullPackage {
     Write-Step "  - 소스코드 복사"
     Exec-Robocopy $ProjectRoot "$FullOutputDir\wordcloud_project" -ExcludeDirs @(
         "venv", "__pycache__", ".git", ".sessions", "doc",
-        "vendor_python_pkgs", "logs", "temp", "node_modules", "plans"
+        "vendor_python_pkgs", "logs", "temp", "node_modules", "plans", "report"
     )
 
-    # .clinerules/docs/cr/ 복사 (dev와 동일한 위치, plans_routes.py 수정 불필요)
+    # .clinerules/outputs/cr/ 복사 (dev와 동일한 zip 내부 위치, plans_routes.py 수정 불필요)
+    $CRSource2 = Resolve-Path "$ProjectRoot/../.clinerules/outputs/cr" -ErrorAction Stop
     $CRDest2 = "$FullOutputDir\.clinerules\docs\cr"
     New-Item -ItemType Directory -Path $CRDest2 -Force | Out-Null
-    Copy-Item -Path "$CRSource\*" -Destination $CRDest2 -Recurse
+    Copy-Item -Path "$CRSource2\*" -Destination $CRDest2 -Recurse
 
     # 6. NVIDIA Driver
     Write-Step "  - NVIDIA Driver"

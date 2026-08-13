@@ -1,0 +1,47 @@
+폐기(큐 제외) 파일 6개
+  active_r3_silver_260706.jsonl                        349행  silver = 규칙·모델 합의 자동분. 사람 판정 대상이 아니며 학습 silver 로만 쓴다
+  hard_labeling_260715.silver_260715.jsonl             225행  silver = 규칙·모델 합의 자동분. 사람 판정 대상이 아니며 학습 silver 로만 쓴다
+  hard_silver_260707.jsonl                             185행  silver = 규칙·모델 합의 자동분. 사람 판정 대상이 아니며 학습 silver 로만 쓴다
+  label_audit_escalation_260715.silver_260715.jsonl     39행  silver = 규칙·모델 합의 자동분. 사람 판정 대상이 아니며 학습 silver 로만 쓴다
+  packet_audit_mismatch_260714.jsonl                    21행  260714 블라인드 감사 산출물(표본·불일치 기록). 판정 대상이 아니라 감사 증적
+  packet_audit_sample_260714.jsonl                     120행  260714 블라인드 감사 산출물(표본·불일치 기록). 판정 대상이 아니라 감사 증적
+
+gold 기확정 제거 292행 · 중복 제거 1518행 · 대장 기록 2723행
+
+재발행 34파일
+  P1  P1_prod25_flip_neg2pos_260806.jsonl                      2314행 미판정   2314
+  P1  P1_prod25_flip_pos2neg_260806.jsonl                       533행 미판정    533
+  P2  P2_8a_other_pos__care_260703.jsonl                        184행 미판정    178
+  P2  P2_8a_other_pos__comm_260703.jsonl                       1027행 미판정    972
+  P2  P2_8a_other_pos__degree_260703.jsonl                      630행 미판정    477
+  P2  P2_8a_other_pos__drive_260703.jsonl                      1567행 미판정   1384
+  P2  P2_8a_other_pos__etc_260703.jsonl                        1292행 미판정   1229
+  P2  P2_8a_other_pos__expert_260703.jsonl                      508행 미판정    473
+  P2  P2_8a_other_pos__leader_260703.jsonl                      112행 미판정    105
+  P2  P2_8a_other_pos__trait_260703.jsonl                        65행 미판정     62
+  P2  P2_8b_other_neg__degree_260703.jsonl                      108행 미판정     70
+  P2  P2_8b_other_neg__etc_260703.jsonl                         893행 미판정    856
+  P2  P2_8b_other_neg__trait_260703.jsonl                        60행 미판정     59
+  P2  P2_8c_other_neu__accuracy_260703.jsonl                     33행 미판정     24
+  P2  P2_8c_other_neu__comm_260703.jsonl                        317행 미판정    113
+  P2  P2_8c_other_neu__degree_260703.jsonl                       45행 미판정     29
+  P2  P2_8c_other_neu__drive_260703.jsonl                        94행 미판정     49
+  P2  P2_8c_other_neu__expert_260703.jsonl                      102행 미판정     35
+  P2  P2_8c_other_neu__it_260703.jsonl                           43행 미판정     17
+  P2  P2_8c_other_neu__trait_260703.jsonl                       144행 미판정     80
+  P2  P2_bareNP_r4_260707.jsonl                                 233행 미판정    233
+  P2  P2_bareNP_r5_260707.jsonl                                 228행 미판정    228
+  P2  P2_hard_escalate_260707_c2.jsonl                            8행 미판정      8
+  P2  P2_hard_prefilled_260707_c2.jsonl                         282행 미판정    282
+  P2  P2_hard_prefilled_260707_c3.jsonl                         378행 미판정    378
+  P2  P2_hard_queue_260707.jsonl                                  0행 미판정      0
+  P2  P2_hard_queue_260713.jsonl                                181행 미판정    181
+  P2  P2_hard_queue_260715.jsonl                                218행 미판정    218
+  P2  P2_label_audit_escalation_260715.jsonl                     44행 미판정      0
+  P2  P2_pattern_D_traitpos_review_260715.jsonl                 116행 미판정    116
+  P2  P2_prod25_ambivalent_260806.jsonl                         795행 미판정    795
+  P2  P2_speechact_r6_260707.jsonl                               56행 미판정     56
+  P3  P3_packet_b346_pool_260714.jsonl                          289행 미판정    289
+  P3  P3_packet_review_pool_260714.jsonl                       9323행 미판정   9323
+
+미판정 합계 21166

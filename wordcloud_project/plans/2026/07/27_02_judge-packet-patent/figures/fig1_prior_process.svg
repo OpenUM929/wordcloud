@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 420" width="1100" height="420" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#5b6b7f"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1100" height="420" fill="#ffffff"/>
+  <text x="24" y="34" font-size="17" font-weight="700" fill="#1f2937">[그림 1] 종래(현행) 감정 판정 프로세스 — 이중 판정값의 즉시 확정</text>
+
+  <!-- flow boxes -->
+  <rect x="24" y="96" width="150" height="62" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="99" y="122" font-size="13.5" fill="#1f2937" text-anchor="middle">인사평가 문서</text>
+  <text x="99" y="140" font-size="12" fill="#5b6b7f" text-anchor="middle">(자유 서술형)</text>
+
+  <rect x="212" y="96" width="150" height="62" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="287" y="122" font-size="13.5" fill="#1f2937" text-anchor="middle">문장 단위 분해</text>
+  <text x="287" y="140" font-size="12" fill="#5b6b7f" text-anchor="middle">문장별 확률 산출</text>
+
+  <rect x="400" y="58" width="228" height="62" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="514" y="82" font-size="13.5" fill="#1f2937" text-anchor="middle">제1 판정값(cur_rule_label)</text>
+  <text x="514" y="100" font-size="12" fill="#5b6b7f" text-anchor="middle">보정 후 문장 스코어의 부호</text>
+  <text x="514" y="114" font-size="11.5" fill="#8a94a6" text-anchor="middle">(모델 라벨 또는 규칙 보정 경로)</text>
+
+  <rect x="400" y="140" width="228" height="62" rx="8" fill="#eef2f7" stroke="#5a7fa6" stroke-width="1.5"/>
+  <text x="514" y="166" font-size="13.5" fill="#1f2937" text-anchor="middle">제2 판정값</text>
+  <text x="514" y="185" font-size="12" fill="#5b6b7f" text-anchor="middle">KoTE 확률 argmax(pos/neg/neu)</text>
+
+  <rect x="666" y="96" width="164" height="62" rx="8" fill="#fdecec" stroke="#c0504d" stroke-width="1.5"/>
+  <text x="748" y="120" font-size="13.5" fill="#1f2937" text-anchor="middle">라벨 즉시 확정</text>
+  <text x="748" y="139" font-size="12" fill="#a2504d" text-anchor="middle">난이도 구분 없음</text>
+
+  <rect x="868" y="96" width="208" height="62" rx="8" fill="#f2eef7" stroke="#7a5aa6" stroke-width="1.5"/>
+  <text x="972" y="120" font-size="13.5" fill="#1f2937" text-anchor="middle">판정 결과 취합</text>
+  <text x="972" y="139" font-size="12" fill="#6b5a8a" text-anchor="middle">워드클라우드 / 부서·직급 차트</text>
+
+  <!-- arrows -->
+  <line x1="174" y1="127" x2="206" y2="127" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M362,127 L381,127 L381,89 L394,89" fill="none" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M362,127 L381,127 L381,171 L394,171" fill="none" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M628,89 L647,89 L647,127 L660,127" fill="none" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <path d="M628,171 L647,171 L647,127 L660,127" fill="none" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="830" y1="127" x2="862" y2="127" stroke="#5b6b7f" stroke-width="1.6" marker-end="url(#ar)"/>
+
+  <!-- problem panel -->
+  <text x="24" y="248" font-size="14" font-weight="700" fill="#a2504d">구조적 한계</text>
+  <rect x="24" y="262" width="336" height="118" rx="8" fill="#fdf4f4" stroke="#d59896" stroke-width="1.2"/>
+  <text x="42" y="286" font-size="13" font-weight="700" fill="#a2504d">① 판정 곤란 문장의 비대칭 위해</text>
+  <text x="42" y="308" font-size="12.5" fill="#3b4756">두 판정값이 긍↔부로 어긋나거나</text>
+  <text x="42" y="328" font-size="12.5" fill="#3b4756">|pos−neg| 가 근소한 문장도 동일하게</text>
+  <text x="42" y="348" font-size="12.5" fill="#3b4756">자동 확정된다. 인사평가에서 긍↔부</text>
+  <text x="42" y="368" font-size="12.5" fill="#3b4756">오분류는 불이익·왜곡을 직접 초래.</text>
+
+  <rect x="382" y="262" width="336" height="118" rx="8" fill="#fdf4f4" stroke="#d59896" stroke-width="1.2"/>
+  <text x="400" y="286" font-size="13" font-weight="700" fill="#a2504d">② 품질 개선 = 항상 프로그램 수정</text>
+  <text x="400" y="308" font-size="12.5" fill="#3b4756">몇 건을 바로잡으려 규칙을 추가하거나</text>
+  <text x="400" y="328" font-size="12.5" fill="#3b4756">모델을 재학습해야 한다. 규칙 추가는</text>
+  <text x="400" y="348" font-size="12.5" fill="#3b4756">기존 판정을 뒤집는 회귀를, 재학습은</text>
+  <text x="400" y="368" font-size="12.5" fill="#3b4756">데이터·배포 주기를 요구한다.</text>
+
+  <rect x="740" y="262" width="336" height="118" rx="8" fill="#fdf4f4" stroke="#d59896" stroke-width="1.2"/>
+  <text x="758" y="286" font-size="13" font-weight="700" fill="#a2504d">③ 외부 AI 활용의 이중 장벽</text>
+  <text x="758" y="308" font-size="12.5" fill="#3b4756">원문에 개인정보가 남을 수 있어 그대로</text>
+  <text x="758" y="328" font-size="12.5" fill="#3b4756">전달 불가. 또 응답이 산문·표·임의 JSON</text>
+  <text x="758" y="348" font-size="12.5" fill="#3b4756">으로 매번 달라 파싱·연계 코드를 쓸 때</text>
+  <text x="758" y="368" font-size="12.5" fill="#3b4756">마다 새로 작성해야 한다.</text>
+</svg>

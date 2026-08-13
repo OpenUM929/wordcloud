@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" width="900" height="620" font-family="Malgun Gothic, 맑은 고딕, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6472"/>
+    </marker>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b8860b"/>
+    </marker>
+  </defs>
+  <rect width="900" height="620" fill="#ffffff"/>
+
+  <text x="28" y="34" font-size="16" font-weight="bold" fill="#20262e">단계별 목표 — 무엇을 했고 무엇이 남았나</text>
+  <text x="28" y="55" font-size="12.5" fill="#5a6472">줄기가 단계, 가지가 그 단계에서 한 일과 그 결과입니다.</text>
+
+  <!-- 줄기 -->
+  <line x1="64" y1="76" x2="64" y2="556" stroke="#c2c8d0" stroke-width="3"/>
+
+  <!-- 1단계 -->
+  <circle cx="64" cy="106" r="9" fill="#2f7a55"/>
+  <rect x="88" y="82" width="150" height="48" rx="4" fill="#e8f1ec" stroke="#2f7a55"/>
+  <text x="163" y="103" font-size="13" font-weight="bold" text-anchor="middle" fill="#20262e">1단계 · 자료 정합</text>
+  <text x="163" y="121" font-size="11.5" text-anchor="middle" fill="#2f7a55">완료</text>
+  <line x1="238" y1="106" x2="286" y2="106" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
+  <rect x="290" y="82" width="256" height="48" rx="4" fill="#fafbfc" stroke="#d5d9de"/>
+  <text x="304" y="102" font-size="12" fill="#3c4652">3개 연도 라벨을 칸별로 재추출</text>
+  <text x="304" y="120" font-size="11.5" fill="#8b929c">2023년은 07-29 전수 재추출로 교체</text>
+  <line x1="546" y1="106" x2="594" y2="106" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
+  <rect x="598" y="82" width="278" height="48" rx="4" fill="#f2f8f4" stroke="#8fbfa6"/>
+  <text x="612" y="102" font-size="12" font-weight="bold" fill="#20262e">전수 확정 — 추정치 0</text>
+  <text x="612" y="120" font-size="11.5" fill="#5a6472">264만 문장 전량이 실측값</text>
+
+  <!-- 2단계 -->
+  <circle cx="64" cy="226" r="9" fill="#2f7a55"/>
+  <rect x="88" y="202" width="150" height="48" rx="4" fill="#e8f1ec" stroke="#2f7a55"/>
+  <text x="163" y="223" font-size="13" font-weight="bold" text-anchor="middle" fill="#20262e">2단계 · 판정 체계</text>
+  <text x="163" y="241" font-size="11.5" text-anchor="middle" fill="#2f7a55">완료</text>
+  <line x1="238" y1="226" x2="286" y2="226" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
+  <rect x="290" y="190" width="256" height="72" rx="4" fill="#fafbfc" stroke="#d5d9de"/>
+  <text x="304" y="210" font-size="12" fill="#3c4652">인사평가 전용 규칙 투입</text>
+  <text x="304" y="228" font-size="12" fill="#3c4652">기입 칸을 단서로 결합해 재학습</text>
+  <text x="304" y="248" font-size="11.5" fill="#8b929c">중립 항목을 새로 만듦</text>
+  <line x1="546" y1="226" x2="594" y2="226" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
+  <rect x="598" y="190" width="278" height="72" rx="4" fill="#f2f8f4" stroke="#8fbfa6"/>
+  <text x="612" y="210" font-size="12" font-weight="bold" fill="#20262e">칭찬↔불만 뒤바뀜 23 → 0</text>
+  <text x="612" y="228" font-size="12" fill="#3c4652">정확도 82.4% → 97.7%</text>
+  <text x="612" y="248" font-size="11.5" fill="#5a6472">시험지 네 장 모두에서 뒤바뀜 0</text>
+
+  <!-- 3단계 -->
+  <circle cx="64" cy="346" r="9" fill="#2f7a55"/>
+  <rect x="88" y="322" width="150" height="48" rx="4" fill="#e8f1ec" stroke="#2f7a55"/>
+  <text x="163" y="343" font-size="13" font-weight="bold" text-anchor="middle" fill="#20262e">3단계 · 검증</text>
+  <text x="163" y="361" font-size="11.5" text-anchor="middle" fill="#2f7a55">완료</text>
+  <line x1="238" y1="346" x2="286" y2="346" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
+  <rect x="290" y="310" width="256" height="72" rx="4" fill="#fafbfc" stroke="#d5d9de"/>
+  <text x="304" y="330" font-size="12" fill="#3c4652">시험지 네 장 · 761건 채점</text>
+  <text x="304" y="348" font-size="12" fill="#3c4652">무작위 400건 블라인드 판독</text>
+  <text x="304" y="368" font-size="12" fill="#3c4652">2025년 실배치 감사</text>
+  <line x1="546" y1="346" x2="594" y2="346" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
+  <rect x="598" y="310" width="278" height="72" rx="4" fill="#f2f8f4" stroke="#8fbfa6"/>
+  <text x="612" y="330" font-size="12" font-weight="bold" fill="#20262e">세 측정이 93~98% 구간에 수렴</text>
+  <text x="612" y="348" font-size="12" fill="#3c4652">93.5% · 97.7% · 약 96%</text>
+  <text x="612" y="368" font-size="11.5" fill="#8b929c">단, 셋 다 정답 주체는 사람이 아님</text>
+
+  <!-- 4단계 -->
+  <circle cx="64" cy="466" r="9" fill="#b8860b"/>
+  <rect x="88" y="442" width="150" height="48" rx="4" fill="#fdf8ec" stroke="#b8860b"/>
+  <text x="163" y="463" font-size="13" font-weight="bold" text-anchor="middle" fill="#20262e">4단계 · 기준 확정</text>
+  <text x="163" y="481" font-size="11.5" text-anchor="middle" fill="#b8860b">미완 · 결재 필요</text>
+  <line x1="238" y1="466" x2="286" y2="466" stroke="#b8860b" stroke-width="1.6" marker-end="url(#arw)"/>
+  <rect x="290" y="418" width="256" height="96" rx="4" fill="#fdf8ec" stroke="#e0cfa0"/>
+  <text x="304" y="438" font-size="12" fill="#3c4652">① 400건 사람 재판독 — 약 2시간</text>
+  <text x="304" y="458" font-size="12" fill="#3c4652">② 2025년 표본 200건 신설 — 2~3시간</text>
+  <text x="304" y="478" font-size="12" fill="#3c4652">③ 검토 후보 5,596건 절차 승인</text>
+  <text x="304" y="498" font-size="12" fill="#3c4652">④ 재발 방지 9개 조 채택</text>
+  <line x1="546" y1="466" x2="594" y2="466" stroke="#b8860b" stroke-width="1.6" marker-end="url(#arw)"/>
+  <rect x="598" y="418" width="278" height="96" rx="4" fill="#fdf8ec" stroke="#e0cfa0"/>
+  <text x="612" y="438" font-size="12" font-weight="bold" fill="#20262e">닫히는 것 — 정답을 정한 주체</text>
+  <text x="612" y="458" font-size="11.5" fill="#5a6472">지금은 사람이 아니라 AI 가 정했습니다.</text>
+  <text x="612" y="478" font-size="11.5" fill="#5a6472">①의 결과에 따라 이 보고서의</text>
+  <text x="612" y="496" font-size="11.5" fill="#5a6472">대표값이 바뀔 수 있습니다.</text>
+
+  <!-- 하단 주 -->
+  <rect x="88" y="534" width="788" height="60" rx="4" fill="#fafbfc" stroke="#d5d9de"/>
+  <text x="104" y="556" font-size="12.5" font-weight="bold" fill="#20262e">보류 권고 — 중립 경계 성능 추가 투자</text>
+  <text x="104" y="578" font-size="12" fill="#5a6472">정답을 더 넣는 축과 모델을 키우는 축 모두 실측으로 기각되었습니다(결과비교 보고서 §2).</text>
+</svg>

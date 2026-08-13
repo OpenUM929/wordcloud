@@ -1,0 +1,329 @@
+{
+  "note": "칸 라벨(장점=긍정/단점=부정) 대비 배포 모델(2026-07-08 seed45) 판정. 전수·추정 없음.",
+  "sources": {
+    "2023": "field_census_2023_full_260729.json",
+    "2024": "field_census_260727.json",
+    "2025": "field_census_2025_260728.json"
+  },
+  "years": {
+    "2023": {
+      "n": 1025634,
+      "per_field": {
+        "장점": {
+          "n": 521817,
+          "match": 501517,
+          "match_pct": 96.11,
+          "to_neutral": 16109,
+          "to_neutral_pct": 3.09,
+          "to_flip": 4191,
+          "to_flip_pct": 0.8,
+          "best_label": "positive",
+          "best_pct": 96.11
+        },
+        "단점": {
+          "n": 503817,
+          "match": 179010,
+          "match_pct": 35.53,
+          "to_neutral": 247072,
+          "to_neutral_pct": 49.04,
+          "to_flip": 77735,
+          "to_flip_pct": 15.43,
+          "best_label": "neutral",
+          "best_pct": 49.04
+        }
+      },
+      "s0": {
+        "correct": 680527,
+        "accuracy_pct": 66.35,
+        "mismatch": 345107,
+        "mismatch_pct": 33.65,
+        "flip": 81926,
+        "flip_pct": 7.99,
+        "neutral_counted_as_negative": 247072,
+        "neutral_counted_as_negative_pct": 24.09
+      },
+      "field_only_ceiling_pct": 72.99,
+      "s0_gap_to_ceiling_pp": 6.64,
+      "information": {
+        "H_Y": 1.413,
+        "H_Y_given_F": 0.8478,
+        "I_Y_F": 0.5652,
+        "explained_ratio_pct": 40.0,
+        "residual_ratio_pct": 60.0,
+        "marginal": {
+          "positive": 579252,
+          "negative": 183201,
+          "neutral": 263181
+        }
+      }
+    },
+    "2024": {
+      "n": 870367,
+      "per_field": {
+        "장점": {
+          "n": 443637,
+          "match": 424242,
+          "match_pct": 95.63,
+          "to_neutral": 15068,
+          "to_neutral_pct": 3.4,
+          "to_flip": 4327,
+          "to_flip_pct": 0.98,
+          "best_label": "positive",
+          "best_pct": 95.63
+        },
+        "단점": {
+          "n": 426730,
+          "match": 152635,
+          "match_pct": 35.77,
+          "to_neutral": 208460,
+          "to_neutral_pct": 48.85,
+          "to_flip": 65635,
+          "to_flip_pct": 15.38,
+          "best_label": "neutral",
+          "best_pct": 48.85
+        }
+      },
+      "s0": {
+        "correct": 576877,
+        "accuracy_pct": 66.28,
+        "mismatch": 293490,
+        "mismatch_pct": 33.72,
+        "flip": 69962,
+        "flip_pct": 8.04,
+        "neutral_counted_as_negative": 208460,
+        "neutral_counted_as_negative_pct": 23.95
+      },
+      "field_only_ceiling_pct": 72.69,
+      "s0_gap_to_ceiling_pp": 6.41,
+      "information": {
+        "H_Y": 1.416,
+        "H_Y_given_F": 0.8605,
+        "I_Y_F": 0.5556,
+        "explained_ratio_pct": 39.24,
+        "residual_ratio_pct": 60.76,
+        "marginal": {
+          "positive": 489877,
+          "negative": 156962,
+          "neutral": 223528
+        }
+      }
+    },
+    "2025": {
+      "n": 739918,
+      "per_field": {
+        "장점": {
+          "n": 367869,
+          "match": 351196,
+          "match_pct": 95.47,
+          "to_neutral": 12863,
+          "to_neutral_pct": 3.5,
+          "to_flip": 3810,
+          "to_flip_pct": 1.04,
+          "best_label": "positive",
+          "best_pct": 95.47
+        },
+        "단점": {
+          "n": 372049,
+          "match": 125465,
+          "match_pct": 33.72,
+          "to_neutral": 187715,
+          "to_neutral_pct": 50.45,
+          "to_flip": 58869,
+          "to_flip_pct": 15.82,
+          "best_label": "neutral",
+          "best_pct": 50.45
+        }
+      },
+      "s0": {
+        "correct": 476661,
+        "accuracy_pct": 64.42,
+        "mismatch": 263257,
+        "mismatch_pct": 35.58,
+        "flip": 62679,
+        "flip_pct": 8.47,
+        "neutral_counted_as_negative": 187715,
+        "neutral_counted_as_negative_pct": 25.37
+      },
+      "field_only_ceiling_pct": 72.83,
+      "s0_gap_to_ceiling_pp": 8.41,
+      "information": {
+        "H_Y": 1.4222,
+        "H_Y_given_F": 0.8777,
+        "I_Y_F": 0.5444,
+        "explained_ratio_pct": 38.28,
+        "residual_ratio_pct": 61.72,
+        "marginal": {
+          "positive": 410065,
+          "negative": 129275,
+          "neutral": 200578
+        }
+      }
+    },
+    "3y": {
+      "n": 2635919,
+      "per_field": {
+        "장점": {
+          "n": 1333323,
+          "match": 1276955,
+          "match_pct": 95.77,
+          "to_neutral": 44040,
+          "to_neutral_pct": 3.3,
+          "to_flip": 12328,
+          "to_flip_pct": 0.92,
+          "best_label": "positive",
+          "best_pct": 95.77
+        },
+        "단점": {
+          "n": 1302596,
+          "match": 457110,
+          "match_pct": 35.09,
+          "to_neutral": 643247,
+          "to_neutral_pct": 49.38,
+          "to_flip": 202239,
+          "to_flip_pct": 15.53,
+          "best_label": "neutral",
+          "best_pct": 49.38
+        }
+      },
+      "s0": {
+        "correct": 1734065,
+        "accuracy_pct": 65.79,
+        "mismatch": 901854,
+        "mismatch_pct": 34.21,
+        "flip": 214567,
+        "flip_pct": 8.14,
+        "neutral_counted_as_negative": 643247,
+        "neutral_counted_as_negative_pct": 24.4
+      },
+      "field_only_ceiling_pct": 72.85,
+      "s0_gap_to_ceiling_pp": 7.06,
+      "information": {
+        "H_Y": 1.4167,
+        "H_Y_given_F": 0.8606,
+        "I_Y_F": 0.5561,
+        "explained_ratio_pct": 39.26,
+        "residual_ratio_pct": 60.74,
+        "marginal": {
+          "positive": 1479194,
+          "negative": 469438,
+          "neutral": 687287
+        }
+      }
+    }
+  },
+  "estimate_check_2023": {
+    "method": "2024·2025 확정본에서 동일 문장 칸 이관(커버 27.95%) + 편향계수 보정",
+    "resolved_n": 286062,
+    "resolved_mismatch_pct": 61.96,
+    "resolved_flip_pct": 2.8,
+    "estimated_mismatch_pct": 32.1,
+    "actual_mismatch_pct": 33.65,
+    "mismatch_error_pp": 1.55,
+    "estimated_flip_pct": 4.4,
+    "actual_flip_pct": 7.99,
+    "flip_error_pp": 3.59,
+    "flip_estimate_ratio": 0.551,
+    "bias_coefficients": {
+      "purity_threshold": 0.95,
+      "model": "D:/dev/wordcloud/model/hr_sentiment_finetuned",
+      "note": "재현 = 타 연도 사전으로 칸을 이관한 부분집합, 전수 = 해당 연도 칸 확정 전량",
+      "years": {
+        "2024": {
+          "full": {
+            "n": 870367,
+            "fields": {
+              "장점": {
+                "n": 443637,
+                "match_pct": 95.63,
+                "to_neutral_pct": 3.4,
+                "to_flip_pct": 0.98
+              },
+              "단점": {
+                "n": 426730,
+                "match_pct": 35.77,
+                "to_neutral_pct": 48.85,
+                "to_flip_pct": 15.38
+              }
+            },
+            "mismatch_pct": 33.72,
+            "flip_pct": 8.04
+          },
+          "transfer_reproduced": {
+            "n": 226274,
+            "fields": {
+              "장점": {
+                "n": 59224,
+                "match_pct": 93.87,
+                "to_neutral_pct": 5.17,
+                "to_flip_pct": 0.95
+              },
+              "단점": {
+                "n": 167050,
+                "match_pct": 12.65,
+                "to_neutral_pct": 80.91,
+                "to_flip_pct": 6.43
+              }
+            },
+            "mismatch_pct": 66.09,
+            "flip_pct": 5.0
+          },
+          "coverage_pct": 26.0,
+          "bias_k": {
+            "mismatch": 1.96,
+            "flip": 0.6219
+          }
+        },
+        "2025": {
+          "full": {
+            "n": 739918,
+            "fields": {
+              "장점": {
+                "n": 367869,
+                "match_pct": 95.47,
+                "to_neutral_pct": 3.5,
+                "to_flip_pct": 1.04
+              },
+              "단점": {
+                "n": 372049,
+                "match_pct": 33.72,
+                "to_neutral_pct": 50.45,
+                "to_flip_pct": 15.82
+              }
+            },
+            "mismatch_pct": 35.58,
+            "flip_pct": 8.47
+          },
+          "transfer_reproduced": {
+            "n": 204859,
+            "fields": {
+              "장점": {
+                "n": 52544,
+                "match_pct": 94.13,
+                "to_neutral_pct": 4.92,
+                "to_flip_pct": 0.94
+              },
+              "단점": {
+                "n": 152315,
+                "match_pct": 11.17,
+                "to_neutral_pct": 81.76,
+                "to_flip_pct": 7.07
+              }
+            },
+            "mismatch_pct": 67.55,
+            "flip_pct": 5.5
+          },
+          "coverage_pct": 27.69,
+          "bias_k": {
+            "mismatch": 1.8985,
+            "flip": 0.6494
+          }
+        }
+      },
+      "bias_k_mean": {
+        "mismatch": 1.9293,
+        "flip": 0.6357
+      }
+    },
+    "verdict": "불일치율은 근사했으나(오차 1.55%p) 뒤바뀜은 실제의 55% 수준으로 크게 과소추정. 이관 구간이 반복 상용구(중립)에 몰려 뒤바뀜 편향계수가 어긋난 것이 원인."
+  }
+}

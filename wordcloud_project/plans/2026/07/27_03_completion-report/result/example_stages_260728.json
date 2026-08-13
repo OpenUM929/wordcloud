@@ -1,0 +1,86 @@
+[
+  {
+    "text": "보완필요점 없습니다",
+    "field": "단점",
+    "kote_raw": {
+      "pos": 0.3005,
+      "neg": 0.2406,
+      "neu": 0.4588
+    },
+    "s1": "neutral",
+    "s2": "neutral",
+    "s2_score": 0.0,
+    "s10": "neutral",
+    "s10_conf": 0.9954
+  },
+  {
+    "text": "적극적인 자세가 요구됨",
+    "field": "단점",
+    "kote_raw": {
+      "pos": 0.2246,
+      "neg": 0.7204,
+      "neu": 0.055
+    },
+    "s1": "negative",
+    "s2": "negative",
+    "s2_score": -0.945,
+    "s10": "negative",
+    "s10_conf": 0.9918
+  },
+  {
+    "text": "고압적인 태도를 보이지 않음",
+    "field": "장점",
+    "kote_raw": {
+      "pos": 0.137,
+      "neg": 0.4824,
+      "neu": 0.3805
+    },
+    "s1": "negative",
+    "s2": "positive",
+    "s2_score": 0.6194,
+    "s10": "positive",
+    "s10_conf": 0.8086
+  },
+  {
+    "text": "권위의식이 없음",
+    "field": "장점",
+    "kote_raw": {
+      "pos": 0.0502,
+      "neg": 0.906,
+      "neu": 0.0438
+    },
+    "s1": "negative",
+    "s2": "positive",
+    "s2_score": 0.9562,
+    "s10": "positive",
+    "s10_conf": 0.6654
+  },
+  {
+    "text": "강압적이지 않음",
+    "field": "장점",
+    "kote_raw": {
+      "pos": 0.0778,
+      "neg": 0.5145,
+      "neu": 0.4077
+    },
+    "s1": "negative",
+    "s2": "positive",
+    "s2_score": 0.5923,
+    "s10": "positive",
+    "s10_conf": 0.8253
+  },
+  {
+    "text": "업무 난이도가 높은 일을 맡아 어려움 없이 처리함",
+    "field": "장점",
+    "kote_raw": {
+      "pos": 0.9575,
+      "neg": 0.0035,
+      "neu": 0.0389
+    },
+    "s1": "positive",
+    "s2": "positive",
+    "s2_score": 0.954,
+    "s10": "positive",
+    "s10_conf": 0.9815
+  }
+]
