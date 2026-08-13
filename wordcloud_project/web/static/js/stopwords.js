@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
             pages.push(totalPages);
         }
         
-        let paginationHTML = '<nav><ul class="pagination justify-content-center mb-0">';
+        let paginationHTML = '<div><ul class="pagination justify-content-center mb-0">';
         paginationHTML += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" data-page="${currentPage - 1}">이전</a>
         </li>`;
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         paginationHTML += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
             <a class="page-link" href="#" data-page="${currentPage + 1}">다음</a>
-        </li></ul></nav>`;
+        </li></ul></div>`;
         
         paginationContainer.style.display = '';
         paginationContainer.innerHTML = paginationHTML;

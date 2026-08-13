@@ -1,0 +1,27 @@
+{
+  "caseA_ul_pagination": {
+    "display": "flex",
+    "height": "65.1875px",
+    "position": "static",
+    "tag": "UL",
+    "width": "152px"
+  },
+  "caseA_wrapper": {
+    "display": "flex",
+    "height": "749px",
+    "position": "sticky",
+    "tag": "NAV",
+    "width": "170px"
+  },
+  "caseB_wrapper": {
+    "display": "block",
+    "height": "39.5938px",
+    "position": "static",
+    "tag": "DIV",
+    "width": "283.125px"
+  },
+  "viewport": {
+    "innerHeight": 749,
+    "innerWidth": 1184
+  }
+}

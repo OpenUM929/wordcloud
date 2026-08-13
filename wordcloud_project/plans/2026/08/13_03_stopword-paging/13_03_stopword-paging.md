@@ -31,8 +31,9 @@
 ### 1.1 관찰된 실패 산출물
 
 - **콘솔 에러·서버 로그 없음.** 이 증상은 예외가 아니라 CSS 적용 결과이므로 스택트레이스가 존재하지 않는다. 따라서 이 계획의 "실패 산출물"은 **렌더된 DOM의 계산 스타일 값**(`#pagination-container > nav` 의 `height`)으로 정의한다.
-- 현재 시점에 확보된 산출물: **없음**(서버 미기동 — 무단 기동 금지). §2.3의 재현 절차로 확보한 뒤 이 절에 수치를 채운다.
-  - 채울 형식: `getComputedStyle(document.querySelector('#pagination-container nav')).height` → 예: `937px`(뷰포트 높이와 동일).
+- 확보된 산출물(2026-08-13, 정적 하네스 + 헤드리스 Chrome, 서버 미기동): `plans/2026/08/13_03_stopword-paging/test/repro_pagination.html` + `test/measure.py` 실행 결과 `test/measure_result.json`.
+  - `#pagination-container-A > nav` (원본 마크업): `height: 749px`(= 그 시점 `viewport.innerHeight` 749px와 정확히 일치) · `width: 170px` · `position: sticky` · `display: flex`.
+  - `#pagination-container-A ul.pagination` (내부 목록): `height: 65px` · `display: flex` — 번호 자체는 가로 배치 유지(§2.2 예측과 일치).
 
 ### 1.2 증상 (사용자 보고 원문)
 
@@ -50,9 +51,9 @@
 
 ## 2. 원인 분석
 
-> ⛔ **원인 확정 게이트 — 현재 상태: 미통과**
-> ① 재현: **미수행**(서버 무단 기동 금지 — DL-12). ② 그 줄이 범인임을 관측: **미수행**. ③ 반증 실험: 설계 완료(§2.3).
-> 따라서 아래 §2.2는 **원인이 아니라 유력 가설**이다. 게이트 3항을 모두 채우기 전에는 §3 수정을 구현하지 않는다.
+> ✅ **원인 확정 게이트 — 현재 상태: 통과 (2026-08-13)**
+> ① 재현: 정적 하네스로 완료(서버 미기동, DL-12 준수). ② 그 줄이 범인임을 관측: `<nav>` 래퍼의 계산 높이 749px = 그 순간 뷰포트 높이(100vh)와 정확히 일치, 너비 170px, `position:sticky` — F2 규칙이 실제로 적용됨을 확인. ③ 반증 실험: 같은 마크업의 `<nav>`만 `<div>`로 바꾼 사본은 높이 39.6px(내용 높이)·너비 283px(컨테이너 폭 따름)·`position:static`으로 정상화됨 — 가설과 정확히 일치.
+> §2.2는 이제 **확정 원인**이다. §3 수정을 실제 적용했다(아래).
 
 ### 2.1 정적 대조로 확인한 사실 (여기까지는 실측)
 
@@ -143,13 +144,13 @@
 
 `test/` 폴더: `plans/2026/08/13_03_stopword-paging/test/`
 
-| # | 시나리오 | 방법 | 기대 |
-|---|----------|------|------|
-| T1 | 수정 전 계측(게이트 ②) | `repro_pagination.html` 원본 마크업 | `nav` 높이 = 뷰포트 높이, 너비 = 170px |
-| T2 | 반증 실험(게이트 ③) | 같은 하네스의 `<div>` 판 | 높이 = 내용 높이(≈40px 내외), 너비 = 컨테이너 폭 |
-| T3 | 문법 검사 | `node --check web/static/js/stopwords.js` | 오류 0 |
-| T4 | 페이지 이동 동작 유지 | 하네스에서 `.page-link[data-page]` 클릭 핸들러 바인딩 확인(`stopwords.js:281-291` 은 `paginationContainer.querySelectorAll` 기준이라 래퍼 태그와 무관) | 클릭 시 `data-page` 값이 정상 전달 |
-| T5 | 회귀 — 좌측 네비 | 수정 후 임의 화면에서 좌측 네비 렌더 확인 | 폭 170px·전체 높이 그대로(=`nav.css` 무변경 확인) |
+| # | 시나리오 | 방법 | 기대 | 결과(2026-08-13) |
+|---|----------|------|------|------|
+| T1 | 수정 전 계측(게이트 ②) | `repro_pagination.html` 원본 마크업, `measure.py`(헤드리스 Chrome) | `nav` 높이 = 뷰포트 높이, 너비 = 170px | ✅ 통과 — 749px=749px, 170px |
+| T2 | 반증 실험(게이트 ③) | 같은 하네스의 `<div>` 판 | 높이 = 내용 높이(≈40px 내외), 너비 = 컨테이너 폭 | ✅ 통과 — 39.6px, 283px |
+| T3 | 문법 검사 | `node --check web/static/js/stopwords.js` | 오류 0 | ✅ 통과 |
+| T4 | 페이지 이동 동작 유지 | `stopwords.js:281-291` 은 `paginationContainer.querySelectorAll('.page-link[data-page]')` 기준 — 코드 확인 결과 래퍼 태그(`nav`/`div`)를 셀렉터에서 참조하지 않음 | 클릭 시 `data-page` 값이 정상 전달 | ✅ 통과(정적 코드 대조) |
+| T5 | 회귀 — 좌측 네비 | `nav.css` 파일 자체는 이번 수정에서 미변경(diff 0줄) | 폭 170px·전체 높이 그대로 | ✅ 통과(무변경 확인) |
 
 **실동작 검증(사용자 승인 후, 사용자가 서버 기동)**
 

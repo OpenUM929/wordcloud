@@ -1068,41 +1068,6 @@ def api_batch_history():
     })
 
 
-@perspective_bp.route('/batches/merge', methods=['POST'])
-def api_batch_merge():
-    """복수 배치를 하나의 통합 배치로 재라벨(병합)한다.
-
-    body: {"source_batch_ids": [...], "display_name": "23년 통합"}
-    계획서: plans/2026/08/13_01_batch-merge/13_01_batch-merge.md §4.3
-    """
-    if not _is_admin():
-        return jsonify({'success': False, 'error': '관리자 로그인이 필요합니다.'}), 401
-
-    from src.services.batch_merge_service import merge_batches, BatchMergeError
-
-    data = request.get_json(silent=True) or {}
-    source_batch_ids = data.get('source_batch_ids') or []
-    display_name = (data.get('display_name') or '').strip()
-
-    try:
-        result = merge_batches(source_batch_ids, display_name=display_name)
-    except BatchMergeError as e:
-        return jsonify({'success': False, 'error': e.message}), e.status_code
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'병합 실패: {e}'}), 500
-
-    log_action('batch_merge', {
-        'batch_id': result['batch_id'],
-        'source_batch_ids': source_batch_ids,
-        'display_name': display_name,
-        'moved': result['moved'],
-        'employee_count': result['employee_count'],
-        'total_evaluations': result['total_evaluations'],
-    }, request)
-
-    return jsonify(result)
-
-
 @perspective_bp.route('/batch/<batch_id>', methods=['DELETE'])
 def api_batch_delete(batch_id):
     if not _is_admin():

@@ -11,6 +11,7 @@ from src.modules.wordcloud_generator import WordCloudGenerator
 from src.modules.sarcasm_analysis import analyze_sarcasm
 from src.modules.emotion_analysis import analyze_emotion
 from src.modules.stopword_manager import get_stopword_manager, is_stopword, filter_stopwords
+from src.services.file_parser import parse_csv_with_encoding
 import os
 import json
 from datetime import datetime
@@ -470,6 +471,147 @@ def filter_text_stopwords():
             'success': False,
             'error': str(e)
         }), 500
+
+
+_STOPWORD_HEADER_MARKERS = {'단어', '이름', '불용어', 'word', 'name'}
+
+
+@api_bp.route('/stopwords/import', methods=['POST'])
+def import_stopwords():
+    """CSV/엑셀 파일로 불용어 일괄 등록 (미리보기 → 등록 2단계).
+
+    이름 업로드(target=names)는 항상 '인명' 카테고리로 stopwords_names.json 에만
+    저장되고, 일반 업로드(target=general)는 요청받은 카테고리('인명' 제외)로
+    stopwords.json 에만 저장된다(DL-9 — 실명 분리).
+    """
+    try:
+        if 'file' not in request.files or request.files['file'].filename == '':
+            return jsonify({'success': False, 'error': '파일이 필요합니다.'}), 400
+        file = request.files['file']
+
+        target = request.form.get('target', '')
+        if target not in ('names', 'general'):
+            return jsonify({
+                'success': False,
+                'error': "target은 'names' 또는 'general' 이어야 합니다."
+            }), 400
+
+        category = request.form.get('category', '기타') or '기타'
+        if target == 'names':
+            category = '인명'
+        elif category == '인명':
+            return jsonify({
+                'success': False,
+                'error': "일반 업로드에는 '인명' 카테고리를 사용할 수 없습니다. 이름 업로드를 이용해 주세요."
+            }), 400
+
+        mode = request.form.get('mode', 'preview')
+        if mode not in ('preview', 'commit'):
+            return jsonify({
+                'success': False,
+                'error': "mode는 'preview' 또는 'commit' 이어야 합니다."
+            }), 400
+
+        column = request.form.get('column', '0')
+
+        filename = (file.filename or '').lower()
+        if not (filename.endswith('.csv') or filename.endswith(('.xlsx', '.xls'))):
+            return jsonify({
+                'success': False,
+                'error': '지원되지 않는 파일 형식입니다. CSV 또는 Excel(.xlsx, .xls) 파일만 업로드 가능합니다.'
+            }), 400
+
+        # 100MB 제한 (file_parser.parse_uploaded_file 과 동일 규약)
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        if file_size > 100 * 1024 * 1024:
+            return jsonify({'success': False, 'error': '파일 크기가 100MB를 초과합니다.'}), 400
+
+        df = None
+        if filename.endswith('.csv'):
+            file_content = file.read()
+            if not file_content:
+                return jsonify({'success': False, 'error': '빈 파일입니다.'}), 400
+            df, _encoding = parse_csv_with_encoding(file_content, file.filename)
+            if df is None:
+                return jsonify({
+                    'success': False,
+                    'error': 'CSV 파일을 읽을 수 없습니다. UTF-8, CP949, EUC-KR 등 표준 인코딩으로 저장된 파일인지 확인해주세요.'
+                }), 400
+        else:
+            try:
+                import pandas as pd
+                df = pd.read_excel(file)
+            except ImportError:
+                return jsonify({
+                    'success': False,
+                    'error': '엑셀을 읽으려면 openpyxl이 필요합니다. CSV로 저장 후 업로드해 주세요.'
+                }), 400
+            except Exception as e:
+                return jsonify({'success': False, 'error': f'엑셀 파일을 읽을 수 없습니다: {str(e)}'}), 400
+
+        if df is None or df.empty:
+            return jsonify({'success': False, 'error': '파일에 데이터가 없습니다.'}), 400
+        if len(df.columns) == 0:
+            return jsonify({'success': False, 'error': '파일에 열이 없습니다.'}), 400
+
+        columns = [str(c) for c in df.columns]
+
+        col_series = None
+        if column in df.columns:
+            col_series = df[column]
+        else:
+            try:
+                idx = int(column)
+                if 0 <= idx < len(df.columns):
+                    col_series = df.iloc[:, idx]
+            except (TypeError, ValueError):
+                col_series = None
+        if col_series is None:
+            return jsonify({'success': False, 'error': f'열을 찾을 수 없습니다: {column}'}), 400
+
+        raw_words = col_series.tolist()
+        if raw_words and str(raw_words[0]).strip().lower() in {m.lower() for m in _STOPWORD_HEADER_MARKERS}:
+            raw_words = raw_words[1:]
+
+        manager = get_stopword_manager()
+        try:
+            result = manager.add_stopwords_bulk(
+                raw_words, category=category, dry_run=(mode == 'preview'), target=target
+            )
+        except ValueError as e:
+            return jsonify({'success': False, 'error': str(e)}), 400
+
+        if mode == 'preview':
+            sample = [{'word': w, 'status': 'added'} for w in result['added_words'][:20]]
+            remaining = 20 - len(sample)
+            if remaining > 0:
+                sample += [{'word': w, 'status': 'duplicated'} for w in result['duplicated_words'][:remaining]]
+            remaining = 20 - len(sample)
+            if remaining > 0:
+                sample += [{'word': w, 'status': 'invalid'} for w in result['invalid_words'][:remaining]]
+
+            return jsonify({
+                'success': True,
+                'total': result['total'],
+                'new': result['added'],
+                'duplicated': result['duplicated'],
+                'invalid': result['invalid'],
+                'sample': sample,
+                'columns': columns,
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'added': result['added'],
+                'duplicated': result['duplicated'],
+                'invalid': result['invalid'],
+                'category': category,
+                'total_after': len(manager.get_all_stopwords()),
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 MAPPINGS_DIR = os.path.join(CONFIGS_DIR_PATH, 'mappings')

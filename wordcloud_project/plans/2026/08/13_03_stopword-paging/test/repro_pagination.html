@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!--
+  정적 재현 하네스 — 13_03_stopword-paging §2.3 게이트
+  Flask 서버를 기동하지 않고, 실제 화면과 동일한 CSS 로드 순서 +
+  stopwords.js:259-277 이 만드는 마크업을 그대로 재현해 계산 스타일을 측정한다.
+  실제 CSS 파일을 상대경로로 로드하므로(복사본 아님) 소스가 바뀌면 이 하네스도 최신 상태를 본다.
+-->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>repro: pagination nav wrapper</title>
+<!-- base.html 로드 순서 그대로: bootstrap → base.css → (inline style, 여기선 settings_hub 블록) → nav.css -->
+<link href="../../../../../web/static/vendor/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="../../../../../web/static/css/base.css">
+<style>
+/* settings_hub.html extra_head 블록 중 페이징 관련 규칙만 발췌 (:81-113 원문 그대로) */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 15px;
+}
+.pagination-container button {
+    padding: 5px 10px;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.pagination-container button:hover {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+}
+.pagination-container button.active {
+    background: #6366f1;
+    color: white;
+    border-color: #6366f1;
+}
+.pagination-container button:disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+</style>
+<link rel="stylesheet" href="../../../../../web/static/css/nav.css">
+<style>
+  body { margin: 0; }
+  .harness-block { padding: 16px; border-bottom: 4px solid #333; }
+  .harness-label { font-family: monospace; font-weight: bold; margin-bottom: 8px; }
+  #result { white-space: pre; font-family: monospace; padding: 16px; background: #f3f3f3; }
+</style>
+</head>
+<body>
+
+<!-- Case A: 실제 코드 그대로 — stopwords.js:259 처럼 <nav> 로 감싼 케이스 -->
+<div class="harness-block">
+  <div class="harness-label">Case A (원본): #pagination-container.pagination-container > &lt;nav&gt;&lt;ul class="pagination"&gt;...</div>
+  <div id="pagination-container-A" class="pagination-container"></div>
+</div>
+
+<!-- Case B: 반증 실험 — <nav> 만 <div> 로 교체 -->
+<div class="harness-block">
+  <div class="harness-label">Case B (반증, 수정안): #pagination-container.pagination-container > &lt;div&gt;&lt;ul class="pagination"&gt;...</div>
+  <div id="pagination-container-B" class="pagination-container"></div>
+</div>
+
+<pre id="result">측정 중...</pre>
+
+<script>
+// stopwords.js:259-277 과 한 글자도 다르지 않게 재현 (currentPage=2, totalPages=5 가정)
+function buildPaginationInner() {
+    const currentPage = 2, totalPages = 5;
+    const pages = [1,2,3,4,5];
+    let html = '<ul class="pagination justify-content-center mb-0">';
+    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage - 1}">이전</a>
+    </li>`;
+    pages.forEach(p => {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+        </li>`;
+    });
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage + 1}">다음</a>
+    </li></ul>`;
+    return html;
+}
+
+const inner = buildPaginationInner();
+document.getElementById('pagination-container-A').innerHTML = '<nav>' + inner + '</nav>';
+document.getElementById('pagination-container-B').innerHTML = '<div>' + inner + '</div>';
+
+function measure(selector) {
+    const el = document.querySelector(selector);
+    const cs = getComputedStyle(el);
+    return {
+        tag: el.tagName,
+        height: cs.height,
+        width: cs.width,
+        display: cs.display,
+        position: cs.position
+    };
+}
+
+const a = measure('#pagination-container-A > nav, #pagination-container-A > div');
+const b = measure('#pagination-container-B > nav, #pagination-container-B > div');
+const ulA = measure('#pagination-container-A ul.pagination');
+
+const out = {
+  caseA_wrapper: a,
+  caseA_ul_pagination: ulA,
+  caseB_wrapper: b,
+  viewport: { innerHeight: window.innerHeight, innerWidth: window.innerWidth }
+};
+document.getElementById('result').textContent = JSON.stringify(out, null, 2);
+window.__REPRO_RESULT__ = out;
+</script>
+</body>
+</html>

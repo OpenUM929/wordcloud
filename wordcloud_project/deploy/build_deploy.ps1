@@ -38,7 +38,9 @@ $ExcludeDirs = @("venv", "__pycache__", ".git", ".sessions", "doc",
                  # setup.py 빌드 잔재(옛 소스 사본 반입 방지 — 잔재 소스 트랩)
                  "build", "*.egg-info")
 $ExcludeFiles = @("*.pyc", ".gitignore", "CACHEDIR.TAG", "README.md", "mermaid.min.js",
-                  ".env", "*.jsonl", "*.zip", "flask_err.txt", "flask_out.txt")
+                  ".env", "*.jsonl", "*.zip", "flask_err.txt", "flask_out.txt",
+                  # 직원 실명 전용 불용어 파일 — PII, 배포 패키지 절대 포함 금지(DL-9)
+                  "stopwords_names.json")
 
 function Write-Step {
     param([string]$Message)

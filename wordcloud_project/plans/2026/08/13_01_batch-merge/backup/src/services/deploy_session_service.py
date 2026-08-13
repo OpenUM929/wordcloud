@@ -280,36 +280,6 @@ def _apply_schema_migrations():
             conn.commit()
             print("[DB] Schema v8: deploy_sessions.started_at 컬럼 추가 완료")
             current = 8
-
-        if current < 9:
-            # 배치 병합(batch_merge_service) 지원 — 병합 이력 테이블 + 행 단위 원본 배치 추적.
-            # orig_batch_id: 병합으로 batch_id가 재라벨되기 전 원래 값을 행마다 보존한다.
-            # moved_count만으로는 어느 평가가 어느 원본 배치였는지 특정할 수 없어(R-1),
-            # 되돌리기(수동 복구) 시 행 단위로 항상 원본을 알 수 있도록 컬럼으로 둔다.
-            conn.executescript("""
-                CREATE TABLE IF NOT EXISTS batch_merges (
-                    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                    merged_batch_id  TEXT NOT NULL,
-                    source_batch_id  TEXT NOT NULL,
-                    moved_count      INTEGER DEFAULT 0,
-                    source_status    TEXT DEFAULT '',
-                    created_at       TEXT DEFAULT (datetime('now','localtime'))
-                );
-                CREATE INDEX IF NOT EXISTS idx_bm_merged ON batch_merges (merged_batch_id);
-                CREATE INDEX IF NOT EXISTS idx_bm_source ON batch_merges (source_batch_id);
-            """)
-            try:
-                conn.execute("ALTER TABLE evaluations ADD COLUMN orig_batch_id TEXT DEFAULT ''")
-            except sqlite3.OperationalError as e:
-                if 'duplicate column name' not in str(e).lower():
-                    raise
-            conn.execute(
-                "INSERT INTO schema_version (version, applied_at, note) VALUES (9, datetime('now'), ?)",
-                ('add batch_merges table + evaluations.orig_batch_id for batch merge feature',)
-            )
-            conn.commit()
-            print("[DB] Schema v9: batch_merges 테이블, evaluations.orig_batch_id 컬럼 추가 완료")
-            current = 9
     finally:
         conn.close()
 

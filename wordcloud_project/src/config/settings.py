@@ -38,6 +38,10 @@ PROFANITY_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "profanity_config.json")
 EMOTION_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "emotion_config.json")
 LEADERSHIP_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "leadership_config.json")
 WORD_BOOST_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "word_boost.json")
+STOPWORDS_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "stopwords.json")
+# 직원 실명 전용 불용어 파일 — PII 이므로 stopwords.json 과 분리, 배포 패키지 제외
+# 대상(deploy/build_deploy.ps1 $ExcludeFiles). 카테고리는 항상 '인명' 1개만 담는다.
+STOPWORDS_NAMES_CONFIG_PATH = os.path.join(CONFIGS_DIR_PATH, "stopwords_names.json")
 
 # Output directories (PROJECT_ROOT is src/, go up one more level to wordcloud_project/)
 OUTPUTS_DIR_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, '..', OUTPUTS_DIR))
