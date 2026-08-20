@@ -137,7 +137,17 @@ def work_orders():
     """게시판용 배치 작업서 전체 목록."""
     try:
         from src.services.batch_work_order_service import get_all_work_orders
-        orders = get_all_work_orders(limit=20)
+        from src.services.batch_manager import read_display_name
+        from src.config.settings import PROCESSED_DATA_DIR_PATH
+        from utils.perf import perf_span
+        with perf_span('work_orders.query'):
+            orders = get_all_work_orders(limit=20)
+        # 20_07: 배치 명칭 정본(batch_summary.json)을 작업서 목록에 병합한다.
+        # LIMIT 20이라 파일 읽기도 최대 20회 — 별도 조인 API 없이 여기서 합친다.
+        # 20_06: 이 파일 읽기 루프가 화면 지연에 기여하는지 별도로 잰다.
+        with perf_span('work_orders.display_name', orders=len(orders)):
+            for wo in orders:
+                wo['display_name'] = read_display_name(PROCESSED_DATA_DIR_PATH, wo.get('batch_id'))
         return jsonify({'success': True, 'data': orders})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

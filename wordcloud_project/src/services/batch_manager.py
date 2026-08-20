@@ -15,6 +15,50 @@ def _get_pseudo_mgr():
     return PseudonymManager(PSEUDONYM_MAPPINGS_PATH, ADMIN_PASSWORD)
 
 
+# 배치 명칭(display_name)에 쓸 수 없는 문자 — 물리 폴더명 규약과 동일하게 막는다.
+_DISPLAY_NAME_FORBIDDEN = set('\\/:*?"<>|')
+
+
+def validate_display_name(name):
+    """배치 명칭 입력 검증 (20_07). 반환: (ok: bool, error: str|None).
+
+    빈 문자열은 '명칭 해제'(batch_id 표시로 되돌림)를 뜻하므로 허용한다.
+    한글을 포함한 비ASCII 문자는 거부한다 — 사용자가 영문 사용을 요구했고,
+    이 값은 배치관리·그룹분석·미리보기 세 화면이 공유하는 라벨이다.
+    """
+    if name is None:
+        return True, None
+    name = str(name)
+    if not name:
+        return True, None
+    for ch in name:
+        if ord(ch) > 0x7E or ord(ch) < 0x20:
+            return False, '배치 명칭은 영문·숫자·기호만 사용할 수 있습니다(한글 등 비영문 불가).'
+    bad = sorted({ch for ch in name if ch in _DISPLAY_NAME_FORBIDDEN})
+    if bad:
+        return False, '사용할 수 없는 문자가 있습니다: ' + ' '.join(bad)
+    return True, None
+
+
+def read_display_name(processed_data_dir, batch_id):
+    """batch_summary.json에 저장된 배치 명칭을 읽는다(없으면 빈 문자열).
+
+    정본 위치는 processed_data/batch/<batch_id>/tdata/batch_summary.json 의
+    batch_info.display_name — PATCH /api/perspective/batch/<id>/display-name 가 쓰는 곳이다.
+    """
+    if not processed_data_dir or not batch_id:
+        return ''
+    summary_path = os.path.join(processed_data_dir, 'batch', batch_id, 'tdata', 'batch_summary.json')
+    if not os.path.exists(summary_path):
+        return ''
+    try:
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary = json.load(f)
+        return summary.get('batch_info', {}).get('display_name', '') or ''
+    except Exception:
+        return ''
+
+
 def get_batch_list(processed_data_dir=None):
     """Get list of available batches from DB."""
     conn = _get_conn()

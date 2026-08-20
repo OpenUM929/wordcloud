@@ -12,7 +12,7 @@ from src.services.perspective_service import (
     load_all_batches, load_employee_batch, list_all_employee_ids,
     load_employees_batch, list_employee_roster, list_users_with_batch_counts,
     load_batch_history,
-    get_matrix_meta, get_matrix_meta_light,
+    get_matrix_meta, get_matrix_meta_light, search_employees,
     generate_perspective_matrix, save_to_deploy,
     save_trend_graph_to_deploy, TREND_METRICS,
     generate_all_employee_matrix, parse_csv_employee_ids,
@@ -63,11 +63,26 @@ def _resolve_output_mode(data):
 def api_get_meta():
     data = request.get_json(silent=True) or {}
     employee_id = data.get('employee_id')
+    batch_ids = data.get('batch_ids') or None
     # 0619_03 후속: X축(시간/회차) 메타도 load_all_batches()의 19,000건 json.loads
     # 병목을 그대로 타고 있었다. row_options는 batch_id·evaluation_date 인덱스 컬럼
     # GROUP BY만으로 산출 가능하므로 data blob 미적재 경량 빌더로 교체.
-    meta = get_matrix_meta_light(employee_id=employee_id, enrich=_is_admin())
+    meta = get_matrix_meta_light(employee_id=employee_id, batch_ids=batch_ids, enrich=_is_admin())
     return jsonify({'success': True, 'admin': _is_admin(), **meta})
+
+
+@perspective_bp.route('/employees/search', methods=['GET'])
+def api_search_employees():
+    """대상 직원 입력창 자동완성 (20_10) — 사번/이름 부분일치, 최대 limit건.
+
+    /meta 와 동일한 노출 규칙을 따른다(원본 값은 관리자에게만).
+    """
+    q = request.args.get('q', '').strip()
+    limit = request.args.get('limit', 20, type=int)
+    batch_ids_raw = request.args.get('batch_ids', '').strip()
+    batch_ids = [b for b in batch_ids_raw.split(',') if b] or None
+    results = search_employees(q, limit=limit, batch_ids=batch_ids, enrich=_is_admin())
+    return jsonify({'success': True, 'employees': results})
 
 
 @perspective_bp.route('/csv-parse', methods=['POST'])
@@ -195,11 +210,12 @@ def api_deploy_session_start():
     data = request.get_json(silent=True) or {}
     options = data.get('options', {})
     employee_ids = data.get('employee_ids', [])
+    kind = data.get('kind', 'deploy')
     if not employee_ids:
         return jsonify({'success': False, 'error': 'employee_ids가 필요합니다.'}), 400
 
     cleanup_old_sessions(days=7)
-    session_id = create_session(options, employee_ids)
+    session_id = create_session(options, employee_ids, kind=kind)
     return jsonify({'success': True, 'session_id': session_id, 'total': len(employee_ids)})
 
 
@@ -415,6 +431,7 @@ def api_generate_matrix():
         'analysis_types': data.get('analysis_types'),
         'word_color': data.get('word_color'),
         'batch_title': (data.get('batch_title') or '').strip() or None,
+        'batch_ids': data.get('batch_ids'),
     }
 
     enrich, err = _resolve_output_mode(data)
@@ -499,6 +516,7 @@ def api_save_deploy():
         'apply_emotion_colors': data.get('apply_emotion_colors', True),
         'word_color': data.get('word_color'),
         'batch_title': (data.get('batch_title') or '').strip() or None,
+        'batch_ids': data.get('batch_ids'),
     }
 
     _setup_korean_font()  # 배치/단일 분기 진입 전 1회 호출(save_to_deploy 내부 호출 대체)
@@ -593,6 +611,7 @@ def api_save_trend_graph():
         'include_name': data.get('include_name', True),
         'include_id': data.get('include_id', True),
         'batch_title': (data.get('batch_title') or '').strip() or None,
+        'batch_ids': data.get('batch_ids'),
     }
 
     _setup_korean_font()  # 배치/단일 분기 진입 전 1회 호출
@@ -1083,9 +1102,11 @@ def api_batch_merge():
     data = request.get_json(silent=True) or {}
     source_batch_ids = data.get('source_batch_ids') or []
     display_name = (data.get('display_name') or '').strip()
+    delete_sources = bool(data.get('delete_sources', False))
 
     try:
-        result = merge_batches(source_batch_ids, display_name=display_name)
+        result = merge_batches(source_batch_ids, display_name=display_name,
+                                delete_sources=delete_sources)
     except BatchMergeError as e:
         return jsonify({'success': False, 'error': e.message}), e.status_code
     except Exception as e:
@@ -1098,6 +1119,7 @@ def api_batch_merge():
         'moved': result['moved'],
         'employee_count': result['employee_count'],
         'total_evaluations': result['total_evaluations'],
+        'delete_sources': delete_sources,
     }, request)
 
     return jsonify(result)
@@ -1148,6 +1170,13 @@ def api_batch_update_display_name(batch_id):
 
     data = request.get_json(silent=True) or {}
     display_name = (data.get('display_name') or '').strip()
+
+    # 20_07: 한글 등 비영문 입력 차단. 이 라우트는 그룹분석·배치관리 두 화면이 공유하므로
+    # 한 곳에서 검증하면 양쪽에 동일하게 적용된다.
+    from src.services.batch_manager import validate_display_name
+    ok, err = validate_display_name(display_name)
+    if not ok:
+        return jsonify({'success': False, 'error': err}), 400
 
     from src.config.settings import PROCESSED_DATA_DIR_PATH
     summary_path = os.path.join(PROCESSED_DATA_DIR_PATH, 'batch', batch_id, 'tdata', 'batch_summary.json')

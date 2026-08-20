@@ -1314,11 +1314,18 @@ function _woFilename(wo) {
 }
 
 function loadWorkOrders() {
+    // 20_06: 이 화면 진입 지연의 원인이 이 요청인지, 그 뒤 렌더인지 콘솔에 남긴다.
+    if (window.__perf) window.__perf.mark('loadWorkOrders:total');
     fetch('/api/batch/work-orders')
     .then(function(r) { return r.json(); })
     .then(function(res) {
         if (!res.success) return;
+        if (window.__perf) window.__perf.mark('loadWorkOrders:render');
         renderWorkOrders(res.data || []);
+        if (window.__perf) {
+            window.__perf.since('loadWorkOrders:render', (res.data || []).length + '건 렌더');
+            window.__perf.since('loadWorkOrders:total', '요청~렌더 전체');
+        }
     })
     .catch(function(e) { console.error('작업 이력 로드 실패:', e); });
 }
@@ -1349,8 +1356,16 @@ function renderWorkOrders(orders) {
                     : (st === 'running' ? '🔄 처리 중' : '⏸ 미완료')));
         var actionCell = (isComplete || isRunning) ? ''
             : '<button class="btn btn-warning" style="padding:4px 10px; font-size:13px;" onclick="resumeWorkOrder(\'' + wo.batch_id + '\')">이어서 작업</button>';
+        // 20_07: 배치 명칭(display_name) 표시 + 편집. 정본은 batch_summary.json이며
+        // 그룹분석 화면의 editDisplayName()과 동일한 PATCH 엔드포인트를 공유한다.
+        var dn = wo.display_name || '';
+        var dnCell = '<span id="woDn-' + escapeHtml(wo.batch_id) + '">'
+            + (dn ? escapeHtml(dn) : '<span style="color:#aaa;">(없음)</span>') + '</span>'
+            + ' <button class="btn" style="padding:1px 6px;font-size:12px;" title="명칭 변경"'
+            + ' onclick="editWorkOrderDisplayName(\'' + wo.batch_id + '\')">✏️</button>';
         rows += '<tr style="border-bottom:1px solid #eee;">'
             + '<td style="padding:8px;">' + escapeHtml(wo.batch_id) + '</td>'
+            + '<td style="padding:8px;">' + dnCell + '</td>'
             + '<td style="padding:8px;">' + escapeHtml(_woFilename(wo)) + '</td>'
             + '<td style="padding:8px;">' + escapeHtml(wo.created_at || '-') + '</td>'
             + '<td style="padding:8px; text-align:center;">' + done + ' / ' + total + '</td>'
@@ -1361,7 +1376,7 @@ function renderWorkOrders(orders) {
 
     listEl.innerHTML = '<table style="width:100%; border-collapse:collapse;">'
         + '<thead><tr style="background:#f8f9fa; text-align:left;">'
-        + '<th style="padding:8px;">작업 ID</th><th style="padding:8px;">파일명</th>'
+        + '<th style="padding:8px;">작업 ID</th><th style="padding:8px;">명칭</th><th style="padding:8px;">파일명</th>'
         + '<th style="padding:8px;">작업 일시</th><th style="padding:8px; text-align:center;">진행/전체</th>'
         + '<th style="padding:8px; text-align:center;">상태</th><th style="padding:8px; text-align:center;">액션</th>'
         + '</tr></thead><tbody>' + rows + '</tbody></table>';
@@ -1373,6 +1388,40 @@ function renderWorkOrders(orders) {
         if (body) body.style.display = 'block';
         if (icon) icon.textContent = '▲';
     }
+}
+
+// 20_07: 배치 명칭 변경. 그룹분석(perspective_test.html)의 editDisplayName()과
+// 같은 엔드포인트·같은 정본(batch_summary.json)을 쓰므로 두 화면의 표시가 일치한다.
+// 서버도 동일하게 검증하지만(비영문 차단), 왕복 전에 안내하기 위해 여기서도 한 번 거른다.
+function editWorkOrderDisplayName(batchId) {
+    var span = document.getElementById('woDn-' + batchId);
+    var current = span ? span.textContent.trim() : '';
+    if (current === '(없음)') current = '';
+    var newName = prompt('배치 명칭을 입력하세요 (영문·숫자만, 비우면 명칭 해제):', current);
+    if (newName === null) return;
+    newName = newName.trim();
+    if (newName && !/^[\x20-\x7E]+$/.test(newName)) {
+        alert('배치 명칭은 영문·숫자·기호만 사용할 수 있습니다(한글 등 비영문 불가).');
+        return;
+    }
+    if (newName && /[\\/:*?"<>|]/.test(newName)) {
+        alert('사용할 수 없는 문자가 포함되어 있습니다: \\ / : * ? " < > |');
+        return;
+    }
+    fetch('/api/perspective/batch/' + encodeURIComponent(batchId) + '/display-name', {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({display_name: newName})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) {
+            loadWorkOrders();
+        } else {
+            alert('명칭 변경 실패: ' + (d.error || ''));
+        }
+    })
+    .catch(function(e) { alert('명칭 변경 실패: ' + e); });
 }
 
 function resumeWorkOrder(batchId) {
@@ -1708,7 +1757,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 나머지 초기화 — 예외 격리
     try {
-        renderIntegratedDataTree();
+        // 20_06: 서버 호출 없는 필드 매핑 트리 렌더 비용도 따로 잰다 —
+        // 요청이 다 빠른데 화면이 느리면 여기(DOM 조립)가 남는 후보다.
+        if (window.__perf) {
+            window.__perf.span('renderIntegratedDataTree', renderIntegratedDataTree);
+        } else {
+            renderIntegratedDataTree();
+        }
         loadWorkOrders();
         updateStepButtons();
         

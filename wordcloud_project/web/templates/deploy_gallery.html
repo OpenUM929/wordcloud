@@ -712,6 +712,29 @@
                 </label>
             </div>
         </div>
+        <div class="filter-group">
+            <label>결과 종류</label>
+            <div style="display:flex;gap:10px;align-items:center;padding:4px 0;flex-wrap:wrap;">
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterResultType" value="" checked> 전체
+                </label>
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterResultType" value="deploy_combined"> 통합
+                </label>
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterResultType" value="deploy_positive"> 긍정
+                </label>
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterResultType" value="deploy_negative"> 부정
+                </label>
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterResultType" value="graph"> 그래프
+                </label>
+                <label style="font-weight:normal;display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;">
+                    <input type="radio" name="filterResultType" value="matrix"> 매트릭스
+                </label>
+            </div>
+        </div>
         <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;">
             <button class="btn btn-primary" onclick="loadGallery(1)" style="padding:6px 18px;font-size:13px;">검색</button>
             <button class="btn btn-secondary" id="deleteModeBtn" onclick="toggleDeleteMode()" style="padding:6px 14px;font-size:13px;">삭제 모드</button>
@@ -772,6 +795,10 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span style="font-size:12px;color:#666;">필터 조건</span>
         <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="toggleAdvancedDownloadFilter()">고급 필터</button>
+    </div>
+    <div class="download-filter-row">
+        <span class="download-filter-label">조회 범위</span>
+        <div id="downloadScopeInfo" style="font-size:12px;display:flex;align-items:center;"></div>
     </div>
     <div class="download-filter-row">
         <span class="download-filter-label">소스</span>
@@ -901,6 +928,10 @@
 <script>
 let currentPage = 1;
 
+// 기본 화면 결과 종류 필터(20_04) — 'combined'|'positive'|'negative'. 카드 썸네일 선택에만 쓰고
+// 목록 필터(loadGallery의 source 파라미터)와는 별개 관심사라 모달의 selectedTypes와 공유하지 않는다.
+let mainThumbVariant = 'combined';
+
 // ── 날짜 칩 & 배치 명칭 칩 & 삭제 모드 상태 ──
 let selectedDateChips = new Set();
 let selectedBatchTitleChips = new Set();
@@ -922,6 +953,10 @@ let downloadFilterSource = new Set();  // 다운로드 필터 - 소스 (단일 �
 let downloadFilterYear   = '';         // 다운로드 필터 - 연도
 let downloadFilterDates  = new Set();  // 다운로드 필터 - 날짜
 let selectedDownloadBatchTitles = new Set();  // 다운로드 필터 - 배치 명칭
+// 20_05: 다운로드 모드 로드 스코프. 갤러리 테이블은 저장할수록 계속 누적되므로
+// 기본은 최근 N개월만 불러오고, 필요할 때만 전체 기간으로 넓힌다(서버가 date_from 지원).
+const DOWNLOAD_SCOPE_MONTHS = 3;
+let downloadScopeAll = false;    // true = 전체 기간
 
 // ── 날짜 칩 ──────────────────────────────────────────────────────
 async function loadAvailableDates() {
@@ -1029,6 +1064,16 @@ async function loadGallery(page) {
 
     const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
     if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
+
+    const resultTypeRadio = document.querySelector('input[name="filterResultType"]:checked');
+    const resultType = resultTypeRadio ? resultTypeRadio.value : '';
+    if (resultType.startsWith('deploy_')) {
+        params.set('source', 'deploy');
+        mainThumbVariant = resultType.slice('deploy_'.length);  // 'combined'|'positive'|'negative'
+    } else {
+        mainThumbVariant = 'combined';
+        if (resultType) params.set('source', resultType);       // 'graph'|'matrix'
+    }
 
     const grid       = document.getElementById('galleryGrid');
     const empty      = document.getElementById('galleryEmpty');
@@ -1150,14 +1195,14 @@ function renderGalleryGrid(entries) {
 
             header.appendChild(groupSpan);
 
-            // 선택 모드에서 헤더 행 클릭 → 날짜 그룹 전체 선택 토글
+            // 20_05: 선택은 체크박스로만 한다. 예전에는 헤더 아무 곳을 클릭해도 날짜 그룹이
+            // 통째로 선택돼 실수 선택이 잦았다 — 헤더 클릭은 접기/펼치기로 바꾼다.
             header.onclick = (e) => {
                 if (!deleteMode && !downloadMode) return;
                 if (e.target.closest('input[type="checkbox"]')) return;
-                if (e.target.closest('.arrow')) return;   // 화살표 클릭은 접기 전용
-                const newState = !groupCb.checked || groupCb.indeterminate;
-                groupCb.checked = newState;
-                groupToggleFn(primaryKey, newState);
+                if (e.target.closest('.arrow')) return;   // 화살표는 자체 핸들러가 처리
+                const arrowEl2 = header.querySelector('.arrow');
+                if (arrowEl2) arrowEl2.click();
             };
             grid.appendChild(header);
 
@@ -1178,8 +1223,11 @@ function buildGalleryCard(item) {
     if (downloadMode && selectedDownloadEntryIds.has(item.id)) card.classList.add('selected');
     card.dataset.entryId = item.id;
 
-    const thumbHtml = item.thumbnail_url
-        ? `<img src="${escapeHtml(item.thumbnail_url)}" alt="thumbnail">`
+    let thumbUrl = item.thumbnail_url;
+    if (mainThumbVariant === 'positive' && item.positive_url) thumbUrl = item.positive_url;
+    else if (mainThumbVariant === 'negative' && item.negative_url) thumbUrl = item.negative_url;
+    const thumbHtml = thumbUrl
+        ? `<img src="${escapeHtml(thumbUrl)}" alt="thumbnail">`
         : `<span class="thumb-placeholder">이미지 없음</span>`;
 
     const dateStr = item.timestamp
@@ -1253,11 +1301,8 @@ function buildSelectRow(item) {
         <span class="source-badge source-badge--${escapeHtml(src)}" style="position:static;">${srcLabel}</span>
         <span class="row-preview">미리보기</span>
     `;
-    row.onclick = () => {
-        const cb = row.querySelector('input[type="checkbox"]');
-        cb.checked = !cb.checked;
-        (deleteMode ? toggleCardSelect : toggleDownloadCardSelect)(item.id, cb.checked);
-    };
+    // 20_05: 행 아무 곳 클릭으로 선택되던 동작 제거 — 선택은 체크박스로만(실수 선택 방지).
+    // 행 클릭은 아무 일도 하지 않고, 미리보기는 [미리보기] 라벨로 연다(기존 openDetail 재사용).
     row.querySelector('.row-preview').onclick = (e) => {
         e.stopPropagation();   // 행 선택 토글과 분리 — 그 1건만 on-demand 이미지 로드
         openDetail(item.id, item.employee_id);
@@ -1283,6 +1328,7 @@ async function toggleDownloadMode() {
     downloadFilterSource.clear();
     downloadFilterYear  = '';
     downloadFilterDates.clear();
+    downloadScopeAll = false;   // 20_05: 모드 진입 시 기본 스코프(최근 N개월)로 되돌린다
 
     const modeBtn = document.getElementById('downloadModeBtn');
     modeBtn.textContent = '다운로드 모드';
@@ -1499,18 +1545,57 @@ function updateDownloadCount() {
 }
 
 // ── 다운로드 모드 전체 데이터 로드 ───────────────────────────────────
+// 20_05: N개월 전 날짜를 gallery_entries.timestamp 접두 형식(YYYYMMDD)으로 반환
+function _scopeDateFrom(months) {
+    const now = new Date();
+    // setMonth() 단독 사용은 말일에서 넘침이 생긴다(5/31 −3개월 → 3/3) — 말일로 clamp한다.
+    const d = new Date(now.getFullYear(), now.getMonth() - months, 1);
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(now.getDate(), lastDay));
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+}
+
 async function _loadAllForDownload() {
     try {
         const params = new URLSearchParams();
         params.set('all', '1');
         const modeRadio = document.querySelector('input[name="filterOutputMode"]:checked');
         if (modeRadio && modeRadio.value) params.set('output_mode', modeRadio.value);
+        // 기본 스코프: 최근 DOWNLOAD_SCOPE_MONTHS 개월 (전체 기간은 사용자가 명시적으로 전환)
+        if (!downloadScopeAll) params.set('date_from', _scopeDateFrom(DOWNLOAD_SCOPE_MONTHS));
         const res  = await fetch(`/api/perspective/deploy-gallery/list?${params.toString()}`);
         const data = await res.json();
         if (data.success) allDownloadEntries = data.entries;
     } catch (e) {
         console.error('전체 데이터 로드 실패:', e);
     }
+    _renderDownloadScopeRow();
+}
+
+// 20_05: 현재 로드 범위를 눈에 띄게 알리고, 전체 기간으로 넓히는 버튼을 제공한다.
+// (범위를 좁힌 탓에 "예전 항목이 사라졌다"고 오인하지 않도록 — §7 R-1)
+function _renderDownloadScopeRow() {
+    const el = document.getElementById('downloadScopeInfo');
+    if (!el) return;
+    const n = allDownloadEntries.length;
+    if (downloadScopeAll) {
+        el.innerHTML = `<span style="color:#666;">전체 기간 (${n}건 로드됨)</span>`;
+        return;
+    }
+    el.innerHTML = `<span style="color:#666;">최근 ${DOWNLOAD_SCOPE_MONTHS}개월 (${n}건 로드됨)</span>`
+        + ` <button class="btn btn-secondary" style="padding:2px 8px;font-size:11px;margin-left:6px;"`
+        + ` onclick="expandDownloadScope()">전체 기간 조회</button>`;
+}
+
+async function expandDownloadScope() {
+    if (downloadScopeAll) return;
+    downloadScopeAll = true;
+    const el = document.getElementById('downloadScopeInfo');
+    if (el) el.innerHTML = '<span style="color:#666;">전체 기간 로드 중…</span>';
+    await _loadAllForDownload();
+    renderDownloadPanel();
+    renderDownloadGrid();
 }
 
 function _getDownloadFiltered() {
@@ -1707,24 +1792,76 @@ function _buildDownloadFileName() {
     return `${safe}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
 }
 
+// 20_05: 다운로드 진행 표시.
+//  서버는 ZIP을 전부 만든 뒤(send_file) 응답하므로 앞 구간에는 흐르는 바이트가 없다 —
+//  응답 헤더가 오기 전까지는 "ZIP 생성 중 + 경과 시간", 그 뒤에는 수신 바이트/전체 바이트
+//  퍼센트를 보여준다(Content-Length가 없으면 수신량만 표시).
+function _setDownloadProgress(text, pct) {
+    const bar = document.getElementById('downloadCountBar');
+    if (!bar) return;
+    if (text === null) { updateDownloadCount(); return; }
+    const gauge = (pct === null || pct === undefined) ? ''
+        : `<span style="display:inline-block;width:120px;height:8px;background:#e5e7eb;border-radius:4px;margin-left:8px;vertical-align:middle;">
+             <span style="display:block;width:${Math.min(100, Math.max(0, pct))}%;height:100%;background:#6366f1;border-radius:4px;"></span>
+           </span>`;
+    bar.innerHTML = `<span>${text}</span>${gauge}`;
+}
+
+function _setDownloadButtonsDisabled(disabled) {
+    document.querySelectorAll('.download-confirm-btn').forEach(b => { b.disabled = disabled; });
+}
+
 async function executeDownload() {
     if (selectedDownloadEntryIds.size === 0) return;
     const ids = Array.from(selectedDownloadEntryIds);
     const folderMode = document.querySelector('input[name="folderMode"]:checked')?.value || 'by_type';
     const fileName = _buildDownloadFileName();
+
+    const startedAt = Date.now();
+    const elapsed = () => Math.round((Date.now() - startedAt) / 1000);
+    _setDownloadButtonsDisabled(true);
+    _setDownloadProgress(`ZIP 생성 중… (${ids.length}건, 경과 0초)`, null);
+    const tick = setInterval(
+        () => _setDownloadProgress(`ZIP 생성 중… (${ids.length}건, 경과 ${elapsed()}초)`, null), 1000);
+
     try {
         const res = await fetch('/api/perspective/deploy-gallery/download', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ entry_ids: ids, folder_mode: folderMode }),
         });
+        clearInterval(tick);
         if (!res.ok) {
             let errMsg = `HTTP ${res.status}`;
             try { const d = await res.json(); errMsg = d.error || errMsg; } catch { /* HTML 응답 무시 */ }
             alert(`다운로드 실패: ${errMsg}`);
             return;
         }
-        const blob = await res.blob();
+
+        const total = parseInt(res.headers.get('Content-Length') || '0', 10);
+        let blob;
+        if (res.body && res.body.getReader) {
+            const reader = res.body.getReader();
+            const chunks = [];
+            let received = 0;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+                received += value.length;
+                const mb = (received / 1048576).toFixed(1);
+                if (total > 0) {
+                    _setDownloadProgress(`다운로드 중… ${mb}MB / ${(total / 1048576).toFixed(1)}MB`,
+                                         received / total * 100);
+                } else {
+                    _setDownloadProgress(`다운로드 중… ${mb}MB (경과 ${elapsed()}초)`, null);
+                }
+            }
+            blob = new Blob(chunks, { type: 'application/zip' });
+        } else {
+            blob = await res.blob();   // 스트리밍 미지원 환경 폴백
+        }
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1733,8 +1870,17 @@ async function executeDownload() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        _setDownloadProgress(`✅ 다운로드 완료 (${(blob.size / 1048576).toFixed(1)}MB, ${elapsed()}초)`, 100);
+        setTimeout(() => _setDownloadProgress(null), 4000);
     } catch (e) {
         alert(`다운로드 중 오류: ${e.message}`);
+        _setDownloadProgress(null);
+    } finally {
+        clearInterval(tick);
+        // 버튼 활성 상태는 선택 개수 규칙(updateDownloadCount)이 정본이다.
+        // 단, 완료 메시지를 덮지 않도록 카운트 바 텍스트는 건드리지 않는다.
+        document.querySelectorAll('.download-confirm-btn')
+            .forEach(b => { b.disabled = selectedDownloadEntryIds.size === 0; });
     }
 }
 

@@ -23,6 +23,7 @@ from src.modules.pseudonym_manager import PseudonymManager
 from src.modules.text_preprocessing import split_sentences  # 정의는 text_preprocessing로 이전(경량)
 from src.modules.hr_context_lexicon import is_negation_praise  # negation 칭찬(부정의 부정) 식별(순수 문자열)
 from utils.logger import get_pipeline_logger, _mask_real_id
+from utils.perf import perf_span  # 20_09: 구간 소요시간 계측(로그만, 동작 불변)
 from utils.date_normalize import normalize_eval_date
 
 # 파이프라인 전용 로거
@@ -1473,6 +1474,27 @@ def _get_pseudo_mgr():
     return _pseudo_mgr_instance
 
 
+def _make_real_id_resolver(pseudo_mgr):
+    """목록 응답용 대량 역변환기 — get_real_id()와 같은 의미를 로컬 dict 조회로 수행.
+
+    20_09 §3.2. 반환 규칙은 get_real_id()(pseudonym_manager.py)와 1:1로 맞춘다:
+      - 비었거나 공백뿐이면 원값 그대로 반환
+      - 그 외에는 strip 후 조회, 매핑이 없으면 strip 된 값을 반환
+    다른 점은 매핑 dict를 매 호출 락으로 얻지 않고 시작 시 스냅샷 1회로 얻는 것뿐이다.
+    (가명 매핑 규칙 문서 §2 "조회 시 원본 복원"의 의무는 그대로 지킨다 — 복원을
+    생략하는 게 아니라 같은 복원을 더 적은 오버헤드로 한다.)
+    """
+    mapping = pseudo_mgr.get_real_id_map() if pseudo_mgr else {}
+
+    def _resolve(value):
+        if not value or not str(value).strip():
+            return value
+        s = str(value).strip()
+        return mapping.get(s, s)
+
+    return _resolve
+
+
 def _resolve_to_pseudo(input_id, pseudo_mgr):
     """원본 ID를 저장된 가명으로 변환. 매핑이 없으면 input_id 그대로 반환.
     get_pseudonym()과 달리 새 가명을 생성하지 않음."""
@@ -1745,7 +1767,7 @@ def load_all_batches(processed_data_dir=None, request_id=''):
     conn = _get_eval_conn()
     try:
         rows = conn.execute("""
-            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id, ev.batch_id
             FROM employees e
             INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
             ORDER BY e.employee_id, ev.id
@@ -1755,7 +1777,7 @@ def load_all_batches(processed_data_dir=None, request_id=''):
 
     emp_evals = defaultdict(list)
     emp_meta = {}
-    for emp_id, name, dept, pos, data, ev_db_id in rows:
+    for emp_id, name, dept, pos, data, ev_db_id, ev_batch_id in rows:
         if emp_id not in emp_meta:
             # target_employee_id는 가명 ID(emp_id)를 매칭 키로 사용한다.
             # 실명 복원은 상위 enrich 계층(get_matrix_meta) 및 'real' 출력 모드
@@ -1773,6 +1795,10 @@ def load_all_batches(processed_data_dir=None, request_id=''):
                 continue
             # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
             ev_obj['_db_id'] = ev_db_id
+            # batch_id 정본은 DB 컬럼이다 — data 블롭에 적재 시점 값이 그대로 남아 있어
+            # 병합(batch_merge_service: 컬럼만 재라벨) 이후 블롭 값이 낡는다.
+            # /meta·배치이력 패널·배치 범위 필터가 모두 컬럼 기준이므로 여기서 정본으로 덮어쓴다.
+            ev_obj['batch_id'] = ev_batch_id
             emp_evals[emp_id].append(ev_obj)
 
     employee_results = []
@@ -1819,24 +1845,32 @@ def load_batch_history(processed_data_dir=None):
 
     conn = _get_eval_conn()
     try:
-        row = conn.execute("""
-            SELECT COUNT(DISTINCT e.employee_id) AS uniq,
-                   COUNT(*) AS total
-            FROM employees e
-            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
-        """).fetchone()
+        # 20_09 1.2: 배치 이력 지연은 원인 미확정 상태다 — 집계 SQL과 목록 조립을
+        # 나눠 재서 어느 쪽인지(혹은 둘 다 빠른지) 실행 즉시 드러나게 한다.
+        with perf_span('batch_history.count_sql'):
+            row = conn.execute("""
+                SELECT COUNT(DISTINCT e.employee_id) AS uniq,
+                       COUNT(*) AS total
+                FROM employees e
+                INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            """).fetchone()
     finally:
         conn.close()
     uniq = (row[0] if row else 0) or 0
     total = (row[1] if row else 0) or 0
 
+    with perf_span('batch_history.count_batches'):
+        batch_count = _count_batches(processed_data_dir)
+    with perf_span('batch_history.list'):
+        batch_list = _load_batch_list(processed_data_dir)
+
     return {
         'batch_info': {
             'total_evaluations': total,
             'unique_employees': uniq,
-            'batch_count': _count_batches(processed_data_dir),
+            'batch_count': batch_count,
         },
-        'batches': _load_batch_list(processed_data_dir),
+        'batches': batch_list,
     }
 
 
@@ -1861,7 +1895,7 @@ def load_employee_batch(employee_id, request_id=''):
     conn = _get_eval_conn()
     try:
         rows = conn.execute("""
-            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id, ev.batch_id
             FROM employees e
             INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
             WHERE e.employee_id = ?
@@ -1876,7 +1910,7 @@ def load_employee_batch(employee_id, request_id=''):
 
     name = dept = pos = ''
     evals = []
-    for _emp_id, nm, dp, ps, data, ev_db_id in rows:
+    for _emp_id, nm, dp, ps, data, ev_db_id, ev_batch_id in rows:
         name, dept, pos = nm or '', dp or '', ps or ''
         if data:
             try:
@@ -1886,6 +1920,8 @@ def load_employee_batch(employee_id, request_id=''):
                 continue
             # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
             ev_obj['_db_id'] = ev_db_id
+            # batch_id 정본은 DB 컬럼(병합 시 컬럼만 재라벨됨) — load_all_batches 동일 주석 참조
+            ev_obj['batch_id'] = ev_batch_id
             evals.append(ev_obj)
 
     logger.info("row_count=%s eval_count=%s", len(rows), len(evals), extra={'request_id': request_id, 'stage': 'DB_LOAD'})
@@ -1928,7 +1964,7 @@ def load_employees_batch(employee_ids, request_id=''):
     conn = _get_eval_conn()
     try:
         rows = conn.execute(f"""
-            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id
+            SELECT e.employee_id, e.name, e.department, e.position, ev.data, ev.id, ev.batch_id
             FROM employees e
             INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
             WHERE e.employee_id IN ({placeholders})
@@ -1939,7 +1975,7 @@ def load_employees_batch(employee_ids, request_id=''):
 
     emp_evals = defaultdict(list)
     emp_meta = {}
-    for emp_id, name, dept, pos, data, ev_db_id in rows:
+    for emp_id, name, dept, pos, data, ev_db_id, ev_batch_id in rows:
         if emp_id not in emp_meta:
             emp_meta[emp_id] = {
                 'target_employee_name': name or '',
@@ -1954,6 +1990,8 @@ def load_employees_batch(employee_ids, request_id=''):
                 continue
             # evaluation_id는 중복될 수 있으므로 고유한 DB row id를 보정값 키로 사용
             ev_obj['_db_id'] = ev_db_id
+            # batch_id 정본은 DB 컬럼(병합 시 컬럼만 재라벨됨) — load_all_batches 동일 주석 참조
+            ev_obj['batch_id'] = ev_batch_id
             emp_evals[emp_id].append(ev_obj)
 
     employee_results = []
@@ -2840,7 +2878,87 @@ def get_matrix_meta(unified_data, employee_id=None, enrich=False):
     }
 
 
-def get_matrix_meta_light(employee_id=None, enrich=False, processed_data_dir=None):
+def search_employees(query, limit=20, batch_ids=None, enrich=False):
+    """사번/이름 부분일치 직원 검색 (20_10). 최대 limit건만 반환한다.
+
+    /meta 는 전 직원을 한 번에 돌려주지만, 대상 직원 입력창은 타이핑마다 소수 후보만
+    필요하다. 전 직원 적재·전 직원 가명 역변환 없이 SQL LIKE + LIMIT 으로 끝낸다.
+
+    DB의 employee_id·name 은 가명이므로, 관리자(enrich)일 때는 원본 사번으로도 찾을 수
+    있도록 매핑(real→pseudo)을 함께 훑는다. 비관리자에게는 원본 값을 노출하지 않는다.
+    배치 범위(batch_ids)가 주어지면 그 배치에 평가가 있는 직원만 반환한다(13_05와 동일 규칙).
+    """
+    q = (query or '').strip()
+    if not q:
+        return []
+    try:
+        limit = int(limit)
+    except (TypeError, ValueError):
+        limit = 20
+    limit = max(1, min(limit, 100))
+
+    # 관리자 한정: 입력값이 원본 사번(부분일치)일 수 있으므로 매핑에서 가명 후보를 모은다.
+    pseudo_hits = []
+    if enrich:
+        q_lower = q.lower()
+        try:
+            for real_id, pseudo in _get_pseudo_mgr().get_all_mappings():
+                if q_lower in str(real_id).lower():
+                    pseudo_hits.append(pseudo)
+                    if len(pseudo_hits) >= limit * 5:
+                        break
+        except Exception:
+            pseudo_hits = []
+
+    like = f'%{q}%'
+    match_sql = 'e.employee_id LIKE ? OR e.name LIKE ?'
+    params = [like, like]
+    if pseudo_hits:
+        match_sql += f" OR e.employee_id IN ({','.join('?' * len(pseudo_hits))})"
+        params.extend(pseudo_hits)
+
+    batch_sql = ''
+    if batch_ids:
+        batch_sql = f" AND ev.batch_id IN ({','.join('?' * len(batch_ids))})"
+        params.extend(batch_ids)
+    params.append(limit)
+
+    conn = _get_eval_conn()
+    try:
+        rows = conn.execute(f"""
+            SELECT e.employee_id, e.name, e.department, e.position, COUNT(ev.id) AS cnt
+            FROM employees e
+            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+            WHERE ({match_sql}){batch_sql}
+            GROUP BY e.employee_id
+            ORDER BY e.employee_id
+            LIMIT ?
+        """, params).fetchall()
+    finally:
+        conn.close()
+
+    # 20_09 §3.2와 동일 방식 — 매핑 스냅샷 1회 후 로컬 조회(결과 동일).
+    _dr = _make_real_id_resolver(_get_pseudo_mgr()) if enrich else None
+    results = []
+    for emp_id, name, dept, pos, cnt in rows:
+        entry = {
+            'employee_id': emp_id,
+            'employee_name': name,
+            'department': dept,
+            'position': pos,
+            'evaluation_count': cnt,
+        }
+        if _dr:
+            real_id = _dr(emp_id)
+            entry['employee_id'] = real_id
+            entry['employee_id_real'] = real_id if real_id != emp_id else None
+            entry['employee_name'] = _dr(name) if name else None
+            entry['department'] = _dr(dept) if dept else dept
+        results.append(entry)
+    return results
+
+
+def get_matrix_meta_light(employee_id=None, batch_ids=None, enrich=False, processed_data_dir=None):
     """/meta 전용 경량 메타 빌더 — evaluations의 data blob을 적재하지 않는다.
 
     X축(row_options)이 실제로 쓰는 값은 batch_id·evaluation_date 둘뿐이며
@@ -2862,32 +2980,51 @@ def get_matrix_meta_light(employee_id=None, enrich=False, processed_data_dir=Non
     if employee_id:
         resolved_id = _resolve_to_pseudo(employee_id, _get_pseudo_mgr())
 
+    # 13_05: 배치 범위 필터 — 축(row_field) 선택과 독립적인 사전 필터.
+    # 미지정 시(None/빈 리스트) 기존과 100% 동일한 SQL(원자 질문 1.7, 하위 호환).
+    batch_clause = ''
+    batch_params = ()
+    if batch_ids:
+        placeholders = ','.join('?' * len(batch_ids))
+        batch_clause = f' AND ev.batch_id IN ({placeholders})'
+        batch_params = tuple(batch_ids)
+
     conn = _get_eval_conn()
     try:
         # 1) X축 facet — 평가일자 × 배치 그룹 카운트 (data blob 미적재)
-        if resolved_id:
-            facet_rows = conn.execute("""
-                SELECT evaluation_date, batch_id, COUNT(*) AS c
-                FROM evaluations
-                WHERE employee_id = ?
-                GROUP BY evaluation_date, batch_id
-            """, (resolved_id,)).fetchall()
-        else:
-            facet_rows = conn.execute("""
-                SELECT evaluation_date, batch_id, COUNT(*) AS c
-                FROM evaluations
-                GROUP BY evaluation_date, batch_id
-            """).fetchall()
+        # 20_09: SQL·가명역변환·조립을 각각 재서 느린 구간을 특정한다(로그만, 동작 불변).
+        with perf_span('meta.sql.facet'):
+            if resolved_id:
+                facet_rows = conn.execute(f"""
+                    SELECT evaluation_date, batch_id, COUNT(*) AS c
+                    FROM evaluations ev
+                    WHERE employee_id = ?{batch_clause}
+                    GROUP BY evaluation_date, batch_id
+                """, (resolved_id,) + batch_params).fetchall()
+            else:
+                where = f'WHERE 1=1{batch_clause}' if batch_clause else ''
+                facet_rows = conn.execute(f"""
+                    SELECT evaluation_date, batch_id, COUNT(*) AS c
+                    FROM evaluations ev
+                    {where}
+                    GROUP BY evaluation_date, batch_id
+                """, batch_params).fetchall()
 
         # 2) 직원 목록 + 평가 건수 (data blob 미적재) — get_matrix_meta와 동일하게 전체 기준
-        emp_rows = conn.execute("""
-            SELECT e.employee_id, e.name, e.department, e.position, COUNT(ev.id) AS cnt
-            FROM employees e
-            INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
-            GROUP BY e.employee_id
-        """).fetchall()
+        with perf_span('meta.sql.employees'):
+            emp_where = f'WHERE 1=1{batch_clause}' if batch_clause else ''
+            emp_rows = conn.execute(f"""
+                SELECT e.employee_id, e.name, e.department, e.position, COUNT(ev.id) AS cnt
+                FROM employees e
+                INNER JOIN evaluations ev ON e.employee_id = ev.employee_id
+                {emp_where}
+                GROUP BY e.employee_id
+            """, batch_params).fetchall()
 
-        total_evals = conn.execute("SELECT COUNT(*) FROM evaluations").fetchone()[0]
+            total_evals = conn.execute(
+                f"SELECT COUNT(*) FROM evaluations ev{(' WHERE 1=1' + batch_clause) if batch_clause else ''}",
+                batch_params
+            ).fetchone()[0]
     finally:
         conn.close()
 
@@ -2923,30 +3060,28 @@ def get_matrix_meta_light(employee_id=None, enrich=False, processed_data_dir=Non
                 'values': [{'value': v, 'count': c} for v, c in vals_sorted],
             })
 
-    pseudo_mgr = _get_pseudo_mgr() if enrich else None
-    employees = []
-    for emp_id, name, dept, pos, cnt in emp_rows:
-        entry = {
-            'employee_id': emp_id,
-            'department': dept,
-            'position': pos,
-            'evaluation_count': cnt,
-            'employee_name': name,
-        }
-        if enrich and pseudo_mgr:
-            def _dr(v):
-                if not v:
-                    return v
-                r = pseudo_mgr.get_real_id(str(v))
-                return r if r != v else v
-            real_id = _dr(emp_id)
-            entry['employee_id'] = real_id
-            entry['employee_id_real'] = real_id if real_id != emp_id else None
-            entry['employee_name'] = _dr(name) if name else None
-            entry['department'] = _dr(dept) if dept else dept
-            entry['position'] = _dr(pos) if pos else pos
-        employees.append(entry)
-    employees.sort(key=lambda e: e['employee_id'] or '')
+    # 20_09 §3.2: 직원 1명당 최대 4회 get_real_id()(락+로깅) → 매핑 스냅샷 1회 + 로컬 조회.
+    # 결과값은 동일하다(_make_real_id_resolver 주석 참조).
+    _dr = _make_real_id_resolver(_get_pseudo_mgr()) if enrich else None
+    with perf_span('meta.employees', enrich=bool(enrich), rows=len(emp_rows)):
+        employees = []
+        for emp_id, name, dept, pos, cnt in emp_rows:
+            entry = {
+                'employee_id': emp_id,
+                'department': dept,
+                'position': pos,
+                'evaluation_count': cnt,
+                'employee_name': name,
+            }
+            if _dr:
+                real_id = _dr(emp_id)
+                entry['employee_id'] = real_id
+                entry['employee_id_real'] = real_id if real_id != emp_id else None
+                entry['employee_name'] = _dr(name) if name else None
+                entry['department'] = _dr(dept) if dept else dept
+                entry['position'] = _dr(pos) if pos else pos
+            employees.append(entry)
+        employees.sort(key=lambda e: e['employee_id'] or '')
 
     return {
         'row_options': row_options,
@@ -3013,12 +3148,15 @@ def generate_perspective_matrix(unified_data, employee_id, row_field, col_mode, 
 
     row_values = options.get('row_values')
     row_combine_all = options.get('row_combine_all', False)
+    batch_ids = options.get('batch_ids')
 
     row_cells = {}
     col_cells = {}
 
     for item in all_items:
         ev = item['evaluation']
+        if batch_ids and ev.get('batch_id') not in batch_ids:
+            continue
         row_vals = _extract_row_values(ev, row_field)
         if row_values and not row_combine_all:
             row_vals = [v for v in row_vals if v in row_values]
@@ -3273,6 +3411,9 @@ def save_to_deploy(unified_data, employee_id, row_field, col_mode, analysis_type
         deploy_name = employee_id
 
     all_items = _get_evaluations_for_employee(unified_data, resolved_id)
+    batch_ids = options.get('batch_ids')
+    if batch_ids:
+        all_items = [it for it in all_items if it['evaluation'].get('batch_id') in batch_ids]
     if not all_items:
         logger.warning("no_evaluations_for_employee", extra={'request_id': request_id, 'stage': 'DEPLOY_SAVE'})
         return None
@@ -3807,6 +3948,9 @@ def save_trend_graph_to_deploy(unified_data, employee_id, row_field, row_values,
         deploy_name = employee_id
 
     all_items = _get_evaluations_for_employee(unified_data, resolved_id)
+    batch_ids = options.get('batch_ids')
+    if batch_ids:
+        all_items = [it for it in all_items if it['evaluation'].get('batch_id') in batch_ids]
     if not all_items:
         logger.warning("no_evaluations_for_employee", extra={'request_id': request_id, 'stage': 'TREND_GRAPH'})
         return None

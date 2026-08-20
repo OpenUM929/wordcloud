@@ -76,6 +76,11 @@ def create_app():
     app.register_blueprint(plans_bp)
     app.register_blueprint(version_bp)
 
+    # 20_06 / 20_09: 모든 요청의 서버 처리시간을 로그로 남긴다(로그만 남기고 동작 불변).
+    # 화면 지연의 원인이 서버인지 네트워크·브라우저인지 가르는 기준선이 된다.
+    from utils.perf import install_request_timing
+    install_request_timing(app)
+
     @app.context_processor
     def inject_auth_state():
         return {'_is_admin_session': session.get('admin_logged_in', False)}

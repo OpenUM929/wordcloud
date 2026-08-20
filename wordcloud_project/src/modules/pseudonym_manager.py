@@ -179,15 +179,35 @@ class PseudonymManager:
         if not pseudonym or not str(pseudonym).strip():
             return pseudonym
         pseudonym = str(pseudonym).strip()
-        logger.info("pseudo=%s", pseudonym, extra={'request_id': '', 'stage': 'PSEUDO_REAL'})
+        # 20_09 §3.1: 대량 호출 구간(직원 1.9만명×최대4필드)에서 매 호출 무조건 로깅되던 것을
+        # debug로 낮춤(반환값·매핑 로직 불변, 로깅 레벨만 변경). found=False는 미가명화 값의
+        # 정상 경로라 anomaly 아님 — warning은 과다 로깅 원인이라 판단해 함께 낮춤.
+        logger.debug("pseudo=%s", pseudonym, extra={'request_id': '', 'stage': 'PSEUDO_REAL'})
         with self._lock:
             data = self._load_mappings()
             real = data["pseudo_to_real"].get(pseudonym, pseudonym)
             if real != pseudonym:
                 logger.debug("found=True real_id=%s", _mask_real_id(real), extra={'request_id': '', 'stage': 'PSEUDO_REAL'})
             else:
-                logger.warning("found=False returned_as_is=%s", pseudonym, extra={'request_id': '', 'stage': 'PSEUDO_REAL'})
+                logger.debug("found=False returned_as_is=%s", pseudonym, extra={'request_id': '', 'stage': 'PSEUDO_REAL'})
             return real
+
+    def get_real_id_map(self):
+        """대량 역변환용 스냅샷 — pseudo→real 매핑의 얕은 복사본을 락 1회로 반환.
+
+        20_09 §3.2: 목록 응답(직원 1.9만명 × 최대 4필드)에서 get_real_id()를
+        건건이 부르면 락 획득·로깅이 최대 7.6만 회 누적된다. 호출부가 이 스냅샷을
+        받아 로컬 dict 조회로 역변환하면 같은 결과를 락 1회로 얻는다.
+
+        - 복사본을 주는 이유: 내부 캐시(_mapping_cache)를 그대로 넘기면 호출부가
+          매핑 원본을 건드릴 수 있다. 가명 매핑은 절대 규칙 대상이라 읽기 전용
+          사본만 내보낸다.
+        - 이 스냅샷은 호출 시점의 값이다. 역변환(조회) 전용이며, 새 가명을
+          만드는 경로(get_pseudonym)에는 쓰지 않는다.
+        """
+        with self._lock:
+            data = self._load_mappings()
+            return dict(data["pseudo_to_real"])
 
     def link_mapping(self, pseudonym, real_id):
         with self._lock:

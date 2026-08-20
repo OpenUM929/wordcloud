@@ -249,7 +249,15 @@ body {
     <div class="selector-row">
         <div class="selector-box">
             <div class="label">① 대상 직원</div>
-            <select id="employeeSelect"><option value="">로딩...</option></select>
+            <!-- 20_10: 1.9만 명 드롭다운 대신 사번 직접 입력 + 서버 검색 제안.
+                 입력값은 항상 "사번"이다(참조 지점 전부가 .value를 사번으로 읽는다). -->
+            <div style="position:relative;">
+                <input type="text" id="employeeIdInput" autocomplete="off" placeholder="사번 입력 (일부만 입력해도 검색)"
+                       style="width:100%;box-sizing:border-box;">
+                <div id="employeeSuggestBox"
+                     style="display:none;position:absolute;z-index:50;left:0;right:0;top:100%;background:#fff;border:1px solid #ccd;border-radius:4px;max-height:190px;overflow-y:auto;box-shadow:0 4px 10px rgba(0,0,0,.12);"></div>
+            </div>
+            <div id="employeeIdInfo" style="font-size:11px;color:#666;margin-top:2px;min-height:14px;"></div>
             <div class="options" style="flex:none;margin-top:4px;">
                 <label><input type="checkbox" id="allEmployeesCheck" onchange="toggleAllEmployees()" checked> 전체 직원 대상</label>
             </div>
@@ -323,6 +331,16 @@ body {
         </div>
         <button id="btnGenerateMatrix" class="btn-primary" onclick="generateMatrix()" disabled>매트릭스 저장</button>
         <button id="btnSaveDeploy" class="btn-success" onclick="saveDeploy()" disabled>제출용 저장</button>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#334;white-space:nowrap;cursor:pointer;">
+            <input type="checkbox" id="includeGraphInDeploy" onchange="_toggleGraphYearRangeEnabled()">
+            그래프 포함
+            <select id="includeGraphYearRange" disabled style="font-size:11px;padding:2px;border:1px solid #ccc;border-radius:4px;">
+                <option value="all">전체</option>
+                <option value="1">최근 1년</option>
+                <option value="2">최근 2년</option>
+                <option value="3">최근 3년</option>
+            </select>
+        </label>
         <span style="position:relative;display:inline-block;">
             <button id="btnSaveGraph" class="btn-primary" onclick="toggleGraphOptions()" disabled>📈 그래프 저장</button>
             <div id="graphOptionsPanel" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.15);margin-top:4px;padding:10px;width:320px;text-align:left;">
@@ -359,11 +377,13 @@ body {
         <span class="arrow">▶</span>
         <span style="font-size:12px;font-weight:600;margin-left:4px;">배치 이력</span>
         <span id="batchHistorySummary" style="font-size:11px;color:#888;margin-left:8px;"></span>
+        <span id="batchScopeSummary" style="font-size:11px;color:#6366f1;margin-left:8px;"></span>
         <span style="margin-left:auto;display:flex;gap:4px;">
             <button class="btn-secondary" style="padding:1px 8px;font-size:10px;" onclick="event.stopPropagation();loadBatchHistory()">새로고침</button>
         </span>
     </div>
     <div class="emp-content" style="max-height:200px;overflow-y:auto;">
+        <div style="padding:4px 8px;font-size:10px;color:#888;">체크한 배치만 분석 대상 데이터로 사용합니다(X축 설정과 별개). 하나도 체크하지 않으면 전체 배치를 사용합니다.</div>
         <div id="batchHistoryList" style="padding:6px;font-size:12px;color:#999;">로드 중...</div>
     </div>
 </div>
@@ -525,6 +545,8 @@ body {
 <script>
 let _meta = null;
 let _csvEmployeeIds = null;
+let _selectedBatchIds = [];  // 13_05: 빈 배열 = 전체(배치 범위 필터 없음)
+let _batchScopeDebounceTimer = null;
 
 const _origLog = console.log.bind(console);
 const _origError = console.error.bind(console);
@@ -539,23 +561,22 @@ window.onload = loadMeta;
 
 async function loadMeta() {
     try {
+        // 20_09: 응답 대기 / JSON 파싱 / 화면 조립을 나눠 잰다(콘솔 [PERF]).
+        // fetch 자체는 perf_probe가 자동으로 재므로 여기선 그 이후 구간을 본다.
+        if (window.__perf) __perf.mark('loadMeta:total');
         const r = await fetch('/api/perspective/meta', {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(_selectedBatchIds.length ? {batch_ids: _selectedBatchIds} : {})
         });
+        if (window.__perf) __perf.mark('loadMeta:parse');
         const d = await r.json();
+        if (window.__perf) __perf.since('loadMeta:parse', 'JSON 파싱');
         if (!d.success) { setStatus('메타 로드 실패', true); return; }
         _meta = d;
+        if (window.__perf) __perf.mark('loadMeta:render');
 
-        const empSel = document.getElementById('employeeSelect');
-        empSel.innerHTML = '<option value="">-- 직원 선택 --</option>';
-        (d.employees || []).forEach(e => {
-            const o = document.createElement('option');
-            o.value = e.employee_id;
-            const label = e.employee_name || e.employee_id_real || e.employee_id;
-            o.textContent = `${label} (${e.department||'?'}) ${e.evaluation_count}건`;
-            empSel.appendChild(o);
-        });
-        if (d.employees?.[0]) empSel.value = d.employees[0].employee_id;
+        // 20_10: 대상 직원은 이제 입력창(employeeIdInput)+서버 검색이라 1.9만 개 option을
+        // 만들지 않는다. _meta.employees 는 「전체 직원 대상」 열거·X축 산출에 계속 쓰인다.
 
         const rowSel = document.getElementById('rowFieldSelect');
         rowSel.innerHTML = '';
@@ -575,6 +596,10 @@ async function loadMeta() {
 
         onRowFieldChange();
         const empCount = (d.employees || []).length;
+        if (window.__perf) {
+            __perf.since('loadMeta:render', '직원 ' + empCount + '명');
+            __perf.since('loadMeta:total', '요청~조립 전체');
+        }
         if (empCount === 0) {
             setStatus('배치 데이터 없음 — CSV를 업로드하여 배치를 생성하세요.');
         } else {
@@ -631,6 +656,28 @@ function getSelectedRowValues() {
 function isRowCombineAll() {
     const mode = document.querySelector('input[name="rowOutputMode"]:checked');
     return mode ? mode.value === 'combined' : false;
+}
+
+function _toggleGraphYearRangeEnabled() {
+    const cb = document.getElementById('includeGraphInDeploy');
+    const sel = document.getElementById('includeGraphYearRange');
+    if (sel) sel.disabled = !(cb && cb.checked);
+}
+
+// 20_03: 제출용 저장에 그래프를 포함할 때, 화면 ②(워드클라우드용 연도 체크박스)와 별도로
+// 그래프에 반영할 연도 범위를 계산한다. rangeSel: 'all' | '1' | '2' | '3'
+function _computeGraphYearValues(rangeSel) {
+    const ro = (_meta && _meta.row_options || []).find(r => r.field === 'evaluation_date__year');
+    if (!ro || !ro.values || ro.values.length === 0) return [];
+    const allValues = ro.values.map(v => v.value);
+    if (!rangeSel || rangeSel === 'all') return allValues;
+    const n = parseInt(rangeSel, 10);
+    const numericYears = ro.values
+        .map(v => v.value)
+        .filter(v => /^\d+$/.test(v))
+        .sort((a, b) => Number(b) - Number(a));
+    if (!Number.isFinite(n) || n <= 0 || numericYears.length === 0) return allValues;
+    return numericYears.slice(0, n);
 }
 
 function setStatus(msg, isError) {
@@ -714,8 +761,85 @@ function getAnalysisTypes() {
 
 function toggleAllEmployees() {
     const cb = document.getElementById('allEmployeesCheck');
-    const sel = document.getElementById('employeeSelect');
+    const sel = document.getElementById('employeeIdInput');
     sel.disabled = cb.checked;
+    if (cb.checked) _hideEmployeeSuggest();
+}
+
+// ── 20_10: 대상 직원 사번 입력 + 서버 검색 제안 ──────────────────────
+let _empSearchTimer = null;
+let _empSearchSeq = 0;          // 늦게 도착한 이전 요청이 최신 결과를 덮지 않도록
+let _empSuggestItems = [];
+
+function _hideEmployeeSuggest() {
+    const box = document.getElementById('employeeSuggestBox');
+    if (box) box.style.display = 'none';
+}
+
+function _setEmployeeInfo(text, color) {
+    const el = document.getElementById('employeeIdInfo');
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = color || '#666';
+}
+
+function _empLabel(e) {
+    const name = e.employee_name || e.employee_id_real || e.employee_id;
+    return `${name} (${e.department || '?'}) ${e.evaluation_count}건`;
+}
+
+function _renderEmployeeSuggest(items) {
+    const box = document.getElementById('employeeSuggestBox');
+    if (!box) return;
+    _empSuggestItems = items;
+    if (!items.length) {
+        box.innerHTML = '<div style="padding:6px 8px;font-size:11px;color:#999;">일치하는 직원이 없습니다.</div>';
+        box.style.display = 'block';
+        return;
+    }
+    box.innerHTML = items.map((e, i) =>
+        `<div class="emp-suggest-item" data-idx="${i}" style="padding:5px 8px;font-size:12px;cursor:pointer;border-bottom:1px solid #f0f0f0;">
+            <strong>${e.employee_id}</strong> <span style="color:#666;">${_empLabel(e)}</span>
+         </div>`).join('');
+    box.style.display = 'block';
+    box.querySelectorAll('.emp-suggest-item').forEach(el => {
+        el.onmousedown = (ev) => {     // blur보다 먼저 잡히도록 mousedown 사용
+            ev.preventDefault();
+            _pickEmployee(_empSuggestItems[parseInt(el.dataset.idx, 10)]);
+        };
+    });
+}
+
+function _pickEmployee(e) {
+    if (!e) return;
+    const input = document.getElementById('employeeIdInput');
+    input.value = e.employee_id;      // 입력값은 항상 사번(참조 지점 호환)
+    _setEmployeeInfo(_empLabel(e), '#28a745');
+    _hideEmployeeSuggest();
+    if (typeof _autoSavePageState === 'function') _autoSavePageState();
+}
+
+async function _searchEmployees(q) {
+    const seq = ++_empSearchSeq;
+    try {
+        const params = new URLSearchParams({q: q, limit: '20'});
+        if (_selectedBatchIds.length) params.set('batch_ids', _selectedBatchIds.join(','));
+        const r = await fetch(`/api/perspective/employees/search?${params.toString()}`);
+        const d = await r.json();
+        if (seq !== _empSearchSeq) return;      // 최신 입력이 아니면 버린다
+        if (d.success) _renderEmployeeSuggest(d.employees || []);
+    } catch (err) {
+        _origError('직원 검색 실패:', err);
+    }
+}
+
+function onEmployeeIdInput() {
+    const q = document.getElementById('employeeIdInput').value.trim();
+    _setEmployeeInfo('');
+    if (_empSearchTimer) clearTimeout(_empSearchTimer);
+    if (!q) { _hideEmployeeSuggest(); return; }
+    // 배치 명칭 입력(_batchTitleTimer)과 같은 300ms 디바운스 관례를 따른다
+    _empSearchTimer = setTimeout(() => _searchEmployees(q), 300);
 }
 
 
@@ -957,7 +1081,7 @@ async function confirmIdInput() {
         _csvEmployeeIds = matchedIds;
         document.getElementById('csvStatus').textContent = `선택: ${_csvEmployeeIds.length}명`;
         document.getElementById('idInputModal').classList.remove('open');
-        document.getElementById('employeeSelect').disabled = true;
+        document.getElementById('employeeIdInput').disabled = true;
         document.getElementById('allEmployeesCheck').disabled = true;
         _autoSavePageState();
 
@@ -983,7 +1107,7 @@ function cancelIdInput() {
     document.getElementById('idInputStatus').textContent = '';
     document.getElementById('idInputStatus').style.color = '#888';
     _csvEmployeeIds = null;
-    document.getElementById('employeeSelect').disabled = false;
+    document.getElementById('employeeIdInput').disabled = false;
     document.getElementById('allEmployeesCheck').disabled = false;
     _autoSavePageState();
 }
@@ -1039,7 +1163,7 @@ function _doBatchTitleCheck() {
 }
 
 async function generateMatrix() {
-    const empId = document.getElementById('employeeSelect').value;
+    const empId = document.getElementById('employeeIdInput').value;
     const allEmp = document.getElementById('allEmployeesCheck').checked;
     const csvIds = _csvEmployeeIds;
     const rowField = document.getElementById('rowFieldSelect').value;
@@ -1065,6 +1189,7 @@ async function generateMatrix() {
         word_color: _wco.word_color,
         remove_profanity: _wco.remove_profanity, wordcloud_pos: _wco.wordcloud_pos,
         batch_title: batchTitle || null,
+        batch_ids: _selectedBatchIds.length ? _selectedBatchIds : undefined,
     };
 
     // 직원 목록 수집
@@ -1277,7 +1402,7 @@ async function selectBatchTitleForRestore(title) {
         _csvEmployeeIds = empIds;
         document.getElementById('csvStatus').textContent = `✅ "${title}" — ${empIds.length}명 복원됨`;
         document.getElementById('allEmployeesCheck').checked = false;
-        document.getElementById('employeeSelect').disabled = true;
+        document.getElementById('employeeIdInput').disabled = true;
         _autoSavePageState();
 
         // 설정 복원 (첫 번째 항목 기준)
@@ -1316,7 +1441,7 @@ async function selectBatchTitleForRestore(title) {
 function _saveLastRunParams() {
     try {
         const params = {
-            empId: document.getElementById('employeeSelect').value,
+            empId: document.getElementById('employeeIdInput').value,
             allEmp: document.getElementById('allEmployeesCheck').checked,
             csvIds: _csvEmployeeIds,
             rowField: document.getElementById('rowFieldSelect').value,
@@ -1378,7 +1503,7 @@ async function _restoreLastMatrix() {
         _csvEmployeeIds = params.csvIds;
         document.getElementById('csvStatus').textContent = `✅ ${params.csvIds.length}명 (복원됨)`;
     } else if (params.empId) {
-        document.getElementById('employeeSelect').value = params.empId;
+        document.getElementById('employeeIdInput').value = params.empId;
     }
 
     // X축 복원
@@ -1428,7 +1553,7 @@ async function _restoreLastMatrix() {
 function _autoSavePageState() {
     try {
         const params = {
-            empId: document.getElementById('employeeSelect').value,
+            empId: document.getElementById('employeeIdInput').value,
             allEmp: document.getElementById('allEmployeesCheck').checked,
             csvIds: _csvEmployeeIds,
             rowField: document.getElementById('rowFieldSelect').value,
@@ -1454,12 +1579,12 @@ async function _restorePageState(params) {
         _csvEmployeeIds = params.csvIds;
         document.getElementById('csvStatus').textContent = `✅ ${params.csvIds.length}명 (복원됨)`;
         document.getElementById('allEmployeesCheck').checked = false;
-        document.getElementById('employeeSelect').disabled = true;
+        document.getElementById('employeeIdInput').disabled = true;
         document.getElementById('allEmployeesCheck').disabled = true;
     } else if (params.empId) {
         document.getElementById('allEmployeesCheck').checked = false;
-        document.getElementById('employeeSelect').disabled = false;
-        document.getElementById('employeeSelect').value = params.empId;
+        document.getElementById('employeeIdInput').disabled = false;
+        document.getElementById('employeeIdInput').value = params.empId;
     }
 
     // X축 복원
@@ -1512,7 +1637,7 @@ async function saveDeploy(resumeSessionId = null) {
 
     const csvIds = _csvEmployeeIds;
     const allEmp = document.getElementById('allEmployeesCheck').checked;
-    const empId = document.getElementById('employeeSelect').value;
+    const empId = document.getElementById('employeeIdInput').value;
     const rowField = document.getElementById('rowFieldSelect').value;
     const colMode = document.getElementById('colModeSelect').value;
     const analysisTypes = getAnalysisTypes();
@@ -1551,6 +1676,13 @@ async function saveDeploy(resumeSessionId = null) {
         remove_profanity: _wco2.remove_profanity,
         wordcloud_pos: _wco2.wordcloud_pos,
         batch_title: batchTitleDeploy || null,
+        // 20_03: 그래프 포함 여부·설정을 세션 options에 함께 저장 — 강제종료 후 재개 시에도
+        // (재개 시점의 체크박스 상태가 아니라) 처음 시작할 때의 설정이 그대로 유지되도록 함
+        include_graph: document.getElementById('includeGraphInDeploy')?.checked ?? false,
+        graph_year_range: document.getElementById('includeGraphYearRange')?.value || 'all',
+        graph_metric: document.getElementById('graphMetric')?.value,
+        graph_unit: document.getElementById('graphUnit')?.value,
+        batch_ids: _selectedBatchIds.length ? _selectedBatchIds : undefined,
     };
 
     if (csvIds) {
@@ -1562,6 +1694,12 @@ async function saveDeploy(resumeSessionId = null) {
     }
 
     window._lastDeployBody = body;
+
+    // 20_03: 그래프 포함 여부·옵션은 세션 options 복원 후(재개 시에도 원래 설정 유지) 확정한다 — 아래 §세션 시작/재개 이후
+    let graphOptions = null;
+    let graphDoneCount = 0;
+    let graphFailCount = 0;
+
     let total = csvIds ? csvIds.length : (allEmp ? 0 : 1);
     const resultArea = document.getElementById('resultArea');
     let statusLines = [];
@@ -1689,7 +1827,7 @@ async function saveDeploy(resumeSessionId = null) {
             const startRes = await fetch('/api/perspective/deploy-session/start', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({options, employee_ids: employeeIds})
+                body: JSON.stringify({options, employee_ids: employeeIds, kind: 'deploy'})
             });
             const startData = await startRes.json();
             if (!startData.success) {
@@ -1716,6 +1854,25 @@ async function saveDeploy(resumeSessionId = null) {
             }
         }
         localStorage.setItem('deploy_session_id', sessionId);
+
+        // 20_03: 세션에 저장된(재개 시에는 원래 시작할 때의) 설정으로 그래프 포함 여부 확정
+        if (options.include_graph) {
+            graphOptions = {
+                row_field: options.row_field,
+                row_values: _computeGraphYearValues(options.graph_year_range || 'all'),
+                metric: options.graph_metric,
+                unit: options.graph_unit,
+                output_mode: options.output_mode,
+                include_name: options.include_name,
+                include_id: options.include_id,
+                width: options.width,
+                height: options.height,
+                wordcloud_pos: options.wordcloud_pos,
+                remove_profanity: options.remove_profanity,
+                batch_title: options.batch_title,
+                batch_ids: options.batch_ids,
+            };
+        }
 
         // Chunk 폴링 루프
         while (true) {
@@ -1751,12 +1908,33 @@ async function saveDeploy(resumeSessionId = null) {
                         completedIds.push({employee_id: eid, result_data: d});
                         successData.push({...d, employee_id: eid});
                         doneCount++;
-                        addLine(`✅ ${d.name || eid} 완료`, 'done');
+                        addLine(`✅ ${d.name || eid} 완료${graphOptions ? '(워드클라우드)' : ''}`, 'done');
                         // 재시도 성공 시 실패 목록에서 제거
                         const fi = failData.findIndex(f => f.employee_id === eid);
                         if (fi !== -1) {
                             failData.splice(fi, 1);
                             failCount--;
+                        }
+                        // 20_03: 그래프 포함 체크 시 이어서 그래프도 저장(별도 성공/실패 집계, 세션 진행률에는 미반영)
+                        if (graphOptions) {
+                            try {
+                                const gRes = await fetch('/api/perspective/matrix/save-graph', {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({...graphOptions, employee_id: eid})
+                                });
+                                const gd = await gRes.json();
+                                if (gd.success) {
+                                    graphDoneCount++;
+                                    addLine(`✅ ${d.name || eid} 완료(그래프)`, 'done');
+                                } else {
+                                    graphFailCount++;
+                                    addLine(`❌ ${eid} 실패(그래프) - ${gd.error || '처리 실패'}`, 'fail');
+                                }
+                            } catch (_ge) {
+                                graphFailCount++;
+                                addLine(`❌ ${eid} 실패(그래프) - 네트워크 오류`, 'fail');
+                            }
                         }
                     } else {
                         failedItems.push({employee_id: eid, error: d.error || '처리 실패'});
@@ -1817,7 +1995,10 @@ async function saveDeploy(resumeSessionId = null) {
     }
 
     window._lastDeploySessionId = sessionId;
-    renderDeployComplete({success: successData, fail: failData, total});
+    renderDeployComplete({
+        success: successData, fail: failData, total,
+        graph: graphOptions ? {done: graphDoneCount, fail: graphFailCount} : null,
+    });
     _doBatchTitleCheck();
 }
 
@@ -1869,10 +2050,10 @@ function _renderGraphRowsSummary() {
     }
 }
 
-async function saveGraph() {
+async function saveGraph(resumeSessionId = null) {
     const csvIds = _csvEmployeeIds;
     const allEmp = document.getElementById('allEmployeesCheck').checked;
-    const empId = document.getElementById('employeeSelect').value;
+    const empId = document.getElementById('employeeIdInput').value;
     const rowField = document.getElementById('rowFieldSelect').value;
 
     if (!allEmp && !empId && !csvIds) { setStatus('직원을 선택하세요.', true); return; }
@@ -1890,7 +2071,7 @@ async function saveGraph() {
     const _wco = getWcOptions();
     const batchTitleGraph = (document.getElementById('batchTitleInput')?.value || '').trim();
 
-    const options = {
+    let options = {
         row_field: rowField,
         row_values: rowValues,
         metric: metric,
@@ -1903,6 +2084,7 @@ async function saveGraph() {
         wordcloud_pos: _wco.wordcloud_pos,
         remove_profanity: _wco.remove_profanity,
         batch_title: batchTitleGraph || null,
+        batch_ids: _selectedBatchIds.length ? _selectedBatchIds : undefined,
     };
 
     const resultArea = document.getElementById('resultArea');
@@ -1912,6 +2094,12 @@ async function saveGraph() {
     let successData = [];
     let failData = [];
     let total = 0;
+    // 속도 저하 자동 대응(원인 불문): 항목당 처리시간이 초기 대비 크게 느려지면
+    // 동시 처리 수를 스스로 낮춰 부하를 줄인다. 근본 원인 무관하게 적용되는 안전장치.
+    let _workerCount = 4;
+    let _itemDurations = [];
+    let _baselineAvgMs = null;
+    let _lastItemMs = null;
 
     function addLine(msg, cls) {
         statusLines.push({msg, cls});
@@ -1928,6 +2116,12 @@ async function saveGraph() {
         if (window._graphStartTime) {
             h += '<div style="margin:6px 0;font-size:13px;color:var(--text-muted);">경과: <strong>'
                + formatElapsed(window._graphStartTime) + '</strong></div>';
+        }
+        if (_lastItemMs !== null) {
+            const _avgMs = _itemDurations.length > 0
+                ? Math.round(_itemDurations.reduce((a, b) => a + b, 0) / _itemDurations.length) : 0;
+            h += '<div style="margin:6px 0;font-size:13px;color:var(--text-muted);">'
+               + `직전 항목: <strong>${Math.round(_lastItemMs)}ms</strong> · 최근 평균: <strong>${_avgMs}ms</strong> · 동시 처리: <strong>${_workerCount}</strong></div>`;
         }
         h += '<div class="deploy-status">';
         statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
@@ -1947,34 +2141,84 @@ async function saveGraph() {
     window._graphStartTime = new Date().toISOString();
     renderProgress(0);
 
-    let sessionId = null;
+    let sessionId = resumeSessionId || null;
+    let existingSuccessData = [];
+    let existingFailData = [];
     try {
-        let employeeIds = [];
-        if (csvIds) employeeIds = csvIds;
-        else if (allEmp) {
-            const _m = _meta || await loadMeta().then(() => _meta);
-            employeeIds = (_m.employees || []).map(e => e.employee_id);
-        } else if (empId) employeeIds = [empId];
-
-        if (employeeIds.length === 0) {
-            setStatus('처리할 직원이 없습니다.', true);
-            return;
+        if (sessionId) {
+            // 기존 세션의 completed/failed 태스크 결과 사전 로드(saveDeploy와 동일 패턴)
+            const tasksRes = await fetch(`/api/perspective/deploy-session/tasks?session_id=${sessionId}`);
+            const tasksData = await tasksRes.json();
+            if (tasksData.success) {
+                tasksData.tasks.forEach(t => {
+                    if (t.status === 'completed' && t.result_path) {
+                        try {
+                            const rd = JSON.parse(t.result_path);
+                            existingSuccessData.push({...rd, employee_id: t.employee_id});
+                        } catch(_) {}
+                    } else if (t.status === 'failed') {
+                        existingFailData.push({employee_id: t.employee_id, error: t.error_message || '처리 실패'});
+                    }
+                });
+            }
+            // failed 태스크를 pending으로 리셋
+            await fetch('/api/perspective/deploy-session/retry', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({session_id: sessionId})
+            });
+            total = existingSuccessData.length + existingFailData.length;
         }
-        total = employeeIds.length;
 
-        const startRes = await fetch('/api/perspective/deploy-session/start', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({options, employee_ids: employeeIds})
-        });
-        const startData = await startRes.json();
-        if (!startData.success) {
-            setStatus('세션 생성 실패: ' + (startData.error || ''), true);
-            resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">' + (startData.error || '세션 생성 실패') + '</p>';
-            return;
+        successData = [...existingSuccessData];
+        failData = [...existingFailData];
+        doneCount = existingSuccessData.length;
+        failCount = existingFailData.length;
+
+        if (!sessionId) {
+            let employeeIds = [];
+            if (csvIds) employeeIds = csvIds;
+            else if (allEmp) {
+                const _m = _meta || await loadMeta().then(() => _meta);
+                employeeIds = (_m.employees || []).map(e => e.employee_id);
+            } else if (empId) employeeIds = [empId];
+
+            if (employeeIds.length === 0) {
+                setStatus('처리할 직원이 없습니다.', true);
+                return;
+            }
+            total = employeeIds.length;
+
+            const startRes = await fetch('/api/perspective/deploy-session/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({options, employee_ids: employeeIds, kind: 'graph'})
+            });
+            const startData = await startRes.json();
+            if (!startData.success) {
+                setStatus('세션 생성 실패: ' + (startData.error || ''), true);
+                resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">' + (startData.error || '세션 생성 실패') + '</p>';
+                return;
+            }
+            sessionId = startData.session_id;
+            total = startData.total;
+        } else {
+            const progressRes = await fetch(`/api/perspective/deploy-session/progress?session_id=${sessionId}`);
+            const progressData = await progressRes.json();
+            if (progressData.success && progressData.progress) {
+                total = progressData.progress.total_count || 0;
+                // 세션에 저장된 options 복원(metric/unit 포함 — 재개 시 원래 설정 유지)
+                if (progressData.progress.options) {
+                    try {
+                        const savedOpts = typeof progressData.progress.options === 'string'
+                            ? JSON.parse(progressData.progress.options)
+                            : progressData.progress.options;
+                        options = savedOpts;
+                    } catch (_) {}
+                }
+            }
         }
-        sessionId = startData.session_id;
-        total = startData.total;
+        localStorage.setItem('deploy_session_id', sessionId);
 
         while (true) {
             const chunkRes = await fetch(`/api/perspective/deploy-session/chunk?session_id=${sessionId}&count=50`);
@@ -1984,13 +2228,13 @@ async function saveGraph() {
 
             const completedIds = [];
             const failedItems = [];
-            const WORKER_COUNT = 4;
             const yieldToRenderer = () => new Promise(r => setTimeout(r, 0));
 
             const processOne = async (eid) => {
                 addLine(`⏳ ${eid} 처리 중...`, 'processing');
                 renderProgress(doneCount + failCount);
                 await yieldToRenderer();
+                const _t0 = performance.now();
                 try {
                     const res = await fetch('/api/perspective/matrix/save-graph', {
                         method: 'POST',
@@ -2015,17 +2259,34 @@ async function saveGraph() {
                     failCount++;
                     addLine(`❌ ${eid} 실패 - 네트워크 오류`, 'fail');
                 }
+                _lastItemMs = performance.now() - _t0;
+                _itemDurations.push(_lastItemMs);
+                if (_itemDurations.length > 20) _itemDurations.shift();
+                if (_baselineAvgMs === null && _itemDurations.length >= 5) {
+                    _baselineAvgMs = _itemDurations.reduce((a, b) => a + b, 0) / _itemDurations.length;
+                }
                 renderProgress(doneCount + failCount);
                 await yieldToRenderer();
             };
 
             const processSubset = async (subset) => { for (const eid of subset) await processOne(eid); };
             const workerPromises = [];
-            for (let w = 0; w < WORKER_COUNT; w++) {
-                const subset = chunk.employee_ids.filter((_, i) => i % WORKER_COUNT === w);
+            for (let w = 0; w < _workerCount; w++) {
+                const subset = chunk.employee_ids.filter((_, i) => i % _workerCount === w);
                 if (subset.length > 0) workerPromises.push(processSubset(subset));
             }
             await Promise.all(workerPromises);
+
+            // 청크 완료 후 속도 점검: 최근 평균이 초기 기준의 3배를 넘으면 동시 처리 수를 낮춘다.
+            // 원인(서버 경합/클라이언트 누적 등)을 특정하지 않고도 부하 자체를 줄이는 대응.
+            if (_baselineAvgMs !== null && _itemDurations.length >= 5 && _workerCount > 1) {
+                const _recentAvg = _itemDurations.reduce((a, b) => a + b, 0) / _itemDurations.length;
+                if (_recentAvg > _baselineAvgMs * 3) {
+                    const _prev = _workerCount;
+                    _workerCount = Math.max(1, _workerCount - 1);
+                    addLine(`⚠️ 처리 속도 저하 감지(평균 ${Math.round(_baselineAvgMs)}ms → ${Math.round(_recentAvg)}ms) — 동시 처리 수를 ${_prev}→${_workerCount}로 조정합니다`, 'fail');
+                }
+            }
 
             await fetch('/api/perspective/deploy-session/complete', {
                 method: 'POST',
@@ -2042,7 +2303,8 @@ async function saveGraph() {
     }
 
     window._lastDeploySessionId = sessionId;
-    renderGraphComplete({success: successData, fail: failData, total, metric, unit});
+    // 재개 시 options가 세션 저장값으로 복원될 수 있으므로 완료 요약도 실제 처리에 쓰인 값을 반영
+    renderGraphComplete({success: successData, fail: failData, total, metric: options.metric, unit: options.unit});
     _doBatchTitleCheck();
 }
 
@@ -2639,6 +2901,10 @@ function renderDeployComplete(summary) {
     h += `<span><strong>✅ 제출용 저장 완료</strong></span>`;
     h += `<span>${successCount}/${totalItems} 성공</span>`;
     if (failCountItems > 0) h += `<span style="color:#dc3545;">${failCountItems}건 실패</span>`;
+    if (summary.graph) {
+        h += `<span>📈 그래프 ${summary.graph.done}건 성공`
+           + (summary.graph.fail > 0 ? `, ${summary.graph.fail}건 실패` : '') + `</span>`;
+    }
     if (failCountItems > 0 && window._lastDeploySessionId) {
         const safeJson = JSON.stringify(failItems.map(f => f.employee_id || f.employee || '?')).replace(/"/g, '&quot;');
         const _sid = window._lastDeploySessionId;
@@ -3438,22 +3704,30 @@ async function loadBatchHistory() {
         + '<span style="width:16px;height:16px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;display:inline-block;animation:globalBusySpin 0.8s linear infinite;"></span>'
         + '조회 중…</div>';
     try {
+        // 20_09 1.2: 배치 이력 지연은 원인 미확정 — 실제로 느린지부터 콘솔에 남긴다.
+        if (window.__perf) __perf.mark('loadBatchHistory:total');
         const r = await fetch('/api/perspective/batches', { credentials: 'include' });
         const d = await r.json();
         if (!d.success || !d.batches || d.batches.length === 0) {
+            if (window.__perf) __perf.since('loadBatchHistory:total', '이력 없음');
             list.innerHTML = '<p style="color:#999;padding:10px;text-align:center;">배치 이력이 없습니다.</p>';
             summary.textContent = '(없음)';
             return;
         }
         const info = d.batch_info || {};
         summary.textContent = `${d.batches.length}개 배치, ${info.unique_employees||0}명, ${info.total_evaluations||0}개 평가`;
+        // 13_05: 이미 사라진(목록에 없는) 배치가 선택 상태로 남아있지 않도록 정리
+        const _liveIds = new Set(d.batches.map(b => b.batch_id));
+        _selectedBatchIds = _selectedBatchIds.filter(id => _liveIds.has(id));
         let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-        html += '<thead><tr style="background:#f0f0f0;"><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">명칭</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">배치 ID</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">생성일</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">직원</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">평가</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;"></th></tr></thead><tbody>';
+        html += '<thead><tr style="background:#f0f0f0;"><th style="padding:4px 6px;"></th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">명칭</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">배치 ID</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">생성일</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">직원</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">평가</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;"></th></tr></thead><tbody>';
         d.batches.forEach(b => {
             var dn = b.display_name || '';
             function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
             var dnDisplay = escHtml(dn ? dn : b.batch_id);
-            html += `<tr><td style="padding:4px 6px;border-bottom:1px solid #eee;"><span id="dn-${b.batch_id}">${dnDisplay}</span> <button class="btn-sm" style="padding:1px 4px;font-size:10px;margin-left:4px;" onclick="editDisplayName('${b.batch_id}')">✏️</button></td>`;
+            var checked = _selectedBatchIds.indexOf(b.batch_id) !== -1 ? 'checked' : '';
+            html += `<tr><td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;"><input type="checkbox" class="batchScopeCheckbox" value="${b.batch_id}" ${checked} onchange="onBatchScopeChange()"></td>`;
+            html += `<td style="padding:4px 6px;border-bottom:1px solid #eee;"><span id="dn-${b.batch_id}">${dnDisplay}</span> <button class="btn-sm" style="padding:1px 4px;font-size:10px;margin-left:4px;" onclick="editDisplayName('${b.batch_id}')">✏️</button></td>`;
             html += `<td style="padding:4px 6px;border-bottom:1px solid #eee;color:#888;font-size:10px;">${b.batch_id}</td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${(b.created_at||'').slice(0,10)}</td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${b.employee_count}</td>`;
@@ -3463,10 +3737,27 @@ async function loadBatchHistory() {
         });
         html += '</tbody></table>';
         list.innerHTML = html;
+        _updateBatchScopeSummary();
+        if (window.__perf) __perf.since('loadBatchHistory:total', d.batches.length + '개 배치');
     } catch(e) {
         _origError('Batch history load failed:', e);
         list.innerHTML = '<p style="color:#dc3545;padding:10px;">로드 실패</p>';
     }
+}
+
+function _updateBatchScopeSummary() {
+    const summary = document.getElementById('batchScopeSummary');
+    if (!summary) return;
+    summary.textContent = _selectedBatchIds.length ? `${_selectedBatchIds.length}개 선택됨` : '';
+}
+
+function onBatchScopeChange() {
+    const boxes = document.querySelectorAll('.batchScopeCheckbox:checked');
+    _selectedBatchIds = Array.from(boxes).map(cb => cb.value);
+    _updateBatchScopeSummary();
+    // D-4: 다다닥 체크할 때 요청이 겹치지 않도록 디바운스(300ms) 후 재조회
+    if (_batchScopeDebounceTimer) clearTimeout(_batchScopeDebounceTimer);
+    _batchScopeDebounceTimer = setTimeout(() => { loadMeta(); }, 300);
 }
 
 async function editDisplayName(batchId) {
@@ -3767,8 +4058,9 @@ async function checkResume() {
             h += `<p style="font-size:13px;color:#555;line-height:1.5;">${dateStr}에 시작된 저장 작업이 중단되었습니다.<br>`;
             h += `<strong>${completed}</strong> / ${total} 완료 (실패 ${failed}명)</p>`;
             h += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">';
+            const _resumeFn = targetSession.kind === 'graph' ? 'resumeGraphSession' : 'resumeDeploySession';
             h += `<button class="btn-secondary" onclick="dismissResume('${targetSession.session_id}')">무시하고 새로 시작</button>`;
-            h += `<button class="btn-primary" onclick="resumeDeploySession('${targetSession.session_id}')">이어서 계속</button>`;
+            h += `<button class="btn-primary" onclick="${_resumeFn}('${targetSession.session_id}')">이어서 계속</button>`;
             h += '</div></div></div>';
             document.body.insertAdjacentHTML('beforeend', h);
             return;
@@ -3804,6 +4096,16 @@ async function resumeDeploySession(sessionId) {
     saveDeploy(sessionId);
 }
 
+async function resumeGraphSession(sessionId) {
+    dismissResume();
+    await fetch('/api/perspective/deploy-session/resume', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({session_id: sessionId})
+    });
+    saveGraph(sessionId);
+}
+
 // 페이지 로드 시 프리셋 드롭다운 초기화 — 최근 사용 프리셋 자동 적용
 document.addEventListener('DOMContentLoaded', () => {
     const sel = document.getElementById('wco-preset-select');
@@ -3820,7 +4122,10 @@ document.addEventListener('DOMContentLoaded', () => {
     _doBatchTitleCheck();
 
     // ── 페이지 상태 자동 저장: 정적 요소 ──
-    document.getElementById('employeeSelect').addEventListener('change', _autoSavePageState);
+    document.getElementById('employeeIdInput').addEventListener('change', _autoSavePageState);
+    // 20_10: 타이핑 → 디바운스 검색 제안, 포커스 이탈 → 제안 닫기
+    document.getElementById('employeeIdInput').addEventListener('input', onEmployeeIdInput);
+    document.getElementById('employeeIdInput').addEventListener('blur', () => setTimeout(_hideEmployeeSuggest, 120));
     document.getElementById('allEmployeesCheck').addEventListener('change', _autoSavePageState);
     document.getElementById('rowFieldSelect').addEventListener('change', _autoSavePageState);
     document.getElementById('colModeSelect').addEventListener('change', _autoSavePageState);
