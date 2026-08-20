@@ -250,6 +250,9 @@ def list_entries(
                 'image_count': top_count + row_count,
                 # 추이 그래프 entry(source='graph')는 combined 가 없고 graph 만 있다
                 'thumbnail_url': images.get('combined') or images.get('graph'),
+                # 긍정/부정 썸네일 전환용(20_04) — matrix/graph entry는 None(프론트가 thumbnail_url로 폴백)
+                'positive_url': images.get('positive'),
+                'negative_url': images.get('negative'),
             })
 
         return {'total': total, 'entries': entries}

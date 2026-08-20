@@ -310,6 +310,23 @@ def _apply_schema_migrations():
             conn.commit()
             print("[DB] Schema v9: batch_merges 테이블, evaluations.orig_batch_id 컬럼 추가 완료")
             current = 9
+
+        if current < 10:
+            # 20_01: 그래프 저장(saveGraph)과 제출용 저장(saveDeploy)이 deploy_sessions를
+            # 공유하면서 재개 시 항상 saveDeploy 경로로 처리되어 source 태그가 갈리던 버그 수정.
+            # kind로 세션 종류를 기록해 재개 시 올바른 저장 함수로 분기한다.
+            try:
+                conn.execute("ALTER TABLE deploy_sessions ADD COLUMN kind TEXT DEFAULT 'deploy'")
+            except sqlite3.OperationalError as e:
+                if 'duplicate column name' not in str(e).lower():
+                    raise
+            conn.execute(
+                "INSERT INTO schema_version (version, applied_at, note) VALUES (10, datetime('now'), ?)",
+                ('add kind column to deploy_sessions to distinguish deploy/graph save sessions on resume',)
+            )
+            conn.commit()
+            print("[DB] Schema v10: deploy_sessions.kind 컬럼 추가 완료")
+            current = 10
     finally:
         conn.close()
 
@@ -390,17 +407,17 @@ _cleanup_stale_running_orders()
 _auto_migrate_manifest()
 
 
-def create_session(options, employee_ids):
+def create_session(options, employee_ids, kind='deploy'):
     session_id = str(uuid.uuid4())
     now = datetime.now().isoformat()
     conn = _get_conn()
     try:
         conn.execute(
             """
-            INSERT INTO deploy_sessions (session_id, created_at, status, options, total_count, started_at)
-            VALUES (?, ?, 'running', ?, ?, ?)
+            INSERT INTO deploy_sessions (session_id, created_at, status, options, total_count, started_at, kind)
+            VALUES (?, ?, 'running', ?, ?, ?, ?)
             """,
-            (session_id, now, json.dumps(options, ensure_ascii=False), len(employee_ids), now),
+            (session_id, now, json.dumps(options, ensure_ascii=False), len(employee_ids), now, kind),
         )
         rows = [(session_id, eid) for eid in employee_ids]
         conn.executemany(
@@ -576,7 +593,7 @@ def get_active_sessions():
         rows = conn.execute(
             """
             SELECT session_id, created_at, status, options, total_count,
-                   completed_count, failed_count, paused_at
+                   completed_count, failed_count, paused_at, kind
               FROM deploy_sessions
              WHERE status IN ('running', 'paused')
              ORDER BY created_at DESC

@@ -27,7 +27,7 @@
   <line x1="546" y1="106" x2="594" y2="106" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
   <rect x="598" y="82" width="278" height="48" rx="4" fill="#f2f8f4" stroke="#8fbfa6"/>
   <text x="612" y="102" font-size="12" font-weight="bold" fill="#20262e">전수 확정 — 추정치 0</text>
-  <text x="612" y="120" font-size="11.5" fill="#5a6472">264만 문장 전량이 실측값</text>
+  <text x="612" y="120" font-size="11.5" fill="#5a6472">265만 문장 전량이 실측값</text>
 
   <!-- 2단계 -->
   <circle cx="64" cy="226" r="9" fill="#2f7a55"/>
@@ -54,12 +54,12 @@
   <rect x="290" y="310" width="256" height="72" rx="4" fill="#fafbfc" stroke="#d5d9de"/>
   <text x="304" y="330" font-size="12" fill="#3c4652">시험지 네 장 · 761건 채점</text>
   <text x="304" y="348" font-size="12" fill="#3c4652">무작위 400건 블라인드 판독</text>
-  <text x="304" y="368" font-size="12" fill="#3c4652">2025년 실배치 감사</text>
+  <text x="304" y="368" font-size="12" fill="#8b929c">2025년 실배치 감사 — 재현 불가로 제외</text>
   <line x1="546" y1="346" x2="594" y2="346" stroke="#5a6472" stroke-width="1.6" marker-end="url(#ar)"/>
   <rect x="598" y="310" width="278" height="72" rx="4" fill="#f2f8f4" stroke="#8fbfa6"/>
-  <text x="612" y="330" font-size="12" font-weight="bold" fill="#20262e">세 측정이 93~98% 구간에 수렴</text>
-  <text x="612" y="348" font-size="12" fill="#3c4652">93.5% · 97.7% · 약 96%</text>
-  <text x="612" y="368" font-size="11.5" fill="#8b929c">단, 셋 다 정답 주체는 사람이 아님</text>
+  <text x="612" y="330" font-size="12" font-weight="bold" fill="#20262e">두 측정이 93~98% 구간에 들어옴</text>
+  <text x="612" y="348" font-size="12" fill="#3c4652">93.5% · 97.7%</text>
+  <text x="612" y="368" font-size="11.5" fill="#8b929c">단, 둘 다 정답 주체는 사람이 아님</text>
 
   <!-- 4단계 -->
   <circle cx="64" cy="466" r="9" fill="#b8860b"/>
@@ -69,7 +69,7 @@
   <line x1="238" y1="466" x2="286" y2="466" stroke="#b8860b" stroke-width="1.6" marker-end="url(#arw)"/>
   <rect x="290" y="418" width="256" height="96" rx="4" fill="#fdf8ec" stroke="#e0cfa0"/>
   <text x="304" y="438" font-size="12" fill="#3c4652">① 400건 사람 재판독 — 약 2시간</text>
-  <text x="304" y="458" font-size="12" fill="#3c4652">② 2025년 표본 200건 신설 — 2~3시간</text>
+  <text x="304" y="458" font-size="12" fill="#3c4652">② 2025년 표본 200건 신설 — 미착수(소요 미산정)</text>
   <text x="304" y="478" font-size="12" fill="#3c4652">③ 검토 후보 5,596건 절차 승인</text>
   <text x="304" y="498" font-size="12" fill="#3c4652">④ 재발 방지 9개 조 채택</text>
   <line x1="546" y1="466" x2="594" y2="466" stroke="#b8860b" stroke-width="1.6" marker-end="url(#arw)"/>

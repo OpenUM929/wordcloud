@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 
                 demoStats.innerHTML = statsHTML;
-                demoResults.classList.remove('d-none');
+                demoResults.style.display = 'block';
             } else {
                 throw new Error(data.error);
             }

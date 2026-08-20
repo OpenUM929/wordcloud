@@ -126,7 +126,8 @@ def _write_batch_summary(processed_data_dir, batch_id, display_name,
             json.dump(summary, f, ensure_ascii=False, indent=2)
 
 
-def merge_batches(source_batch_ids, display_name='', new_batch_id=None, processed_data_dir=None):
+def merge_batches(source_batch_ids, display_name='', new_batch_id=None,
+                   processed_data_dir=None, delete_sources=False):
     """복수 배치를 하나의 통합 배치로 재라벨한다.
 
     Args:
@@ -134,10 +135,13 @@ def merge_batches(source_batch_ids, display_name='', new_batch_id=None, processe
         display_name: 통합 배치 표시 명칭
         new_batch_id: 통합 배치 ID를 강제 지정할 때 사용(생략 시 자동 생성, D-2)
         processed_data_dir: 물리 폴더 루트(생략 시 PROCESSED_DATA_DIR_PATH)
+        delete_sources: True면 원본 작업서 행 + 물리 폴더를 완전히 삭제한다
+            (13_04). False(기본)면 기존 동작대로 status='merged'로만 남긴다.
 
     Returns:
         {'success': True, 'batch_id': str, 'moved': int,
-         'employee_count': int, 'total_evaluations': int, 'sources': [...]}
+         'employee_count': int, 'total_evaluations': int, 'sources': [...],
+         'deleted_sources': bool}
 
     Raises:
         BatchMergeError: 입력 검증 실패(status_code 400/404)
@@ -248,13 +252,20 @@ def merge_batches(source_batch_ids, display_name='', new_batch_id=None, processe
             employee_count, employee_count, employee_count, total_evaluations,
         ))
 
-        # 8. 원본 작업서 status='merged'
+        # 8. 원본 작업서 처리 — delete_sources 분기 (13_04)
         placeholders = ','.join('?' * len(source_batch_ids))
-        conn.execute(f"""
-            UPDATE batch_work_orders
-               SET status = 'merged', updated_at = datetime('now','localtime')
-             WHERE batch_id IN ({placeholders})
-        """, tuple(source_batch_ids))
+        if delete_sources:
+            # batch_work_order_items는 4단계에서 이미 원본 행이 DELETE된 상태라
+            # 추가 조치 불요. 여기서는 작업서 레지스트리 행만 지운다.
+            conn.execute(f"""
+                DELETE FROM batch_work_orders WHERE batch_id IN ({placeholders})
+            """, tuple(source_batch_ids))
+        else:
+            conn.execute(f"""
+                UPDATE batch_work_orders
+                   SET status = 'merged', updated_at = datetime('now','localtime')
+                 WHERE batch_id IN ({placeholders})
+            """, tuple(source_batch_ids))
 
         # 9. batch_merges 이력 기록
         now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -279,6 +290,14 @@ def merge_batches(source_batch_ids, display_name='', new_batch_id=None, processe
     finally:
         conn.close()
 
+    if delete_sources:
+        # 트랜잭션 밖(커밋 후) 물리 폴더 삭제 — 실패해도 DB는 이미 정상 완료 상태이므로
+        # api_batch_delete와 동일하게 예외를 무시하고 API 전체는 성공으로 취급(13_04 R-3).
+        for bid in source_batch_ids:
+            src_dir = os.path.join(processed_data_dir, 'batch', bid)
+            if os.path.isdir(src_dir):
+                shutil.rmtree(src_dir, ignore_errors=True)
+
     return {
         'success': True,
         'batch_id': merged_batch_id,
@@ -286,4 +305,5 @@ def merge_batches(source_batch_ids, display_name='', new_batch_id=None, processe
         'employee_count': employee_count,
         'total_evaluations': total_evaluations,
         'sources': list(source_batch_ids),
+        'deleted_sources': bool(delete_sources),
     }
