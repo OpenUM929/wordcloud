@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR:-D:/dev/wordcloud}/wordcloud_project/scripts/dlp_guard.ps1\" -Hook 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "파일 일괄 삭제 점검 중"
+          }
+        ]
+      }
+    ]
+  }
+}

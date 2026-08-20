@@ -45,6 +45,21 @@
 
 ---
 
+## 🛡 파일 일괄 삭제 대비 (사내 보안 프로그램)
+
+2026-08-20 사내 프로그램이 `.html` `.txt` `.csv` `.png` 을 **확장자 단위로 전량 하드 삭제**했다(휴지통 우회, 본체 61 + `.clinerules` 56). `.git` 내부는 온전했다 → **커밋된 것만 산다.** 정책상 재발 전제.
+
+| 상황 | 행동 |
+|------|------|
+| 파일이 사라졌을 때 | `powershell -NoProfile -File wordcloud_project/scripts/dlp_guard.ps1 -Restore` — 본체+`.clinerules` 동시, **삭제분만** 복원(수정분 불가침) |
+| 점검 | 인자 없이 실행. 세션 시작 시 자동 실행되어 삭제 발견 시 경고 |
+| 신규 산출물 확장자 | 실행로그·리포트 `.txt`→`.md`, 표 데이터 `.csv`→`.jsonl`, 도식 `.png`→`.svg`. **생존이 실측된 확장자만 쓴다**(md·json·jsonl·py·js·css·svg·log) |
+| 확장자를 못 바꾸는 것 | 앱 템플릿 `.html`, 반입 원본 `.csv` → **생성 즉시 커밋**. 커밋할 수 없으면 `-Snapshot`(스윕 대상 밖 `.dlpbak` 아카이브) |
+
+> `wordcloud_project/outputs/` 의 생성 PNG 처럼 `.gitignore` 대상은 git 이 지키지 못한다. 재생성 불가한 자산을 그런 위치에 두지 않는다.
+
+---
+
 ## 📦 학습 데이터셋 누적 지침 (KoTE 파인튜닝)
 
 > 🔴 **데이터 도착·감정/리더십 작업 착수 시 반드시 [`RUNBOOK.md`](wordcloud_project/plans/_datasets/kote_finetune/RUNBOOK.md) 를 펴고 §2 체크리스트 → §누적 로그를 수행한다.** RUNBOOK 은 완료(DN) 개념이 없는 **상시 절차**이며, 이 누적 작업이 잊히지 않게 하는 단일 진입점이다.
