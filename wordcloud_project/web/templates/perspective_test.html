@@ -114,15 +114,30 @@ body {
     border-top: 1px solid #e9ecef;
     margin-top: 4px;
 }
+/* 25_01: 버튼 줄 옆에 붙어있던 안내/상태 문구를 버튼 아래 별도 영역으로 분리 */
+.action-row-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 3px 0 2px;
+}
+/* 25_01: 배치 이력 행은 어디를 눌러도 체크박스가 토글된다(_toggleBatchRow) — hover로 표시 */
+.batchHistoryRow:hover { background: #f5f6ff; }
 .btn-primary { background: #6366f1; color: white; border: none; padding: 6px 20px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
 .btn-primary:hover { background: #0069d9; }
 .btn-primary:disabled, .btn-success:disabled { opacity: 0.55; cursor: not-allowed; filter: grayscale(30%); }
+/* 20_10 후속: "전체 직원 대상" 체크 시 toggleAllEmployees()가 disabled 처리하는 대상 직원
+   콤보박스/입력창이 브라우저 기본 스타일만으로는 눈에 잘 안 띄어 명시 스타일 추가. */
+#employeeIdInput:disabled, #employeeSelect:disabled { background: #e9ecef; color: #999; cursor: not-allowed; opacity: 0.7; }
 .btn-secondary { background: #6c757d; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 12px; }
 .btn-secondary:hover { background: #5a6268; }
 .btn-success { background: #28a745; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 12px; }
 .btn-success:hover { background: #218838; }
 .btn-danger { background: #dc3545; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-#statusMsg { font-size: 13px; color: #666; margin-left: 8px; }
+/* 25_01(7차 수정): 제목 검사·배치 로드 안내·그래프 경고·일반 상태를 한 줄(#statusMsg)이
+   공유한다 — 줄마다 따로 두면 대부분 빈 채로 남는 줄이 생겨 이상해 보인다는 지적. 텍스트가
+   비어도 줄 높이가 유지되도록 고정 min-height는 유지한다. */
+#statusMsg { display: block; font-size: 13px; line-height: 16px; min-height: 16px; color: #666; }
 #statusMsg.error { color: #dc3545; }
 #resultArea {
     flex: 1;
@@ -249,8 +264,12 @@ body {
     <div class="selector-row">
         <div class="selector-box">
             <div class="label">① 대상 직원</div>
-            <!-- 20_10: 1.9만 명 드롭다운 대신 사번 직접 입력 + 서버 검색 제안.
-                 입력값은 항상 "사번"이다(참조 지점 전부가 .value를 사번으로 읽는다). -->
+            <!-- 20_10(2026-08-21 정정): 사번 직접 입력(서버 검색 제안)에 더해, 사용자 요청대로
+                 기존 콤보박스(select)도 함께 유지한다 — 둘 중 어느 쪽으로 골라도 결과는
+                 employeeIdInput.value(사번)에 반영되므로 기존 13개 참조 지점은 그대로 둔다. -->
+            <select id="employeeSelect" style="width:100%;box-sizing:border-box;margin-bottom:4px;" onchange="onEmployeeSelectPick(this.value)">
+                <option value="">콤보박스에서 선택…</option>
+            </select>
             <div style="position:relative;">
                 <input type="text" id="employeeIdInput" autocomplete="off" placeholder="사번 입력 (일부만 입력해도 검색)"
                        style="width:100%;box-sizing:border-box;">
@@ -288,7 +307,7 @@ body {
             <div class="label">② X축 (시간/회차)</div>
             <select id="rowFieldSelect" onchange="onRowFieldChange()"><option value="evaluation_date__year">평가 연도</option></select>
             <div class="options" id="rowValuesContainer">
-                <span style="font-size:12px;color:#999;text-align:center;">로딩...</span>
+                <span style="font-size:12px;color:#999;text-align:center;">배치 이력에서 배치를 체크하고 [선택된 배치 로드]를 누르면 표시됩니다</span>
             </div>
         </div>
 
@@ -349,12 +368,13 @@ body {
                     <span style="cursor:pointer;color:#999;" onclick="closeGraphOptions()">✕</span>
                 </div>
                 <label style="display:block;font-size:11px;color:#666;margin-bottom:2px;">비율 산출 지표</label>
-                <select id="graphMetric" style="width:100%;padding:4px;font-size:12px;margin-bottom:8px;">
+                <select id="graphMetric" style="width:100%;padding:4px;font-size:12px;margin-bottom:8px;" onchange="_onGraphMetricChange()">
                     <option value="sentence_cnt">긍정/부정 문장 수</option>
                     <option value="word_freq">긍정/부정 단어 수(빈도)</option>
                     <option value="word_uniq">긍정/부정 단어 종류 수</option>
                     <option value="word_weighted">감정 가중 단어량 (빈도 × 감정 강도)</option>
                     <option value="sentence_power">감정 강도 합</option>
+                    <option value="all">전체 선택 (5종 모두 생성)</option>
                 </select>
                 <label style="display:block;font-size:11px;color:#666;margin-bottom:2px;">표시 단위</label>
                 <select id="graphUnit" style="width:100%;padding:4px;font-size:12px;margin-bottom:8px;">
@@ -366,9 +386,13 @@ body {
             </div>
         </span>
         <button id="zipDownloadBtn" class="btn-secondary" style="display:none;margin-left:8px;" onclick="downloadDeployZip()">⬇️ 결과물 ZIP</button>
-        <span id="statusMsg"></span>
-        <span id="batchTitleStatus" style="font-size:12px;margin-left:8px;white-space:nowrap;"></span>
         <span style="margin-left:auto;"></span>
+    </div>
+    <!-- 25_01(7차 수정): 세 줄로 나뉘어 있으면 대부분 비어 보이는 줄이 생겨 이상해 보인다는
+         지적 — 한 줄만 두고 모든 안내(제목 검사·배치 로드 필요·그래프 경고·일반 상태)를
+         이 한 줄이 돌아가며 표시하도록 통합. -->
+    <div class="action-row-messages">
+        <span id="statusMsg" style="color:#dc3545;">먼저 배치를 체크하고 [선택된 배치 로드]를 눌러주세요</span>
     </div>
 </div>
 
@@ -378,12 +402,15 @@ body {
         <span style="font-size:12px;font-weight:600;margin-left:4px;">배치 이력</span>
         <span id="batchHistorySummary" style="font-size:11px;color:#888;margin-left:8px;"></span>
         <span id="batchScopeSummary" style="font-size:11px;color:#6366f1;margin-left:8px;"></span>
+        <span id="batchLoadBadge" style="font-size:11px;margin-left:6px;font-weight:600;"></span>
+        <span id="batchScopeSpinner" style="display:none;margin-left:6px;width:12px;height:12px;border:2px solid #e5e7eb;border-top-color:#6366f1;border-radius:50%;vertical-align:middle;animation:globalBusySpin 0.8s linear infinite;"></span>
         <span style="margin-left:auto;display:flex;gap:4px;">
+            <button id="applyBatchScopeBtn" class="btn-primary" style="padding:1px 10px;font-size:10px;" onclick="event.stopPropagation();applyBatchScope()">선택된 배치 로드</button>
             <button class="btn-secondary" style="padding:1px 8px;font-size:10px;" onclick="event.stopPropagation();loadBatchHistory()">새로고침</button>
         </span>
     </div>
     <div class="emp-content" style="max-height:200px;overflow-y:auto;">
-        <div style="padding:4px 8px;font-size:10px;color:#888;">체크한 배치만 분석 대상 데이터로 사용합니다(X축 설정과 별개). 하나도 체크하지 않으면 전체 배치를 사용합니다.</div>
+        <div style="padding:4px 8px;font-size:10px;color:#888;">체크한 배치만 분석 대상 데이터로 사용합니다(X축 설정과 별개). 하나도 체크하지 않으면 전체 배치를 사용합니다. 체크만으로는 반영되지 않으며, [선택된 배치 로드] 버튼을 눌러야 적용됩니다.</div>
         <div id="batchHistoryList" style="padding:6px;font-size:12px;color:#999;">로드 중...</div>
     </div>
 </div>
@@ -546,7 +573,13 @@ body {
 let _meta = null;
 let _csvEmployeeIds = null;
 let _selectedBatchIds = [];  // 13_05: 빈 배열 = 전체(배치 범위 필터 없음)
-let _batchScopeDebounceTimer = null;
+// 25_01: 현재 _selectedBatchIds 조합이 "선택된 배치 로드" 버튼으로 명시적으로 로드된 적 있는지.
+// 페이지 진입 시 어떤 데이터도 자동으로 받아오지 않는다(window.onload 참조) — 이 플래그가
+// true가 되는 유일한 경로는 사용자가 "선택된 배치 로드"를 눌러 성공했을 때뿐이다.
+let _batchScopeAppliedOnce = false;
+// 25_01(2차 수정): 마지막으로 성공 로드된 배치 ID 목록(테이블 행별 "로드됨" 표시용).
+// 체크박스를 바꿔도 즉시 바뀌지 않고, 다음 성공적인 "선택된 배치 로드" 클릭 시에만 교체된다.
+let _loadedBatchIds = [];
 
 const _origLog = console.log.bind(console);
 const _origError = console.error.bind(console);
@@ -557,26 +590,68 @@ function pageLog(type, ...args) {
 console.log = function(...args) { pageLog('log', ...args); };
 console.error = function(...args) { pageLog('error', ...args); };
 
-window.onload = loadMeta;
+// 25_01(재수정): window.onload=loadMeta()가 진입 즉시 "전체 배치" 데이터를 조용히 받아와
+// X축 드롭다운 등을 채우던 것 자체가 "로드 없이 이미 기본 데이터를 호출한다"는 지적의 원인이었다.
+// 자동 호출을 완전히 제거 — 어떤 데이터도 "선택된 배치 로드" 버튼을 눌러야만 받아온다.
+window.onload = function() { _updateBatchLoadBadge(); };
+
+// 20_10 후속: 배치 범위(체크박스 조합)별 /api/perspective/meta 응답 캐시.
+// 콤보박스 최대 1.9만 개 재구성이 매번 fetch+렌더로 반복되던 것을 같은 범위 재방문 시 렌더만 재사용하도록 완화.
+// 키는 선택된 배치 ID 집합을 정렬해 정규화(순서 무관 동일 키). 새로고침 시 자연 소멸(영속화 불필요).
+let _metaCache = new Map();
+
+function _metaCacheKey() {
+    return JSON.stringify([..._selectedBatchIds].sort());
+}
+
+// 20_10 후속 진단: _restorePageState()는 "이전 세션 복원"용인데 가드가 없어
+// 배치 체크박스를 바꿀 때마다(loadMeta() 재호출마다) 매번 재실행되며, onRowFieldChange()가
+// 새 배치 범위로 이미 그린 X축 체크 상태를 30ms 뒤 저장된 예전 값으로 덮어써
+// "X축이 늦게 연동됨/버벅임"으로 체감됐다. 페이지 최초 진입 1회만 복원하도록 가드.
+let _pageStateRestoredOnce = false;
 
 async function loadMeta() {
     try {
         // 20_09: 응답 대기 / JSON 파싱 / 화면 조립을 나눠 잰다(콘솔 [PERF]).
         // fetch 자체는 perf_probe가 자동으로 재므로 여기선 그 이후 구간을 본다.
         if (window.__perf) __perf.mark('loadMeta:total');
-        const r = await fetch('/api/perspective/meta', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(_selectedBatchIds.length ? {batch_ids: _selectedBatchIds} : {})
-        });
-        if (window.__perf) __perf.mark('loadMeta:parse');
-        const d = await r.json();
-        if (window.__perf) __perf.since('loadMeta:parse', 'JSON 파싱');
-        if (!d.success) { setStatus('메타 로드 실패', true); return; }
+        const _cacheKey = _metaCacheKey();
+        let d;
+        if (_metaCache.has(_cacheKey)) {
+            d = _metaCache.get(_cacheKey);
+            if (window.__perf) __perf.since('loadMeta:total', '캐시 적중(fetch 생략)');
+        } else {
+            const r = await fetch('/api/perspective/meta', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(_selectedBatchIds.length ? {batch_ids: _selectedBatchIds} : {})
+            });
+            if (window.__perf) __perf.mark('loadMeta:parse');
+            d = await r.json();
+            if (window.__perf) __perf.since('loadMeta:parse', 'JSON 파싱');
+            if (!d.success) { _setBatchLoadBadgeText('❌ 메타 로드 실패', true); return false; }
+            _metaCache.set(_cacheKey, d);
+        }
         _meta = d;
         if (window.__perf) __perf.mark('loadMeta:render');
 
-        // 20_10: 대상 직원은 이제 입력창(employeeIdInput)+서버 검색이라 1.9만 개 option을
-        // 만들지 않는다. _meta.employees 는 「전체 직원 대상」 열거·X축 산출에 계속 쓰인다.
+        // 20_10(2026-08-21 정정): 입력창(employeeIdInput)+서버 검색과 별개로, 사용자가
+        // 유지를 요청한 콤보박스(employeeSelect)도 _meta.employees로 채운다. DocumentFragment로
+        // 한 번에 붙여 1.9만 개 option 삽입 시 반복 reflow를 피한다.
+        const empSel = document.getElementById('employeeSelect');
+        if (empSel) {
+            empSel.innerHTML = '<option value="">콤보박스에서 선택…</option>';
+            const frag = document.createDocumentFragment();
+            (d.employees || []).forEach(e => {
+                const o = document.createElement('option');
+                o.value = e.employee_id;
+                // 20_10 §8-3: 가명→원본 사번 역변환 실패(employee_id_real 없음) 항목은 경고 표시
+                const unresolved = !e.employee_id_real;
+                o.textContent = (unresolved ? '⚠ ' : '') + `${e.employee_name || e.employee_id} (${e.department || '-'}) ${e.evaluation_count || 0}건`;
+                if (unresolved) o.title = '원본 사번 매핑을 찾지 못했습니다(가명이 표시 중일 수 있음)';
+                frag.appendChild(o);
+            });
+            empSel.appendChild(frag);
+        }
 
         const rowSel = document.getElementById('rowFieldSelect');
         rowSel.innerHTML = '';
@@ -600,11 +675,9 @@ async function loadMeta() {
             __perf.since('loadMeta:render', '직원 ' + empCount + '명');
             __perf.since('loadMeta:total', '요청~조립 전체');
         }
-        if (empCount === 0) {
-            setStatus('배치 데이터 없음 — CSV를 업로드하여 배치를 생성하세요.');
-        } else {
-            setStatus(`${empCount}명 직원, ${d.batch_count}개 배치, ${d.total_evaluations}개 평가 로드됨`);
-        }
+        // 25_01(4차 수정): 이 결과 메시지는 더 이상 #statusMsg(버튼 줄 아래)가 아니라
+        // "배치 이력" 패널의 batchLoadBadge에 표시한다(applyBatchScope()가 성공 시 호출).
+        // 로드는 이 화면에서 오직 그 버튼을 통해서만 일어나므로, 결과도 그 버튼 옆에 있어야 한다.
 
         // 이전 분석 세션 복원 배너
         try {
@@ -612,17 +685,22 @@ async function loadMeta() {
             if (_savedRun) _showRestoreBanner(JSON.parse(_savedRun));
         } catch(e) {}
 
-        // 페이지 상태 자동 복원
-        try {
-            const _savedState = sessionStorage.getItem('pt_page_state');
-            if (_savedState) await _restorePageState(JSON.parse(_savedState));
-        } catch(e) {}
+        // 페이지 상태 자동 복원 — 최초 1회만(배치 범위 변경으로 인한 재호출 시 재실행 금지)
+        if (!_pageStateRestoredOnce) {
+            _pageStateRestoredOnce = true;
+            try {
+                const _savedState = sessionStorage.getItem('pt_page_state');
+                if (_savedState) await _restorePageState(JSON.parse(_savedState));
+            } catch(e) {}
+        }
 
         // 복원 후 현재 상태 저장 (초기 상태 캡처)
         _autoSavePageState();
+        return true;
     } catch(e) {
         console.error('Meta load failed:', e);
-        setStatus('메타 로드 실패', true);
+        _setBatchLoadBadgeText('❌ 메타 로드 실패', true);
+        return false;
     }
 }
 
@@ -664,6 +742,23 @@ function _toggleGraphYearRangeEnabled() {
     if (sel) sel.disabled = !(cb && cb.checked);
 }
 
+// 12_01 §11-2 🟡 승인 항목: graphMetric이 "전체 선택"이면 제출용 저장의 "그래프 포함"을
+// 비활성화한다(전체 선택 상태에서는 세션당-지표-1개인 20_03 그래프 포함 스키마와 맞지 않음).
+function _onGraphMetricChange() {
+    const metricSel = document.getElementById('graphMetric');
+    const cb = document.getElementById('includeGraphInDeploy');
+    const isAll = !!(metricSel && metricSel.value === 'all');
+    if (cb) {
+        cb.disabled = isAll;
+        if (isAll && cb.checked) {
+            cb.checked = false;
+            _toggleGraphYearRangeEnabled();
+        }
+    }
+    // 25_01(7차 수정): 별도 줄 대신 공유 상태줄(statusMsg)에 표시.
+    if (isAll) setStatus('「전체 선택」 상태에서는 제출용 저장에 그래프를 포함할 수 없습니다 — 단일 지표를 선택하세요', true);
+}
+
 // 20_03: 제출용 저장에 그래프를 포함할 때, 화면 ②(워드클라우드용 연도 체크박스)와 별도로
 // 그래프에 반영할 연도 범위를 계산한다. rangeSel: 'all' | '1' | '2' | '3'
 function _computeGraphYearValues(rangeSel) {
@@ -683,6 +778,9 @@ function _computeGraphYearValues(rangeSel) {
 function setStatus(msg, isError) {
     const el = document.getElementById('statusMsg');
     el.textContent = msg;
+    // 25_01(7차 수정): #statusMsg가 이제 여러 함수(_doBatchTitleCheck 등)와 공유하는 단일 줄이라,
+    // 매번 인라인 색상을 명시적으로 씌워서 이전 호출이 남긴 색이 새 메시지에 묻어나지 않게 한다.
+    el.style.color = isError ? '#dc3545' : '#666';
     el.className = isError ? 'error' : '';
 }
 
@@ -763,6 +861,8 @@ function toggleAllEmployees() {
     const cb = document.getElementById('allEmployeesCheck');
     const sel = document.getElementById('employeeIdInput');
     sel.disabled = cb.checked;
+    const combo = document.getElementById('employeeSelect');
+    if (combo) combo.disabled = cb.checked;
     if (cb.checked) _hideEmployeeSuggest();
 }
 
@@ -797,10 +897,15 @@ function _renderEmployeeSuggest(items) {
         box.style.display = 'block';
         return;
     }
-    box.innerHTML = items.map((e, i) =>
-        `<div class="emp-suggest-item" data-idx="${i}" style="padding:5px 8px;font-size:12px;cursor:pointer;border-bottom:1px solid #f0f0f0;">
-            <strong>${e.employee_id}</strong> <span style="color:#666;">${_empLabel(e)}</span>
-         </div>`).join('');
+    box.innerHTML = items.map((e, i) => {
+        // 20_10 §8-3: 가명→원본 사번 역변환 실패(employee_id_real 없음) 항목은 경고 표시
+        const unresolved = !e.employee_id_real;
+        const warnAttr = unresolved ? ' title="원본 사번 매핑을 찾지 못했습니다(가명이 표시 중일 수 있음)"' : '';
+        const bg = unresolved ? 'background:#fff8e1;' : '';
+        return `<div class="emp-suggest-item" data-idx="${i}" style="padding:5px 8px;font-size:12px;cursor:pointer;border-bottom:1px solid #f0f0f0;${bg}"${warnAttr}>
+            <strong>${unresolved ? '⚠ ' : ''}${e.employee_id}</strong> <span style="color:#666;">${_empLabel(e)}</span>
+         </div>`;
+    }).join('');
     box.style.display = 'block';
     box.querySelectorAll('.emp-suggest-item').forEach(el => {
         el.onmousedown = (ev) => {     // blur보다 먼저 잡히도록 mousedown 사용
@@ -814,9 +919,19 @@ function _pickEmployee(e) {
     if (!e) return;
     const input = document.getElementById('employeeIdInput');
     input.value = e.employee_id;      // 입력값은 항상 사번(참조 지점 호환)
+    const combo = document.getElementById('employeeSelect');
+    if (combo) combo.value = e.employee_id;   // 콤보박스 표시도 함께 동기화
     _setEmployeeInfo(_empLabel(e), '#28a745');
     _hideEmployeeSuggest();
     if (typeof _autoSavePageState === 'function') _autoSavePageState();
+}
+
+// 20_10(2026-08-21 정정): 콤보박스(employeeSelect) 선택도 검색 제안 선택과 동일하게
+// _pickEmployee()로 처리해 입력값·정보 라벨·상태 저장을 한 경로로 통일한다.
+function onEmployeeSelectPick(empId) {
+    if (!empId) return;
+    const found = (_meta.employees || []).find(e => e.employee_id === empId);
+    _pickEmployee(found || {employee_id: empId, employee_name: '', department: '', evaluation_count: 0});
 }
 
 async function _searchEmployees(q) {
@@ -1082,6 +1197,7 @@ async function confirmIdInput() {
         document.getElementById('csvStatus').textContent = `선택: ${_csvEmployeeIds.length}명`;
         document.getElementById('idInputModal').classList.remove('open');
         document.getElementById('employeeIdInput').disabled = true;
+        document.getElementById('employeeSelect').disabled = true;
         document.getElementById('allEmployeesCheck').disabled = true;
         _autoSavePageState();
 
@@ -1108,6 +1224,7 @@ function cancelIdInput() {
     document.getElementById('idInputStatus').style.color = '#888';
     _csvEmployeeIds = null;
     document.getElementById('employeeIdInput').disabled = false;
+        document.getElementById('employeeSelect').disabled = false;
     document.getElementById('allEmployeesCheck').disabled = false;
     _autoSavePageState();
 }
@@ -1117,10 +1234,21 @@ function _doBatchTitleCheck() {
     clearTimeout(_batchTitleDebounce);
     _batchTitleDebounce = setTimeout(async () => {
         const val = (document.getElementById('batchTitleInput')?.value || '').trim();
-        const status = document.getElementById('batchTitleStatus');
+        // 25_01(7차 수정): 별도 batchTitleStatus 줄을 없애고 statusMsg 한 줄을 공유한다.
+        const status = document.getElementById('statusMsg');
         const btnGen = document.getElementById('btnGenerateMatrix');
         const btnSave = document.getElementById('btnSaveDeploy');
         const btnGraph = document.getElementById('btnSaveGraph');
+        // 25_01(6차 수정=5차 되돌림): 사용자가 이 문구를 배치 명칭 입력창 바로 아래(이 자리)에
+        // 명시적으로 원함 — 빼면 그 자리가 빈 채로 남아 어색하다는 지적. 원위치.
+        if (!_batchScopeAppliedOnce) {
+            status.textContent = '먼저 배치를 체크하고 [선택된 배치 로드]를 눌러주세요';
+            status.style.color = '#dc3545';
+            if (btnGen) btnGen.disabled = true;
+            if (btnSave) btnSave.disabled = true;
+            if (btnGraph) btnGraph.disabled = true;
+            return;
+        }
         if (!val) {
             status.textContent = '배치 명칭을 입력해주세요';
             status.style.color = '#dc3545';
@@ -1403,6 +1531,7 @@ async function selectBatchTitleForRestore(title) {
         document.getElementById('csvStatus').textContent = `✅ "${title}" — ${empIds.length}명 복원됨`;
         document.getElementById('allEmployeesCheck').checked = false;
         document.getElementById('employeeIdInput').disabled = true;
+        document.getElementById('employeeSelect').disabled = true;
         _autoSavePageState();
 
         // 설정 복원 (첫 번째 항목 기준)
@@ -1504,6 +1633,7 @@ async function _restoreLastMatrix() {
         document.getElementById('csvStatus').textContent = `✅ ${params.csvIds.length}명 (복원됨)`;
     } else if (params.empId) {
         document.getElementById('employeeIdInput').value = params.empId;
+        { const _sel = document.getElementById('employeeSelect'); if (_sel) _sel.value = params.empId; }
     }
 
     // X축 복원
@@ -1580,11 +1710,14 @@ async function _restorePageState(params) {
         document.getElementById('csvStatus').textContent = `✅ ${params.csvIds.length}명 (복원됨)`;
         document.getElementById('allEmployeesCheck').checked = false;
         document.getElementById('employeeIdInput').disabled = true;
+        document.getElementById('employeeSelect').disabled = true;
         document.getElementById('allEmployeesCheck').disabled = true;
     } else if (params.empId) {
         document.getElementById('allEmployeesCheck').checked = false;
         document.getElementById('employeeIdInput').disabled = false;
+        document.getElementById('employeeSelect').disabled = false;
         document.getElementById('employeeIdInput').value = params.empId;
+        { const _sel = document.getElementById('employeeSelect'); if (_sel) _sel.value = params.empId; }
     }
 
     // X축 복원
@@ -2032,6 +2165,7 @@ function toggleGraphOptions() {
     const selUnit = document.getElementById('graphUnit');
     if (savedMetric && selMetric) selMetric.value = savedMetric;
     if (savedUnit && selUnit) selUnit.value = savedUnit;
+    _onGraphMetricChange();
     _renderGraphRowsSummary();
     panel.style.display = 'block';
 }
@@ -2054,15 +2188,49 @@ async function saveGraph(resumeSessionId = null) {
     const csvIds = _csvEmployeeIds;
     const allEmp = document.getElementById('allEmployeesCheck').checked;
     const empId = document.getElementById('employeeIdInput').value;
-    const rowField = document.getElementById('rowFieldSelect').value;
 
     if (!allEmp && !empId && !csvIds) { setStatus('직원을 선택하세요.', true); return; }
 
-    const metric = document.getElementById('graphMetric').value;
+    const metricSel = document.getElementById('graphMetric').value;
     const unit = document.getElementById('graphUnit').value;
-    localStorage.setItem('graph_metric', metric);
+    localStorage.setItem('graph_metric', metricSel);
     localStorage.setItem('graph_unit', unit);
     closeGraphOptions();
+
+    if (metricSel !== 'all') {
+        const data = await _saveGraphOneMetric(metricSel, unit, resumeSessionId);
+        if (data) {
+            renderGraphComplete(data);
+            _doBatchTitleCheck();
+        }
+        return;
+    }
+
+    // 12_01 §11-2: "전체 선택" — 지표 5종을 직렬로(Promise.all 금지, for...of + await) 순차 생성한다.
+    // 지표마다 별도 deploy-session이 생성되므로 강제종료 후 재개는 지원하지 않는다(§11-2 항목5).
+    if (resumeSessionId) {
+        setStatus('"전체 선택" 모드는 세션 재개를 지원하지 않습니다 — 처음부터 다시 시작하세요.', true);
+        return;
+    }
+
+    const metricKeys = Object.keys(GRAPH_METRIC_LABELS);
+    const resultsByMetric = [];
+    for (let i = 0; i < metricKeys.length; i++) {
+        const key = metricKeys[i];
+        const data = await _saveGraphOneMetric(key, unit, null, {index: i + 1, total: metricKeys.length});
+        if (data) resultsByMetric.push(data);
+    }
+    renderGraphCompleteAll(resultsByMetric);
+    _doBatchTitleCheck();
+}
+
+// 12_01 §11-2: 지표 1개 기준의 기존 saveGraph() 본문을 그대로 추출한 내부 함수.
+// "전체 선택" 모드는 이 함수를 지표별로 순차 호출한다(단일 지표 흐름은 saveGraph()가 1회만 호출 — 회귀 없음).
+async function _saveGraphOneMetric(metric, unit, resumeSessionId = null, progressPrefix = null) {
+    const csvIds = _csvEmployeeIds;
+    const allEmp = document.getElementById('allEmployeesCheck').checked;
+    const empId = document.getElementById('employeeIdInput').value;
+    const rowField = document.getElementById('rowFieldSelect').value;
 
     wcPresetLoad();
     const rowValues = getSelectedRowValues();
@@ -2088,6 +2256,7 @@ async function saveGraph(resumeSessionId = null) {
     };
 
     const resultArea = document.getElementById('resultArea');
+    const metricLabelForProgress = GRAPH_METRIC_LABELS[metric] || metric;
     let statusLines = [];
     let doneCount = 0;
     let failCount = 0;
@@ -2109,7 +2278,9 @@ async function saveGraph(resumeSessionId = null) {
     function renderProgress(current) {
         const pct = total > 0 ? current / total * 100 : 0;
         const barColor = pct >= 100 ? '#00b894' : '#6366f1';
-        let h = '<div class="summary-bar"><span><strong>그래프 저장 중...</strong></span>';
+        // 12_01 §11-2: "전체 선택" 모드에서는 상단 라벨에 "지표 N/5 — {지표 라벨}"을 덧붙인다.
+        const prefixTxt = progressPrefix ? `지표 ${progressPrefix.index}/${progressPrefix.total} (${metricLabelForProgress}) — ` : '';
+        let h = '<div class="summary-bar"><span><strong>' + prefixTxt + '그래프 저장 중...</strong></span>';
         h += `<span>${current}/${total} (${Math.round(pct)}%)</span></div>`;
         h += `<div class="progress-container"><div class="deploy-bar" style="width:${pct}%;background:${barColor};"></div>`;
         h += `<div class="progress-text${pct>50?' light':''}">${current}/${total} (${Math.round(pct)}%)</div></div>`;
@@ -2127,6 +2298,10 @@ async function saveGraph(resumeSessionId = null) {
         statusLines.forEach(s => { h += '<div class="' + s.cls + '">' + s.msg + '</div>'; });
         h += '</div>';
         resultArea.innerHTML = h;
+    }
+
+    if (progressPrefix) {
+        addLine(`▶ 지표 ${progressPrefix.index}/${progressPrefix.total} — ${metricLabelForProgress} 시작`, 'processing');
     }
 
     // 0619_03 교훈: 전면 차단 오버레이는 쓰지 않는다. 버튼만 비활성화하고 진행률은 노출한다.
@@ -2185,7 +2360,7 @@ async function saveGraph(resumeSessionId = null) {
 
             if (employeeIds.length === 0) {
                 setStatus('처리할 직원이 없습니다.', true);
-                return;
+                return null;
             }
             total = employeeIds.length;
 
@@ -2198,7 +2373,7 @@ async function saveGraph(resumeSessionId = null) {
             if (!startData.success) {
                 setStatus('세션 생성 실패: ' + (startData.error || ''), true);
                 resultArea.innerHTML = '<p style="color:#dc3545;padding:20px;">' + (startData.error || '세션 생성 실패') + '</p>';
-                return;
+                return null;
             }
             sessionId = startData.session_id;
             total = startData.total;
@@ -2304,8 +2479,9 @@ async function saveGraph(resumeSessionId = null) {
 
     window._lastDeploySessionId = sessionId;
     // 재개 시 options가 세션 저장값으로 복원될 수 있으므로 완료 요약도 실제 처리에 쓰인 값을 반영
-    renderGraphComplete({success: successData, fail: failData, total, metric: options.metric, unit: options.unit});
-    _doBatchTitleCheck();
+    // (단일 지표 모드는 이 값을 saveGraph()가 그대로 renderGraphComplete()에 전달하고,
+    //  "전체 선택" 모드는 saveGraph()가 지표별로 모아 renderGraphCompleteAll()에 전달한다)
+    return {success: successData, fail: failData, total, metric: options.metric, unit: options.unit};
 }
 
 function renderGraphComplete(data) {
@@ -2368,6 +2544,114 @@ function renderGraphComplete(data) {
             zipBtn.style.display = 'none';
         }
     }
+}
+
+// 12_01 §11-2 재설계(2026-08-24, 사용자 지시): "전체 선택" 완료 요약 — 지표를 기준으로 사람을 나열하지 않고,
+// 워드클라우드 제출용 저장(_buildEmployeeResultHtml)과 동일하게 "직원"을 기준 단위로 접이식 섹션을 만들고,
+// 그 안에 지표별(문장수/비율/빈도/가중/강도 최대 5개) 그래프를 한 행에 나열한다.
+function renderGraphCompleteAll(resultsByMetric) {
+    const resultArea = document.getElementById('resultArea');
+    const totalSuccess = resultsByMetric.reduce((s, r) => s + (r.success || []).length, 0);
+    const totalFail = resultsByMetric.reduce((s, r) => s + (r.fail || []).length, 0);
+
+    // 지표별 결과를 직원 기준으로 재구성한다.
+    const byEmp = new Map();
+    const empOrder = [];
+    function _getEmp(empId, name) {
+        if (!byEmp.has(empId)) {
+            byEmp.set(empId, {employee_id: empId, name: name || empId, metrics: [], fails: []});
+            empOrder.push(empId);
+        }
+        return byEmp.get(empId);
+    }
+    resultsByMetric.forEach(function(data) {
+        const metricLabel = GRAPH_METRIC_LABELS[data.metric] || data.metric;
+        const unitLabel = data.unit === 'pct' ? '백분율(%)' : '수량';
+        (data.success || []).forEach(function(r) {
+            const emp = _getEmp(r.employee_id || r.name, r.name);
+            emp.metrics.push({
+                metricLabel: metricLabel, unitLabel: unitLabel, graph: r.graph,
+                rows: r.rows || [], skipped_rows: r.skipped_rows || []
+            });
+        });
+        (data.fail || []).forEach(function(f) {
+            const emp = _getEmp(f.employee_id, f.name);
+            emp.fails.push({metricLabel: metricLabel, error: f.error || '실패'});
+        });
+    });
+
+    let h = '<div class="summary-bar"><span><strong>그래프 저장 완료 (전체 선택 · '
+          + resultsByMetric.length + '개 지표 · ' + empOrder.length + '명)</strong></span>';
+    h += '<span>성공 ' + totalSuccess + ' / 실패 ' + totalFail + '</span></div>';
+
+    if (empOrder.length === 0) {
+        h += '<p style="padding:20px;color:#dc3545;">지표별 처리에 모두 실패했습니다.</p>';
+    }
+
+    empOrder.forEach(function(empId, idx) {
+        const emp = byEmp.get(empId);
+        const sectionId = 'graphAllEmpSection' + idx;
+
+        h += '<div style="border:1px solid #ddd;border-radius:6px;margin-bottom:8px;overflow:hidden;">';
+        // 워드클라우드 제출용 저장 결과(_buildEmployeeResultHtml, emp-header/.emp-content 178-190행)와
+        // 동일한 패턴으로 기본 접힘 시작 — .emp-content는 CSS 기본값이 display:none, .open일 때만 block.
+        // (주의: 이 div에 inline display를 함께 주면 인라인이 클래스보다 항상 우선해 토글이 깨진다 — 절대 추가하지 말 것)
+        h += '<div class="emp-header" onclick="var c=this.nextElementSibling;c.classList.toggle(\'open\');this.querySelector(\'.arrow\').classList.toggle(\'open\')" '
+           + 'style="justify-content:space-between;">';
+        h += '<span style="display:flex;align-items:center;gap:8px;">';
+        h += '<span class="arrow">▶</span>';
+        h += '<span class="emp-name">' + escapeHtml(emp.name) + '</span>';
+        if (emp.employee_id) {
+            h += '<span class="emp-info">(' + escapeHtml(emp.employee_id) + ')</span>';
+        }
+        h += '</span>';
+        h += '<span style="font-size:11px;color:#666;">그래프 ' + emp.metrics.length + '/' + resultsByMetric.length
+           + (emp.fails.length ? ' · 실패 ' + emp.fails.length : '') + '</span>';
+        h += '</div>';
+
+        h += '<div id="' + sectionId + '" class="emp-content">';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:10px;padding:10px;">';
+        emp.metrics.forEach(function(m) {
+            const rowsTxt = (m.rows || []).join(', ');
+            h += '<div style="border:1px solid #ddd;border-radius:6px;padding:8px;width:220px;">';
+            h += '<div style="font-size:11px;font-weight:700;color:#555;margin-bottom:4px;">' + m.metricLabel + ' · ' + m.unitLabel + '</div>';
+            h += '<a href="' + m.graph + '" target="_blank"><img src="' + m.graph + '" style="width:100%;border:1px solid #eee;border-radius:4px;cursor:pointer;" onclick="event.preventDefault();openModal(\'' + m.graph + '\')"></a>';
+            h += '<div style="font-size:11px;color:#666;margin-top:4px;">연도: ' + rowsTxt + '</div>';
+            if (m.skipped_rows && m.skipped_rows.length > 0) {
+                const sk = m.skipped_rows.map(function(s) { return s.row + '(' + s.reason + ')'; }).join(', ');
+                h += '<div style="font-size:11px;color:#dc3545;">값 없음: ' + sk + '</div>';
+            }
+            h += '</div>';
+        });
+        h += '</div>';
+
+        if (emp.fails.length > 0) {
+            h += '<div class="deploy-status" style="padding:0 10px 10px;">';
+            emp.fails.forEach(function(f) {
+                h += '<div class="fail">❌ ' + f.metricLabel + ' - ' + f.error + '</div>';
+            });
+            h += '</div>';
+        }
+
+        if (emp.metrics.length === 0 && emp.fails.length === 0) {
+            h += '<p style="padding:10px;color:#888;">생성된 그래프가 없습니다.</p>';
+        }
+
+        h += '</div>'; // .emp-content 종료
+        h += '</div>'; // 섹션 외곽 border div 종료
+    });
+
+    resultArea.innerHTML = h;
+    setStatus('그래프 저장 완료 (전체 선택 · 성공 ' + totalSuccess + ' / 실패 ' + totalFail + ')');
+
+    document.body.style.height = 'auto';
+    document.body.style.overflow = 'auto';
+    resultArea.style.flex = 'none';
+    resultArea.style.overflow = 'visible';
+
+    // 전체 선택 모드는 지표마다 별도 deploy-session이라 단일 ZIP 다운로드 대상이 없다(마지막 세션만 남음) — 숨김.
+    const zipBtn = document.getElementById('zipDownloadBtn');
+    if (zipBtn) zipBtn.style.display = 'none';
 }
 
 function showDeployToast(message, linkUrl) {
@@ -3708,10 +3992,14 @@ async function loadBatchHistory() {
         if (window.__perf) __perf.mark('loadBatchHistory:total');
         const r = await fetch('/api/perspective/batches', { credentials: 'include' });
         const d = await r.json();
+        // 20_10 후속: 배치 목록이 갱신됐을 수 있으므로(생성/삭제/명칭변경) meta 캐시를 안전하게 전량 무효화.
+        // deleteBatch·editBatchId도 성공 시 loadBatchHistory()를 호출하므로 여기서 한 번에 처리된다.
+        if (d.success) _metaCache.clear();
         if (!d.success || !d.batches || d.batches.length === 0) {
             if (window.__perf) __perf.since('loadBatchHistory:total', '이력 없음');
             list.innerHTML = '<p style="color:#999;padding:10px;text-align:center;">배치 이력이 없습니다.</p>';
             summary.textContent = '(없음)';
+            _updateBatchLoadBadge();
             return;
         }
         const info = d.batch_info || {};
@@ -3720,24 +4008,27 @@ async function loadBatchHistory() {
         const _liveIds = new Set(d.batches.map(b => b.batch_id));
         _selectedBatchIds = _selectedBatchIds.filter(id => _liveIds.has(id));
         let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
-        html += '<thead><tr style="background:#f0f0f0;"><th style="padding:4px 6px;"></th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">명칭</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">배치 ID</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">생성일</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">직원</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">평가</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;"></th></tr></thead><tbody>';
+        html += '<thead><tr style="background:#f0f0f0;"><th style="padding:4px 6px;"></th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">명칭</th><th style="padding:4px 6px;text-align:left;border-bottom:1px solid #ddd;">배치 ID</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">생성일</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">직원</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">평가</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;">상태</th><th style="padding:4px 6px;text-align:center;border-bottom:1px solid #ddd;"></th></tr></thead><tbody>';
         d.batches.forEach(b => {
             var dn = b.display_name || '';
             function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
             var dnDisplay = escHtml(dn ? dn : b.batch_id);
             var checked = _selectedBatchIds.indexOf(b.batch_id) !== -1 ? 'checked' : '';
-            html += `<tr><td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;"><input type="checkbox" class="batchScopeCheckbox" value="${b.batch_id}" ${checked} onchange="onBatchScopeChange()"></td>`;
+            html += `<tr class="batchHistoryRow" style="cursor:pointer;" onclick="_toggleBatchRow(event, '${b.batch_id}')"><td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;"><input type="checkbox" class="batchScopeCheckbox" value="${b.batch_id}" ${checked} onchange="onBatchScopeChange()"></td>`;
             html += `<td style="padding:4px 6px;border-bottom:1px solid #eee;"><span id="dn-${b.batch_id}">${dnDisplay}</span> <button class="btn-sm" style="padding:1px 4px;font-size:10px;margin-left:4px;" onclick="editDisplayName('${b.batch_id}')">✏️</button></td>`;
-            html += `<td style="padding:4px 6px;border-bottom:1px solid #eee;color:#888;font-size:10px;">${b.batch_id}</td>`;
+            html += `<td style="padding:4px 6px;border-bottom:1px solid #eee;color:#888;font-size:10px;"><span id="bid-${b.batch_id}">${b.batch_id}</span> <button class="btn-sm" style="padding:1px 4px;font-size:10px;margin-left:4px;" onclick="editBatchId('${b.batch_id}')">✏️</button></td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${(b.created_at||'').slice(0,10)}</td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${b.employee_count}</td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;">${b.total_evaluations}</td>`;
+            html += `<td id="rowstatus-${b.batch_id}" style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;font-weight:600;"></td>`;
             html += `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid #eee;"><button class="btn-danger btn-sm" style="padding:1px 6px;font-size:10px;" onclick="deleteBatch('${b.batch_id}', this)">삭제</button></td>`;
             html += '</tr>';
         });
         html += '</tbody></table>';
         list.innerHTML = html;
         _updateBatchScopeSummary();
+        _updateBatchLoadBadge();
+        _updateBatchRowStatuses();
         if (window.__perf) __perf.since('loadBatchHistory:total', d.batches.length + '개 배치');
     } catch(e) {
         _origError('Batch history load failed:', e);
@@ -3751,13 +4042,108 @@ function _updateBatchScopeSummary() {
     summary.textContent = _selectedBatchIds.length ? `${_selectedBatchIds.length}개 선택됨` : '';
 }
 
+// 13_05 §8-1: 전면 오버레이(showBusyOverlay()) 금지 — 인라인 소형 인디케이터만 사용.
+function _showBatchScopeLoading(show) {
+    const sp = document.getElementById('batchScopeSpinner');
+    if (sp) sp.style.display = show ? 'inline-block' : 'none';
+}
+
+// 25_01(4차 수정): loadMeta()의 실패/경고 메시지도 이 배지 위치에 직접 쓴다(같은 위치 원칙).
+function _setBatchLoadBadgeText(text, isError) {
+    const badge = document.getElementById('batchLoadBadge');
+    if (!badge) return;
+    badge.textContent = text;
+    badge.style.color = isError ? '#dc3545' : '#00b894';
+}
+
+// 25_01: "현재 체크된 조합을 명시적으로 로드했는가"(_batchScopeAppliedOnce)로 판정한다.
+// window.onload의 자동 배경 호출은 이제 존재하지 않는다(완전 제거, 아래 window.onload 참조).
+// 25_01(4차 수정): 로드 성공 시 "N명 직원, N개 배치, N개 평가 로드됨"을 여기(배치 이력 패널,
+// 선택된 배치 로드 버튼 바로 옆)에 표시한다 — 이전엔 #statusMsg(버튼 줄 아래)에 표시돼
+// 로드를 실행한 위치와 결과를 보여주는 위치가 서로 멀리 떨어져 있었다.
+function _updateBatchLoadBadge() {
+    const badge = document.getElementById('batchLoadBadge');
+    if (!badge) return;
+    if (_batchScopeAppliedOnce && _meta) {
+        const empCount = (_meta.employees || []).length;
+        if (empCount === 0) {
+            badge.textContent = '⚠️ 배치 데이터 없음 — CSV를 업로드하여 배치를 생성하세요.';
+            badge.style.color = '#dc3545';
+        } else {
+            badge.textContent = `✅ ${empCount}명 직원, ${_meta.batch_count}개 배치, ${_meta.total_evaluations}개 평가 로드됨`;
+            badge.style.color = '#00b894';
+        }
+    } else {
+        badge.textContent = '⏳ 로드 필요';
+        badge.style.color = '#dc3545';
+    }
+}
+
+// 25_01(2차 수정): 테이블 각 행(배치)에 "이 배치가 현재 로드된 데이터에 포함돼 있는가"를 표시.
+// _loadedBatchIds는 체크박스 변경으로는 바뀌지 않고 성공적인 로드에서만 교체된다(§요구사항4·5).
+function _updateBatchRowStatuses() {
+    document.querySelectorAll('.batchScopeCheckbox').forEach(cb => {
+        const el = document.getElementById('rowstatus-' + cb.value);
+        if (!el) return;
+        if (_loadedBatchIds.indexOf(cb.value) !== -1) {
+            el.textContent = '✅ 로드됨';
+            el.style.color = '#00b894';
+        } else {
+            el.textContent = '⏳ 로드 필요';
+            el.style.color = '#999';
+        }
+    });
+}
+
+// 25_01: 배치 이력 행의 체크박스·버튼이 아닌 부분을 클릭해도 그 행의 체크박스가 토글되게 한다.
+// input/button 클릭은 그냥 두어(각자 자기 동작을 함) 체크박스 자체 클릭 시 이중 토글을 피한다.
+function _toggleBatchRow(event, batchId) {
+    const tag = (event.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'button') return;
+    const cb = document.querySelector(`.batchScopeCheckbox[value="${CSS.escape(batchId)}"]`);
+    if (!cb) return;
+    cb.checked = !cb.checked;
+    onBatchScopeChange();
+}
+
+// 24_02 §10 사용자 확정: 체크박스는 상태·배지만 갱신하고 자동 재조회하지 않는다.
+// 조회는 "선택된 배치 로드" 버튼(applyBatchScope)을 눌러야만 시작된다.
+// 25_01: 조합이 바뀌면 이전 조합에 대한 명시적 로드 상태는 무효화(재로드 필요).
 function onBatchScopeChange() {
     const boxes = document.querySelectorAll('.batchScopeCheckbox:checked');
     _selectedBatchIds = Array.from(boxes).map(cb => cb.value);
+    _batchScopeAppliedOnce = false;
     _updateBatchScopeSummary();
-    // D-4: 다다닥 체크할 때 요청이 겹치지 않도록 디바운스(300ms) 후 재조회
-    if (_batchScopeDebounceTimer) clearTimeout(_batchScopeDebounceTimer);
-    _batchScopeDebounceTimer = setTimeout(() => { loadMeta(); }, 300);
+    _updateBatchLoadBadge();
+    _doBatchTitleCheck();
+}
+
+// 24_02: "선택된 배치 로드" 버튼 핸들러. loadMeta()가 내부적으로 _metaCache를 먼저 확인하므로
+// 이미 로드된 조합이면 네트워크 요청 없이 즉시 반영되고, 아니면 새로 조회 후 캐시에 남는다.
+// 25_01: 이 버튼을 눌러야만 저장 버튼들이 켜진다(_batchScopeAppliedOnce, _doBatchTitleCheck 참조).
+// 25_01(2차 수정): 체크 0개 상태로는 아무것도 로드하지 않는다("전체 배치" 자동 대체 폐지) —
+// 사용자가 명시적으로 체크한 배치만 로드하라는 요구사항4에 따름.
+// 25_01(4차 수정): loadMeta()가 이제 성공 여부(boolean)를 반환한다 — 실패했는데도
+// _batchScopeAppliedOnce가 true로 남는 일이 없도록, 성공했을 때만 로드 상태를 확정한다.
+async function applyBatchScope() {
+    if (_selectedBatchIds.length === 0) {
+        _setBatchLoadBadgeText('⚠️ 체크된 배치가 없습니다 — 로드할 배치를 먼저 체크하세요', true);
+        return;
+    }
+    _showBatchScopeLoading(true);
+    let ok = false;
+    try {
+        ok = await loadMeta();
+    } finally {
+        _showBatchScopeLoading(false);
+        if (ok) {
+            _batchScopeAppliedOnce = true;
+            _loadedBatchIds = [..._selectedBatchIds];
+            _updateBatchLoadBadge();
+            _updateBatchRowStatuses();
+        }
+        _doBatchTitleCheck();
+    }
 }
 
 async function editDisplayName(batchId) {
@@ -3780,6 +4166,98 @@ async function editDisplayName(batchId) {
     } catch (e) {
         alert('오류: ' + e.message);
     }
+}
+
+// 20_07 §12: batch_id(내부 식별자) 실제 값 변경 — display_name과 달리 DB 5개 테이블
+// + 물리 폴더를 함께 옮기는 작업이라 서버 처리가 조금 걸릴 수 있다.
+// prompt()는 키 입력을 가로챌 수 없어(네이티브 대화상자) 타이핑 중 실시간 필터가
+// 불가능하다 — 커스텀 입력창으로 바꿔 input 이벤트에서 즉시 걸러낸다(IME 조합 중엔
+// 건드리지 않고 조합이 끝나는 순간 걸러냄, 그래야 한글 조합 자체가 깨지지 않는다).
+function editBatchId(batchId) {
+    var old = document.getElementById('batchIdModalOverlay');
+    if (old) old.remove();
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    var overlay = document.createElement('div');
+    overlay.id = 'batchIdModalOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:2000;';
+    overlay.innerHTML =
+        '<div style="background:#fff;border-radius:8px;padding:20px 24px;width:380px;max-width:90vw;box-shadow:0 4px 20px rgba(0,0,0,0.3);">' +
+            '<h4 style="margin:0 0 10px 0;">배치 ID 변경</h4>' +
+            '<div style="font-size:12px;color:#888;margin-bottom:8px;">현재: ' + escHtml(batchId) + '</div>' +
+            '<input id="batchIdModalInput" type="text" maxlength="100" autocomplete="off" style="width:100%;padding:6px 8px;box-sizing:border-box;font-size:13px;border:1px solid #ccc;border-radius:4px;">' +
+            '<div id="batchIdModalHint" style="font-size:11px;color:#dc3545;margin-top:4px;min-height:14px;">영문·숫자·"_"·"-"·"."만 입력할 수 있습니다.</div>' +
+            '<div style="margin-top:14px;text-align:right;">' +
+                '<button id="batchIdModalCancel" class="btn-secondary">취소</button>' +
+                '<button id="batchIdModalOk" class="btn-primary" style="margin-left:6px;">변경</button>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(overlay);
+
+    var input = document.getElementById('batchIdModalInput');
+    var hint = document.getElementById('batchIdModalHint');
+    input.value = batchId;
+    var composing = false;
+
+    function sanitize() {
+        var before = input.value;
+        var after = before.replace(/[^A-Za-z0-9_.\-]/g, '');
+        if (after !== before) {
+            var pos = Math.max(0, input.selectionStart - (before.length - after.length));
+            input.value = after;
+            try { input.setSelectionRange(pos, pos); } catch (e) {}
+            hint.textContent = '허용되지 않는 문자는 자동으로 제거됩니다(영문·숫자·"_"·"-"·"."만 허용).';
+            hint.style.color = '#dc3545';
+        } else {
+            hint.textContent = '영문·숫자·"_"·"-"·"."만 입력할 수 있습니다.';
+            hint.style.color = '#888';
+        }
+    }
+    input.addEventListener('compositionstart', function () { composing = true; });
+    input.addEventListener('compositionend', function () { composing = false; sanitize(); });
+    input.addEventListener('input', function () { if (!composing) sanitize(); });
+
+    function close() { overlay.remove(); }
+    document.getElementById('batchIdModalCancel').onclick = close;
+    overlay.onclick = function (e) { if (e.target === overlay) close(); };
+
+    async function submit() {
+        var newId = input.value.trim();
+        if (!newId || newId === batchId) { close(); return; }
+        var okBtn = document.getElementById('batchIdModalOk');
+        okBtn.disabled = true;
+        try {
+            var r = await fetch('/api/perspective/batch/' + batchId + '/rename', {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({new_batch_id: newId})
+            });
+            var d = await r.json();
+            if (d.success) {
+                close();
+                // 24_02 §9 R-3: 배치 ID가 바뀌면 선택 상태의 구 ID도 신 ID로 치환(방치 시
+                // _selectedBatchIds에 존재하지 않는 배치 ID가 남아 다음 로드에 영향을 준다).
+                var _idx = _selectedBatchIds.indexOf(batchId);
+                if (_idx !== -1) _selectedBatchIds[_idx] = newId;
+                loadBatchHistory();
+            } else {
+                hint.textContent = d.error || '변경 실패';
+                hint.style.color = '#dc3545';
+                okBtn.disabled = false;
+            }
+        } catch (e) {
+            hint.textContent = '오류: ' + e.message;
+            hint.style.color = '#dc3545';
+            okBtn.disabled = false;
+        }
+    }
+    document.getElementById('batchIdModalOk').onclick = submit;
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !composing) submit();
+        if (e.key === 'Escape') close();
+    });
+    input.focus();
+    input.select();
 }
 
 async function deleteBatch(batchId, btn) {
